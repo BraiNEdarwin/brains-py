@@ -1,0 +1,7 @@
+name: bspyproc
+dependencies:
+   - python=3.6
+   - ipython
+   - pip
+   - pip:
+     - numpy
