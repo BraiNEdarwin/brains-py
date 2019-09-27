@@ -5,3 +5,4 @@ dependencies:
    - pip
    - pip:
      - numpy
+     - git+https://github.com/BraiNEdarwin/brainspy-instruments.git
