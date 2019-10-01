@@ -55,6 +55,11 @@ class DNPU(TorchModel):
         # self.min_voltage = torch.tensor(self.min_voltage, dtype=torch.float32).to(DEVICE)
         # self.max_voltage = torch.tensor(self.max_voltage, dtype=torch.float32).to(DEVICE)
 
+    def inference(self, input_matrix):
+        inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
+        output = self.forward(inputs_torch)
+        return TorchUtils.get_numpy_from_tensor(output)
+
     def forward(self, x):
 
         expand_cv = self.bias.expand(x.size()[0], -1)
