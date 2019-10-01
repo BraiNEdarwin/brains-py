@@ -66,84 +66,14 @@ class TorchModel(nn.Module):
 
         print('Model built with the following modules: \n', modules)
 
-    def inference(self, input_voltages):
-
-        inputs_torch = TorchUtils.get_tensor_from_numpy(input_voltages)
-        output = self.forward(input_voltages)
+    def inference(self, input_matrix):
+        with torch.no_grad:
+            inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
+            output = self.forward(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output) * self.info['amplification']
 
     def forward(self, x):
         return self.__model(x)
-
-    def train(data, loss_fn=torch.nn.MSELoss()):
-
-        # set configurations
-        if "seed" in config_dict.keys():
-            torch.manual_seed(config_dict['seed'])
-            print('The torch RNG is seeded with ', config_dict['seed'])
-
-        if "betas" in config_dict.keys():
-            optimizer = torch.optim.Adam(network.parameters(),
-                                         lr=config_dict['learning_rate'],
-                                         betas=config_dict["betas"])
-            print("Set betas to values: ", {config_dict["betas"]})
-        else:
-            optimizer = torch.optim.Adam(network.parameters(),
-                                         lr=config_dict['learning_rate'])
-        print('Prediction using ADAM optimizer')
-        if 'results_path' in config_dict.keys():
-            dir_path = create_directory_timestamp(config_dict['results_path'], config_dict['experiment_name'])
-        else:
-            dir_path = None
-
-        # Define variables
-        x_train, y_train = data[0]
-        x_val, y_val = data[1]
-        costs = np.zeros((config_dict['nr_epochs'], 2))  # training and validation costs per epoch
-
-        for epoch in range(config_dict['nr_epochs']):
-
-            network.train()
-            permutation = torch.randperm(x_train.size()[0])  # Permute indices
-
-            for mb in range(0, len(permutation), config_dict['batch_size']):
-
-                # Get prediction
-                indices = permutation[mb:mb + config_dict['batch_size']]
-                x_mb = x_train[indices]
-                y_pred = network(x_mb)
-                # GD step
-                if 'regularizer' in dir(network):
-                    loss = loss_fn(y_pred, y_train[indices]) + network.regularizer()
-                else:
-                    loss = loss_fn(y_pred, y_train[indices])
-
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-            # Evaluate training error
-            network.eval()
-            samples = len(x_val)
-            get_indices = torch.randperm(len(x_train))[:samples]
-            x_sampled = x_train[get_indices]
-            prediction = network(x_sampled)
-            target = y_train[get_indices]
-            costs[epoch, 0] = loss_fn(prediction, target).item()
-            # Evaluate Validation error
-            prediction = network(x_val)
-            costs[epoch, 1] = loss_fn(prediction, y_val).item()
-
-            if dir_path and (epoch + 1) % SGD_CONFIGS['save_interval'] == 0:
-                save('torch', config_dict, dir_path, f'checkpoint_epoch{epoch}.pt', torch_model=network)
-
-            if epoch % 10 == 0:
-                print('Epoch:', epoch,
-                      'Val. Error:', costs[epoch, 1],
-                      'Training Error:', costs[epoch, 0])
-
-        if dir_path:
-            save('torch', config_dict, dir_path, 'trained_network.pt', torch_model=network)
-        return costs
 
     def _info_consistency_check(self, model_info):
         """ It checks if the model info follows the expected standards.
