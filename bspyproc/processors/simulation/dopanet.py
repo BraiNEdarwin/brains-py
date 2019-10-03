@@ -12,7 +12,6 @@ import numpy as np
 import torch.nn as nn
 from bspyproc.processors.simulation.network import TorchModel
 from bspyproc.utils.pytorch import TorchUtils
-# DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class DNPU(TorchModel):
@@ -20,7 +19,7 @@ class DNPU(TorchModel):
     '''
 
     def __init__(self, in_list,
-                 path=r'./tmp/NN_model/checkpoint3000_02-07-23h47m.pt'):
+                 path=r'./tmp/input/models/nn_test/checkpoint3000_02-07-23h47m.pt'):
         super().__init__(path)
 
         self.nr_inputs = len(in_list)
@@ -56,7 +55,7 @@ class DNPU(TorchModel):
         # self.max_voltage = torch.tensor(self.max_voltage, dtype=torch.float32).to(DEVICE)
 
     def get_output(self, input_matrix):
-        with torch.no_grad:
+        with torch.no_grad():
             inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
             output = self.forward(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output)
@@ -72,7 +71,7 @@ class DNPU(TorchModel):
 #        print(inp.dtype,self.indx_cv.dtype,expand_cv.dtype)
         inp[:, self.indx_cv] = expand_cv
 
-        return self.__model(inp) * self.amplification
+        return self.model(inp) * self.amplification
 
     def regularizer(self):
         low = self.min_voltage[self.indx_cv]
@@ -86,6 +85,8 @@ class DNPU(TorchModel):
 
 
 if __name__ == '__main__':
+
+    # DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     import matplotlib.pyplot as plt
     x = 0.5 * np.random.randn(10, 2)
