@@ -66,7 +66,7 @@ class TorchModel(nn.Module):
 
         print('Model built with the following modules: \n', modules)
 
-    def inference(self, input_matrix):
+    def get_output(self, input_matrix):
         with torch.no_grad:
             inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
             output = self.forward(inputs_torch)
