@@ -12,8 +12,10 @@ def get_processor(configs):
         return HardwareProcessor()
     elif configs['platform'] == 'simulation':
         if configs['simulation_type'] == 'neural_network':
-            if configs['network_type'] == 'raw_model':
+            if configs['network_type'] == 'device_model':
                 return TorchModel(configs['torch_model_path'])
+            elif configs['network_type'] == 'nn_model':
+                return TorchModel(configs['torch_model_dict'])
             elif configs['network_type'] == 'dnpu':
                 return DNPU(configs['input_indices'], configs['torch_model_path'])
             else:
