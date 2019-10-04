@@ -42,10 +42,10 @@ class TorchModel(nn.Module):
         """Loads a pytorch model from a directory string."""
         self.info, state_dict = self.load_file(data_dir, 'pt')
         self.build_model(self.info)
-        self.__model.load_state_dict(state_dict)
+        self.model.load_state_dict(state_dict)
 
         if TorchUtils.get_accelerator_type() == torch.device('cuda'):
-            self.__model.cuda()
+            self.model.cuda()
 
     def build_model(self, model_info):
 
@@ -62,18 +62,18 @@ class TorchModel(nn.Module):
             modules.append(activ_function)
 
         modules.append(output_layer)
-        self.__model = nn.Sequential(*modules)
+        self.model = nn.Sequential(*modules)
 
         print('Model built with the following modules: \n', modules)
 
     def get_output(self, input_matrix):
-        with torch.no_grad:
+        with torch.no_grad():
             inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
             output = self.forward(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output) * self.info['amplification']
 
     def forward(self, x):
-        return self.__model(x)
+        return self.model(x)
 
     def _info_consistency_check(self, model_info):
         """ It checks if the model info follows the expected standards.

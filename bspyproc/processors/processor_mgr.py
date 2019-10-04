@@ -13,9 +13,9 @@ def get_processor(configs):
     elif configs['platform'] == 'simulation':
         if configs['simulation_type'] == 'neural_network':
             if configs['network_type'] == 'raw_model':
-                return TorchModel(configs['model_source'])
+                return TorchModel(configs['torch_model_path'])
             elif configs['network_type'] == 'dnpu':
-                return DNPU(configs['input_list'], configs['model_source'])
+                return DNPU(configs['input_indices'], configs['torch_model_path'])
             else:
                 raise NotImplementedError(f"{configs['network_type']} 'network_type' configuration is not recognised. The simulation type has to be defined as 'raw_model' or 'dpnu'. ")
         elif configs['simulation_type'] == 'kinetic_monte_carlo':
@@ -31,8 +31,8 @@ if __name__ == '__main__':
     PROCESSOR_CONFIGS['platform'] = 'simulation'
     PROCESSOR_CONFIGS['simulation_type'] = 'neural_network'
     PROCESSOR_CONFIGS['network_type'] = 'raw_model'
-    PROCESSOR_CONFIGS['input_list'] = [0, 4]
-    PROCESSOR_CONFIGS['model_source'] = 'tmp/inputs/test_model/checkpoint3000_02-07-23h47m.pt'
+    PROCESSOR_CONFIGS['input_indices'] = [0, 4]
+    PROCESSOR_CONFIGS['torch_model_path'] = 'tmp/inputs/test_model/checkpoint3000_02-07-23h47m.pt'
 
     import matplotlib.pyplot as plt
     import torch
