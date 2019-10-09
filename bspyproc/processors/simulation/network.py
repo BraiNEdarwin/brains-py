@@ -91,6 +91,7 @@ class TorchModel(nn.Module):
             model_info['hidden_sizes'] = [90] * 6
             print('WARNING: The model loaded does not define the input dimension as expected. Changed it to default value: %d.' % 90)
         return model_info
+# TODO: generalize get_activation function to allow for several options, e.g. relu, tanh, hard-tanh, sigmoid
 
     def _get_activation(self, activation):
         if type(activation) is str:
