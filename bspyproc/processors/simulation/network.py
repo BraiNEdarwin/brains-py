@@ -23,6 +23,9 @@ class TorchModel(nn.Module):
         elif type(model_source) is dict:
             self.build_model(model_source)
 
+        if TorchUtils.get_accelerator_type() == torch.device('cuda'):
+            self.model.cuda()
+
     def load_file(self, data_dir, file_type):
         if file_type == 'pt':
             state_dict = torch.load(data_dir, map_location=TorchUtils.get_accelerator_type())
@@ -43,9 +46,6 @@ class TorchModel(nn.Module):
         self.info, state_dict = self.load_file(data_dir, 'pt')
         self.build_model(self.info)
         self.model.load_state_dict(state_dict)
-
-        if TorchUtils.get_accelerator_type() == torch.device('cuda'):
-            self.model.cuda()
 
     def build_model(self, model_info):
 

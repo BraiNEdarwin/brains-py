@@ -64,8 +64,8 @@ class TorchUtils:
     def get_tensor_from_numpy(data):
         """Enables to create a torch variable from numpy with a consistent accelerator type and
         data type."""
-        return TorchUtils.get_tensor_from_list(torch.as_tensor(data))
+        return TorchUtils.get_tensor_from_list(data)
 
     @staticmethod
     def get_numpy_from_tensor(data):
-        return data.clone().detach().numpy()
+        return data.cpu().numpy()
