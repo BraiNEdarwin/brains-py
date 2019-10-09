@@ -55,8 +55,15 @@ class TorchUtils:
         if args:
             data_type = args[0]
         else:
+            data_type = None
+        return TorchUtils.format_tensor(torch.tensor(data), data_type=data_type)
+
+    @staticmethod
+    def format_tensor(tensor, data_type=None):
+        """Enables setting the data type and device consistently for all torch.tensors"""
+        if data_type is None:
             data_type = TorchUtils.data_type
-        return torch.tensor(data, dtype=data_type).to(device=TorchUtils.get_accelerator_type())
+        return tensor.to(device=TorchUtils.get_accelerator_type(), dtype=data_type)
 
     # _ANS = format_torch.__func__()
 
