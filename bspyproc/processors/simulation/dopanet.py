@@ -65,7 +65,7 @@ class DNPU(TorchModel):
         expand_cv = self.bias.expand(x.size()[0], -1)
         # inp = torch.empty((x.size()[0], x.size()[1] + self.nr_cv)).to(DEVICE)
         inp = torch.empty((x.size()[0], x.size()[1] + self.nr_cv))
-        inp = TorchUtils.get_tensor_from_list(inp)
+        inp = TorchUtils.format_tensor(inp)
 #        print(x.dtype,self.amplification.dtype)
         inp[:, self.in_list] = x
 #        print(inp.dtype,self.indx_cv.dtype,expand_cv.dtype)
