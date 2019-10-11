@@ -1,15 +1,20 @@
 
-from bspyproc.processors.hardware.hardware_processor import HardwareProcessor
 from bspyproc.processors.simulation.dopanet import DNPU
 from bspyproc.processors.simulation.network import TorchModel
 from bspyproc.processors.simulation.kmc import SimulationKMC
+from bspyinstr.instruments.instrument_mgr import get_instrument
 
 
 def get_processor(configs):
     '''
     '''
     if configs['platform'] == 'hardware':
-        return HardwareProcessor()
+        # configs['setup_type'] = 'cdaq_to_cdaq':
+        # configs['shape'] = n_points  # y.shape[1], length of the signal
+        # configs['input_channels'] = tested_inp
+        # configs['output_channels'] = tested_out
+        # configs['sampling_frequency'] = 1000
+        return get_instrument(configs['processor'])
     elif configs['platform'] == 'simulation':
         if configs['simulation_type'] == 'neural_network':
             if configs['network_type'] == 'device_model':
