@@ -14,7 +14,7 @@ def get_processor(configs):
         # configs['input_channels'] = tested_inp
         # configs['output_channels'] = tested_out
         # configs['sampling_frequency'] = 1000
-        return get_instrument(configs['processor'])
+        return get_instrument(configs)
     elif configs['platform'] == 'simulation':
         if configs['simulation_type'] == 'neural_network':
             if configs['network_type'] == 'device_model':
