@@ -48,6 +48,8 @@ class DNPU(TorchModel):
         self.amplification = TorchUtils.get_tensor_from_list(self.info['amplification'])
         self.min_voltage = TorchUtils.get_tensor_from_list(self.min_voltage)
         self.max_voltage = TorchUtils.get_tensor_from_list(self.max_voltage)
+        self.control_low = self.min_voltage[self.indx_cv]
+        self.control_high = self.max_voltage[self.indx_cv]
 
     def get_output(self, input_matrix):
         with torch.no_grad():
@@ -66,13 +68,16 @@ class DNPU(TorchModel):
         return self.model(inp) * self.amplification
 
     def regularizer(self):
-        low = self.min_voltage[self.indx_cv]
-        high = self.max_voltage[self.indx_cv]
-        assert any(low < 0), \
+        assert any(self.control_low < 0), \
             "Min. Voltage is assumed to be negative, but value is positive!"
-        assert any(high > 0), \
+        assert any(self.control_high > 0), \
             "Max. Voltage is assumed to be positive, but value is negative!"
-        return torch.sum(torch.relu(low - self.bias) + torch.relu(self.bias - high))
+        return torch.sum(torch.relu(self.control_low - self.bias) + torch.relu(self.bias - self.control_high))
+
+    def reset(self):
+        for k in range(len(self.control_low)):
+            print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
+            self.bias.data[:, k].uniform_(self.control_low[k], self.control_high[k])
 
 
 if __name__ == '__main__':
