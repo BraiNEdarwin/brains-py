@@ -40,7 +40,6 @@ class DNPU(TorchModel):
             (self.max_voltage[self.indx_cv] - self.min_voltage[self.indx_cv]) * \
             np.random.rand(1, self.nr_cv)
 
-        # bias = torch.as_tensor(bias, dtype=torch.float32).to(DEVICE)
         bias = TorchUtils.get_tensor_from_numpy(bias)
         self.bias = nn.Parameter(bias)
         # Set as torch Tensors and send to DEVICE
@@ -49,10 +48,8 @@ class DNPU(TorchModel):
         self.amplification = TorchUtils.get_tensor_from_list(self.info['amplification'])
         self.min_voltage = TorchUtils.get_tensor_from_list(self.min_voltage)
         self.max_voltage = TorchUtils.get_tensor_from_list(self.max_voltage)
-        # self.indx_cv = torch.tensor(self.indx_cv, dtype=torch.int64).to(DEVICE)  # IndexError: tensors used as indices must be long, byte or bool tensors
-        # self.amplification = torch.tensor(self.info['amplification']).to(DEVICE)
-        # self.min_voltage = torch.tensor(self.min_voltage, dtype=torch.float32).to(DEVICE)
-        # self.max_voltage = torch.tensor(self.max_voltage, dtype=torch.float32).to(DEVICE)
+        self.control_low = self.min_voltage[self.indx_cv]
+        self.control_high = self.max_voltage[self.indx_cv]
 
     def get_output(self, input_matrix):
         with torch.no_grad():
@@ -63,40 +60,35 @@ class DNPU(TorchModel):
     def forward(self, x):
 
         expand_cv = self.bias.expand(x.size()[0], -1)
-        # inp = torch.empty((x.size()[0], x.size()[1] + self.nr_cv)).to(DEVICE)
         inp = torch.empty((x.size()[0], x.size()[1] + self.nr_cv))
         inp = TorchUtils.format_tensor(inp)
-#        print(x.dtype,self.amplification.dtype)
         inp[:, self.in_list] = x
-#        print(inp.dtype,self.indx_cv.dtype,expand_cv.dtype)
         inp[:, self.indx_cv] = expand_cv
 
         return self.model(inp) * self.amplification
 
     def regularizer(self):
-        low = self.min_voltage[self.indx_cv]
-        high = self.max_voltage[self.indx_cv]
-#        print(x.dtype,low.dtype,high.dtype)
-        assert any(low < 0), \
+        assert any(self.control_low < 0), \
             "Min. Voltage is assumed to be negative, but value is positive!"
-        assert any(high > 0), \
+        assert any(self.control_high > 0), \
             "Max. Voltage is assumed to be positive, but value is negative!"
-        return torch.sum(torch.relu(low - self.bias) + torch.relu(self.bias - high))
+        return torch.sum(torch.relu(self.control_low - self.bias) + torch.relu(self.bias - self.control_high))
+
+    def reset(self):
+        for k in range(len(self.control_low)):
+            print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
+            self.bias.data[:, k].uniform_(self.control_low[k], self.control_high[k])
 
 
 if __name__ == '__main__':
 
-    # DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
     import matplotlib.pyplot as plt
     x = 0.5 * np.random.randn(10, 2)
-    # x = torch.Tensor(x).to(DEVICE)
     x = TorchUtils.get_tensor_from_numpy(x)
-    # target = torch.Tensor([[5]] * 10).to(DEVICE)
     target = TorchUtils.get_tensor_from_list([[5]] * 10)
     node = DNPU([0, 4])
     loss = nn.MSELoss()
-    optimizer = torch.optim.SGD([{'params': node.parameters()}], lr=0.00005)
+    optimizer = torch.optim.Adam([{'params': node.parameters()}], lr=0.01)
 
     LOSS_LIST = []
     CHANGE_PARAMS_NET = []
@@ -104,7 +96,7 @@ if __name__ == '__main__':
 
     START_PARAMS = [p.clone().detach() for p in node.parameters()]
 
-    for eps in range(2000):
+    for eps in range(10000):
 
         optimizer.zero_grad()
         out = node(x)
