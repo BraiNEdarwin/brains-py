@@ -38,13 +38,13 @@ def get_simulation_processor(configs):
 
 def get_neural_network_simulation_processor(configs):
     if configs['network_type'] == 'device_model':
-        return TorchModel(configs['torch_model_path'])
+        return TorchModel(configs['torch_model_dict'])
     elif configs['network_type'] == 'nn_model':
         return TorchModel(configs['torch_model_dict'])
     elif configs['network_type'] == 'dnpu':
-        return DNPU(configs['input_indices'], configs['torch_model_path'])
+        return DNPU(configs['input_indices'], configs['torch_model_dict'])
     else:
-        raise NotImplementedError(f"{configs['network_type']} 'network_type' configuration is not recognised. The simulation type has to be defined as 'raw_model' or 'dpnu'. ")
+        raise NotImplementedError(f"{configs['network_type']} 'network_type' configuration is not recognised. The simulation type has to be defined as 'device_model', 'nn_model' or 'dpnu'. ")
 
 
 if __name__ == '__main__':
