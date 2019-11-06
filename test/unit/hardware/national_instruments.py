@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from bspyinstr.instruments.instrument_mgr import get_instrument
+from bspyproc.instruments.instrument_mgr import get_instrument
 
 
 def sweepgen(v_high, v_low, n_points, direction):
