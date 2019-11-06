@@ -1,36 +1,50 @@
-
 from bspyproc.processors.simulation.dopanet import DNPU
 from bspyproc.processors.simulation.network import TorchModel
 from bspyproc.processors.simulation.kmc import SimulationKMC
-from bspyinstr.instruments.instrument_mgr import get_instrument
+from bspyproc.processors.hardware.setups import CDAQtoCDAQ, CDAQtoNiDAQ
 
 
 def get_processor(configs):
-    '''
-    '''
     if configs['platform'] == 'hardware':
-        # configs['setup_type'] = 'cdaq_to_cdaq':
-        # configs['shape'] = n_points  # y.shape[1], length of the signal
-        # configs['input_channels'] = tested_inp
-        # configs['output_channels'] = tested_out
-        # configs['sampling_frequency'] = 1000
-        return get_instrument(configs)
+        return get_hardware_processor(configs)
     elif configs['platform'] == 'simulation':
-        if configs['simulation_type'] == 'neural_network':
-            if configs['network_type'] == 'device_model':
-                return TorchModel(configs['torch_model_path'])
-            elif configs['network_type'] == 'nn_model':
-                return TorchModel(configs['torch_model_dict'])
-            elif configs['network_type'] == 'dnpu':
-                return DNPU(configs['input_indices'], configs['torch_model_path'])
-            else:
-                raise NotImplementedError(f"{configs['network_type']} 'network_type' configuration is not recognised. The simulation type has to be defined as 'raw_model' or 'dpnu'. ")
-        elif configs['simulation_type'] == 'kinetic_monte_carlo':
-            return SimulationKMC()
-        else:
-            raise NotImplementedError(f"{configs['simulation_type']} 'simulation_type' configuration is not recognised. The simulation type has to be defined as 'neural_network' or 'kinetic_monte_carlo'. ")
+        return get_simulation_processor(configs)
     else:
         raise NotImplementedError(f"Platform {configs['platform']} is not recognised. The platform has to be either 'hardware' or 'simulation'")
+
+
+def get_hardware_processor(configs):
+    if configs['setup_type'] == 'cdaq_to_cdaq':
+        configs['input_instrument'] = 'cDAQ1Mod2'
+        configs['output_instrument'] = 'cDAQ1Mod1'
+        configs['trigger_source'] = 'cDAQ1'
+        return CDAQtoCDAQ(configs)
+    elif configs['setup_type'] == 'cdaq_to_nidaq':
+        configs['input_instrument'] = 'dev1'
+        configs['output_instrument'] = 'cDAQ1Mod1'
+        return CDAQtoNiDAQ(configs)
+    else:
+        raise NotImplementedError(f"{configs['setup_type']} 'setup_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. ")
+
+
+def get_simulation_processor(configs):
+    if configs['simulation_type'] == 'neural_network':
+        return get_neural_network_simulation_processor(configs)
+    elif configs['simulation_type'] == 'kinetic_monte_carlo':
+        return SimulationKMC()
+    else:
+        raise NotImplementedError(f"{configs['simulation_type']} 'simulation_type' configuration is not recognised. The simulation type has to be defined as 'neural_network' or 'kinetic_monte_carlo'. ")
+
+
+def get_neural_network_simulation_processor(configs):
+    if configs['network_type'] == 'device_model':
+        return TorchModel(configs['torch_model_path'])
+    elif configs['network_type'] == 'nn_model':
+        return TorchModel(configs['torch_model_dict'])
+    elif configs['network_type'] == 'dnpu':
+        return DNPU(configs['input_indices'], configs['torch_model_path'])
+    else:
+        raise NotImplementedError(f"{configs['network_type']} 'network_type' configuration is not recognised. The simulation type has to be defined as 'raw_model' or 'dpnu'. ")
 
 
 if __name__ == '__main__':
