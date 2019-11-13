@@ -86,7 +86,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def __init__(self, configs):
         configs['auto_start'] = False
-        configs['offset'] = int(configs['sampling_frequency'] * 0.2)
+        configs['offset'] = int(configs['sampling_frequency'] * 0.05)
         super().__init__(self, configs)
         self.add_channels()
 
