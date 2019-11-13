@@ -25,7 +25,8 @@ def safety_format(amplitudes_input, lengths_input, slopes_input):
 
     lengths_output.append(0)
 
-    return amplitudes_output, lengths_output, slopes_output
+    output = np.concatenate((np.array([]), np.linspace(0, amplitudes_output[0], slopes_output[0])))
+    return output, amplitudes_output, lengths_output, slopes_output
 
 
 def generate_waveform(amplitudes, amplitude_lengths, slope_lengths=0, safety_formatting=True):
@@ -38,13 +39,12 @@ def generate_waveform(amplitudes, amplitude_lengths, slope_lengths=0, safety_for
 
     The output is in list format
     '''
-    output = np.array([])
     if safety_formatting is True:
-        amplitudes, amplitude_lengths, slope_lengths = safety_format(amplitudes, amplitude_lengths, slope_lengths)
+        output, amplitudes, amplitude_lengths, slope_lengths = safety_format(amplitudes, amplitude_lengths, slope_lengths)
     else:
+        output = np.array([])
         warnings.warn('WARNING: Safety formatting is not enabled. This can make the boron-doped silicon device unusable. ')
     if len(amplitudes) == len(amplitude_lengths) == len(slope_lengths):
-        output = np.concatenate((output, np.linspace(0, amplitudes[0], slope_lengths[0])))
         for i in range(len(amplitudes) - 1):
             output = np.concatenate((output, np.array([amplitudes[i]] * amplitude_lengths[i])))
             output = np.concatenate((output, np.linspace(amplitudes[i], amplitudes[i + 1], slope_lengths[i])))
@@ -66,7 +66,7 @@ def generate_mask(amplitudes, amplitude_lengths, slope_lengths=0, safety_formatt
     '''
     mask = []
     if safety_formatting is True:
-        amplitudes, amplitude_lengths, slope_lengths = safety_format(amplitudes, amplitude_lengths, slope_lengths)
+        _, amplitudes, amplitude_lengths, slope_lengths = safety_format(amplitudes, amplitude_lengths, slope_lengths)
     else:
         warnings.warn('WARNING: Safety formatting is not enabled. This can make the boron-doped silicon device unusable. ')
     if len(amplitudes) == len(amplitude_lengths) == len(slope_lengths):
@@ -78,6 +78,14 @@ def generate_mask(amplitudes, amplitude_lengths, slope_lengths=0, safety_formatt
         assert False, 'Assignment of amplitudes and lengths/slopes is not unique!'
 
     return mask
+
+
+def generate_slopped_plato(slope_length, total_length, value=1):
+    length = total_length - (2 * slope_length)
+    up = np.linspace(0, value, slope_length)
+    down = np.linspace(value, 0, slope_length)
+    plato = np.broadcast_to(value, length)
+    return np.concatenate((up, plato, down))
 
 
 if __name__ == '__main__':
