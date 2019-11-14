@@ -86,7 +86,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def __init__(self, configs):
         configs['auto_start'] = False
-        configs['offset'] = int(configs['sampling_frequency'] * 0.05)
+        configs['offset'] = int(configs['sampling_frequency'] * 0.03)  # do not reduce to less than 0.02
         super().__init__(self, configs)
         self.add_channels()
 
@@ -94,11 +94,23 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         y = y.T
         assert self.configs['shape'] == y.shape[1]
         y = self.synchronise_input_data(y)
+        max_attempts = 5
+        attempts = 1
+        finished = False
+        while not finished and (attempts < max_attempts):
+            data, finished = self.readout_trial(y)
+            attempts += 1
+
+        assert finished, ('Error: output data not same size as input data. Output: ' +
+                          str(data.shape[1]) + ' points, input: ' + str(self.configs['shape']) + ' points.')
+        return data.T
+
+    def readout_trial(self, y):
         data = self.read_data(y)
         data = self.process_output_data(data)
         data = self.synchronise_output_data(data)
-        assert data.shape[1] == self.configs['shape'], 'Error: output data not same size as input data. Output: ' + str(data.shape[1]) + ' points, input: ' + str(self.configs['shape']) + ' points.'
-        return data.T
+        finished = data.shape[1] == self.configs['shape']
+        return data, finished
 
     def synchronise_input_data(self, y):
         # TODO: Are the following three lines really necessary?
