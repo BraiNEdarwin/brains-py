@@ -38,7 +38,7 @@ class NationalInstrumentsSetup():
         data = np.asarray(data)
         if len(data.shape) == 1:
             data = data[np.newaxis, :]
-        return data
+        return data * self.configs["amplification"]
 
     def start_tasks(self, y):
         self.output_task.write(y, auto_start=self.configs['auto_start'])
@@ -86,7 +86,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def __init__(self, configs):
         configs['auto_start'] = False
-        configs['offset'] = int(configs['sampling_frequency'] * 0.03)  # do not reduce to less than 0.02
+        configs['offset'] = int(configs['sampling_frequency'] * 0.04)  # do not reduce to less than 0.02
         super().__init__(self, configs)
         self.add_channels()
 
