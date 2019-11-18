@@ -14,7 +14,7 @@ def get_driver(configs):
     else:
        raise NotImplementedError(f"{configs['driver_type']} 'driver_type' configuration is not recognised. The driver type has to be defined as 'local' or 'remote'. ")
 
-def run_server(ip=DEFAULT_IP, subnet_mask=DEFAULT_SUBNET_MASK, port=DEFAULT_PORT, set_static_ip=TRUE):
+def run_server(ip=DEFAULT_IP, subnet_mask=DEFAULT_SUBNET_MASK, port=DEFAULT_PORT, set_static_ip=True):
     if set_static_ip:
         set_static_ip(ip,subnet_mask)
     server = RemoteTasksServer(ip, port)
