@@ -18,7 +18,7 @@ def get_driver(configs):
     if configs['driver_type'] == 'local':
         return LocalTasks()
     elif configs['driver_type'] == 'remote':
-        return RemoteTasks()
+        return RemoteTasks(configs['uri'])
     else:
        raise NotImplementedError(f"{configs['driver_type']} 'driver_type' configuration is not recognised. The driver type has to be defined as 'local' or 'remote'. ")
 
@@ -41,7 +41,6 @@ def set_static_ip(configs):
 class LocalTasks():
     def __init__(self):
         self.acquisition_type = constants.AcquisitionType.FINITE
-        self.configs = configs
     
     @Pyro4.oneway
     def init_output(self, input_channels, output_instrument, sampling_frequency, offsetted_shape):
@@ -95,7 +94,6 @@ class LocalTasks():
 class RemoteTasks():
     def __init__(self, uri):
         self.acquisition_type = constants.AcquisitionType.FINITE
-        self.configs = configs
         self.tasks = Pyro4.Proxy(uri)
     
 
