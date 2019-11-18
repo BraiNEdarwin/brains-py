@@ -17,7 +17,7 @@ def get_driver(configs):
     if configs['driver_type'] == 'local':
         return LocalTasks()
     elif configs['driver_type'] == 'remote':
-        return RemoteTasksClient(configs['uri'])
+        return Pyro4.Proxy(configs['uri'])
     else:
        raise NotImplementedError(f"{configs['driver_type']} 'driver_type' configuration is not recognised. The driver type has to be defined as 'local' or 'remote'. ")
 
@@ -38,41 +38,58 @@ def set_static_ip(configs):
 
 @Pyro4.expose
 class LocalTasks():
-    def __init__(self):
+    def __init__(self, configs):
         self.acquisition_type = constants.AcquisitionType.FINITE
-
-    def get_task(self):
-        return nidaqmx.Task()
+        self.configs = configs
     
+    @Pyro4.oneway
+    def init_output(self, input_channels, output_instrument, sampling_frequency, offsetted_shape):
+        '''Initialises the output of the computer which is the input of the device'''
+        self.output_task = nidaqmx.Task()
+        for i in range(len(input_channels)):
+            self.output_task.ao_channels.add_ao_voltage_chan(output_instrument + '/ao' + str(input_channels[i]), 'ao' + str(i) + '', -2, 2)
+        self.output_task.timing.cfg_samp_clk_timing(sampling_frequency, sample_mode=self.acquisition_type, samps_per_chan=offsetted_shape)
 
-class RemoteTasksClient():
-    def __init__(self, uri):
-        self.tasks = Pyro4.Proxy(uri) 
+    @Pyro4.oneway
+    def init_input(self, output_channels, input_instrument, sampling_frequency, offsetted_shape):
+        '''Initialises the input of the computer which is the output of the device'''
+        self.input_task = nidaqmx.Task()
+        for i in range(len(output_channels)):
+            self.input_task.ai_channels.add_ai_voltage_chan(input_instrument + '/ai' + str(output_channels[i]))
+        self.input_task.timing.cfg_samp_clk_timing(sampling_frequency, sample_mode=self.acquisition_type, samps_per_chan=offsetted_shape)
 
-    def get_task(self):
-        return self.tasks.get_task()
-    
-    def init_output(self):
-        self.tasks.init_output()
+    @Pyro4.oneway
+    def add_channels(self, output_instrument, input_instrument):
+        # Define ao7 as sync signal for the NI 6216 ai0
+        self.output_task.ao_channels.add_ao_voltage_chan(output_instrument + '/ao7', 'ao7', -5, 5)
+        self.input_task.ai_channels.add_ai_voltage_chan(input_instrument + '/ai7')
 
-    def init_input(self):
-        self.tasks.init_input()
+    def read(self, offsetted_shape, ceil):
+        return self.input_task.read(offsetted_shape, ceil)
 
-    def start_tasks(self, y):
-        self.tasks.start_tasks(y)
+    @Pyro4.oneway
+    def start_trigger(self, trigger_source):
+        self.output_task.triggers.start_trigger.cfg_dig_edge_start_trig('/' + trigger_source + '/ai/StartTrigger')
 
+    @Pyro4.oneway
+    def start_tasks(self, y, auto_start):
+        self.output_task.write(y, auto_start=auto_start)
+        if not auto_start:
+            self.output_task.start()
+            self.input_task.start()
+
+    @Pyro4.oneway
     def stop_tasks(self):
-        self.tasks.stop_tasks()
+        self.input_task.stop()
+        self.output_task.stop()
 
+    @Pyro4.oneway
     def close_tasks(self):
-        self.tasks.close_tasks()
+        self.input_task.close()
+        self.output_task.close()
 
-    def shutdown(self):
-        self.tasks.close_tasks()
-        self.tasks.shutdown()
 
 class RemoteTasksServer():
-    import Pyro4
     def __init__(self, configs):
         self.configs = configs
         self.tasks = LocalTasks()
