@@ -68,7 +68,7 @@ class LocalTasks():
         return self.input_task.read(offsetted_shape, ceil)
     
     def remote_read(self, offsetted_shape, ceil):
-        return pickle.dumps(self.read(offsetted_shape,ceil), protocol=0)
+        return pickle.dumps(self.read(offsetted_shape,ceil), protocol=1)
 
     @Pyro4.oneway
     def start_trigger(self, trigger_source):
@@ -116,7 +116,7 @@ class RemoteTasks():
         self.tasks.start_trigger(trigger_source)
 
     def start_tasks(self, y, auto_start):
-        self.tasks.remote_start_tasks(pickle.dumps(y, protocol=0), auto_start)
+        self.tasks.remote_start_tasks(pickle.dumps(y, protocol=1), auto_start)
 
     @Pyro4.oneway
     def stop_tasks(self):
