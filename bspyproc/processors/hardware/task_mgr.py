@@ -71,11 +71,10 @@ class LocalTasks():
     
     def remote_read(self, offsetted_shape, ceil):
         try:
-            result = self.input_task.read(offsetted_shape, ceil)
-            return np.asarray(result)
+            return self.input_task.read(offsetted_shape, ceil)
         except nidaqmx.errors.DaqError:
             print(DaqError.values)
-        return np.asarray(0)
+        return -1
 
     @Pyro4.oneway
     def start_trigger(self, trigger_source):
