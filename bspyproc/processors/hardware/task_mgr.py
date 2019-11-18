@@ -91,6 +91,7 @@ class RemoteTasksServer():
         self.daemon.close()
 
 if __name__ == "__main__":
+    configs = {}
     configs['ip'] = DEFAULT_IP
     configs['port'] = DEFAULT_PORT
     configs['subnet_mask'] = DEFAULT_SUBNET_MASK
