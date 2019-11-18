@@ -78,7 +78,7 @@ class RemoteTasksServer():
         self.tasks = LocalTasks()
 
     def save_uri(self, uri):
-        print('Server ready, object URI: '+uri)
+        print('Server ready, object URI: '+str(uri))
         f = open('uri.txt')
         f.write(str(uri)+' \n')
         f.close()
