@@ -14,7 +14,7 @@ class NationalInstrumentsSetup():
         self.offsetted_shape = configs['shape'] + configs['offset']
         self.ceil = math.ceil((self.offsetted_shape) / self.configs['sampling_frequency']) + 1
         self.driver.init_output(self.configs['input_channels'], self.configs['output_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)
-        self.driver.init_input(self.configs['output_channels'], self.configs['input_instrument'], self.configs['sampling_frequency'], self.configs['offsetted_shape'])
+        self.driver.init_input(self.configs['output_channels'], self.configs['input_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)
 
     def process_output_data(self, data):
         data = np.asarray(data)

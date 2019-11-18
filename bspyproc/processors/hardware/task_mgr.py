@@ -1,5 +1,6 @@
 import os
 import time
+import pickle
 
 import nidaqmx
 import nidaqmx.constants as constants
@@ -17,7 +18,7 @@ def get_driver(configs):
     if configs['driver_type'] == 'local':
         return LocalTasks()
     elif configs['driver_type'] == 'remote':
-        return Pyro4.Proxy(configs['uri'])
+        return RemoteTasks()
     else:
        raise NotImplementedError(f"{configs['driver_type']} 'driver_type' configuration is not recognised. The driver type has to be defined as 'local' or 'remote'. ")
 
@@ -66,6 +67,9 @@ class LocalTasks():
 
     def read(self, offsetted_shape, ceil):
         return self.input_task.read(offsetted_shape, ceil)
+    
+    def remote_read(self, offsetted_shape, ceil):
+        return pickle.dumps(self.read(offsetted_shape,ceil), protocol=0)
 
     @Pyro4.oneway
     def start_trigger(self, trigger_source):
@@ -87,6 +91,41 @@ class LocalTasks():
     def close_tasks(self):
         self.input_task.close()
         self.output_task.close()
+
+class RemoteTasks():
+    def __init__(self, uri):
+        self.acquisition_type = constants.AcquisitionType.FINITE
+        self.configs = configs
+        self.tasks = Pyro4.Proxy(uri)
+    
+
+    def init_output(self, input_channels, output_instrument, sampling_frequency, offsetted_shape):
+        self.tasks.init_output( input_channels, output_instrument, sampling_frequency, offsetted_shape)
+
+    def init_input(self, output_channels, input_instrument, sampling_frequency, offsetted_shape):
+        self.tasks.init_input(output_channels, input_instrument, sampling_frequency, offsetted_shape)
+
+    def add_channels(self, output_instrument, input_instrument):
+        self.tasks.add_channels(output_instrument, input_instrument)
+
+    def read(self, offsetted_shape, ceil):
+        return pickle.loads(self.tasks.remote_read(offsetted_shape, ceil))
+
+    @Pyro4.oneway
+    def start_trigger(self, trigger_source):
+        self.tasks.start_trigger(trigger_source)
+
+    @Pyro4.oneway
+    def start_tasks(self, y, auto_start):
+        self.tasks.start_tasks(y,auto_start)
+
+    @Pyro4.oneway
+    def stop_tasks(self):
+        self.tasks.stop_tasks()
+
+    @Pyro4.oneway
+    def close_tasks(self):
+        self.tasks.close_tasks()
 
 
 class RemoteTasksServer():
