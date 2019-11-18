@@ -75,6 +75,9 @@ class LocalTasks():
         self.output_task.triggers.start_trigger.cfg_dig_edge_start_trig('/' + trigger_source + '/ai/StartTrigger')
 
     @Pyro4.oneway
+    def remote_start_tasks(self, y, auto_start):
+        self.start_tasks(pickle.loads(y), auto_start)
+    @Pyro4.oneway
     def start_tasks(self, y, auto_start):
         self.output_task.write(y, auto_start=auto_start)
         if not auto_start:
@@ -109,13 +112,11 @@ class RemoteTasks():
     def read(self, offsetted_shape, ceil):
         return pickle.loads(self.tasks.remote_read(offsetted_shape, ceil))
 
-    @Pyro4.oneway
     def start_trigger(self, trigger_source):
         self.tasks.start_trigger(trigger_source)
 
-    @Pyro4.oneway
     def start_tasks(self, y, auto_start):
-        self.tasks.start_tasks(y,auto_start)
+        self.tasks.remote_start_tasks(pickle.dumps(y, protocol=0), auto_start)
 
     @Pyro4.oneway
     def stop_tasks(self):
