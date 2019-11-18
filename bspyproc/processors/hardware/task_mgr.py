@@ -70,7 +70,12 @@ class LocalTasks():
         return self.input_task.read(offsetted_shape, ceil)
     
     def remote_read(self, offsetted_shape, ceil):
-        return self.input_task.read(offsetted_shape, ceil).tolist()
+        try:
+            result self.input_task.read(offsetted_shape, ceil).tolist()
+            return np.asarray(result)
+        except nidaqmx.errors.DaqError:
+            print(DaqError.values)
+        return np.asarray(0)
 
     @Pyro4.oneway
     def start_trigger(self, trigger_source):
@@ -116,12 +121,8 @@ class RemoteTasks():
         self.tasks.add_channels(output_instrument, input_instrument)
 
     def read(self, offsetted_shape, ceil):
-        try:
-            result = self.tasks.remote_read(offsetted_shape, ceil)
-            return np.asarray(result)
-        except nidaqmx.errors.DaqError:
-            print(DaqError.values)
-        return np.asarray(0)
+        return self.tasks.remote_read(offsetted_shape, ceil)
+
 
     def start_trigger(self, trigger_source):
         self.tasks.start_trigger(trigger_source)
