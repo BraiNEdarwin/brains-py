@@ -1,38 +1,20 @@
 '''
-This module provides input/output functions for communicating with the
-NI USB 6216. (Note that nidaqmx has to be installed seperately first.)
+
 '''
-import nidaqmx
-import nidaqmx.constants as constants
 import numpy as np
 import math
 
+from  bspyproc.processors.hardware import task_mgr
 
 class NationalInstrumentsSetup():
 
     def __init__(self, reset_mgr, configs):
         self.configs = configs
-        self.acquisition_type = constants.AcquisitionType.FINITE
+        self.driver = task_mgr.get_driver(configs)
         self.offsetted_shape = configs['shape'] + configs['offset']
         self.ceil = math.ceil((self.offsetted_shape) / self.configs['sampling_frequency']) + 1
-        self.init_output()
-        self.init_input()
-
-    def init_output(self):
-        '''Initialises the output of the computer which is the input of the device'''
-
-        self.output_task = nidaqmx.Task()
-        for i in range(len(self.configs['input_channels'])):
-            self.output_task.ao_channels.add_ao_voltage_chan(self.configs['output_instrument'] + '/ao' + str(self.configs['input_channels'][i]), 'ao' + str(i) + '', -2, 2)
-        self.output_task.timing.cfg_samp_clk_timing(self.configs['sampling_frequency'], sample_mode=self.acquisition_type, samps_per_chan=self.configs['shape'] + self.configs['offset'])
-
-    def init_input(self):
-        '''Initialises the input of the computer which is the output of the device'''
-
-        self.input_task = nidaqmx.Task()
-        for i in range(len(self.configs['output_channels'])):
-            self.input_task.ai_channels.add_ai_voltage_chan(self.configs['input_instrument'] + '/ai' + str(self.configs['output_channels'][i]))
-        self.input_task.timing.cfg_samp_clk_timing(self.configs['sampling_frequency'], sample_mode=self.acquisition_type, samps_per_chan=self.configs['shape'] + self.configs['offset'])
+        self.driver.init_output()
+        self.driver.init_input()
 
     def process_output_data(self, data):
         data = np.asarray(data)
@@ -40,39 +22,28 @@ class NationalInstrumentsSetup():
             data = data[np.newaxis, :]
         return data * self.configs["amplification"]
 
-    def start_tasks(self, y):
-        self.output_task.write(y, auto_start=self.configs['auto_start'])
-        if not self.configs['auto_start']:
-            self.output_task.start()
-            self.input_task.start()
-
-    def stop_tasks(self):
-        self.input_task.stop()
-        self.output_task.stop()
-
-    def close_tasks(self):
-        self.input_task.close()
-        self.output_task.close()
 
     def read_data(self, y):
         '''
             y = It represents the input data as matrix where the shpe is defined by the "number of inputs to the device" times "input points that you want to input to the device".
         '''
-        self.start_tasks(y)
-        read_data = self.input_task.read(self.offsetted_shape, self.ceil)
-        self.stop_tasks()
+        self.driver.start_tasks(y)
+        read_data = self.driver.input_task.read(self.offsetted_shape, self.ceil)
+        self.driver.stop_tasks()
 
         return read_data
+
+    def close():
+        self.driver.close_tasks()
 
 
 class CDAQtoCDAQ(NationalInstrumentsSetup):
 
     def __init__(self, configs):
         configs['auto_start'] = True
-        configs['aquisition_type'] = constants.AcquisitionType.FINITE
         configs['offset'] = 0
         super().__init__(self, configs)
-        self.output_task.triggers.start_trigger.cfg_dig_edge_start_trig('/' + self.configs['trigger_source'] + '/ai/StartTrigger')
+        self.driver.output_task.triggers.start_trigger.cfg_dig_edge_start_trig('/' + self.configs['trigger_source'] + '/ai/StartTrigger')
 
     def get_output(self, y):
         y = y.T
@@ -86,6 +57,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def __init__(self, configs):
         configs['auto_start'] = False
+
         configs['offset'] = int(configs['sampling_frequency'] * 0.04)  # do not reduce to less than 0.02
         super().__init__(self, configs)
         self.add_channels()
@@ -132,8 +104,8 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def add_channels(self):
         # Define ao7 as sync signal for the NI 6216 ai0
-        self.output_task.ao_channels.add_ao_voltage_chan(self.configs['output_instrument'] + '/ao7', 'ao7', -5, 5)
-        self.input_task.ai_channels.add_ai_voltage_chan(self.configs['input_instrument'] + '/ai7')
+        self.driver.output_task.ao_channels.add_ao_voltage_chan(self.configs['output_instrument'] + '/ao7', 'ao7', -5, 5)
+        self.driver.input_task.ai_channels.add_ai_voltage_chan(self.configs['input_instrument'] + '/ai7')
 
     def get_output_cut_value(self, read_data):
         cut_value = np.argmax(read_data[-1, :])
