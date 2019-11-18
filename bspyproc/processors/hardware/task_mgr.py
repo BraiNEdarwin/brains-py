@@ -71,7 +71,7 @@ class LocalTasks():
     
     def remote_read(self, offsetted_shape, ceil):
         try:
-            result self.input_task.read(offsetted_shape, ceil).tolist()
+            result = self.input_task.read(offsetted_shape, ceil).tolist()
             return np.asarray(result)
         except nidaqmx.errors.DaqError:
             print(DaqError.values)
