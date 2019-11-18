@@ -4,7 +4,7 @@ import numpy as np
 
 import nidaqmx
 import nidaqmx.constants as constants
-
+from nidaqmx.errors import DaqError
 import Pyro4
 
 DEFAULT_IP = '192.168.1.5'
@@ -41,6 +41,8 @@ def set_static_ip(configs):
 class LocalTasks():
     def __init__(self):
         self.acquisition_type = constants.AcquisitionType.FINITE
+        self.output_task = None
+        self.input_task = None
     
     @Pyro4.oneway
     def init_output(self, input_channels, output_instrument, sampling_frequency, offsetted_shape):
@@ -114,7 +116,12 @@ class RemoteTasks():
         self.tasks.add_channels(output_instrument, input_instrument)
 
     def read(self, offsetted_shape, ceil):
-        return np.asarray(self.tasks.remote_read(offsetted_shape, ceil))
+        try:
+            result = self.tasks.remote_read(offsetted_shape, ceil)
+            return np.asarray(result)
+        except nidaqmx.errors.DaqError:
+            print(DaqError.values)
+        return np.asarray(0)
 
     def start_trigger(self, trigger_source):
         self.tasks.start_trigger(trigger_source)
