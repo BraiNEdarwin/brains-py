@@ -23,9 +23,9 @@ def run_server(ip=DEFAULT_IP, subnet_mask=DEFAULT_SUBNET_MASK, port=DEFAULT_PORT
 def set_static_ip(ip=DEFAULT_IP, subnet_mask=DEFAULT_SUBNET_MASK):
     SET_STATIC_IP_COMMAND = f"ifconfig eth0 {ip} netmask {subnet_mask} up"
     os.system(SET_STATIC_IP_COMMAND)
-    os.wait(1)
+    os.sleep(1)
     os.system(SWITCH_ETHERNET_OFF_COMMAND)
-    os.wait(1)
+    os.sleep(1)
     os.system(SWITCH_ETHERNET_ON_COMMAND)
 
 
