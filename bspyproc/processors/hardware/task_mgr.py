@@ -1,6 +1,6 @@
 import os
 import time
-import pickle
+import numpy as np
 
 import nidaqmx
 import nidaqmx.constants as constants
@@ -68,7 +68,7 @@ class LocalTasks():
         return self.input_task.read(offsetted_shape, ceil)
     
     def remote_read(self, offsetted_shape, ceil):
-        return pickle.dumps(self.input_task.read(offsetted_shape, ceil), protocol=1)
+        return self.input_task.read(offsetted_shape, ceil).tolist()
 
     @Pyro4.oneway
     def start_trigger(self, trigger_source):
@@ -76,7 +76,11 @@ class LocalTasks():
 
     @Pyro4.oneway
     def remote_start_tasks(self, y, auto_start):
-        self.start_tasks(pickle.loads(y), auto_start)
+        self.output_task.write(np.asarray(y), auto_start=auto_start)
+        if not auto_start:
+            self.output_task.start()
+            self.input_task.start()
+
     @Pyro4.oneway
     def start_tasks(self, y, auto_start):
         self.output_task.write(y, auto_start=auto_start)
@@ -110,13 +114,13 @@ class RemoteTasks():
         self.tasks.add_channels(output_instrument, input_instrument)
 
     def read(self, offsetted_shape, ceil):
-        return pickle.loads(self.tasks.remote_read(offsetted_shape, ceil))
+        return np.asarray(self.tasks.remote_read(offsetted_shape, ceil))
 
     def start_trigger(self, trigger_source):
         self.tasks.start_trigger(trigger_source)
 
     def start_tasks(self, y, auto_start):
-        self.tasks.remote_start_tasks(pickle.dumps(y, protocol=1), auto_start)
+        self.tasks.remote_start_tasks(y.tolist(), auto_start)
 
     @Pyro4.oneway
     def stop_tasks(self):
