@@ -79,7 +79,7 @@ class RemoteTasksServer():
 
     def save_uri(self, uri):
         print('Server ready, object URI: '+str(uri))
-        f = open('uri.txt')
+        f = open('uri.txt', 'w')
         f.write(str(uri)+' \n')
         f.close()
 
