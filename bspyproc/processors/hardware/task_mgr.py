@@ -36,7 +36,7 @@ def set_static_ip(configs):
     time.sleep(1)
     os.system(SWITCH_ETHERNET_ON_COMMAND)
 
-
+@Pyro4.expose
 class LocalTasks():
     def __init__(self):
         self.acquisition_type = constants.AcquisitionType.FINITE
