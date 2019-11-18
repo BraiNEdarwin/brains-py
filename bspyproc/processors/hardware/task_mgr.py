@@ -1,6 +1,11 @@
 import os
 import time
 
+import nidaqmx
+import nidaqmx.constants as constants
+
+import Pyro4
+
 DEFAULT_IP = '192.168.1.5'
 DEFAULT_SUBNET_MASK = '255.255.255.0'
 DEFAULT_PORT = 8081
@@ -33,8 +38,6 @@ def set_static_ip(configs):
 
 
 class LocalTasks():
-    import nidaqmx
-    import nidaqmx.constants as constants
     def __init__(self):
         self.acquisition_type = constants.AcquisitionType.FINITE
 
@@ -43,7 +46,6 @@ class LocalTasks():
     
 
 class RemoteTasksClient():
-    import Pyro4
     def __init__(self, uri):
         self.tasks = Pyro4.Proxy(uri) 
 
