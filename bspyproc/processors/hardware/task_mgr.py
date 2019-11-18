@@ -38,7 +38,7 @@ def set_static_ip(configs):
 
 @Pyro4.expose
 class LocalTasks():
-    def __init__(self, configs):
+    def __init__(self):
         self.acquisition_type = constants.AcquisitionType.FINITE
         self.configs = configs
     
