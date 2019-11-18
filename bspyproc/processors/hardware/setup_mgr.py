@@ -10,7 +10,7 @@ class NationalInstrumentsSetup():
 
     def __init__(self, reset_mgr, configs):
         self.configs = configs
-        self.driver = task_mgr.get_driver(configs)
+        self.driver = task_mgr.get_driver(configs['driver'])
         self.offsetted_shape = configs['shape'] + configs['offset']
         self.ceil = math.ceil((self.offsetted_shape) / self.configs['sampling_frequency']) + 1
         self.init_output()

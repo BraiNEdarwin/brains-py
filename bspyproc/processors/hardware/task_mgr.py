@@ -14,10 +14,10 @@ SWITCH_ETHERNET_OFF_COMMAND = "ifconfig eth0 down"
 SWITCH_ETHERNET_ON_COMMAND = "ifconfig eth0 up"
 
 def get_driver(configs):
-    if configs['driver']['driver_type'] == 'local':
+    if configs['driver_type'] == 'local':
         return LocalTasks()
-    elif configs['driver']['driver_type'] == 'remote':
-        return RemoteTasksClient(configs)
+    elif configs['driver_type'] == 'remote':
+        return RemoteTasksClient(configs['uri'])
     else:
        raise NotImplementedError(f"{configs['driver_type']} 'driver_type' configuration is not recognised. The driver type has to be defined as 'local' or 'remote'. ")
 
