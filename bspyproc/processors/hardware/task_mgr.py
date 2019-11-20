@@ -43,7 +43,7 @@ class LocalTasks():
         self.acquisition_type = constants.AcquisitionType.FINITE
         self.output_task = None
         self.input_task = None
-    
+
     @Pyro4.oneway
     def init_output(self, input_channels, output_instrument, sampling_frequency, offsetted_shape):
         '''Initialises the output of the computer which is the input of the device'''
@@ -68,12 +68,12 @@ class LocalTasks():
 
     def read(self, offsetted_shape, ceil):
         return self.input_task.read(offsetted_shape, ceil)
-    
+
     def remote_read(self, offsetted_shape, ceil):
         try:
             return self.input_task.read(offsetted_shape, ceil)
-        except nidaqmx.errors.DaqError:
-            print(DaqError.values)
+        except nidaqmx.errors.DaqError as e:
+            print('Error reading: '+str(e))
         return -1
 
     @Pyro4.oneway
@@ -108,7 +108,7 @@ class RemoteTasks():
     def __init__(self, uri):
         self.acquisition_type = constants.AcquisitionType.FINITE
         self.tasks = Pyro4.Proxy(uri)
-    
+
 
     def init_output(self, input_channels, output_instrument, sampling_frequency, offsetted_shape):
         self.tasks.init_output( input_channels, output_instrument, sampling_frequency, offsetted_shape)
@@ -166,13 +166,3 @@ if __name__ == "__main__":
     configs['force_static_ip'] = False
 
     run_server(configs)
-
-
-    
-
-    
-    
-    
-
-    
-
