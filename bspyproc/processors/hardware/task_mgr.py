@@ -4,7 +4,6 @@ import numpy as np
 
 import nidaqmx
 import nidaqmx.constants as constants
-from nidaqmx.errors import DaqError
 import Pyro4
 
 DEFAULT_IP = '192.168.1.5'
@@ -14,13 +13,14 @@ DEFAULT_PORT = 8081
 SWITCH_ETHERNET_OFF_COMMAND = "ifconfig eth0 down"
 SWITCH_ETHERNET_ON_COMMAND = "ifconfig eth0 up"
 
+
 def get_driver(configs):
     if configs['driver_type'] == 'local':
         return LocalTasks()
     elif configs['driver_type'] == 'remote':
         return RemoteTasks(configs['uri'])
     else:
-       raise NotImplementedError(f"{configs['driver_type']} 'driver_type' configuration is not recognised. The driver type has to be defined as 'local' or 'remote'. ")
+        raise NotImplementedError(f"{configs['driver_type']} 'driver_type' configuration is not recognised. The driver type has to be defined as 'local' or 'remote'. ")
 
 
 def run_server(configs):
@@ -29,6 +29,7 @@ def run_server(configs):
     server = RemoteTasksServer(configs)
     server.start()
 
+
 def set_static_ip(configs):
     SET_STATIC_IP_COMMAND = f"ifconfig eth0 {configs['ip']} netmask {configs['subnet_mask']} up"
     os.system(SET_STATIC_IP_COMMAND)
@@ -36,6 +37,7 @@ def set_static_ip(configs):
     os.system(SWITCH_ETHERNET_OFF_COMMAND)
     time.sleep(1)
     os.system(SWITCH_ETHERNET_ON_COMMAND)
+
 
 @Pyro4.expose
 class LocalTasks():
@@ -73,7 +75,7 @@ class LocalTasks():
         try:
             return self.input_task.read(offsetted_shape, ceil)
         except nidaqmx.errors.DaqError as e:
-            print('Error reading: '+str(e))
+            print('Error reading: ' + str(e))
         return -1
 
     @Pyro4.oneway
@@ -96,22 +98,25 @@ class LocalTasks():
 
     @Pyro4.oneway
     def stop_tasks(self):
-        self.input_task.stop()
-        self.output_task.stop()
+        if self.input_task is not None:
+            self.input_task.stop()
+        if self.output_task is not None:
+            self.output_task.stop()
 
     @Pyro4.oneway
     def close_tasks(self):
         self.input_task.close()
         self.output_task.close()
 
+
 class RemoteTasks():
     def __init__(self, uri):
         self.acquisition_type = constants.AcquisitionType.FINITE
         self.tasks = Pyro4.Proxy(uri)
-
+        self.close_tasks()
 
     def init_output(self, input_channels, output_instrument, sampling_frequency, offsetted_shape):
-        self.tasks.init_output( input_channels, output_instrument, sampling_frequency, offsetted_shape)
+        self.tasks.init_output(input_channels, output_instrument, sampling_frequency, offsetted_shape)
 
     def init_input(self, output_channels, input_instrument, sampling_frequency, offsetted_shape):
         self.tasks.init_input(output_channels, input_instrument, sampling_frequency, offsetted_shape)
@@ -122,18 +127,15 @@ class RemoteTasks():
     def read(self, offsetted_shape, ceil):
         return self.tasks.remote_read(offsetted_shape, ceil)
 
-
     def start_trigger(self, trigger_source):
         self.tasks.start_trigger(trigger_source)
 
     def start_tasks(self, y, auto_start):
         self.tasks.remote_start_tasks(y.tolist(), auto_start)
 
-    @Pyro4.oneway
     def stop_tasks(self):
         self.tasks.stop_tasks()
 
-    @Pyro4.oneway
     def close_tasks(self):
         self.tasks.close_tasks()
 
@@ -144,9 +146,9 @@ class RemoteTasksServer():
         self.tasks = LocalTasks()
 
     def save_uri(self, uri):
-        print('Server ready, object URI: '+str(uri))
+        print('Server ready, object URI: ' + str(uri))
         f = open('uri.txt', 'w')
-        f.write(str(uri)+' \n')
+        f.write(str(uri) + ' \n')
         f.close()
 
     def start(self):
@@ -157,6 +159,7 @@ class RemoteTasksServer():
 
     def stop(self):
         self.daemon.close()
+
 
 if __name__ == "__main__":
     configs = {}
