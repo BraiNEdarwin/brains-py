@@ -3,8 +3,9 @@
 '''
 import numpy as np
 import math
+import time
+from bspyproc.processors.hardware import task_mgr
 
-from  bspyproc.processors.hardware import task_mgr
 
 class NationalInstrumentsSetup():
 
@@ -14,6 +15,7 @@ class NationalInstrumentsSetup():
         self.offsetted_shape = configs['shape'] + configs['offset']
         self.ceil = math.ceil((self.offsetted_shape) / self.configs['sampling_frequency']) + 1
         self.driver.init_output(self.configs['input_channels'], self.configs['output_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)
+        time.sleep(1)
         self.driver.init_input(self.configs['output_channels'], self.configs['input_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)
 
     def process_output_data(self, data):
@@ -21,7 +23,6 @@ class NationalInstrumentsSetup():
         if len(data.shape) == 1:
             data = data[np.newaxis, :]
         return data * self.configs["amplification"]
-
 
     def read_data(self, y):
         '''
@@ -51,7 +52,6 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         data = self.read_data(y)
         data = self.process_output_data(data)
         return data.T
-    
 
 
 class CDAQtoNiDAQ(NationalInstrumentsSetup):
@@ -102,8 +102,6 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         y_corr[-1, self.configs['offset']] = 1  # Start input data
 
         return y_corr
-
-
 
     def get_output_cut_value(self, read_data):
         cut_value = np.argmax(read_data[-1, :])
