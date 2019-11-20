@@ -98,15 +98,15 @@ class LocalTasks():
 
     @Pyro4.oneway
     def stop_tasks(self):
-        if self.input_task is not None:
-            self.input_task.stop()
-        if self.output_task is not None:
-            self.output_task.stop()
+        self.input_task.stop()
+        self.output_task.stop()
 
     @Pyro4.oneway
     def close_tasks(self):
-        self.input_task.close()
-        self.output_task.close()
+        if self.input_task is not None:
+            self.input_task.close()
+        if self.output_task is not None:
+            self.output_task.close()
 
 
 class RemoteTasks():
