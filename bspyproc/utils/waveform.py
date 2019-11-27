@@ -25,7 +25,7 @@ def safety_format(amplitudes_input, lengths_input, slopes_input):
 
     lengths_output.append(0)
 
-    output = np.concatenate((np.array([]), np.linspace(0, amplitudes_output[0], slopes_output[0])))
+    output = np.linspace(0, amplitudes_output[0], slopes_output[0])  # np.concatenate((np.array([]), np.linspace(0, amplitudes_output[0], slopes_output[0])))
     return output, amplitudes_output, lengths_output, slopes_output
 
 
