@@ -34,20 +34,6 @@ class DNPU_NET(nn.Module):
         scale = TorchUtils.get_tensor_from_numpy(scale)
         return nn.Parameter(scale)
 
-    def forward(self, x):
-        # Pass through input layer
-        x = (self.scale * x) + self.offset
-        x1 = self.input_node1(x)
-        x2 = self.input_node2(x)
-        # --- BatchNorm --- #
-        h = self.bn1(torch.cat((x1, x2), dim=1))
-        std1 = np.sqrt(torch.mean(self.bn1.running_var).cpu().numpy())
-        cut = 2 * std1
-        # Pass it through output layer
-        h = torch.tensor(1.8 / (4 * std1)) * \
-            torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
-        return self.output_node(h)
-
     def regularizer(self):
         control_penalty = self.input_node1.regularizer() \
             + self.input_node2.regularizer() \
