@@ -18,9 +18,14 @@ class DNPU_NET(nn.Module):
         self.conversion_offset = torch.tensor(-0.6)
         offset_min = -0.35
         offset_max = 0.7
-        offset = offset_min + offset_max*np.random.rand(1, 2)
+        scale_max = 1.5
+        scale_min = 0.1
+        offset = offset_min + offset_max * np.random.rand(1, 2)
+        scale = scale_min + scale_max * np.random.rand(1)
+        scale = TorchUtils.get_tensor_from_numpy(scale)
         offset = TorchUtils.get_tensor_from_numpy(offset)
         self.offset = nn.Parameter(offset)
+        self.scale = nn.Parameter(scale)
         self.offset_min = offset_min
         self.offset_max = offset_max
 
@@ -32,15 +37,15 @@ class DNPU_NET(nn.Module):
 
     def forward(self, x):
         # Pass through input layer
-        x = x + self.offset
+        x = (self.scale * x) + self.offset
         x1 = self.input_node1(x)
         x2 = self.input_node2(x)
         # --- BatchNorm --- #
         h = self.bn1(torch.cat((x1, x2), dim=1))
         std1 = np.sqrt(torch.mean(self.bn1.running_var).cpu().numpy())
-        cut = 2*std1
+        cut = 2 * std1
         # Pass it through output layer
-        h = torch.tensor(1.8/(4*std1)) * \
+        h = torch.tensor(1.8 / (4 * std1)) * \
             torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
         return self.output_node(h)
 
@@ -48,10 +53,13 @@ class DNPU_NET(nn.Module):
         control_penalty = self.input_node1.regularizer() \
             + self.input_node2.regularizer() \
             + self.output_node.regularizer()
-        return control_penalty + self.offset_penalty()
+        return control_penalty + self.offset_penalty() + self.scale_penalty()
 
     def offset_penalty(self):
         return torch.sum(torch.relu(self.offset_min - self.offset) + torch.relu(self.offset - self.offset_max))
+
+    def scale_penalty(self):
+        return torch.sum(torch.relu(self.scale_min - self.scale) + torch.relu(self.scale - self.scale_m))
 
 
 if __name__ == "__main__":
@@ -68,7 +76,7 @@ if __name__ == "__main__":
     dnpu_net.to(device)
 
     nr_points = 7
-    x = -1.2+1.8*np.random.rand(nr_points, 2)
+    x = -1.2 + 1.8 * np.random.rand(nr_points, 2)
     x = TorchUtils.get_tensor_from_numpy(x)
     target = TorchUtils.get_tensor_from_numpy(
         300 * np.random.rand(nr_points, 1))
