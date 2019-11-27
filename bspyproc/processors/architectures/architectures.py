@@ -15,24 +15,24 @@ class DNPU_NET(nn.Module):
         super().__init__()
         self.in_dict = in_dict
         self.conversion_offset = torch.tensor(-0.6)
-        offset_min = -0.35
-        offset_max = 0.7
-        scale_max = 1.5
-        scale_min = 0.1
-        offset = offset_min + offset_max * np.random.rand(1, 2)
-        scale = scale_min + scale_max * np.random.rand(1)
-        scale = TorchUtils.get_tensor_from_numpy(scale)
-        offset = TorchUtils.get_tensor_from_numpy(offset)
-        self.offset = nn.Parameter(offset)
-        self.scale = nn.Parameter(scale)
-        self.offset_min = offset_min
-        self.offset_max = offset_max
+        self.offset = self.init_offset(-0.35, 0.7)
+        self.scale = self.init_scale(0.1, 1.5)
 
         self.input_node1 = DNPU(in_dict['input_node1'], path=path)
         self.input_node2 = DNPU(in_dict['input_node2'], path=path)
         self.bn1 = nn.BatchNorm1d(2, affine=False)
 
         self.output_node = DNPU(in_dict['output_node'], path=path)
+
+    def init_offset(self, offset_min, offset_max):
+        offset = offset_min + offset_max * np.random.rand(1, 2)
+        offset = TorchUtils.get_tensor_from_numpy(offset)
+        return nn.Parameter(offset)
+
+    def init_scale(self, scale_min, scale_max):
+        scale = scale_min + scale_max * np.random.rand(1)
+        scale = TorchUtils.get_tensor_from_numpy(scale)
+        return nn.Parameter(scale)
 
     def forward(self, x):
         # Pass through input layer
