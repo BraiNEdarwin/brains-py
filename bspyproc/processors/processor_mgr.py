@@ -26,6 +26,7 @@ def get_hardware_processor(configs):
     else:
         raise NotImplementedError(f"{configs['setup_type']} 'setup_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. ")
 
+
 def deploy_driver(configs):
     configs['ip'] = DEFAULT_IP
     configs['port'] = DEFAULT_PORT
@@ -33,7 +34,7 @@ def deploy_driver(configs):
     configs['force_static_ip'] = False
 
     run_server(configs)
-    
+
 
 def get_simulation_processor(configs):
     if configs['simulation_type'] == 'neural_network':

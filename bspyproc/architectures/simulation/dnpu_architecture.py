@@ -6,16 +6,17 @@ import torch
 import numpy as np
 import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
-# from bspyproc.processors.simulation.dopanet import DNPU
 
 
 class DNPUArchitecture(nn.Module):
     def __init__(self, configs):
+        # offset min = -0.35 max = 0.7
+        # scale min = 0.1 max = 1.5
+        # conversion offset = -0.6
         super().__init__()
-        # self.in_dict = in_dict
-        self.conversion_offset = torch.tensor(-0.6)
-        self.offset = self.init_offset(-0.35, 0.7)
-        self.scale = self.init_scale(0.1, 1.5)
+        self.conversion_offset = torch.tensor(configs['conversion_offset'])
+        self.offset = self.init_offset(configs['offset_min'], configs['offset_max'])
+        self.scale = self.init_scale(configs['scale_min'], configs['scale_max'])
 
     def init_offset(self, offset_min, offset_max):
         offset = offset_min + offset_max * np.random.rand(1, 2)
