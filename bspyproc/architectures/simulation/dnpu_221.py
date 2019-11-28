@@ -13,7 +13,7 @@ from bspyproc.processors.processor_mgr import get_processor
 from bspyproc.architectures.architectures import DNPUArchitecture
 
 
-class DNPU_NET(DNPUArchitecture):
+class TwoToTwoToOneDNPU(DNPUArchitecture):
     def __init__(self, configs):
         super().__init__(configs)
 
