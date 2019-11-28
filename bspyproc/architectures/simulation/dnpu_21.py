@@ -9,19 +9,20 @@ import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.processors.simulation.dopanet import DNPU
 from bspyproc.architectures.architectures import DNPUArchitecture
+from bspyproc.processors.processor_mgr import get_processor
 
 
 class TwoToOneDNPU(DNPUArchitecture):
 
     def __init__(self, configs):  # in_dict, path=r'../Data/Models/checkpoint3000_02-07-23h47m.pt'
         super().__init__(configs)
-        # self.in_dict = in_dict
-        # self.conversion_offset = torch.tensor(-0.6)
+        self.init_model(configs)
 
-        self.input_node1 = DNPU(in_dict['input_node1'], path=path)
-        self.input_node2 = DNPU(in_dict['input_node2'], path=path)
+    def init_model(self, configs):
+        self.input_node1 = get_processor(configs)  # DNPU(in_dict['input_node1'], path=path)
+        self.input_node2 = get_processor(configs)
         self.bn1 = nn.BatchNorm1d(2, affine=False)
-        self.output_node = DNPU(in_dict['output_node'], path=path)
+        self.output_node = get_processor(configs)
 
     def forward(self, x):
         # Pass through input layer

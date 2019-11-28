@@ -9,31 +9,24 @@ import numpy as np
 import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.processors.simulation.dopanet import DNPU
+from bspyproc.processors.processor_mgr import get_processor
+from bspyproc.architectures.architectures import DNPUArchitecture
 
 
-class DNPU_NET(nn.Module):
-    def __init__(self, in_dict,
-                 path=r'../Data/Models/checkpoint3000_02-07-23h47m.pt'):
-        super().__init__()
-        self.in_dict = in_dict
-        self.conversion_offset = torch.tensor(-0.6)
-        offset_min = -0.35
-        offset_max = 0.7
-        offset = offset_min + offset_max * np.random.rand(1, 2)
-        offset = TorchUtils.get_tensor_from_numpy(offset)
-        self.offset = nn.Parameter(offset)
-        self.offset_min = offset_min
-        self.offset_max = offset_max
+class DNPU_NET(DNPUArchitecture):
+    def __init__(self, configs):
+        super().__init__(configs)
 
-        self.input_node1 = DNPU(in_dict['input_node1'], path=path)
-        self.input_node2 = DNPU(in_dict['input_node2'], path=path)
+    def init_model(self, configs):
+        self.input_node1 = get_processor(configs)  # DNPU(in_dict['input_node1'], path=path)
+        self.input_node2 = get_processor(configs)  # DNPU(in_dict['input_node2'], path=path)
         self.bn1 = nn.BatchNorm1d(2, affine=False)
 
-        self.hidden_node1 = DNPU(in_dict['hidden_node1'], path=path)
-        self.hidden_node2 = DNPU(in_dict['hidden_node2'], path=path)
+        self.hidden_node1 = get_processor(configs)  # DNPU(in_dict['hidden_node1'], path=path)
+        self.hidden_node2 = get_processor(configs)  # DNPU(in_dict['hidden_node2'], path=path)
         self.bn2 = nn.BatchNorm1d(2, affine=False)
 
-        self.output_node = DNPU(in_dict['output_node'], path=path)
+        self.output_node = get_processor(configs)  # DNPU(in_dict['output_node'], path=path)
 
     def forward(self, x):
         # Pass through input layer
@@ -62,7 +55,4 @@ class DNPU_NET(nn.Module):
         control_penalty = self.input_node1.regularizer() \
             + self.input_node2.regularizer() \
             + self.output_node.regularizer()
-        return control_penalty + self.offset_penalty()
-
-    def offset_penalty(self):
-        return torch.sum(torch.relu(self.offset_min - self.offset) + torch.relu(self.offset - self.offset_max))
+        return control_penalty + self.offset_penalty() + self.scale_penalty()
