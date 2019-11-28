@@ -14,9 +14,9 @@ class DNPUArchitecture(nn.Module):
         # scale min = 0.1 max = 1.5
         # conversion offset = -0.6
         super().__init__()
-        self.conversion_offset = torch.tensor(configs['conversion_offset'])
-        self.offset = self.init_offset(configs['offset_min'], configs['offset_max'])
-        self.scale = self.init_scale(configs['scale_min'], configs['scale_max'])
+        self.conversion_offset = torch.tensor(configs['offset']['conversion'])
+        self.offset = self.init_offset(configs['offset']['min'], configs['offset']['max'])
+        self.scale = self.init_scale(configs['scale']['min'], configs['scale']['max'])
 
     def init_offset(self, offset_min, offset_max):
         offset = offset_min + offset_max * np.random.rand(1, 2)
