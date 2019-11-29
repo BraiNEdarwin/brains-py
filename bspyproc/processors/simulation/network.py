@@ -75,6 +75,9 @@ class TorchModel(nn.Module):
     def forward(self, x):
         return self.model(x)
 
+    def get_amplification_value(self):
+        return self.info['amplification']
+
     def _info_consistency_check(self, model_info):
         """ It checks if the model info follows the expected standards.
         If it does not follow the standards, it forces the model to
