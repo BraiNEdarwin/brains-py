@@ -1,3 +1,4 @@
+from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.processors.simulation.dopanet import DNPU
 from bspyproc.processors.simulation.network import TorchModel
 from bspyproc.processors.simulation.kmc import SimulationKMC
@@ -38,7 +39,7 @@ def deploy_driver(configs):
 
 def get_simulation_processor(configs):
     if configs['simulation_type'] == 'neural_network':
-        return get_neural_network_simulation_processor(configs)
+        return get_neural_network_simulation_processor(configs).to(device=TorchUtils.get_accelerator_type())
     elif configs['simulation_type'] == 'kinetic_monte_carlo':
         return SimulationKMC()
     else:
