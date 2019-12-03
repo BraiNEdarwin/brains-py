@@ -74,6 +74,7 @@ class TwoToOneDNPU(DNPUArchitecture):
 class TwoToTwoToOneDNPU(DNPUArchitecture):
     def __init__(self, configs):
         super().__init__(configs)
+        self.init_model(configs)
 
     def init_model(self, configs):
         self.input_node1 = get_processor(configs)  # DNPU(in_dict['input_node1'], path=path)
