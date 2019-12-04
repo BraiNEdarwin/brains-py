@@ -27,8 +27,8 @@ class TwoToOneProcessor():
         # h = torch.tensor(1.8 / (4 * std1)) * \
         #    torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
 
-        x[:, 7] = x1[:, 0]
-        x[:, 8] = x2[:, 0]
+        x[:, 14] = x1[:, 0]
+        x[:, 15] = x2[:, 0]
         result = self.processor.get_output(x[:, 14:])
         # --- BatchNorm --- #
         # h = self.bn1(torch.cat((x1, x2), dim=1))
@@ -53,8 +53,8 @@ class TwoToTwoToOneProcessor():
         # Pass through input layer
         # x = (self.scale * x) + self.offset
         # configs "input_indices": [0, 1]
-        x1 = self.processor.get_output(x[0:7])
-        x2 = self.processor.get_output(x[7:14])
+        x1 = self.processor.get_output(x[:, 0:7])
+        x2 = self.processor.get_output(x[:, 7:14])
 
         # --- BatchNorm --- #
         # h = self.bn1(torch.cat((x1, x2), dim=1))
@@ -64,13 +64,13 @@ class TwoToTwoToOneProcessor():
         # h = torch.tensor(1.8 / (4 * std1)) * \
         #    torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
 
-        x[14 + self.configs['input_indices'][0]] = x1
-        x[14 + self.configs['input_indices'][1]] = x2
-        x[21 + self.configs['input_indices'][0]] = x1
-        x[21 + self.configs['input_indices'][1]] = x2
+        x[:, 14] = x1[:, 0]
+        x[:, 15] = x2[:, 0]
+        x[:, 21] = x1[:, 0]
+        x[:, 22] = x2[:, 0]
 
-        h1 = self.processor.get_output(x[14:21])
-        h2 = self.processor.get_output(x[21:28])
+        h1 = self.processor.get_output(x[:, 14:21])
+        h2 = self.processor.get_output(x[:, 21:28])
         # --- BatchNorm --- #
         # h = self.bn1(torch.cat((x1, x2), dim=1))
         # std1 = np.sqrt(torch.mean(self.bn1.running_var).cpu().numpy())
@@ -79,9 +79,9 @@ class TwoToTwoToOneProcessor():
         # h = torch.tensor(1.8 / (4 * std1)) * \
         #    torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
 
-        x[28 + self.configs['input_indices'][0]] = h1
-        x[28 + self.configs['input_indices'][1]] = h2
-        result = self.processor.get_output(x[28:])
+        x[:, 28] = h1[:, 0]
+        x[:, 29] = h2[:, 0]
+        result = self.processor.get_output(x[:, 28:])
 
         # --- BatchNorm --- #
         # h = self.bn1(torch.cat((x1, x2), dim=1))
