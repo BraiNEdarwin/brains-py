@@ -36,6 +36,15 @@ class DNPUArchitecture(nn.Module):
     def scale_penalty(self):
         return torch.sum(torch.relu(self.configs['scale']['min'] - self.scale) + torch.relu(self.scale - self.configs['scale']['max']))
 
+    def batch_norm(self, bn, x1, x2):
+        h = bn(torch.cat((x1, x2), dim=1))
+        std1 = np.sqrt(torch.mean(bn.running_var).cpu().numpy())
+        cut = 2 * std1
+        # Pass it through output layer
+        h = torch.tensor(1.8 / (4 * std1)) * \
+            torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
+        return h
+
 
 class TwoToOneDNPU(DNPUArchitecture):
 
@@ -55,13 +64,9 @@ class TwoToOneDNPU(DNPUArchitecture):
         x = (self.scale * x) + self.offset
         x1 = self.input_node1(x)
         x2 = self.input_node2(x)
-        # --- BatchNorm --- #
-        h = self.bn1(torch.cat((x1, x2), dim=1))
-        std1 = np.sqrt(torch.mean(self.bn1.running_var).cpu().numpy())
-        cut = 2 * std1
-        # Pass it through output layer
-        h = torch.tensor(1.8 / (4 * std1)) * \
-            torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
+
+        h = self.batch_norm(self.bn1, x1, x2)
+
         return self.output_node(h)
 
     def regularizer(self):
@@ -92,22 +97,13 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         x = x + self.offset
         x1 = self.input_node1(x)
         x2 = self.input_node2(x)
-        # --- BatchNorm --- #
-        h = self.bn1(torch.cat((x1, x2), dim=1))
-        std1 = np.sqrt(torch.mean(self.bn1.running_var).cpu().numpy())
-        cut = 2 * std1
-        # Pass through first hidden layer
-        h = torch.tensor(1.8 / (4 * std1)) * \
-            torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
+
+        h = self.batch_norm(self.bn1, x1, x2)
+
         h1 = self.hidden_node1(h)
         h2 = self.hidden_node2(h)
-        # --- BatchNorm --- #
-        h = self.bn2(torch.cat((h1, h2), dim=1))
-        std2 = np.sqrt(torch.mean(self.bn2.running_var).cpu().numpy())
-        cut = 2 * std2
-        # Pass it through output layer
-        h = torch.tensor(1.8 / (4 * std2)) * \
-            torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
+
+        h = self.batch_norm(self.bn2, h1, h2)
         return self.output_node(h)
 
     def regularizer(self):
