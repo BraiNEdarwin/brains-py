@@ -10,7 +10,7 @@ class ArchitectureProcessor():
     def __init__(self, configs):
         self.configs = configs
         self.processor = get_processor(configs)
-        self.clipping_value = 3.55 * self.get_amplification_value()
+        self.clipping_value = configs['waveform']['clipping_value'] * self.get_amplification_value()
         self.conversion_offset = -0.6
 
     def clip(self, x):
