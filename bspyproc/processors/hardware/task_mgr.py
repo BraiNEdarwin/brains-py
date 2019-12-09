@@ -161,11 +161,14 @@ class RemoteTasksServer():
         self.daemon.close()
 
 
-if __name__ == "__main__":
-    configs = {}
+def deploy_driver(configs):
     configs['ip'] = DEFAULT_IP
     configs['port'] = DEFAULT_PORT
     configs['subnet_mask'] = DEFAULT_SUBNET_MASK
     configs['force_static_ip'] = False
 
     run_server(configs)
+
+
+if __name__ == "__main__":
+    deploy_driver({})
