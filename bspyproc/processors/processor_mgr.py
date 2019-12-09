@@ -59,7 +59,6 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import torch
     from torch import nn
-    from bspyproc.utils.pytorch import TorchUtils
     import numpy as np
     x = 0.5 * np.random.randn(10, 7)
     # x = torch.Tensor(x).to(DEVICE)
