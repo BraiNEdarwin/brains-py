@@ -46,9 +46,9 @@ class TwoToOneProcessor(ArchitectureProcessor):
         x2 = self.processor.get_output(x[:, 7:14])
 
         x = self.process_layer1(x, x1, x2)
-        result = self.processor.get_output(x[:, 14:])
+        x = self.processor.get_output(x[:, 14:])
 
-        return self.process_output_layer(result)
+        return self.process_output_layer(x)
 
     def process_layer1_alone(self, x, x1, x2):
         x[:, 14] = self.clip(x1[:, 0])
@@ -90,9 +90,9 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
         x = self.process_layer2(x, h1, h2)
 
-        result = self.processor.get_output(x[:, 28:])
+        x = self.processor.get_output(x[:, 28:])
 
-        return self.process_output_layer(result)
+        return self.process_output_layer(x)
 
     def process_layer1_alone(self, x, x1, x2):
         x[:, 14] = self.clip(x1[:, 0])
