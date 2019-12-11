@@ -10,7 +10,7 @@ class ArchitectureProcessor():
     def __init__(self, configs):
         self.configs = configs
         self.processor = get_processor(configs)
-        self.clipping_value = 3.55 * self.get_amplification_value()
+        self.clipping_value = configs['waveform']['output_clipping_value'] * self.get_amplification_value()
         self.conversion_offset = -0.6
 
     def clip(self, x):
@@ -46,9 +46,9 @@ class TwoToOneProcessor(ArchitectureProcessor):
         x2 = self.processor.get_output(x[:, 7:14])
 
         x = self.process_layer1(x, x1, x2)
-        result = self.processor.get_output(x[:, 14:])
+        x = self.processor.get_output(x[:, 14:])
 
-        return self.process_output_layer(result)
+        return self.process_output_layer(x)
 
     def process_layer1_alone(self, x, x1, x2):
         x[:, 14] = self.clip(x1[:, 0])
@@ -90,9 +90,9 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
         x = self.process_layer2(x, h1, h2)
 
-        result = self.processor.get_output(x[:, 28:])
+        x = self.processor.get_output(x[:, 28:])
 
-        return self.process_output_layer(result)
+        return self.process_output_layer(x)
 
     def process_layer1_alone(self, x, x1, x2):
         x[:, 14] = self.clip(x1[:, 0])

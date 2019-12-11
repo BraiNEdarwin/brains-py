@@ -4,6 +4,7 @@
 import torch
 import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
+from bspyproc.utils.input import merge_inputs_and_control_voltages, get_control_voltage_indices
 
 
 class TorchModel(nn.Module):
@@ -15,14 +16,19 @@ class TorchModel(nn.Module):
     """
 # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
 
-    def __init__(self, model_source):
+    def __init__(self, configs):
         super().__init__()
 
-        if type(model_source) is str:
-            self.load_model(model_source)
-        elif type(model_source) is dict:
-            self.build_model(model_source)
-
+        self.configs = configs
+        if type(configs['torch_model_dict']) is str:
+            self.load_model(configs['torch_model_dict'])
+        elif type(configs['torch_model_dict']) is dict:
+            self.build_model(configs['torch_model_dict'])
+        if 'input_indices' in configs and 'input_electrode_no' in configs:
+            self.input_indices = configs['input_indices']
+            self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
+        else:
+            print('Warning: Input indices and control voltage indices have not been defined.')
         if TorchUtils.get_accelerator_type() == torch.device('cuda'):
             self.model.cuda()
 
@@ -76,6 +82,10 @@ class TorchModel(nn.Module):
             inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
             output = self.forward(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output) * self.amplification
+
+    def get_output_(self, inputs, control_voltages):
+        y = merge_inputs_and_control_voltages(inputs, control_voltages, self.input_indices, self.control_voltage_indices)
+        return self.get_output(y)
 
     def forward(self, x):
         return self.model(x)

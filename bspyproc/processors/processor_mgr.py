@@ -1,7 +1,6 @@
 from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.processors.simulation.dopanet import DNPU
 from bspyproc.processors.simulation.network import TorchModel
-from bspyproc.processors.simulation.kmc import SimulationKMC
 from bspyproc.processors.hardware.setup_mgr import CDAQtoCDAQ, CDAQtoNiDAQ
 
 
@@ -28,29 +27,16 @@ def get_hardware_processor(configs):
         raise NotImplementedError(f"{configs['setup_type']} 'setup_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. ")
 
 
-def deploy_driver(configs):
-    configs['ip'] = DEFAULT_IP
-    configs['port'] = DEFAULT_PORT
-    configs['subnet_mask'] = DEFAULT_SUBNET_MASK
-    configs['force_static_ip'] = False
-
-    run_server(configs)
-
-
 def get_simulation_processor(configs):
     if configs['simulation_type'] == 'neural_network':
         return get_neural_network_simulation_processor(configs).to(device=TorchUtils.get_accelerator_type())
-    elif configs['simulation_type'] == 'kinetic_monte_carlo':
-        return SimulationKMC()
     else:
         raise NotImplementedError(f"{configs['simulation_type']} 'simulation_type' configuration is not recognised. The simulation type has to be defined as 'neural_network' or 'kinetic_monte_carlo'. ")
 
 
 def get_neural_network_simulation_processor(configs):
-    if configs['network_type'] == 'device_model':
-        return TorchModel(configs['torch_model_dict'])
-    elif configs['network_type'] == 'nn_model':
-        return TorchModel(configs['torch_model_dict'])
+    if configs['network_type'] == 'device_model' or configs['network_type'] == 'nn_model':
+        return TorchModel(configs)
     elif configs['network_type'] == 'dnpu':
         return DNPU(configs['input_indices'], configs['torch_model_dict'])
     else:
@@ -68,7 +54,6 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import torch
     from torch import nn
-    from bspyproc.utils.pytorch import TorchUtils
     import numpy as np
     x = 0.5 * np.random.randn(10, 7)
     # x = torch.Tensor(x).to(DEVICE)
