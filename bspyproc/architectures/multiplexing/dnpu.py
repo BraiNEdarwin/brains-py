@@ -45,19 +45,32 @@ class DNPUArchitecture(nn.Module):
             torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
         return h
 
+    def clip(self, x, clipping_value):
+        x[x > clipping_value] = clipping_value
+        return x
+
 
 class TwoToOneDNPU(DNPUArchitecture):
 
     def __init__(self, configs):  # in_dict, path=r'../Data/Models/checkpoint3000_02-07-23h47m.pt'
         super().__init__(configs)
         self.init_model(configs)
+        self.init_clipping_values(configs['waveform']['output_clipping_value'])
+        if configs['batch_norm']:
+            self.bn1 = nn.BatchNorm1d(2, affine=False)
+            self.process_layer1 = self.process_layer1_batch_norm
+        else:
+            self.process_layer1 = self.process_layer1_alone
 
     def init_model(self, configs):
         self.input_node1 = get_processor(configs)  # DNPU(in_dict['input_node1'], path=path)
-
         self.input_node2 = get_processor(configs)
-        self.bn1 = nn.BatchNorm1d(2, affine=False)
         self.output_node = get_processor(configs)
+
+    def init_clipping_values(self, base_clipping_value):
+        self.input_node1_clipping_value = base_clipping_value * self.input_node1.get_amplification_value()
+        self.input_node2_clipping_value = base_clipping_value * self.input_node2.get_amplification_value()
+        self.output_node_clipping_value = base_clipping_value * self.output_node.get_amplification_value()
 
     def forward(self, x):
         # Pass through input layer
@@ -65,49 +78,108 @@ class TwoToOneDNPU(DNPUArchitecture):
         x1 = self.input_node1(x)
         x2 = self.input_node2(x)
 
-        h = self.batch_norm(self.bn1, x1, x2)
+        h1 = self.process_layer1(x, x1, x2)
 
-        return self.output_node(h)
+        return self.output_node(h1)
 
     def regularizer(self):
         control_penalty = self.input_node1.regularizer() \
             + self.input_node2.regularizer() \
             + self.output_node.regularizer()
         return control_penalty + self.offset_penalty() + self.scale_penalty()
+
+    def process_layer1_alone(self, x, x1, x2):
+        x[:, 14] = self.clip(x1[:, 0], self.input_node1_clipping_value)
+        x[:, 15] = self.clip(x2[:, 0], self.input_node2_clipping_value)
+        return x
+
+    def process_layer1_batch_norm(self, x, x1, x2):
+        bnx = self.batch_norm(self.bn1, x1, x2)
+
+        x[:, 14] = self.clip(bnx[:, 0], self.input_node1_clipping_value)
+        x[:, 15] = self.clip(bnx[:, 1], self.input_node2_clipping_value)
+
+        return x
+
+    def process_output_layer(self, y):
+        return self.clip(y, self.output_node_clipping_value)
 
 
 class TwoToTwoToOneDNPU(DNPUArchitecture):
     def __init__(self, configs):
         super().__init__(configs)
         self.init_model(configs)
+        self.init_clipping_values(configs['waveform']['output_clipping_value'])
+        if configs['batch_norm']:
+            self.bn1 = nn.BatchNorm1d(2, affine=False)
+            self.bn2 = nn.BatchNorm1d(2, affine=False)
+            self.process_layer1 = self.process_layer1_batch_norm
+            self.process_layer2 = self.process_layer2_batch_norm
+        else:
+            self.process_layer1 = self.process_layer1_alone
+            self.process_layer2 = self.process_layer2_alone
 
     def init_model(self, configs):
         self.input_node1 = get_processor(configs)  # DNPU(in_dict['input_node1'], path=path)
         self.input_node2 = get_processor(configs)  # DNPU(in_dict['input_node2'], path=path)
-        self.bn1 = nn.BatchNorm1d(2, affine=False)
 
         self.hidden_node1 = get_processor(configs)  # DNPU(in_dict['hidden_node1'], path=path)
         self.hidden_node2 = get_processor(configs)  # DNPU(in_dict['hidden_node2'], path=path)
-        self.bn2 = nn.BatchNorm1d(2, affine=False)
 
         self.output_node = get_processor(configs)  # DNPU(in_dict['output_node'], path=path)
 
+    def init_clipping_values(self, base_clipping_value):
+        self.input_node1_clipping_value = base_clipping_value * self.input_node1.get_amplification_value()
+        self.input_node2_clipping_value = base_clipping_value * self.input_node2.get_amplification_value()
+        self.hidden_node1_clipping_value = base_clipping_value * self.hidden_node1.get_amplification_value()
+        self.hidden_node2_clipping_value = base_clipping_value * self.hidden_node2.get_amplification_value()
+        self.output_node_clipping_value = base_clipping_value * self.output_node.get_amplification_value()
+
     def forward(self, x):
         # Pass through input layer
+        x = (self.scale * x) + self.offset
         x = x + self.offset
         x1 = self.input_node1(x)
         x2 = self.input_node2(x)
 
-        h = self.batch_norm(self.bn1, x1, x2)
+        x = self.process_layer1(x, x1, x2)
 
-        h1 = self.hidden_node1(h)
-        h2 = self.hidden_node2(h)
+        h1 = self.hidden_node1(x)
+        h2 = self.hidden_node2(x)
 
-        h = self.batch_norm(self.bn2, h1, h2)
-        return self.output_node(h)
+        x = self.process_layer2(x, h1, h2)
+
+        return self.process_output_layer(x)
 
     def regularizer(self):
         control_penalty = self.input_node1.regularizer() \
             + self.input_node2.regularizer() \
             + self.output_node.regularizer()
         return control_penalty + self.offset_penalty() + self.scale_penalty()
+
+    def process_layer1_alone(self, x, x1, x2):
+        x[:, 0] = self.clip(x1[:, 0], self.input_node1_clipping_value)
+        x[:, 1] = self.clip(x2[:, 0], self.input_node2_clipping_value)
+        return x
+
+    def process_layer1_batch_norm(self, x, x1, x2):
+        bnx = self.batch_norm(self.bn1, x1, x2)
+
+        x[:, 0] = self.clip(bnx[:, 0], self.input_node1_clipping_value)
+        x[:, 1] = self.clip(bnx[:, 1], self.input_node2_clipping_value)
+        return x
+
+    def process_layer2_alone(self, x, x1, x2):
+        x[:, 0] = self.clip(x1[:, 0], self.hidden_node1_clipping_value)
+        x[:, 1] = self.clip(x2[:, 0], self.hidden_node2_clipping_value)
+        return x
+
+    def process_layer2_batch_norm(self, x, x1, x2):
+        bnx = self.batch_norm(self.bn2, x1, x2)
+
+        x[:, 0] = self.clip(bnx[:, 0], self.hidden_node1_clipping_value)
+        x[:, 1] = self.clip(bnx[:, 1], self.hidden_node2_clipping_value)
+        return x
+
+    def process_output_layer(self, y):
+        return self.clip(y, self.output_node_clipping_value)
