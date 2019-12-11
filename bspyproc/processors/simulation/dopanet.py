@@ -18,18 +18,16 @@ class DNPU(TorchModel):
     '''
     '''
 
-    def __init__(self, in_list,
-                 path=r'./tmp/input/models/nn_test/checkpoint3000_02-07-23h47m.pt'):
-        super().__init__(path)
-
-        self.nr_inputs = len(in_list)
-        self.in_list = TorchUtils.get_tensor_from_list(in_list, torch.int64)
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.nr_inputs = len(configs['input_indices'])
+        self.in_list = TorchUtils.get_tensor_from_list(configs['input_indices'], torch.int64)
         # Freeze parameters
         for params in self.parameters():
             params.requires_grad = False
         # Define learning parameters
         self.nr_electodes = len(self.info['offset'])
-        self.indx_cv = np.delete(np.arange(self.nr_electodes), in_list)
+        self.indx_cv = np.delete(np.arange(self.nr_electodes), configs['input_indices'])
         self.nr_cv = len(self.indx_cv)
         offset = self.info['offset']
         amplitude = self.info['amplitude']
