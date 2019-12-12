@@ -26,12 +26,11 @@ class DNPU(TorchModel):
         for params in self.parameters():
             params.requires_grad = False
         # Define learning parameters
-        self.nr_electodes = len(self.info['offset'])
+        self.nr_electodes = len(self.info['data_info']['input_data']['offset'])
         self.indx_cv = np.delete(np.arange(self.nr_electodes), configs['input_indices'])
         self.nr_cv = len(self.indx_cv)
-        offset = self.info['offset']
-        amplitude = self.info['amplitude']
-
+        offset = np.array(self.info['data_info']['input_data']['offset'])
+        amplitude = np.array(self.info['data_info']['input_data']['amplitude'])
         self.min_voltage = offset - amplitude
         self.max_voltage = offset + amplitude
         bias = self.min_voltage[self.indx_cv] + \
@@ -43,7 +42,7 @@ class DNPU(TorchModel):
         # Set as torch Tensors and send to DEVICE
         self.indx_cv = TorchUtils.get_tensor_from_list(self.indx_cv, torch.int64)  # IndexError: tensors used as indices must be long, byte or bool tensors
 
-        self.amplification = TorchUtils.get_tensor_from_list(self.info['amplification'])
+        self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
         self.min_voltage = TorchUtils.get_tensor_from_list(self.min_voltage)
         self.max_voltage = TorchUtils.get_tensor_from_list(self.max_voltage)
         self.control_low = self.min_voltage[self.indx_cv]
