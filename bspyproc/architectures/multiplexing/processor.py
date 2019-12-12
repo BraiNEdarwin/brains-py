@@ -44,10 +44,9 @@ class TwoToOneProcessor(ArchitectureProcessor):
     def get_output(self, x):
         x1 = self.processor.get_output(x[:, 0:7])
         x2 = self.processor.get_output(x[:, 7:14])
-
         x = self.process_layer1(x, x1, x2)
-        x = self.processor.get_output(x[:, 14:])
 
+        x = self.processor.get_output(x[:, 14:])
         return self.process_output_layer(x)
 
     def process_layer1_alone(self, x, x1, x2):
@@ -82,16 +81,13 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
         x1 = self.processor.get_output(x[:, 0:7])
         x2 = self.processor.get_output(x[:, 7:14])
-
         x = self.process_layer1(x, x1, x2)
 
         h1 = self.processor.get_output(x[:, 14:21])
         h2 = self.processor.get_output(x[:, 21:28])
-
         x = self.process_layer2(x, h1, h2)
 
         x = self.processor.get_output(x[:, 28:])
-
         return self.process_output_layer(x)
 
     def process_layer1_alone(self, x, x1, x2):

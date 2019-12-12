@@ -47,6 +47,7 @@ class DNPUArchitecture(nn.Module):
 
     def clip(self, x, clipping_value):
         x[x > clipping_value] = clipping_value
+        x[x < -clipping_value] = -clipping_value
         return x
 
 
@@ -75,12 +76,13 @@ class TwoToOneDNPU(DNPUArchitecture):
     def forward(self, x):
         # Pass through input layer
         x = (self.scale * x) + self.offset
+
         x1 = self.input_node1(x)
         x2 = self.input_node2(x)
+        x = self.process_layer1(x, x1, x2)
 
-        h1 = self.process_layer1(x, x1, x2)
-
-        return self.output_node(h1)
+        x = self.output_node(x)
+        return self.process_output_layer(x)
 
     def regularizer(self):
         control_penalty = self.input_node1.regularizer() \
@@ -138,17 +140,16 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
     def forward(self, x):
         # Pass through input layer
         x = (self.scale * x) + self.offset
-        x = x + self.offset
+
         x1 = self.input_node1(x)
         x2 = self.input_node2(x)
-
         x = self.process_layer1(x, x1, x2)
 
         h1 = self.hidden_node1(x)
         h2 = self.hidden_node2(x)
-
         x = self.process_layer2(x, h1, h2)
 
+        x = self.output_node(x)
         return self.process_output_layer(x)
 
     def regularizer(self):
