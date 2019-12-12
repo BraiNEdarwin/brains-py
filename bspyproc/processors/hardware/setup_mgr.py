@@ -5,7 +5,7 @@ import numpy as np
 import math
 import time
 from bspyproc.processors.hardware import task_mgr
-from bspyproc.utils.input import get_control_voltage_indices, merge_inputs_and_control_voltages
+from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages
 
 
 class NationalInstrumentsSetup():

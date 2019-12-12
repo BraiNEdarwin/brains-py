@@ -4,7 +4,7 @@
 import torch
 import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.input import merge_inputs_and_control_voltages, get_control_voltage_indices
+from bspyproc.utils.control import merge_inputs_and_control_voltages, get_control_voltage_indices
 
 
 class TorchModel(nn.Module):
