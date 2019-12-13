@@ -101,7 +101,7 @@ class TorchModel(nn.Module):
         #    model_info['activation'] = nn.ReLU()
         if 'D_in' not in model_info['processor']['torch_model_dict']:
             model_info['processor']['torch_model_dict']['D_in'] = 7
-            print('WARNING: The model loaded does not define the input dimension as expected. Changed it to default value: %d.' % len(model_info['offset']))
+            print('WARNING: The model loaded does not define the input dimension as expected. Changed it to default value: 7')
         if 'D_out' not in model_info['processor']['torch_model_dict']:
             model_info['processor']['torch_model_dict']['D_out'] = 1
             print('WARNING: The model loaded does not define the output dimension as expected. Changed it to default value: %d.' % 1)
