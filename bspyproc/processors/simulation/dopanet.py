@@ -55,7 +55,6 @@ class DNPU(TorchModel):
         return TorchUtils.get_numpy_from_tensor(output)
 
     def forward(self, x):
-
         expand_cv = self.bias.expand(x.size()[0], -1)
         inp = torch.empty((x.size()[0], x.size()[1] + self.nr_cv))
         inp = TorchUtils.format_tensor(inp)
@@ -75,6 +74,9 @@ class DNPU(TorchModel):
         for k in range(len(self.control_low)):
             print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
             self.bias.data[:, k].uniform_(self.control_low[k], self.control_high[k])
+
+    def get_control_voltages(self):
+        return next(self.parameters()).detach()
 
 
 if __name__ == '__main__':

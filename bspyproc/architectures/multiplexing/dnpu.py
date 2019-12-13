@@ -7,6 +7,7 @@ import numpy as np
 import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.processors.processor_mgr import get_processor
+from bspyproc.utils.control import get_control_voltage_indices
 
 
 class DNPUArchitecture(nn.Module):
@@ -18,6 +19,7 @@ class DNPUArchitecture(nn.Module):
         self.conversion_offset = torch.tensor(configs['offset']['conversion'])
         self.offset = self.init_offset(configs['offset']['min'], configs['offset']['max'])
         self.scale = self.init_scale(configs['scale']['min'], configs['scale']['max'])
+        self.control_voltage_indices = get_control_voltage_indices(configs['input_indices'], configs['input_electrode_no'])
         self.configs = configs
 
     def init_offset(self, offset_min, offset_max):
@@ -91,20 +93,26 @@ class TwoToOneDNPU(DNPUArchitecture):
         return control_penalty + self.offset_penalty() + self.scale_penalty()
 
     def process_layer1_alone(self, x, x1, x2):
-        x[:, 14] = self.clip(x1[:, 0], self.input_node1_clipping_value)
-        x[:, 15] = self.clip(x2[:, 0], self.input_node2_clipping_value)
+        x[:, 0] = self.clip(x1[:, 0], self.input_node1_clipping_value)
+        x[:, 1] = self.clip(x2[:, 0], self.input_node2_clipping_value)
         return x
 
     def process_layer1_batch_norm(self, x, x1, x2):
         bnx = self.batch_norm(self.bn1, x1, x2)
 
-        x[:, 14] = self.clip(bnx[:, 0], self.input_node1_clipping_value)
-        x[:, 15] = self.clip(bnx[:, 1], self.input_node2_clipping_value)
+        x[:, 0] = self.clip(bnx[:, 0], self.input_node1_clipping_value)
+        x[:, 1] = self.clip(bnx[:, 1], self.input_node2_clipping_value)
 
         return x
 
     def process_output_layer(self, y):
         return self.clip(y, self.output_node_clipping_value)
+
+    def get_control_voltages(self):
+        w1 = next(self.input_node1.parameters()).detach().cpu().numpy()
+        w2 = next(self.input_node2.parameters()).detach().cpu().numpy()
+        w3 = next(self.output_node.parameters()).detach().cpu().numpy()
+        return np.array([w1, w2, w3])
 
 
 class TwoToTwoToOneDNPU(DNPUArchitecture):
@@ -184,3 +192,11 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
 
     def process_output_layer(self, y):
         return self.clip(y, self.output_node_clipping_value)
+
+    def get_control_voltages(self):
+        w1 = next(self.input_node1.parameters()).detach().cpu().numpy()
+        w2 = next(self.input_node2.parameters()).detach().cpu().numpy()
+        w3 = next(self.hidden_node1.parameters()).detach().cpu().numpy()
+        w4 = next(self.hidden_node2.parameters()).detach().cpu().numpy()
+        w5 = next(self.output_node.parameters()).detach().cpu().numpy()
+        return np.array([w1, w2, w3, w4, w5])
