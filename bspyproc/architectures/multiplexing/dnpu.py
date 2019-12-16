@@ -7,7 +7,6 @@ import numpy as np
 import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.processors.processor_mgr import get_processor
-from bspyproc.utils.control import get_control_voltage_indices
 
 
 class DNPUArchitecture(nn.Module):
@@ -19,7 +18,6 @@ class DNPUArchitecture(nn.Module):
         self.conversion_offset = torch.tensor(configs['offset']['conversion'])
         self.offset = self.init_offset(configs['offset']['min'], configs['offset']['max'])
         self.scale = self.init_scale(configs['scale']['min'], configs['scale']['max'])
-        self.control_voltage_indices = get_control_voltage_indices(configs['input_indices'], configs['input_electrode_no'])
         self.configs = configs
 
     def init_offset(self, offset_min, offset_max):
@@ -110,7 +108,7 @@ class TwoToOneDNPU(DNPUArchitecture):
         w1 = next(self.input_node1.parameters()).detach().cpu().numpy()
         w2 = next(self.input_node2.parameters()).detach().cpu().numpy()
         w3 = next(self.output_node.parameters()).detach().cpu().numpy()
-        return np.array([w1, w2, w3])
+        return torch.stack([w1, w2, w3])
 
     def get_bn_statistics(self):
         bn_statistics = {'bn_1': {}}
@@ -198,12 +196,12 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         return self.clip(y, self.output_node_clipping_value)
 
     def get_control_voltages(self):
-        w1 = next(self.input_node1.parameters()).detach().cpu().numpy()
-        w2 = next(self.input_node2.parameters()).detach().cpu().numpy()
-        w3 = next(self.hidden_node1.parameters()).detach().cpu().numpy()
-        w4 = next(self.hidden_node2.parameters()).detach().cpu().numpy()
-        w5 = next(self.output_node.parameters()).detach().cpu().numpy()
-        return np.array([w1, w2, w3, w4, w5])
+        w1 = next(self.input_node1.parameters()).detach()[0, :]
+        w2 = next(self.input_node2.parameters()).detach()[0, :]
+        w3 = next(self.hidden_node1.parameters()).detach()[0, :]
+        w4 = next(self.hidden_node2.parameters()).detach()[0, :]
+        w5 = next(self.output_node.parameters()).detach()[0, :]
+        return torch.stack([w1, w2, w3, w4, w5])
 
     def get_bn_statistics(self):
         bn_statistics = {'bn_1': {}, 'bn_2': {}}
