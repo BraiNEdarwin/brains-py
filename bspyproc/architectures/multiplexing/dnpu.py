@@ -44,23 +44,21 @@ class DNPUArchitecture(nn.Module):
         cut = 2 * std1
         # Pass it through output layer
         h = torch.tensor(1.8 / (4 * std1)) * \
-            torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
+            self.clip(h, cut) + self.conversion_offset
         return h
 
     def clip(self, x, clipping_value):
-        x[x > clipping_value] = clipping_value
-        x[x < -clipping_value] = -clipping_value
-        return x
+        return torch.clamp(x, min=-clipping_value, max=clipping_value)
 
 
 class TwoToOneDNPU(DNPUArchitecture):
 
-    def __init__(self, configs):  # in_dict, path=r'../Data/Models/checkpoint3000_02-07-23h47m.pt'
+    def __init__(self, configs):
         super().__init__(configs)
         self.init_model(configs)
         self.init_clipping_values(configs['waveform']['output_clipping_value'])
         if configs['batch_norm']:
-            self.bn1 = nn.BatchNorm1d(2, affine=False)
+            self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
             self.process_layer1 = self.process_layer1_batch_norm
         else:
             self.process_layer1 = self.process_layer1_alone
@@ -114,6 +112,12 @@ class TwoToOneDNPU(DNPUArchitecture):
         w3 = next(self.output_node.parameters()).detach().cpu().numpy()
         return np.array([w1, w2, w3])
 
+    def get_bn_statistics(self):
+        bn_statistics = {'bn_1': {}}
+        bn_statistics['bn_1']['mean'] = self.bn1.running_mean.cpu().detach().numpy()
+        bn_statistics['bn_1']['var'] = self.bn1.running_var.cpu().detach().numpy()
+        return bn_statistics
+
 
 class TwoToTwoToOneDNPU(DNPUArchitecture):
     def __init__(self, configs):
@@ -121,8 +125,8 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.init_model(configs)
         self.init_clipping_values(configs['waveform']['output_clipping_value'])
         if configs['batch_norm']:
-            self.bn1 = nn.BatchNorm1d(2, affine=False)
-            self.bn2 = nn.BatchNorm1d(2, affine=False)
+            self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
+            self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
             self.process_layer1 = self.process_layer1_batch_norm
             self.process_layer2 = self.process_layer2_batch_norm
         else:
@@ -200,3 +204,30 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         w4 = next(self.hidden_node2.parameters()).detach().cpu().numpy()
         w5 = next(self.output_node.parameters()).detach().cpu().numpy()
         return np.array([w1, w2, w3, w4, w5])
+
+    def get_bn_statistics(self):
+        bn_statistics = {'bn_1': {}, 'bn_2': {}}
+        bn_statistics['bn_1']['mean'] = self.bn1.running_mean.cpu().detach().numpy()
+        bn_statistics['bn_1']['var'] = self.bn1.running_var.cpu().detach().numpy()
+        bn_statistics['bn_2']['mean'] = self.bn2.running_mean.cpu().detach().numpy()
+        bn_statistics['bn_2']['var'] = self.bn2.running_var.cpu().detach().numpy()
+        return bn_statistics
+
+
+if __name__ == '__main__':
+
+    from bspyalgo.utils.io import load_configs
+    import matplotlib.pyplot as plt
+
+    config_path = 'configs/configs_dnpu21.json'
+    CONFIGS = load_configs(config_path)
+    dnpu_221 = TwoToTwoToOneDNPU(CONFIGS)
+
+    INPUTS = TorchUtils.get_tensor_from_numpy(np.random.rand(1000, 2))
+    OUTPUS = dnpu_221(INPUTS)
+
+    bn_statistics = dnpu_221.get_bn_statistics()
+    print(bn_statistics)
+
+    plt.hist(OUTPUS.cpu().detach().numpy())
+    plt.show()
