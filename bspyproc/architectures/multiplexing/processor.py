@@ -3,8 +3,9 @@
 # import torch.nn as nn
 import numpy as np
 from bspyproc.processors.processor_mgr import get_processor
+from bspyproc.utils.waveform import generate_waveform
 # from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages
+from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_architecture
 
 
 class ArchitectureProcessor():
@@ -15,8 +16,9 @@ class ArchitectureProcessor():
         self.conversion_offset = -0.6
         self.control_voltage_indices = get_control_voltage_indices(configs['input_indices'], configs['input_electrode_no'])
 
-    def clip(self, x):
-        x[x > self.clipping_value] = self.clipping_value
+    def clip(self, x, cut_min, cut_max):
+        x[x > cut_max] = cut_max
+        x[x < cut_min] = cut_min
         return x
 
     # def batch_norm(self, bn, x1, x2):
@@ -30,8 +32,13 @@ class ArchitectureProcessor():
     #         torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
     #     return h.numpy()
 
-    def batch_norm(self, bn, x1, x2):
-        return np.array(((x1 - bn['mean']) / np.sqrt(bn['var']), (x2 - bn['mean']) / np.sqrt(bn['var'])))
+    def batch_norm(self, x, mean, var):
+        return (x - mean) / np.sqrt(var)
+
+    def current_to_voltage(self, x, std):
+        cut = 2 * std
+        h = (1.8 / (4 * std)) * self.clip(x, cut_min=-cut, cut_max=cut)
+        return h + self.conversion_offset
 
     def get_amplification_value(self):
         return self.processor.get_amplification_value()
@@ -43,11 +50,20 @@ class ArchitectureProcessor():
 class TwoToOneProcessor(ArchitectureProcessor):
     def __init__(self, configs):
         super().__init__(configs)
+        self.input_indices = self.get_input_indices(configs['input_indices'])
+        self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
         if configs['batch_norm']:
             # self.bn1=nn.BatchNorm1d(2, affine=False)
             self.process_layer1 = self.process_layer1_batch_norm
         else:
             self.process_layer1 = self.process_layer1_alone
+
+    def get_input_indices(self, input_indices):
+        result = np.empty(len(input_indices) * 3)
+        result[0:7] = input_indices
+        result[7:14] = input_indices + 7
+        result[14:] = input_indices + 14
+        return result
 
     def get_output(self, x):
         x1 = self.processor.get_output(x[:, 0:7])
@@ -58,20 +74,20 @@ class TwoToOneProcessor(ArchitectureProcessor):
         x = self.processor.get_output(x[:, 14:])
         return self.process_output_layer(x)
 
-    def get_output_(self, inputs, control_voltages, b):
-        x = merge_inputs_and_control_voltages(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices)
+    def get_output_(self, inputs, control_voltages):
+        x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=3, node_electrode_no=7)
         return self.get_output(x)
 
     def process_layer1_alone(self, x, x1, x2):
-        x[:, 14] = self.clip(x1[:, 0])
-        x[:, 15] = self.clip(x2[:, 0])
+        x[:, 14 + self.input_indices[0]] = self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        x[:, 14 + self.input_indices[1]] = self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
         return x
 
     def process_layer1_batch_norm(self, x, x1, x2):
         bnx = self.batch_norm(self.bn1, x1, x2)
 
-        x[:, 14] = self.clip(bnx[:, 0])
-        x[:, 15] = self.clip(bnx[:, 1])
+        x[:, 14 + self.input_indices[0]] = self.clip(bnx[:, 0])
+        x[:, 14 + self.input_indices[1]] = self.clip(bnx[:, 1])
         return x
 
     def process_output_layer(self, y):
@@ -84,6 +100,8 @@ class TwoToOneProcessor(ArchitectureProcessor):
 class TwoToTwoToOneProcessor(ArchitectureProcessor):
     def __init__(self, configs):
         super().__init__(configs)
+        self.input_indices = self.get_input_indices(configs['input_indices'])
+        self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
         if configs['batch_norm']:
             # self.bn1 = nn.BatchNorm1d(2, affine=False)
             # self.bn2 = nn.BatchNorm1d(2, affine=False)
@@ -92,6 +110,20 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         else:
             self.process_layer1 = self.process_layer1_alone
             self.process_layer2 = self.process_layer2_alone
+
+    def get_input_indices(self, input_indices):
+        result = np.empty(len(input_indices) * 5, dtype=int)
+        result[0] = input_indices[0]
+        result[1] = input_indices[1]
+        result[2] = input_indices[0] + 7
+        result[3] = input_indices[1] + 7
+        result[4] = input_indices[0] + 14
+        result[5] = input_indices[1] + 14
+        result[6] = input_indices[0] + 21
+        result[7] = input_indices[1] + 21
+        result[8] = input_indices[0] + 28
+        result[9] = input_indices[1] + 28
+        return result
 
     def get_output(self, x):
 
@@ -109,36 +141,58 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
         return self.process_output_layer(x)
 
+    def get_output_(self, inputs, control_voltages, mask):
+        self.mask = mask
+        self.plato_indices = np.arange(len(mask))[mask]
+        x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7)
+        return self.get_output(x)
+
     def process_layer1_alone(self, x, x1, x2):
-        x[:, 14] = self.clip(x1[:, 0])
-        x[:, 15] = self.clip(x2[:, 0])
-        x[:, 21] = self.clip(x1[:, 0])
-        x[:, 22] = self.clip(x2[:, 0])
+        x[:, 14 + self.configs['input_indices'][0]] = self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        x[:, 14 + self.configs['input_indices'][1]] = self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        x[:, 21 + self.configs['input_indices'][0]] = self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        x[:, 21 + self.configs['input_indices'][1]] = self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
         return x
 
     def process_layer1_batch_norm(self, x, x1, x2):
-        bnx = self.batch_norm(self.bn1, x1, x2)
+        bnx1 = self.batch_norm(x1[self.mask], self.bn1['mean'][0], self.bn1['var'][0])
+        bnx2 = self.batch_norm(x2[self.mask], self.bn1['mean'][1], self.bn1['var'][1])
+        bnx1 = self.process_batch_norm(bnx1[:, 0])
+        bnx2 = self.process_batch_norm(bnx2[:, 0])
+        # np.newaxis
 
-        x[:, 14] = self.clip(bnx[:, 0])
-        x[:, 15] = self.clip(bnx[:, 1])
-        x[:, 21] = self.clip(bnx[:, 0])
-        x[:, 22] = self.clip(bnx[:, 1])
+        x[:, 14 + self.configs['input_indices'][0]] = self.clip(bnx1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        x[:, 14 + self.configs['input_indices'][1]] = self.clip(bnx2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        x[:, 21 + self.configs['input_indices'][0]] = self.clip(bnx1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        x[:, 21 + self.configs['input_indices'][1]] = self.clip(bnx2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
         return x
 
+    def process_batch_norm(self, bnx):
+        i = 0
+        amplitudes = np.array([])
+        while i < len(bnx):
+            aux = bnx[i:i + self.configs['waveform']['amplitude_lengths']]
+            amplitudes = np.append(amplitudes, np.mean(aux))
+            i += self.configs['waveform']['amplitude_lengths']
+        return generate_waveform(amplitudes, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+
     def process_layer2_alone(self, x, x1, x2):
-        x[:, 28] = self.clip(x1[:, 0])
-        x[:, 29] = self.clip(x2[:, 0])
+        x[:, 28 + self.configs['input_indices'][0]] = self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        x[:, 28 + self.configs['input_indices'][1]] = self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
         return x
 
     def process_layer2_batch_norm(self, x, x1, x2):
-        bnx = self.batch_norm(self.bn2, x1, x2)
+        bnx1 = self.batch_norm(x1[self.mask], self.bn2['mean'][0], self.bn1['var'][0])
+        bnx2 = self.batch_norm(x2[self.mask], self.bn2['mean'][1], self.bn1['var'][1])
+        bnx1 = self.process_batch_norm(bnx1[:, 0])
+        bnx2 = self.process_batch_norm(bnx2[:, 0])
 
-        x[:, 28] = self.clip(bnx[:, 0])
-        x[:, 29] = self.clip(bnx[:, 0])
+        x[:, 28 + self.configs['input_indices'][0]] = self.clip(bnx1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        x[:, 28 + self.configs['input_indices'][1]] = self.clip(bnx2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
         return x
 
     def process_output_layer(self, y):
-        return self.clip(y)
+        return self.clip(y, cut_min=-self.clipping_value, cut_max=self.clipping_value)
 
     def set_batch_normalistaion_values(self, bn_statistics):
         self.bn1 = bn_statistics['bn_1']
