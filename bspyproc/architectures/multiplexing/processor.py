@@ -35,7 +35,8 @@ class ArchitectureProcessor():
     def batch_norm(self, x, mean, var):
         return (x - mean) / np.sqrt(var)
 
-    def current_to_voltage(self, x, std):
+    def current_to_voltage(self, x, var):
+        std = np.sqrt(var)
         cut = 2 * std
         h = (1.8 / (4 * std)) * self.clip(x, cut_min=-cut, cut_max=cut)
         return h + self.conversion_offset
@@ -101,7 +102,7 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
     def __init__(self, configs):
         super().__init__(configs)
         self.input_indices = self.get_input_indices(configs['input_indices'])
-        self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
+        self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'] * 5)
         if configs['batch_norm']:
             # self.bn1 = nn.BatchNorm1d(2, affine=False)
             # self.bn2 = nn.BatchNorm1d(2, affine=False)
@@ -137,34 +138,40 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
         self.control_voltages = self.get_control_voltages(x)
 
-        x = self.processor.get_output(x[:, 28:])
-
-        return self.process_output_layer(x)
+        return self.processor.get_output(x[:, 28:])
 
     def get_output_(self, inputs, control_voltages, mask):
         self.mask = mask
         self.plato_indices = np.arange(len(mask))[mask]
-        x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7)
+        x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset)
         return self.get_output(x)
 
     def process_layer1_alone(self, x, x1, x2):
-        x[:, 14 + self.configs['input_indices'][0]] = self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        x[:, 14 + self.configs['input_indices'][1]] = self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        x[:, 21 + self.configs['input_indices'][0]] = self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        x[:, 21 + self.configs['input_indices'][1]] = self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        # x[:, 14 + self.configs['input_indices'][0]] = self.current_to_voltage(self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
+        # x[:, 14 + self.configs['input_indices'][1]] = self.current_to_voltage(self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
+        # x[:, 21 + self.configs['input_indices'][0]] = self.current_to_voltage(self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
+        # x[:, 21 + self.configs['input_indices'][1]] = self.current_to_voltage(self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
         return x
 
     def process_layer1_batch_norm(self, x, x1, x2):
+        # Clip current
+        x1 = self.clip(x1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        x2 = self.clip(x2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+
+        # Batch normalisation
         bnx1 = self.batch_norm(x1[self.mask], self.bn1['mean'][0], self.bn1['var'][0])
         bnx2 = self.batch_norm(x2[self.mask], self.bn1['mean'][1], self.bn1['var'][1])
+
+        # Get mean of platos and create waveform back
         bnx1 = self.process_batch_norm(bnx1[:, 0])
         bnx2 = self.process_batch_norm(bnx2[:, 0])
-        # np.newaxis
 
-        x[:, 14 + self.configs['input_indices'][0]] = self.clip(bnx1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        x[:, 14 + self.configs['input_indices'][1]] = self.clip(bnx2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        x[:, 21 + self.configs['input_indices'][0]] = self.clip(bnx1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        x[:, 21 + self.configs['input_indices'][1]] = self.clip(bnx2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        # Convert from current to voltage, clip voltage, and save into corresponding indices
+        x[:, 14 + self.configs['input_indices'][0]] = self.current_to_voltage(bnx1, self.bn1['var'][0])
+        x[:, 14 + self.configs['input_indices'][1]] = self.current_to_voltage(bnx2, self.bn1['var'][1])
+        x[:, 21 + self.configs['input_indices'][0]] = self.current_to_voltage(bnx1, self.bn1['var'][0])
+        x[:, 21 + self.configs['input_indices'][1]] = self.current_to_voltage(bnx2, self.bn1['var'][1])
+
         return x
 
     def process_batch_norm(self, bnx):
@@ -177,23 +184,33 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         return generate_waveform(amplitudes, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
 
     def process_layer2_alone(self, x, x1, x2):
-        x[:, 28 + self.configs['input_indices'][0]] = self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        x[:, 28 + self.configs['input_indices'][1]] = self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        # x[:, 28 + self.configs['input_indices'][0]] = self.current_to_voltage(self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
+        # x[:, 28 + self.configs['input_indices'][1]] = self.current_to_voltage(self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
         return x
 
     def process_layer2_batch_norm(self, x, x1, x2):
-        bnx1 = self.batch_norm(x1[self.mask], self.bn2['mean'][0], self.bn1['var'][0])
-        bnx2 = self.batch_norm(x2[self.mask], self.bn2['mean'][1], self.bn1['var'][1])
+        # Clip current
+        x1 = self.clip(x1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        x2 = self.clip(x2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+
+        # Batch normalisation
+        bnx1 = self.batch_norm(x1[self.mask], self.bn2['mean'][0], self.bn2['var'][0])
+        bnx2 = self.batch_norm(x2[self.mask], self.bn2['mean'][1], self.bn2['var'][1])
+
+        # Get mean of platos and create waveform back
         bnx1 = self.process_batch_norm(bnx1[:, 0])
         bnx2 = self.process_batch_norm(bnx2[:, 0])
 
-        x[:, 28 + self.configs['input_indices'][0]] = self.clip(bnx1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        x[:, 28 + self.configs['input_indices'][1]] = self.clip(bnx2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        return x
+        # Convert from current to voltage, clip voltage, and save into corresponding indices
+        x[:, 28 + self.configs['input_indices'][0]] = self.current_to_voltage(bnx1, self.bn2['var'][0])
+        x[:, 28 + self.configs['input_indices'][1]] = self.current_to_voltage(bnx2, self.bn2['var'][1])
 
-    def process_output_layer(self, y):
-        return self.clip(y, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        return x
 
     def set_batch_normalistaion_values(self, bn_statistics):
         self.bn1 = bn_statistics['bn_1']
         self.bn2 = bn_statistics['bn_2']
+
+    def set_scale_and_offset(self, scale, offset):
+        self.scale = scale
+        self.offset = offset
