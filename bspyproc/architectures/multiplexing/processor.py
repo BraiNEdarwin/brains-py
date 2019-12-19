@@ -154,6 +154,8 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         return x
 
     def process_layer1_batch_norm(self, x, x1, x2):
+        # The input has been already scaled and offsetted
+
         # Clip current
         x1 = self.clip(x1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
         x2 = self.clip(x2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
