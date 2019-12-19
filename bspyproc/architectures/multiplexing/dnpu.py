@@ -15,10 +15,10 @@ class DNPUArchitecture(nn.Module):
         # scale min = 0.1 max = 1.5
         # conversion offset = -0.6
         super().__init__()
+        self.configs = configs
         self.conversion_offset = torch.tensor(configs['offset']['conversion'])
         self.offset = self.init_offset(configs['offset']['min'], configs['offset']['max'])
         self.scale = self.init_scale(configs['scale']['min'], configs['scale']['max'])
-        self.configs = configs
 
     def init_offset(self, offset_min, offset_max):
         offset = offset_min + offset_max * np.random.rand(1, 2)
@@ -26,9 +26,12 @@ class DNPUArchitecture(nn.Module):
         return nn.Parameter(offset)
 
     def init_scale(self, scale_min, scale_max):
-        scale = scale_min + scale_max * np.random.rand(1)
-        scale = TorchUtils.get_tensor_from_numpy(scale)
-        return nn.Parameter(scale)
+        if self.configs['scale']['min'] == 1.0 and self.configs['scale']['max'] == 1.0:
+            scale = TorchUtils.get_tensor_from_numpy(np.array([1.0]))
+            return scale
+        else:
+            scale = TorchUtils.get_tensor_from_numpy(scale_min + scale_max * np.random.rand(1))
+            return nn.Parameter(scale)
 
     def offset_penalty(self):
         return torch.sum(torch.relu(self.configs['offset']['min'] - self.offset) + torch.relu(self.offset - self.configs['offset']['max']))
@@ -215,6 +218,24 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         bn_statistics['bn_2']['mean'] = self.bn2.running_mean.cpu().detach().numpy()
         bn_statistics['bn_2']['var'] = self.bn2.running_var.cpu().detach().numpy()
         return bn_statistics
+
+    def reset(self):
+        self.input_node1.reset()
+        self.input_node2.reset()
+        self.hidden_node1.reset()
+        self.hidden_node2.reset()
+        self.output_node.reset()
+        self.offset.data.uniform_(self.configs['offset']['min'], self.configs['offset']['max'])
+        self.scale = self.init_scale(self.configs['scale']['min'], self.configs['scale']['max'])
+        if self.configs['batch_norm']:
+            self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
+            self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
+
+    def get_scale(self):
+        return TorchUtils.get_numpy_from_tensor(self.scale.detach())
+
+    def get_offset(self):
+        return TorchUtils.get_numpy_from_tensor(self.offset.detach())
 
 
 if __name__ == '__main__':
