@@ -154,7 +154,7 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
 
     def forward(self, x):
 
-        # Pass through input layer
+        # Scale and offset
         x = (self.scale * x) + self.offset
 
         # Clipping and passing data to the first layer
@@ -236,6 +236,23 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
 
     def get_offset(self):
         return TorchUtils.get_numpy_from_tensor(self.offset.detach())
+
+    def set_batch_normalistaion_values(self, bn_statistics):
+        self.bn1.running_mean.data = TorchUtils.get_tensor_from_numpy(bn_statistics['bn_1']['mean'])
+        self.bn1.running_var.data = TorchUtils.get_tensor_from_numpy(bn_statistics['bn_1']['var'])
+        self.bn2.running_mean.data = TorchUtils.get_tensor_from_numpy(bn_statistics['bn_2']['mean'])
+        self.bn2.running_var.data = TorchUtils.get_tensor_from_numpy(bn_statistics['bn_2']['var'])
+
+    def set_scale_and_offset(self, scale, offset):
+        self.scale.data = TorchUtils.get_tensor_from_numpy(scale)
+        self.offset.data = TorchUtils.get_tensor_from_numpy(offset)
+
+    def set_control_voltages(self, control_voltages):
+        self.input_node1.bias.data = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 0:5])
+        self.input_node2.bias.data = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 5:10])
+        self.hidden_node1.bias.data = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 10:15])
+        self.hidden_node2.bias.data = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 15:20])
+        self.output_node.bias.data = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 20:25])
 
 
 if __name__ == '__main__':
