@@ -41,14 +41,15 @@ class DNPUArchitecture(nn.Module):
 
     def batch_norm(self, bn, x1, x2):
         h = bn(torch.cat((x1, x2), dim=1))
-        std = np.sqrt(torch.mean(bn.running_var).cpu().numpy())
-        return self.current_to_voltage(h, std)
+        std = np.sqrt(bn.running_var.clone().cpu().numpy())
+        return h, std
 
     def current_to_voltage(self, x, std):
         # Pass it through output layer and clip it to two times the standard deviation
         cut = 2 * std
-        return torch.tensor(1.8 / (4 * std)) * \
-            self.clip(x, cut) + self.conversion_offset
+        voltage = torch.tensor(1.8 / (4 * std)) * self.clip(x, cut) + self.conversion_offset
+        # torch.save(voltage,'voltage.pt')
+        return voltage
 
     def clip(self, x, clipping_value):
         return torch.clamp(x, min=-clipping_value, max=clipping_value)
@@ -57,74 +58,82 @@ class DNPUArchitecture(nn.Module):
 class TwoToOneDNPU(DNPUArchitecture):
 
     def __init__(self, configs):
-        super().__init__(configs)
-        self.init_model(configs)
-        self.init_clipping_values(configs['waveform']['output_clipping_value'])
-        if configs['batch_norm']:
-            self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
-            self.process_layer1 = self.process_layer1_batch_norm
-        else:
-            self.process_layer1 = self.process_layer1_alone
+        pass
+#         super().__init__(configs)
+#         self.init_model(configs)
+#         self.init_clipping_values(configs['waveform']['output_clipping_value'])
+#         if configs['batch_norm']:
+#             self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
+#             self.process_layer1 = self.process_layer1_batch_norm
+#         else:
+#             self.process_layer1 = self.process_layer1_alone
 
-    def init_model(self, configs):
-        self.input_node1 = get_processor(configs)  # DNPU(in_dict['input_node1'], path=path)
-        self.input_node2 = get_processor(configs)
-        self.output_node = get_processor(configs)
+#     def init_model(self, configs):
+#         self.input_node1 = get_processor(configs)  # DNPU(in_dict['input_node1'], path=path)
+#         self.input_node2 = get_processor(configs)
+#         self.output_node = get_processor(configs)
 
-    def init_clipping_values(self, base_clipping_value):
-        self.input_node1_clipping_value = base_clipping_value * self.input_node1.get_amplification_value()
-        self.input_node2_clipping_value = base_clipping_value * self.input_node2.get_amplification_value()
-        self.output_node_clipping_value = base_clipping_value * self.output_node.get_amplification_value()
+#     def init_clipping_values(self, base_clipping_value):
+#         self.input_node1_clipping_value = base_clipping_value * self.input_node1.get_amplification_value()
+#         self.input_node2_clipping_value = base_clipping_value * self.input_node2.get_amplification_value()
+#         self.output_node_clipping_value = base_clipping_value * self.output_node.get_amplification_value()
 
-    def forward(self, x):
-        # Pass through input layer
-        x = (self.scale * x) + self.offset
+#     def forward(self, x):
+#         # Pass through input layer
+#         x = (self.scale * x) + self.offset
 
-        x1 = self.input_node1(x)
-        x2 = self.input_node2(x)
-        x = self.process_layer1(x, x1, x2)
+#         x1 = self.input_node1(x)
+#         x2 = self.input_node2(x)
+#         x = self.process_layer1(x, x1, x2)
 
-        x = self.output_node(x)
-        return self.process_output_layer(x)
+#         x = self.output_node(x)
+#         return self.process_output_layer(x)
 
-    def regularizer(self):
-        control_penalty = self.input_node1.regularizer() \
-            + self.input_node2.regularizer() \
-            + self.output_node.regularizer()
-        return control_penalty + self.offset_penalty() + self.scale_penalty()
+#     def regularizer(self):
+#         control_penalty = self.input_node1.regularizer() \
+#             + self.input_node2.regularizer() \
+#             + self.output_node.regularizer()
+#         return control_penalty + self.offset_penalty() + self.scale_penalty()
 
-    def process_layer1_alone(self, x, x1, x2):
-        x[:, 0] = self.clip(x1[:, 0], self.input_node1_clipping_value)
-        x[:, 1] = self.clip(x2[:, 0], self.input_node2_clipping_value)
-        return x
+#     def process_layer1_alone(self, x, x1, x2):
+#         x[:, 0] = self.clip(x1[:, 0], self.input_node1_clipping_value)
+#         x[:, 1] = self.clip(x2[:, 0], self.input_node2_clipping_value)
+#         return x
 
-    def process_layer1_batch_norm(self, x, x1, x2):
-        bnx = self.batch_norm(self.bn1, x1, x2)
+#     def process_layer1_batch_norm(self, x, x1, x2):
 
-        x[:, 0] = self.clip(bnx[:, 0], self.input_node1_clipping_value)
-        x[:, 1] = self.clip(bnx[:, 1], self.input_node2_clipping_value)
+#         bnx, std = self.batch_norm(self.bn1, x1, x2)
+#         torch.save(bnx, f'bn_afterbatch_1.pt')
 
-        return x
+#         bnx = self.current_to_voltage(bnx, std)
+#         torch.save(bnx, f'bn_aftercv_1.pt')
 
-    def process_output_layer(self, y):
-        return self.clip(y, self.output_node_clipping_value)
+#         x[:, 0] = self.clip(bnx[:, 0], self.input_node1_clipping_value)
+#         x[:, 1] = self.clip(bnx[:, 1], self.input_node2_clipping_value)
 
-    def get_control_voltages(self):
-        w1 = next(self.input_node1.parameters()).detach().cpu().numpy()
-        w2 = next(self.input_node2.parameters()).detach().cpu().numpy()
-        w3 = next(self.output_node.parameters()).detach().cpu().numpy()
-        return torch.stack([w1, w2, w3])
+#         return x
 
-    def get_bn_statistics(self):
-        bn_statistics = {'bn_1': {}}
-        bn_statistics['bn_1']['mean'] = self.bn1.running_mean.cpu().detach().numpy()
-        bn_statistics['bn_1']['var'] = self.bn1.running_var.cpu().detach().numpy()
-        return bn_statistics
+#     def process_output_layer(self, y):
+#         return self.clip(y, self.output_node_clipping_value)
+
+#     def get_control_voltages(self):
+#         w1 = next(self.input_node1.parameters()).detach().cpu().numpy()
+#         w2 = next(self.input_node2.parameters()).detach().cpu().numpy()
+#         w3 = next(self.output_node.parameters()).detach().cpu().numpy()
+#         return torch.stack([w1, w2, w3])
+
+#     def get_bn_statistics(self):
+#         bn_statistics = {'bn_1': {}}
+#         bn_statistics['bn_1']['mean'] = self.bn1.running_mean.cpu().detach().numpy()
+#         bn_statistics['bn_1']['var'] = self.bn1.running_var.cpu().detach().numpy()
+#         return bn_statistics
 
 
 class TwoToTwoToOneDNPU(DNPUArchitecture):
+
     def __init__(self, configs):
         super().__init__(configs)
+        self.counter = 1
         self.init_model(configs)
         self.init_clipping_values(configs['waveform']['output_clipping_value'])
         if configs['batch_norm']:
@@ -156,16 +165,22 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
 
         # Scale and offset
         x = (self.scale * x) + self.offset
-
+        torch.save(x, 'raw_input.pt')
         # Clipping and passing data to the first layer
         x1 = self.input_node1(x)
         x2 = self.input_node2(x)
+
+        torch.save(x1, 'layer_1_output_1.pt')
+        torch.save(x2, 'layer_1_output_2.pt')
         x = self.process_layer1(x, x1, x2)
 
+        torch.save(x, 'layer_1_output_processed.pt')
         h1 = self.hidden_node1(x)
         h2 = self.hidden_node2(x)
+        torch.save(h1, 'layer_2_output_1.pt')
+        torch.save(h2, 'layer_2_output_2.pt')
         x = self.process_layer2(x, h1, h2)
-
+        torch.save(x, 'layer_2_output_processed.pt')
         return self.output_node(x)
 
     def regularizer(self):
@@ -183,9 +198,20 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         # Clip values at 400
         x1 = self.clip(x1, clipping_value=self.input_node1_clipping_value)
         x2 = self.clip(x2, clipping_value=self.input_node2_clipping_value)
+        torch.save(x1, 'bn_afterclip_1_1.pt')
+        torch.save(x2, 'bn_afterclip_1_2.pt')
+        self.counter += 1
+
+        bnx, std = self.batch_norm(self.bn1, x1, x2)
+        torch.save(bnx, f'bn_afterbatch_1.pt')
+        bnx_0 = self.current_to_voltage(bnx[:, 0], std[0])
+        bnx_1 = self.current_to_voltage(bnx[:, 1], std[1])
+        bnx = torch.cat((bnx_0[:, None], bnx_1[:, None]), dim=1)
+        torch.save(bnx, f'bn_aftercv_1.pt')
+        return bnx
 
         # Batch normalisation and transformation to voltage
-        return self.batch_norm(self.bn1, x1, x2)
+        # return
 
     def process_layer2_alone(self, x, x1, x2):
         x[:, 0] = self.clip(x1[:, 0], self.hidden_node1_clipping_value)
@@ -196,9 +222,16 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         # Clip values at 400
         x1 = self.clip(x1, clipping_value=self.hidden_node1_clipping_value)
         x2 = self.clip(x2, clipping_value=self.hidden_node2_clipping_value)
-
+        torch.save(x1, 'bn_afterclip_2_1.pt')
+        torch.save(x2, 'bn_afterclip_2_2.pt')
         # Batch normalisation and transformation to voltage
-        return self.batch_norm(self.bn2, x1, x2)
+        bnx, std = self.batch_norm(self.bn2, x1, x2)
+        torch.save(bnx, f'bn_afterbatch_2.pt')
+        bnx_0 = self.current_to_voltage(bnx[:, 0], std[0])
+        bnx_1 = self.current_to_voltage(bnx[:, 1], std[1])
+        torch.save(bnx, f'bn_aftercv_2.pt')
+
+        return torch.cat((bnx_0[:, None], bnx_1[:, None]), dim=1)
 
     def process_output_layer(self, y):
         return self.clip(y, self.output_node_clipping_value)
