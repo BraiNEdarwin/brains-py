@@ -113,7 +113,7 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
             self.process_layer2 = self.process_layer2_alone
 
     def get_input_indices(self, input_indices):
-        result = np.empty(len(input_indices) * 5, dtype=int)
+        result = np.zeros(len(input_indices) * 5, dtype=int)
         result[0] = input_indices[0]
         result[1] = input_indices[1]
         result[2] = input_indices[0] + 7
