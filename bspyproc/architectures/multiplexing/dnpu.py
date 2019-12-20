@@ -133,7 +133,6 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
 
     def __init__(self, configs):
         super().__init__(configs)
-        self.counter = 1
         self.init_model(configs)
         self.init_clipping_values(configs['waveform']['output_clipping_value'])
         if configs['batch_norm']:
@@ -200,7 +199,6 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         x2 = self.clip(x2, clipping_value=self.input_node2_clipping_value)
         torch.save(x1, 'bn_afterclip_1_1.pt')
         torch.save(x2, 'bn_afterclip_1_2.pt')
-        self.counter += 1
 
         bnx, std = self.batch_norm(self.bn1, x1, x2)
         torch.save(bnx, f'bn_afterbatch_1.pt')
@@ -209,9 +207,6 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         bnx = torch.cat((bnx_0[:, None], bnx_1[:, None]), dim=1)
         torch.save(bnx, f'bn_aftercv_1.pt')
         return bnx
-
-        # Batch normalisation and transformation to voltage
-        # return
 
     def process_layer2_alone(self, x, x1, x2):
         x[:, 0] = self.clip(x1[:, 0], self.hidden_node1_clipping_value)
@@ -255,6 +250,7 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         return bn_dict
 
     def reset(self):
+        # This function needs to be checked
         self.input_node1.reset()
         self.input_node2.reset()
         self.hidden_node1.reset()
