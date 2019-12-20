@@ -6,6 +6,7 @@ from bspyproc.processors.processor_mgr import get_processor
 from bspyproc.utils.waveform import generate_waveform
 # from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_architecture
+from bspyproc.utils.pytorch import TorchUtils
 
 
 class ArchitectureProcessor():
@@ -140,10 +141,10 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
         return self.processor.get_output(x[:, 28:])
 
-    def get_output_(self, inputs, control_voltages, mask):
+    def get_output_(self, inputs, mask):
         self.mask = mask
         self.plato_indices = np.arange(len(mask))[mask]
-        x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset)
+        x = merge_inputs_and_control_voltages_in_architecture(inputs, self.control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset)
         return self.get_output(x)
 
     def process_layer1_alone(self, x, x1, x2):
@@ -209,10 +210,37 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
         return x
 
-    def set_batch_normalistaion_values(self, bn_statistics):
-        self.bn1 = bn_statistics['bn_1']
-        self.bn2 = bn_statistics['bn_2']
+    def set_batch_normalistaion_values(self, state_dict):
+        self.bn1 = {}
+        self.bn2 = {}
+        self.bn1['mean'] = TorchUtils.get_numpy_from_tensor(state_dict['bn1.running_mean'])
+        self.bn1['var'] = TorchUtils.get_numpy_from_tensor(state_dict['bn1.running_var'])
+        self.bn1['batch_no'] = TorchUtils.get_numpy_from_tensor(state_dict['bn1.num_batches_tracked'])
+        self.bn2['mean'] = TorchUtils.get_numpy_from_tensor(state_dict['bn2.running_mean'])
+        self.bn2['var'] = TorchUtils.get_numpy_from_tensor(state_dict['bn2.running_var'])
+        self.bn2['batch_no'] = TorchUtils.get_numpy_from_tensor(state_dict['bn2.num_batches_tracked'])
+        # self.bn_statistics = bn_statistics
+        # self.bn1 = bn_statistics['bn_1']
+        # self.bn2 = bn_statistics['bn_2']
 
-    def set_scale_and_offset(self, scale, offset):
-        self.scale = scale
-        self.offset = offset
+    def set_scale_and_offset(self, state_dict):
+        if 'scale' in state_dict:
+            self.scale = TorchUtils.get_numpy_from_tensor(state_dict['scale'])
+        else:
+            self.scale = 1
+        self.offset = TorchUtils.get_numpy_from_tensor(state_dict['offset'])
+
+    def load_state_dict(self, state_dict):
+        self.set_scale_and_offset(state_dict)
+        self.set_batch_normalistaion_values(state_dict)
+        self.set_control_voltages(state_dict)
+        self.state_dict = state_dict
+
+    def set_control_voltages(self, state_dict):
+        control_voltages = np.zeros([len(self.control_voltage_indices)])
+        control_voltages[0:5] = TorchUtils.get_numpy_from_tensor(state_dict['input_node1.bias'])
+        control_voltages[5:10] = TorchUtils.get_numpy_from_tensor(state_dict['input_node2.bias'])
+        control_voltages[10:15] = TorchUtils.get_numpy_from_tensor(state_dict['hidden_node1.bias'])
+        control_voltages[15:20] = TorchUtils.get_numpy_from_tensor(state_dict['hidden_node2.bias'])
+        control_voltages[20:25] = TorchUtils.get_numpy_from_tensor(state_dict['output_node.bias'])
+        self.control_voltages = control_voltages
