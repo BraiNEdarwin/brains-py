@@ -7,6 +7,7 @@ from bspyproc.utils.waveform import generate_waveform
 # from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_architecture
 from bspyproc.utils.pytorch import TorchUtils
+from bspyproc.utils.waveform import generate_slopped_plato, generate_waveform
 
 
 class ArchitectureProcessor():
@@ -77,6 +78,9 @@ class TwoToOneProcessor(ArchitectureProcessor):
         return self.process_output_layer(x)
 
     def get_output_(self, inputs, control_voltages):
+        slopped_plato = generate_slopped_plato(
+            self.configs['waveform']['slope_lengths'], inputs.shape[0])[np.newaxis, :]
+        control_voltages = slopped_plato * control_voltages[:, np.newaxis]
         x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=3, node_electrode_no=7)
         return self.get_output(x)
 
@@ -176,8 +180,8 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         np.save('bn_afterbatch_1', bnx1)
         np.save('bn_afterbatch_2', bnx2)
         # Get mean of platos and create waveform back
-        # bnx1 = self.process_batch_norm(bnx1[:, 0])
-        # bnx2 = self.process_batch_norm(bnx2[:, 0])
+        bnx1 = self.process_batch_norm(bnx1)
+        bnx2 = self.process_batch_norm(bnx2)
 
         # Convert from current to voltage, clip voltage, and save into corresponding indices
         x[:, 14 + self.configs['input_indices'][0]] = self.current_to_voltage(bnx1, self.bn1['var'][0])
