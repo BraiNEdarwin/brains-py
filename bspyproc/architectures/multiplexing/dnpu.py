@@ -211,13 +211,15 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         w5 = next(self.output_node.parameters()).detach()[0, :]
         return torch.stack([w1, w2, w3, w4, w5])
 
-    def get_bn_statistics(self):
-        bn_statistics = {'bn_1': {}, 'bn_2': {}}
-        bn_statistics['bn_1']['mean'] = self.bn1.running_mean.cpu().detach().numpy()
-        bn_statistics['bn_1']['var'] = self.bn1.running_var.cpu().detach().numpy()
-        bn_statistics['bn_2']['mean'] = self.bn2.running_mean.cpu().detach().numpy()
-        bn_statistics['bn_2']['var'] = self.bn2.running_var.cpu().detach().numpy()
-        return bn_statistics
+    def set_bn_dict(self, bn_dict):
+        self.bn1.load_state_dict(bn_dict['bn_1'])
+        self.bn2.load_state_dict(bn_dict['bn_2'])
+
+    def get_bn_dict(self):
+        bn_dict = {'bn_1': {}, 'bn_2': {}}
+        bn_dict['bn_1'] = self.bn1.state_dict()
+        bn_dict['bn_2'] = self.bn2.state_dict()
+        return bn_dict
 
     def reset(self):
         self.input_node1.reset()
@@ -237,22 +239,25 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
     def get_offset(self):
         return TorchUtils.get_numpy_from_tensor(self.offset.detach())
 
-    def set_batch_normalistaion_values(self, bn_statistics):
-        self.bn1.running_mean.data = TorchUtils.get_tensor_from_numpy(bn_statistics['bn_1']['mean'])
-        self.bn1.running_var.data = TorchUtils.get_tensor_from_numpy(bn_statistics['bn_1']['var'])
-        self.bn2.running_mean.data = TorchUtils.get_tensor_from_numpy(bn_statistics['bn_2']['mean'])
-        self.bn2.running_var.data = TorchUtils.get_tensor_from_numpy(bn_statistics['bn_2']['var'])
+    def initialise_parameters(self, control_voltages, bn_stats, scale, offset):
+        self.set_control_voltages(control_voltages)
+        self.set_scale_and_offset(scale, offset)
+        self.set_bn_dict(bn_stats)
 
     def set_scale_and_offset(self, scale, offset):
-        self.scale.data = TorchUtils.get_tensor_from_numpy(scale)
-        self.offset.data = TorchUtils.get_tensor_from_numpy(offset)
+        state_dict = self.state_dict()
+        state_dict['scale'] = TorchUtils.get_tensor_from_numpy(scale)
+        state_dict['offset'] = TorchUtils.get_tensor_from_numpy(offset)
+        self.load_state_dict(state_dict)
 
     def set_control_voltages(self, control_voltages):
-        self.input_node1.bias.data = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 0:5])
-        self.input_node2.bias.data = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 5:10])
-        self.hidden_node1.bias.data = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 10:15])
-        self.hidden_node2.bias.data = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 15:20])
-        self.output_node.bias.data = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 20:25])
+        state_dict = self.state_dict()
+        state_dict['input_node1.bias'] = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 0:5])
+        state_dict['input_node2.bias'] = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 5:10])
+        state_dict['hidden_node1.bias'] = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 10:15])
+        state_dict['hidden_node2.bias'] = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 15:20])
+        state_dict['output_node.bias'] = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 20:25])
+        self.load_state_dict(state_dict)
 
 
 if __name__ == '__main__':
