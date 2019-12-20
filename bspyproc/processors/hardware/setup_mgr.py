@@ -7,6 +7,8 @@ import time
 from bspyproc.processors.hardware import task_mgr
 from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages
 
+SECURITY_THRESHOLD = 1.5  # Voltage input security threshold
+
 
 class NationalInstrumentsSetup():
 
@@ -31,6 +33,7 @@ class NationalInstrumentsSetup():
         '''
             y = It represents the input data as matrix where the shpe is defined by the "number of inputs to the device" times "input points that you want to input to the device".
         '''
+        assert self.offsetted_shape[self.offsetted_shape > SECURITY_THRESHOLD].shape[0] > 0 or self.offsetted_shape[self.offsetted_shape < -SECURITY_THRESHOLD].shape[0] > 0, f"A value is higher/lower than the threshold of +/-{SECURITY_THRESHOLD}. Stopping the program in order to avoid damage to the device."
         self.driver.start_tasks(y, self.configs['auto_start'])
         read_data = self.driver.read(self.offsetted_shape, self.ceil)
         self.driver.stop_tasks()
