@@ -4,6 +4,7 @@
 import torch
 import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
+from bspyproc.utils.control import merge_inputs_and_control_voltages, get_control_voltage_indices
 
 
 class TorchModel(nn.Module):
@@ -15,37 +16,47 @@ class TorchModel(nn.Module):
     """
 # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
 
-    def __init__(self, model_source):
+    def __init__(self, configs):
         super().__init__()
-        self.info = None
-        if type(model_source) is str:
-            self.load_model(model_source)
-        elif type(model_source) is dict:
-            self.build_model(model_source)
 
+        self.configs = configs
+        if type(configs['torch_model_dict']) is str:
+            self.load_model(configs['torch_model_dict'])
+        elif type(configs['torch_model_dict']) is dict:
+            self.build_model(configs['torch_model_dict'])
+        if 'input_indices' in configs and 'input_electrode_no' in configs:
+            self.input_indices = configs['input_indices']
+            self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
+        else:
+            print('Warning: Input indices and control voltage indices have not been defined.')
         if TorchUtils.get_accelerator_type() == torch.device('cuda'):
             self.model.cuda()
 
     def load_file(self, data_dir, file_type):
         if file_type == 'pt':
             state_dict = torch.load(data_dir, map_location=TorchUtils.get_accelerator_type())
-            info = self._info_consistency_check(state_dict['info'])
+            info = state_dict['info']
+            info['smg_configs'] = self._info_consistency_check(info['smg_configs'])
             del state_dict['info']
+            if 'amplification' not in info['data_info']['processor'].keys():
+                info['data_info']['processor']['amplification'] = 1
         elif file_type == 'json':
             state_dict = None
             # TODO: Implement loading from a json file
             raise NotImplementedError(f"Loading file from a json file in TorchModel has not been implemented yet. ")
             # info = model_info loaded from a json file
-        if 'amplification' not in info.keys():
-            info['amplification'] = 1
-
         return info, state_dict
 
     def load_model(self, data_dir):
         """Loads a pytorch model from a directory string."""
         self.info, state_dict = self.load_file(data_dir, 'pt')
-        self.build_model(self.info)
+        if 'smg_configs' in self.info.keys():
+            model_dict = self.info['smg_configs']['processor']['torch_model_dict']
+        else:
+            model_dict = self.info
+        self.build_model(model_dict)
         self.model.load_state_dict(state_dict)
+        self.amplification = self.info['data_info']['processor']['amplification']
 
     def build_model(self, model_info):
 
@@ -70,13 +81,17 @@ class TorchModel(nn.Module):
         with torch.no_grad():
             inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
             output = self.forward(inputs_torch)
-        return TorchUtils.get_numpy_from_tensor(output) * self.info['amplification']
+        return TorchUtils.get_numpy_from_tensor(output) * self.amplification
+
+    def get_output_(self, inputs, control_voltages):
+        y = merge_inputs_and_control_voltages(inputs, control_voltages, self.input_indices, self.control_voltage_indices)
+        return self.get_output(y)
 
     def forward(self, x):
         return self.model(x)
 
     def get_amplification_value(self):
-        return self.info['amplification']
+        return self.info['data_info']['processor']['amplification']
 
     def _info_consistency_check(self, model_info):
         """ It checks if the model info follows the expected standards.
@@ -84,14 +99,14 @@ class TorchModel(nn.Module):
         follow them and throws an exception. """
         # if type(model_info['activation']) is str:
         #    model_info['activation'] = nn.ReLU()
-        if 'D_in' not in model_info:
-            model_info['D_in'] = len(model_info['offset'])
-            print('WARNING: The model loaded does not define the input dimension as expected. Changed it to default value: %d.' % len(model_info['offset']))
-        if 'D_out' not in model_info:
-            model_info['D_out'] = 1
+        if 'D_in' not in model_info['processor']['torch_model_dict']:
+            model_info['processor']['torch_model_dict']['D_in'] = 7
+            print('WARNING: The model loaded does not define the input dimension as expected. Changed it to default value: 7')
+        if 'D_out' not in model_info['processor']['torch_model_dict']:
+            model_info['processor']['torch_model_dict']['D_out'] = 1
             print('WARNING: The model loaded does not define the output dimension as expected. Changed it to default value: %d.' % 1)
-        if 'hidden_sizes' not in model_info:
-            model_info['hidden_sizes'] = [90] * 6
+        if 'hidden_sizes' not in model_info['processor']['torch_model_dict']:
+            model_info['processor']['torch_model_dict']['hidden_sizes'] = [90] * 6
             print('WARNING: The model loaded does not define the input dimension as expected. Changed it to default value: %d.' % 90)
         return model_info
 # TODO: generalize get_activation function to allow for several options, e.g. relu, tanh, hard-tanh, sigmoid

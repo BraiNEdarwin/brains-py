@@ -18,22 +18,19 @@ class DNPU(TorchModel):
     '''
     '''
 
-    def __init__(self, in_list,
-                 path=r'./tmp/input/models/nn_test/checkpoint3000_02-07-23h47m.pt'):
-        super().__init__(path)
-
-        self.nr_inputs = len(in_list)
-        self.in_list = TorchUtils.get_tensor_from_list(in_list, torch.int64)
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.nr_inputs = len(configs['input_indices'])
+        self.in_list = TorchUtils.get_tensor_from_list(configs['input_indices'], torch.int64)
         # Freeze parameters
         for params in self.parameters():
             params.requires_grad = False
         # Define learning parameters
-        self.nr_electodes = len(self.info['offset'])
-        self.indx_cv = np.delete(np.arange(self.nr_electodes), in_list)
+        self.nr_electodes = len(self.info['data_info']['input_data']['offset'])
+        self.indx_cv = np.delete(np.arange(self.nr_electodes), configs['input_indices'])
         self.nr_cv = len(self.indx_cv)
-        offset = self.info['offset']
-        amplitude = self.info['amplitude']
-
+        offset = np.array(self.info['data_info']['input_data']['offset'])
+        amplitude = np.array(self.info['data_info']['input_data']['amplitude'])
         self.min_voltage = offset - amplitude
         self.max_voltage = offset + amplitude
         bias = self.min_voltage[self.indx_cv] + \
@@ -45,7 +42,7 @@ class DNPU(TorchModel):
         # Set as torch Tensors and send to DEVICE
         self.indx_cv = TorchUtils.get_tensor_from_list(self.indx_cv, torch.int64)  # IndexError: tensors used as indices must be long, byte or bool tensors
 
-        self.amplification = TorchUtils.get_tensor_from_list(self.info['amplification'])
+        self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
         self.min_voltage = TorchUtils.get_tensor_from_list(self.min_voltage)
         self.max_voltage = TorchUtils.get_tensor_from_list(self.max_voltage)
         self.control_low = self.min_voltage[self.indx_cv]
@@ -58,7 +55,6 @@ class DNPU(TorchModel):
         return TorchUtils.get_numpy_from_tensor(output)
 
     def forward(self, x):
-
         expand_cv = self.bias.expand(x.size()[0], -1)
         inp = torch.empty((x.size()[0], x.size()[1] + self.nr_cv))
         inp = TorchUtils.format_tensor(inp)
@@ -78,6 +74,9 @@ class DNPU(TorchModel):
         for k in range(len(self.control_low)):
             print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
             self.bias.data[:, k].uniform_(self.control_low[k], self.control_high[k])
+
+    def get_control_voltages(self):
+        return next(self.parameters()).detach()
 
 
 if __name__ == '__main__':
