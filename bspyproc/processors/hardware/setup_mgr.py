@@ -38,7 +38,7 @@ class NationalInstrumentsSetup():
         self.driver.close_tasks()
 
     def get_amplification_value(self):
-        return self.configs["processor"]["amplification"]
+        return self.configs["amplification"]
 
 
 class CDAQtoCDAQ(NationalInstrumentsSetup):
