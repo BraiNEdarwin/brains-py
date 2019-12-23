@@ -9,7 +9,9 @@ setup(name='brainspy-processors',
       license='GPL-3.0',
       packages=find_packages(),
       install_requires=[
-      'numpy'
+      'numpy',
+	  'nidaqmx',
+	  'Pyro4'
       ],
       python_requires='~=3.6',
       zip_safe=False)
