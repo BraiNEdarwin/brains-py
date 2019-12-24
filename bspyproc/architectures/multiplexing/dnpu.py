@@ -47,9 +47,8 @@ class DNPUArchitecture(nn.Module):
     def current_to_voltage(self, x, std):
         # Pass it through output layer and clip it to two times the standard deviation
         cut = 2 * std
-        voltage = torch.tensor(1.8 / (4 * std)) * self.clip(x, cut) + self.conversion_offset
+        return torch.tensor(1.8 / (4 * std)) * self.clip(x, cut) + self.conversion_offset
         # torch.save(voltage,'voltage.pt')
-        return voltage
 
     def clip(self, x, clipping_value):
         return torch.clamp(x, min=-clipping_value, max=clipping_value)
