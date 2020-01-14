@@ -15,7 +15,7 @@ class ArchitectureProcessor():
         self.configs = configs
         self.processor = get_processor(configs)
         self.clipping_value = configs['waveform']['output_clipping_value'] * self.get_amplification_value()
-        self.conversion_offset = configs['conversion']
+        self.conversion_offset = configs['current_to_voltage']['offset']
         self.control_voltage_indices = get_control_voltage_indices(configs['input_indices'], configs['input_electrode_no'])
 
     def clip(self, x, cut_min, cut_max):
@@ -35,13 +35,12 @@ class ArchitectureProcessor():
     #     return h.numpy()
 
     def batch_norm(self, x, mean, var):
-        std = np.sqrt(np.var(x) + 1e-05)
-        return (x - np.mean(x)) / std, std
+        # return (x - np.mean(x)) / np.sqrt(np.var(x) + 1e-05)
+        return (x - mean) / np.sqrt(var + 1e-05)
 
     def current_to_voltage(self, x, std):
         cut = 2 * std
         return (1.8 / (4 * std)) * self.clip(x, cut_min=-cut, cut_max=cut) + self.conversion_offset
-        
 
     def get_amplification_value(self):
         return self.processor.get_amplification_value()
@@ -110,12 +109,6 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         super().__init__(configs)
         self.input_indices = self.get_input_indices(configs['input_indices'])
         self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'] * 5)
-        if configs['batch_norm']:
-            self.process_layer1 = self.process_layer1_batch_norm
-            self.process_layer2 = self.process_layer2_batch_norm
-        else:
-            self.process_layer1 = self.process_layer1_alone
-            self.process_layer2 = self.process_layer2_alone
 
     def get_input_indices(self, input_indices):
         result = np.zeros(len(input_indices) * 5, dtype=int)
@@ -136,19 +129,19 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         x1 = self.processor.get_output(x[:, 0:7])
         x2 = self.processor.get_output(x[:, 7:14])
 
-        np.save('layer_1_output_1', x1)
-        np.save('layer_1_output_2', x2)
-        x = self.process_layer1(x, x1, x2)
-        np.save('layer_1_output_processed', x)
+        bnx1, bnx2 = self.process_layer(x1, x2, self.bn1, 1)
+
+        x[:, 14 + self.configs['input_indices'][0]] = bnx1
+        x[:, 14 + self.configs['input_indices'][1]] = bnx2
+        x[:, 21 + self.configs['input_indices'][0]] = bnx1
+        x[:, 21 + self.configs['input_indices'][1]] = bnx2
+
         h1 = self.processor.get_output(x[:, 14:21])
         h2 = self.processor.get_output(x[:, 21:28])
 
-        np.save('layer_2_output_1', h1)
-        np.save('layer_2_output_2', h2)
-
-        x = self.process_layer2(x, h1, h2)
-        np.save('layer_2_output_processed', x)
-        self.control_voltages = self.get_control_voltages(x)
+        bnx1, bnx2 = self.process_layer(h1, h2, self.bn2, 2)
+        x[:, 28 + self.configs['input_indices'][0]] = bnx1
+        x[:, 28 + self.configs['input_indices'][1]] = bnx2
 
         return self.processor.get_output(x[:, 28:])
 
@@ -156,54 +149,40 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         self.mask = mask
         self.plato_indices = np.arange(len(mask))[mask]
         slopped_plato = generate_slopped_plato(
-        self.configs['waveform']['slope_lengths'], self.configs['shape'])[np.newaxis, :]
+            self.configs['waveform']['slope_lengths'], self.configs['shape'])[np.newaxis, :]
         control_voltages = slopped_plato * self.control_voltages[:, np.newaxis]
         x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages.T, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset, amplitudes=self.configs['waveform']['amplitude_lengths'], slopes=self.configs['waveform']['slope_lengths'])
         return self.get_output(x)
 
-    def process_layer1_alone(self, x, x1, x2):
-        # x[:, 14 + self.configs['input_indices'][0]] = self.current_to_voltage(self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
-        # x[:, 14 + self.configs['input_indices'][1]] = self.current_to_voltage(self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
-        # x[:, 21 + self.configs['input_indices'][0]] = self.current_to_voltage(self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
-        # x[:, 21 + self.configs['input_indices'][1]] = self.current_to_voltage(self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
-        return x
-
-    def process_layer1_batch_norm(self, x, x1, x2):
+    def process_layer(self, x1, x2, bn, layer):
         # The input has been already scaled and offsetted
-
+        np.save('device_layer_' + str(layer) + '_output_1', x1[:, 0])
+        np.save('device_layer_' + str(layer) + '_output_2', x2[:, 0])
         # Clip current
         x1 = self.clip(x1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
         x2 = self.clip(x2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        np.save('bn_afterclip_1_1', x1)
-        np.save('bn_afterclip_1_2', x2)
+        np.save('bn_afterclip_' + str(layer) + '_1', x1[:, 0])
+        np.save('bn_afterclip_' + str(layer) + '_2', x2[:, 0])
         # Batch normalisation
-        bnx1, std1 = self.batch_norm(x1[self.mask], self.bn1['mean'][0], self.bn1['var'][0])
-        bnx2, std2 = self.batch_norm(x2[self.mask], self.bn1['mean'][1], self.bn1['var'][1])
+        bnx1 = self.batch_norm(x1[self.mask], bn['mean'][0], bn['var'][0])
+        bnx2 = self.batch_norm(x2[self.mask], bn['mean'][1], bn['var'][1])
 
-        bnx1 = bnx1[:,0]
-        bnx2 = bnx2[:,0]
+        bnx1 = bnx1[:, 0]
+        bnx2 = bnx2[:, 0]
 
-        np.save('bn_afterbatch_1', bnx1)
-        np.save('bn_afterbatch_2', bnx2)
+        np.save('bn_afterbatch_' + str(layer) + '_1', bnx1)
+        np.save('bn_afterbatch_' + str(layer) + '_2', bnx2)
         # Get mean of platos and create waveform back
-        bnx1 = self.current_to_voltage(bnx1, std1)
-        bnx2 = self.current_to_voltage(bnx2, std2)
-
-        np.save('bn_aftercv_1_1', bnx1)
-        np.save('bn_aftercv_1_2', bnx2)
+        bnx1 = self.current_to_voltage(bnx1, np.sqrt(bn['var'][0]))
+        bnx2 = self.current_to_voltage(bnx2, np.sqrt(bn['var'][1]))
 
         bnx1 = self.process_batch_norm(bnx1)
         bnx2 = self.process_batch_norm(bnx2)
 
-        # Convert from current to voltage, clip voltage, and save into corresponding indices
-        x[:, 14 + self.configs['input_indices'][0]] = bnx1
-        x[:, 14 + self.configs['input_indices'][1]] = bnx2
-        x[:, 21 + self.configs['input_indices'][0]] = bnx1
-        x[:, 21 + self.configs['input_indices'][1]] = bnx2
+        np.save('bn_aftercv_' + str(layer) + '_1', bnx1)
+        np.save('bn_aftercv_' + str(layer) + '_2', bnx2)
 
-
-
-        return x
+        return bnx1, bnx2
 
     def process_batch_norm(self, bnx):
         i = 0
@@ -213,40 +192,6 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
             amplitudes = np.append(amplitudes, np.mean(aux))
             i += self.configs['waveform']['amplitude_lengths']
         return generate_waveform(amplitudes, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
-
-    def process_layer2_alone(self, x, x1, x2):
-        # x[:, 28 + self.configs['input_indices'][0]] = self.current_to_voltage(self.clip(x1[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
-        # x[:, 28 + self.configs['input_indices'][1]] = self.current_to_voltage(self.clip(x2[:, 0], cut_min=-self.clipping_value, cut_max=self.clipping_value))
-        return x
-
-    def process_layer2_batch_norm(self, x, x1, x2):
-        # Clip current
-        x1 = self.clip(x1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        x2 = self.clip(x2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-
-        np.save('bn_afterclip_2_1', x1)
-        np.save('bn_afterclip_2_2', x2)
-
-        # Batch normalisation
-        bnx1, std1 = self.batch_norm(x1[self.mask], self.bn2['mean'][0], self.bn2['var'][0])
-        bnx2, std2 = self.batch_norm(x2[self.mask], self.bn2['mean'][1], self.bn2['var'][1])
-
-        bnx1 = bnx1[:,0]
-        bnx2 = bnx2[:,0]
-        
-        # Convert from current to voltage, clip voltage, and save into corresponding indices
-        bnx1 = self.current_to_voltage(bnx1, std1)
-        bnx2 = self.current_to_voltage(bnx2, std2)
-       
-        np.save('bn_aftercv_2_1', bnx1)
-        np.save('bn_aftercv_2_2', bnx1)
-
-         # Get mean of platos and create waveform back
-        
-        x[:, 28 + self.configs['input_indices'][0]] = self.process_batch_norm(bnx1)
-        x[:, 28 + self.configs['input_indices'][1]] = self.process_batch_norm(bnx2)
-
-        return x
 
     def set_batch_normalistaion_values(self, state_dict):
         self.bn1 = {}
