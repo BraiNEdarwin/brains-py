@@ -3,6 +3,7 @@ DNPU based network of devices to solve complex tasks 25/10/2019
 '''
 
 import torch
+import os
 import numpy as np
 import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
@@ -136,6 +137,7 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.init_clipping_values(configs['waveform']['output_clipping_value'])
         self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
         self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
+        self.output_path = 'tmp'
 
     def init_model(self, configs):
         self.input_node1 = get_processor(configs)  # DNPU(in_dict['input_node1'], path=path)
@@ -157,7 +159,7 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
 
         # Scale and offset
         x = (self.scale * x) + self.offset
-        torch.save(x, 'raw_input.pt')
+        torch.save(x, os.path.join(self.output_path, 'raw_input.pt'))
         # Clipping and passing data to the first layer
         x = self.process_layer(self.input_node1(x), self.input_node2(x), self.bn1, self.input_node1_clipping_value, self.input_node2_clipping_value, 1)
         x = self.process_layer(self.hidden_node1(x), self.hidden_node2(x), self.bn2, self.hidden_node1_clipping_value, self.hidden_node2_clipping_value, 2)
@@ -171,22 +173,22 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         return control_penalty + self.offset_penalty() + self.scale_penalty()
 
     def process_layer(self, x1, x2, bn, clipping_value_1, clipping_value_2, i):
-        torch.save(x1[:, 0], 'device_layer_' + str(i) + '_output_1.pt')
-        torch.save(x2[:, 0], 'device_layer_' + str(i) + '_output_2.pt')
+        torch.save(x1[:, 0], os.path.join(self.output_path, 'device_layer_' + str(i) + '_output_1.pt'))
+        torch.save(x2[:, 0], os.path.join(self.output_path, 'device_layer_' + str(i) + '_output_2.pt'))
         # Clip values at 400
         x1 = self.clip(x1, clipping_value=clipping_value_1)
         x2 = self.clip(x2, clipping_value=clipping_value_2)
-        torch.save(x1[:, 0], 'bn_afterclip_' + str(i) + '_1.pt')
-        torch.save(x2[:, 0], 'bn_afterclip_' + str(i) + '_2.pt')
+        torch.save(x1[:, 0], os.path.join(self.output_path, 'bn_afterclip_' + str(i) + '_1.pt'))
+        torch.save(x2[:, 0], os.path.join(self.output_path, 'bn_afterclip_' + str(i) + '_2.pt'))
 
         bnx, std = self.batch_norm(bn, x1, x2)
-        torch.save(bnx[:, 0], f'bn_afterbatch_' + str(i) + '_1.pt')
-        torch.save(bnx[:, 1], f'bn_afterbatch_' + str(i) + '_2.pt')
+        torch.save(bnx[:, 0], os.path.join(self.output_path, f'bn_afterbatch_' + str(i) + '_1.pt'))
+        torch.save(bnx[:, 1], os.path.join(self.output_path, f'bn_afterbatch_' + str(i) + '_2.pt'))
 
         bnx_0 = self.current_to_voltage(bnx[:, 0], std[0])
         bnx_1 = self.current_to_voltage(bnx[:, 1], std[1])
-        torch.save(bnx_0, f'bn_aftercv_' + str(i) + '_1.pt')
-        torch.save(bnx_1, f'bn_aftercv_' + str(i) + '_2.pt')
+        torch.save(bnx_0, os.path.join(self.output_path, f'bn_aftercv_' + str(i) + '_1.pt'))
+        torch.save(bnx_1, os.path.join(self.output_path, f'bn_aftercv_' + str(i) + '_2.pt'))
         return torch.cat((bnx_0[:, None], bnx_1[:, None]), dim=1)
 
     def get_control_voltages(self):

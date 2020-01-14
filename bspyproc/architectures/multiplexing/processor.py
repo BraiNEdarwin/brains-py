@@ -2,6 +2,7 @@
 # import torch
 # import torch.nn as nn
 import numpy as np
+import os
 from bspyproc.processors.processor_mgr import get_processor
 from bspyproc.utils.waveform import generate_waveform
 # from bspyproc.utils.pytorch import TorchUtils
@@ -17,6 +18,7 @@ class ArchitectureProcessor():
         self.clipping_value = configs['waveform']['output_clipping_value'] * self.get_amplification_value()
         self.conversion_offset = configs['current_to_voltage']['offset']
         self.control_voltage_indices = get_control_voltage_indices(configs['input_indices'], configs['input_electrode_no'])
+        self.output_path = 'tmp'
 
     def clip(self, x, cut_min, cut_max):
         x[x > cut_max] = cut_max
@@ -125,7 +127,7 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         return result
 
     def get_output(self, x):
-        np.save('raw_input', x)
+        np.save(os.path.join(self.output_path, 'raw_input'), x)
         x1 = self.processor.get_output(x[:, 0:7])
         x2 = self.processor.get_output(x[:, 7:14])
 
@@ -156,13 +158,13 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
     def process_layer(self, x1, x2, bn, layer):
         # The input has been already scaled and offsetted
-        np.save('device_layer_' + str(layer) + '_output_1', x1[:, 0])
-        np.save('device_layer_' + str(layer) + '_output_2', x2[:, 0])
+        np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_1'), x1[:, 0])
+        np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_2'), x2[:, 0])
         # Clip current
         x1 = self.clip(x1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
         x2 = self.clip(x2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        np.save('bn_afterclip_' + str(layer) + '_1', x1[:, 0])
-        np.save('bn_afterclip_' + str(layer) + '_2', x2[:, 0])
+        np.save(os.path.join(self.output_path, 'bn_afterclip_' + str(layer) + '_1'), x1[:, 0])
+        np.save(os.path.join(self.output_path, 'bn_afterclip_' + str(layer) + '_2'), x2[:, 0])
         # Batch normalisation
         bnx1 = self.batch_norm(x1[self.mask], bn['mean'][0], bn['var'][0])
         bnx2 = self.batch_norm(x2[self.mask], bn['mean'][1], bn['var'][1])
@@ -170,8 +172,8 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         bnx1 = bnx1[:, 0]
         bnx2 = bnx2[:, 0]
 
-        np.save('bn_afterbatch_' + str(layer) + '_1', bnx1)
-        np.save('bn_afterbatch_' + str(layer) + '_2', bnx2)
+        np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_1'), bnx1)
+        np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_2'), bnx2)
         # Get mean of platos and create waveform back
         bnx1 = self.current_to_voltage(bnx1, np.sqrt(bn['var'][0]))
         bnx2 = self.current_to_voltage(bnx2, np.sqrt(bn['var'][1]))
@@ -179,8 +181,8 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         bnx1 = self.process_batch_norm(bnx1)
         bnx2 = self.process_batch_norm(bnx2)
 
-        np.save('bn_aftercv_' + str(layer) + '_1', bnx1)
-        np.save('bn_aftercv_' + str(layer) + '_2', bnx2)
+        np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_1'), bnx1)
+        np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_2'), bnx2)
 
         return bnx1, bnx2
 
