@@ -160,6 +160,7 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         # Scale and offset
         x = (self.scale * x) + self.offset
         torch.save(x, os.path.join(self.output_path, 'raw_input.pt'))
+
         # Clipping and passing data to the first layer
         x = self.process_layer(self.input_node1(x), self.input_node2(x), self.bn1, self.input_node1_clipping_value, self.input_node2_clipping_value, 1)
         x = self.process_layer(self.hidden_node1(x), self.hidden_node2(x), self.bn2, self.hidden_node1_clipping_value, self.hidden_node2_clipping_value, 2)
@@ -175,6 +176,7 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
     def process_layer(self, x1, x2, bn, clipping_value_1, clipping_value_2, i):
         torch.save(x1[:, 0], os.path.join(self.output_path, 'device_layer_' + str(i) + '_output_1.pt'))
         torch.save(x2[:, 0], os.path.join(self.output_path, 'device_layer_' + str(i) + '_output_2.pt'))
+
         # Clip values at 400
         x1 = self.clip(x1, clipping_value=clipping_value_1)
         x2 = self.clip(x2, clipping_value=clipping_value_2)
@@ -185,11 +187,12 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         torch.save(bnx[:, 0], os.path.join(self.output_path, f'bn_afterbatch_' + str(i) + '_1.pt'))
         torch.save(bnx[:, 1], os.path.join(self.output_path, f'bn_afterbatch_' + str(i) + '_2.pt'))
 
-        bnx_0 = self.current_to_voltage(bnx[:, 0], std[0])
-        bnx_1 = self.current_to_voltage(bnx[:, 1], std[1])
-        torch.save(bnx_0, os.path.join(self.output_path, f'bn_aftercv_' + str(i) + '_1.pt'))
-        torch.save(bnx_1, os.path.join(self.output_path, f'bn_aftercv_' + str(i) + '_2.pt'))
-        return torch.cat((bnx_0[:, None], bnx_1[:, None]), dim=1)
+        bnx1 = self.current_to_voltage(bnx[:, 0], std[0])
+        bnx2 = self.current_to_voltage(bnx[:, 1], std[1])
+
+        torch.save(bnx1, os.path.join(self.output_path, f'bn_aftercv_' + str(i) + '_1.pt'))
+        torch.save(bnx2, os.path.join(self.output_path, f'bn_aftercv_' + str(i) + '_2.pt'))
+        return torch.cat((bnx1[:, None], bnx2[:, None]), dim=1)
 
     def get_control_voltages(self):
         w1 = next(self.input_node1.parameters()).detach()[0, :]

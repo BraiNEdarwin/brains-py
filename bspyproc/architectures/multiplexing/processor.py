@@ -8,7 +8,7 @@ from bspyproc.utils.waveform import generate_waveform
 # from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_architecture
 from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.waveform import generate_slopped_plato, generate_waveform
+from bspyproc.utils.waveform import generate_slopped_plato, generate_waveform, generate_waveform_from_masked_data
 
 
 class ArchitectureProcessor():
@@ -150,50 +150,37 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
     def get_output_(self, inputs, mask):
         self.mask = mask
         self.plato_indices = np.arange(len(mask))[mask]
-        slopped_plato = generate_slopped_plato(
-            self.configs['waveform']['slope_lengths'], self.configs['shape'])[np.newaxis, :]
-        control_voltages = slopped_plato * self.control_voltages[:, np.newaxis]
-        x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages.T, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset, amplitudes=self.configs['waveform']['amplitude_lengths'], slopes=self.configs['waveform']['slope_lengths'])
+        control_voltages = np.linspace(self.control_voltages, self.control_voltages, inputs.shape[0])
+
+        x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset, amplitudes=self.configs['waveform']['amplitude_lengths'], slopes=self.configs['waveform']['slope_lengths'])
         return self.get_output(x)
 
     def process_layer(self, x1, x2, bn, layer):
         # The input has been already scaled and offsetted
         np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_1'), x1[:, 0])
         np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_2'), x2[:, 0])
+
         # Clip current
         x1 = self.clip(x1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
         x2 = self.clip(x2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
         np.save(os.path.join(self.output_path, 'bn_afterclip_' + str(layer) + '_1'), x1[:, 0])
         np.save(os.path.join(self.output_path, 'bn_afterclip_' + str(layer) + '_2'), x2[:, 0])
+
         # Batch normalisation
         bnx1 = self.batch_norm(x1[self.mask], bn['mean'][0], bn['var'][0])
         bnx2 = self.batch_norm(x2[self.mask], bn['mean'][1], bn['var'][1])
 
-        bnx1 = bnx1[:, 0]
-        bnx2 = bnx2[:, 0]
-
-        np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_1'), bnx1)
-        np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_2'), bnx2)
-        # Get mean of platos and create waveform back
+        # Transform current to voltage
         bnx1 = self.current_to_voltage(bnx1, np.sqrt(bn['var'][0]))
         bnx2 = self.current_to_voltage(bnx2, np.sqrt(bn['var'][1]))
 
-        bnx1 = self.process_batch_norm(bnx1)
-        bnx2 = self.process_batch_norm(bnx2)
+        bnx1 = generate_waveform_from_masked_data(bnx1[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+        bnx2 = generate_waveform_from_masked_data(bnx2[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
 
         np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_1'), bnx1)
         np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_2'), bnx2)
 
         return bnx1, bnx2
-
-    def process_batch_norm(self, bnx):
-        i = 0
-        amplitudes = np.array([])
-        while i < len(bnx):
-            aux = bnx[i:i + self.configs['waveform']['amplitude_lengths']]
-            amplitudes = np.append(amplitudes, np.mean(aux))
-            i += self.configs['waveform']['amplitude_lengths']
-        return generate_waveform(amplitudes, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
 
     def set_batch_normalistaion_values(self, state_dict):
         self.bn1 = {}
