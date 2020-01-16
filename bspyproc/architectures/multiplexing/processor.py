@@ -129,20 +129,25 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
     def get_output(self, x):
         np.save(os.path.join(self.output_path, 'raw_input'), x)
         x1 = self.processor.get_output(x[:, 0:7])
-        x2 = self.processor.get_output(x[:, 7:14])
 
-        bnx1, bnx2 = self.process_layer(x1, x2, self.bn1, 1)
-
+        bnx1 = self.process_layer(x1, self.bn1, 1, 0)
         x[:, 14 + self.configs['input_indices'][0]] = bnx1
-        x[:, 14 + self.configs['input_indices'][1]] = bnx2
         x[:, 21 + self.configs['input_indices'][0]] = bnx1
+
+        x2 = self.processor.get_output(x[:, 7:14])
+        bnx2 = self.process_layer(x2, self.bn1, 1, 1)
+        # bnx1, bnx2 = self.process_layer(x1, x2, self.bn1, 1)
+
+        x[:, 14 + self.configs['input_indices'][1]] = bnx2
         x[:, 21 + self.configs['input_indices'][1]] = bnx2
 
         h1 = self.processor.get_output(x[:, 14:21])
-        h2 = self.processor.get_output(x[:, 21:28])
-
-        bnx1, bnx2 = self.process_layer(h1, h2, self.bn2, 2)
+        bnx1 = self.process_layer(h1, self.bn2, 2, 0)
         x[:, 28 + self.configs['input_indices'][0]] = bnx1
+        # bnx1, bnx2 = self.process_layer(h1, h2, self.bn2, 2)
+
+        h2 = self.processor.get_output(x[:, 21:28])
+        bnx2 = self.process_layer(h2, self.bn2, 2, 1)
         x[:, 28 + self.configs['input_indices'][1]] = bnx2
 
         return self.processor.get_output(x[:, 28:])
@@ -155,34 +160,60 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset, amplitudes=self.configs['waveform']['amplitude_lengths'], slopes=self.configs['waveform']['slope_lengths'])
         return self.get_output(x)
 
-    def process_layer(self, x1, x2, bn, layer):
+    def process_layer(self, x, bn, layer, device):
         # The input has been already scaled and offsetted
-        np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_1'), x1[:, 0])
-        np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_2'), x2[:, 0])
+        np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_' + str(device)), x[:, 0])
 
         # Clip current
-        x1 = self.clip(x1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        x2 = self.clip(x2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        np.save(os.path.join(self.output_path, 'bn_afterclip_' + str(layer) + '_1'), x1[:, 0])
-        np.save(os.path.join(self.output_path, 'bn_afterclip_' + str(layer) + '_2'), x2[:, 0])
+        x = self.clip(x, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+        np.save(os.path.join(self.output_path, 'bn_afterclip_' + str(layer) + '_' + str(device)), x[:, 0])
 
         # Batch normalisation
-        bnx1 = self.batch_norm(x1[self.mask], bn['mean'][0], bn['var'][0])
-        bnx2 = self.batch_norm(x2[self.mask], bn['mean'][1], bn['var'][1])
+        bnx = self.batch_norm(x[self.mask], bn['mean'][device], bn['var'][device])
+        # bnx2 = self.batch_norm(x2[self.mask], bn['mean'][1], bn['var'][1])
 
-        np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_1'), generate_waveform_from_masked_data(bnx1[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths']))
-        np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_2'), generate_waveform_from_masked_data(bnx2[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths']))
+        np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_' + str(device)), generate_waveform_from_masked_data(bnx[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths']))
+        # np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_2'), generate_waveform_from_masked_data(bnx2[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths']))
         # Transform current to voltage
-        bnx1 = self.current_to_voltage(bnx1, np.sqrt(bn['var'][0]))
-        bnx2 = self.current_to_voltage(bnx2, np.sqrt(bn['var'][1]))
+        bnx = self.current_to_voltage(bnx, np.sqrt(bn['var'][device]))
+        # bnx2 = self.current_to_voltage(bnx2, np.sqrt(bn['var'][1]))
 
-        bnx1 = generate_waveform_from_masked_data(bnx1[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
-        bnx2 = generate_waveform_from_masked_data(bnx2[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+        bnx = generate_waveform_from_masked_data(bnx[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+        # bnx2 = generate_waveform_from_masked_data(bnx2[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
 
-        np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_1'), bnx1)
-        np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_2'), bnx2)
+        np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_' + str(device)), bnx)
+        # np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_2'), bnx2)
 
-        return bnx1, bnx2
+        return bnx
+
+    # def process_layer(self, x1, x2, bn, layer):
+    #     # The input has been already scaled and offsetted
+    #     np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_1'), x1[:, 0])
+    #     np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_2'), x2[:, 0])
+
+    #     # Clip current
+    #     x1 = self.clip(x1, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+    #     x2 = self.clip(x2, cut_min=-self.clipping_value, cut_max=self.clipping_value)
+    #     np.save(os.path.join(self.output_path, 'bn_afterclip_' + str(layer) + '_1'), x1[:, 0])
+    #     np.save(os.path.join(self.output_path, 'bn_afterclip_' + str(layer) + '_2'), x2[:, 0])
+
+    #     # Batch normalisation
+    #     bnx1 = self.batch_norm(x1[self.mask], bn['mean'][0], bn['var'][0])
+    #     bnx2 = self.batch_norm(x2[self.mask], bn['mean'][1], bn['var'][1])
+
+    #     np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_1'), generate_waveform_from_masked_data(bnx1[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths']))
+    #     np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_2'), generate_waveform_from_masked_data(bnx2[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths']))
+    #     # Transform current to voltage
+    #     bnx1 = self.current_to_voltage(bnx1, np.sqrt(bn['var'][0]))
+    #     bnx2 = self.current_to_voltage(bnx2, np.sqrt(bn['var'][1]))
+
+    #     bnx1 = generate_waveform_from_masked_data(bnx1[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+    #     bnx2 = generate_waveform_from_masked_data(bnx2[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+
+    #     np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_1'), bnx1)
+    #     np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_2'), bnx2)
+
+    #     return bnx1, bnx2
 
     def set_batch_normalistaion_values(self, state_dict):
         self.bn1 = {}
