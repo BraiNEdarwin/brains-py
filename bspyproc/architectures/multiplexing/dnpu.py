@@ -156,7 +156,6 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.output_node_clipping_value = base_clipping_value * self.output_node.get_amplification_value()
 
     def forward(self, x):
-
         # Scale and offset
         x = (self.scale * x) + self.offset
         torch.save(x, os.path.join(self.output_path, 'raw_input.pt'))
@@ -194,24 +193,6 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         torch.save(bnx2, os.path.join(self.output_path, f'bn_aftercv_' + str(i) + '_1.pt'))
         return torch.cat((bnx1[:, None], bnx2[:, None]), dim=1)
 
-    def get_control_voltages(self):
-        w1 = next(self.input_node1.parameters()).detach()[0, :]
-        w2 = next(self.input_node2.parameters()).detach()[0, :]
-        w3 = next(self.hidden_node1.parameters()).detach()[0, :]
-        w4 = next(self.hidden_node2.parameters()).detach()[0, :]
-        w5 = next(self.output_node.parameters()).detach()[0, :]
-        return torch.stack([w1, w2, w3, w4, w5])
-
-    def set_bn_dict(self, bn_dict):
-        self.bn1.load_state_dict(bn_dict['bn_1'])
-        self.bn2.load_state_dict(bn_dict['bn_2'])
-
-    def get_bn_dict(self):
-        bn_dict = {'bn_1': {}, 'bn_2': {}}
-        bn_dict['bn_1'] = self.bn1.state_dict()
-        bn_dict['bn_2'] = self.bn2.state_dict()
-        return bn_dict
-
     def reset(self):
         # This function needs to be checked
         self.input_node1.reset()
@@ -224,48 +205,3 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         if self.configs['batch_norm']:
             self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
             self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
-
-    def get_scale(self):
-        return TorchUtils.get_numpy_from_tensor(self.scale.detach())
-
-    def get_offset(self):
-        return TorchUtils.get_numpy_from_tensor(self.offset.detach())
-
-    def initialise_parameters(self, control_voltages, bn_stats, scale, offset):
-        self.set_control_voltages(control_voltages)
-        self.set_scale_and_offset(scale, offset)
-        self.set_bn_dict(bn_stats)
-
-    def set_scale_and_offset(self, scale, offset):
-        state_dict = self.state_dict()
-        state_dict['scale'] = TorchUtils.get_tensor_from_numpy(scale)
-        state_dict['offset'] = TorchUtils.get_tensor_from_numpy(offset)
-        self.load_state_dict(state_dict)
-
-    def set_control_voltages(self, control_voltages):
-        state_dict = self.state_dict()
-        state_dict['input_node1.bias'] = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 0:5])
-        state_dict['input_node2.bias'] = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 5:10])
-        state_dict['hidden_node1.bias'] = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 10:15])
-        state_dict['hidden_node2.bias'] = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 15:20])
-        state_dict['output_node.bias'] = TorchUtils.get_tensor_from_numpy(control_voltages[np.newaxis, 20:25])
-        self.load_state_dict(state_dict)
-
-
-if __name__ == '__main__':
-
-    from bspyalgo.utils.io import load_configs
-    import matplotlib.pyplot as plt
-
-    config_path = 'configs/configs_dnpu21.json'
-    CONFIGS = load_configs(config_path)
-    dnpu_221 = TwoToTwoToOneDNPU(CONFIGS)
-
-    INPUTS = TorchUtils.get_tensor_from_numpy(np.random.rand(1000, 2))
-    OUTPUS = dnpu_221(INPUTS)
-
-    bn_statistics = dnpu_221.get_bn_statistics()
-    print(bn_statistics)
-
-    plt.hist(OUTPUS.cpu().detach().numpy())
-    plt.show()
