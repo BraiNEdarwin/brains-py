@@ -105,13 +105,18 @@ def generate_mask(amplitudes, amplitude_lengths, slope_lengths=0, safety_formatt
 
 
 def generate_waveform_from_masked_data(x, amplitude_lengths, slope_lengths):
+    amplitudes = remove_unmasked_platos(x, amplitude_lengths)
+    return generate_waveform(amplitudes, amplitude_lengths, slope_lengths)
+
+
+def remove_unmasked_platos(x, amplitude_lengths):
     i = 0
     amplitudes = np.array([])
     while i < len(x):
         aux = x[i:i + amplitude_lengths]
         amplitudes = np.append(amplitudes, np.mean(aux))
         i += amplitude_lengths
-    return generate_waveform(amplitudes, amplitude_lengths, slope_lengths)
+    return amplitudes
 
 
 def generate_slopped_plato(slope_length, total_length, value=1):
