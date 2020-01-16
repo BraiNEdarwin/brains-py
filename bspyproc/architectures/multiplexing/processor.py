@@ -37,8 +37,8 @@ class ArchitectureProcessor():
     #     return h.numpy()
 
     def batch_norm(self, x, mean, var):
-        # return (x - np.mean(x)) / np.sqrt(np.var(x) + 1e-05)
-        return (x - mean) / np.sqrt(var + 1e-05)
+        return (x - np.mean(x)) / np.sqrt(np.var(x) + 1e-05)
+        # return (x - mean) / np.sqrt(var + 1e-05)
 
     def current_to_voltage(self, x, std):
         cut = 2 * std
@@ -170,6 +170,8 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         bnx1 = self.batch_norm(x1[self.mask], bn['mean'][0], bn['var'][0])
         bnx2 = self.batch_norm(x2[self.mask], bn['mean'][1], bn['var'][1])
 
+        np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_1'), generate_waveform_from_masked_data(bnx1[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths']))
+        np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_2'), generate_waveform_from_masked_data(bnx2[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths']))
         # Transform current to voltage
         bnx1 = self.current_to_voltage(bnx1, np.sqrt(bn['var'][0]))
         bnx2 = self.current_to_voltage(bnx2, np.sqrt(bn['var'][1]))
