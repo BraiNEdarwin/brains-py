@@ -27,7 +27,10 @@ def format_amplitudes_and_slopes(amplitudes_input, amplitude_lengths_input, slop
 def safety_format(amplitudes, safety_formatting):
     if safety_formatting is True:
         # amplitudes = np.insert(amplitudes, 0, 0, axis=0)
-        amplitudes = np.insert(amplitudes, amplitudes.shape[0], 0, axis=0)
+        if type(amplitudes) is list:
+            amplitudes.append(0)
+        else:
+            amplitudes = np.insert(amplitudes, amplitudes.shape[0], 0, axis=0)
     else:
         warnings.warn('WARNING: Safety formatting is not enabled. This can make the boron-doped silicon device unusable. ')
     return amplitudes
