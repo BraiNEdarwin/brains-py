@@ -72,7 +72,7 @@ class DNPU(TorchModel):
 
     def reset(self):
         for k in range(len(self.control_low)):
-            print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
+            # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
             self.bias.data[:, k].uniform_(self.control_low[k], self.control_high[k])
 
     def get_control_voltages(self):
