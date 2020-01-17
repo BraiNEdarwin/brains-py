@@ -3,6 +3,7 @@ DNPU based network of devices to solve complex tasks 25/10/2019
 '''
 
 import torch
+import os
 import numpy as np
 import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
@@ -16,7 +17,7 @@ class DNPUArchitecture(nn.Module):
         # conversion offset = -0.6
         super().__init__()
         self.configs = configs
-        self.conversion_offset = torch.tensor(configs['offset']['conversion'])
+        self.conversion_offset = torch.tensor(configs['current_to_voltage']['offset'])
         self.offset = self.init_offset(configs['offset']['min'], configs['offset']['max'])
         self.scale = self.init_scale(configs['scale']['min'], configs['scale']['max'])
 
@@ -134,14 +135,9 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         super().__init__(configs)
         self.init_model(configs)
         self.init_clipping_values(configs['waveform']['output_clipping_value'])
-        if configs['batch_norm']:
-            self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
-            self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
-            self.process_layer1 = self.process_layer1_batch_norm
-            self.process_layer2 = self.process_layer2_batch_norm
-        else:
-            self.process_layer1 = self.process_layer1_alone
-            self.process_layer2 = self.process_layer2_alone
+        self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
+        self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
+        self.output_path = 'tmp'
 
     def init_model(self, configs):
         self.input_node1 = get_processor(configs)  # DNPU(in_dict['input_node1'], path=path)
@@ -163,22 +159,11 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
 
         # Scale and offset
         x = (self.scale * x) + self.offset
-        torch.save(x, 'raw_input.pt')
+        torch.save(x, os.path.join(self.output_path, 'raw_input.pt'))
         # Clipping and passing data to the first layer
-        x1 = self.input_node1(x)
-        x2 = self.input_node2(x)
+        x = self.process_layer(self.input_node1(x), self.input_node2(x), self.bn1, self.input_node1_clipping_value, self.input_node2_clipping_value, 1)
+        x = self.process_layer(self.hidden_node1(x), self.hidden_node2(x), self.bn2, self.hidden_node1_clipping_value, self.hidden_node2_clipping_value, 2)
 
-        torch.save(x1, 'layer_1_output_1.pt')
-        torch.save(x2, 'layer_1_output_2.pt')
-        x = self.process_layer1(x, x1, x2)
-
-        torch.save(x, 'layer_1_output_processed.pt')
-        h1 = self.hidden_node1(x)
-        h2 = self.hidden_node2(x)
-        torch.save(h1, 'layer_2_output_1.pt')
-        torch.save(h2, 'layer_2_output_2.pt')
-        x = self.process_layer2(x, h1, h2)
-        torch.save(x, 'layer_2_output_processed.pt')
         return self.output_node(x)
 
     def regularizer(self):
@@ -187,48 +172,24 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
             + self.output_node.regularizer()
         return control_penalty + self.offset_penalty() + self.scale_penalty()
 
-    def process_layer1_alone(self, x, x1, x2):
-        x[:, 0] = self.clip(x1[:, 0], self.input_node1_clipping_value)
-        x[:, 1] = self.clip(x2[:, 0], self.input_node2_clipping_value)
-        return x
-
-    def process_layer1_batch_norm(self, x, x1, x2):
+    def process_layer(self, x1, x2, bn, clipping_value_1, clipping_value_2, i):
+        torch.save(x1[:, 0], os.path.join(self.output_path, 'device_layer_' + str(i) + '_output_1.pt'))
+        torch.save(x2[:, 0], os.path.join(self.output_path, 'device_layer_' + str(i) + '_output_2.pt'))
         # Clip values at 400
-        x1 = self.clip(x1, clipping_value=self.input_node1_clipping_value)
-        x2 = self.clip(x2, clipping_value=self.input_node2_clipping_value)
-        torch.save(x1, 'bn_afterclip_1_1.pt')
-        torch.save(x2, 'bn_afterclip_1_2.pt')
+        x1 = self.clip(x1, clipping_value=clipping_value_1)
+        x2 = self.clip(x2, clipping_value=clipping_value_2)
+        torch.save(x1[:, 0], os.path.join(self.output_path, 'bn_afterclip_' + str(i) + '_1.pt'))
+        torch.save(x2[:, 0], os.path.join(self.output_path, 'bn_afterclip_' + str(i) + '_2.pt'))
 
-        bnx, std = self.batch_norm(self.bn1, x1, x2)
-        torch.save(bnx, f'bn_afterbatch_1.pt')
+        bnx, std = self.batch_norm(bn, x1, x2)
+        torch.save(bnx[:, 0], os.path.join(self.output_path, f'bn_afterbatch_' + str(i) + '_1.pt'))
+        torch.save(bnx[:, 1], os.path.join(self.output_path, f'bn_afterbatch_' + str(i) + '_2.pt'))
+
         bnx_0 = self.current_to_voltage(bnx[:, 0], std[0])
         bnx_1 = self.current_to_voltage(bnx[:, 1], std[1])
-        bnx = torch.cat((bnx_0[:, None], bnx_1[:, None]), dim=1)
-        torch.save(bnx, f'bn_aftercv_1.pt')
-        return bnx
-
-    def process_layer2_alone(self, x, x1, x2):
-        x[:, 0] = self.clip(x1[:, 0], self.hidden_node1_clipping_value)
-        x[:, 1] = self.clip(x2[:, 0], self.hidden_node2_clipping_value)
-        return x
-
-    def process_layer2_batch_norm(self, x, x1, x2):
-        # Clip values at 400
-        x1 = self.clip(x1, clipping_value=self.hidden_node1_clipping_value)
-        x2 = self.clip(x2, clipping_value=self.hidden_node2_clipping_value)
-        torch.save(x1, 'bn_afterclip_2_1.pt')
-        torch.save(x2, 'bn_afterclip_2_2.pt')
-        # Batch normalisation and transformation to voltage
-        bnx, std = self.batch_norm(self.bn2, x1, x2)
-        torch.save(bnx, f'bn_afterbatch_2.pt')
-        bnx_0 = self.current_to_voltage(bnx[:, 0], std[0])
-        bnx_1 = self.current_to_voltage(bnx[:, 1], std[1])
-        torch.save(bnx, f'bn_aftercv_2.pt')
-
+        torch.save(bnx_0, os.path.join(self.output_path, f'bn_aftercv_' + str(i) + '_1.pt'))
+        torch.save(bnx_1, os.path.join(self.output_path, f'bn_aftercv_' + str(i) + '_2.pt'))
         return torch.cat((bnx_0[:, None], bnx_1[:, None]), dim=1)
-
-    def process_output_layer(self, y):
-        return self.clip(y, self.output_node_clipping_value)
 
     def get_control_voltages(self):
         w1 = next(self.input_node1.parameters()).detach()[0, :]
