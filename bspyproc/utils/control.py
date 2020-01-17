@@ -1,4 +1,5 @@
 import numpy as np
+from bspyproc.utils.waveform import generate_waveform
 
 
 def get_control_voltage_indices(input_indices, length):
@@ -13,8 +14,9 @@ def merge_inputs_and_control_voltages(inputs, control_voltages, input_indices, c
     return result
 
 
-def merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, input_indices, control_voltage_indices, node_no, node_electrode_no, scale, offset):
+def merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, input_indices, control_voltage_indices, node_no, node_electrode_no, scale, offset, amplitudes, slopes):
     inputs = (scale * inputs) + offset
+    inputs = generate_waveform(inputs, amplitudes, slopes)
     result = np.zeros((inputs.shape[0], len(input_indices * node_no) + len(control_voltage_indices)))
     result[:, input_indices] = inputs
     result[:, node_electrode_no + input_indices[0]] = inputs[:, 0]
