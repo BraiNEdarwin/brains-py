@@ -20,33 +20,32 @@ class DNPU(TorchModel):
 
     def __init__(self, configs):
         super().__init__(configs)
-        self.nr_inputs = len(configs['input_indices'])
-        self.in_list = TorchUtils.get_tensor_from_list(configs['input_indices'], torch.int64)
+        self.init_electrode_info(configs)
+        self.init_bias()
+
+        self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
+
         # Freeze parameters
         for params in self.parameters():
             params.requires_grad = False
-        # Define learning parameters
+
+    def init_electrode_info(self, configs):
+        self.nr_inputs = len(configs['input_indices'])
+        self.in_list = TorchUtils.get_tensor_from_list(configs['input_indices'], torch.int64)
         self.nr_electodes = len(self.info['data_info']['input_data']['offset'])
         self.indx_cv = np.delete(np.arange(self.nr_electodes), configs['input_indices'])
-        self.nr_cv = len(self.indx_cv)
-        offset = np.array(self.info['data_info']['input_data']['offset'])
-        amplitude = np.array(self.info['data_info']['input_data']['amplitude'])
-        self.min_voltage = offset - amplitude
-        self.max_voltage = offset + amplitude
-        bias = self.min_voltage[self.indx_cv] + \
-            (self.max_voltage[self.indx_cv] - self.min_voltage[self.indx_cv]) * \
-            np.random.rand(1, self.nr_cv)
-
-        bias = TorchUtils.get_tensor_from_numpy(bias)
-        self.bias = nn.Parameter(bias)
-        # Set as torch Tensors and send to DEVICE
         self.indx_cv = TorchUtils.get_tensor_from_list(self.indx_cv, torch.int64)  # IndexError: tensors used as indices must be long, byte or bool tensors
+        self.nr_cv = len(self.indx_cv)
 
-        self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
-        self.min_voltage = TorchUtils.get_tensor_from_list(self.min_voltage)
-        self.max_voltage = TorchUtils.get_tensor_from_list(self.max_voltage)
+    def init_bias(self):
         self.control_low = self.min_voltage[self.indx_cv]
         self.control_high = self.max_voltage[self.indx_cv]
+
+        bias = self.min_voltage[self.indx_cv] + \
+            (self.max_voltage[self.indx_cv] - self.min_voltage[self.indx_cv]) * \
+            TorchUtils.get_tensor_from_numpy(np.random.rand(1, self.nr_cv))
+
+        self.bias = nn.Parameter(TorchUtils.get_tensor_from_numpy(bias))
 
     def get_output(self, input_matrix):
         with torch.no_grad():
