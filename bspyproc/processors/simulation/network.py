@@ -56,7 +56,10 @@ class TorchModel(nn.Module):
             model_dict = self.info
         self.build_model(model_dict)
         self.model.load_state_dict(state_dict)
+        self.init_max_and_min_values()
         self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
+
+    def init_max_and_min_values(self):
         self.offset = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['offset'])
         self.amplitude = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['amplitude'])
         self.min_voltage = self.offset - self.amplitude
