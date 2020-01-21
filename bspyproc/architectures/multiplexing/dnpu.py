@@ -73,10 +73,13 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
         self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
         self.init_current_to_voltage_conversion_variables()
-        self.output_path = os.path.join('tmp', 'architecture_debug')
-
-        if not os.path.exists(self.output_path):
-            os.makedirs(self.output_path)
+        if configs['debug']:
+            self.output_path = os.path.join('tmp', 'architecture_debug')
+            if not os.path.exists(self.output_path):
+                os.makedirs(self.output_path)
+            self.forward = self.forward_with_debug
+        else:
+            self.forward = self.forward_
 
     def init_current_to_voltage_conversion_variables(self):
         self.std = 1
@@ -104,12 +107,17 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.hidden_node2_clipping_value = base_clipping_value * self.hidden_node2.get_amplification_value()
         self.output_node_clipping_value = base_clipping_value * self.output_node.get_amplification_value()
 
-    def forward(self, x):
+    def forward_with_debug(self, x):
         # Scale and offset
         x = (self.scale * x) + self.offset
         torch.save(x, os.path.join(self.output_path, 'raw_input.pt'))
+        x = self.process_layer_with_debug(self.input_node1(x), self.input_node2(x), self.bn1, self.input_node1_clipping_value, self.input_node2_clipping_value, 1)
+        x = self.process_layer_with_debug(self.hidden_node1(x), self.hidden_node2(x), self.bn2, self.hidden_node1_clipping_value, self.hidden_node2_clipping_value, 2)
 
-        # Clipping and passing data to the first layer
+        return self.output_node(x)
+
+    def forward_(self, x):
+        x = (self.scale * x) + self.offset
         x = self.process_layer(self.input_node1(x), self.input_node2(x), self.bn1, self.input_node1_clipping_value, self.input_node2_clipping_value, 1)
         x = self.process_layer(self.hidden_node1(x), self.hidden_node2(x), self.bn2, self.hidden_node1_clipping_value, self.hidden_node2_clipping_value, 2)
 
@@ -124,6 +132,16 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         return control_penalty + self.offset_penalty() + self.scale_penalty()
 
     def process_layer(self, x1, x2, bn, clipping_value_1, clipping_value_2, i):
+        # Clip values at 400
+        x1 = self.clip(x1, clipping_value=clipping_value_1)
+        x2 = self.clip(x2, clipping_value=clipping_value_2)
+
+        bnx = self.batch_norm(bn, x1, x2)
+        bnx = self.current_to_voltage(bnx, self.input_node1.input_indices)
+
+        return bnx
+
+    def process_layer_with_debug(self, x1, x2, bn, clipping_value_1, clipping_value_2, i):
         torch.save(x1[:, 0], os.path.join(self.output_path, 'device_layer_' + str(i) + '_output_0.pt'))
         torch.save(x2[:, 0], os.path.join(self.output_path, 'device_layer_' + str(i) + '_output_1.pt'))
 
