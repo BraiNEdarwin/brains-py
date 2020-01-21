@@ -21,13 +21,12 @@ class DNPU(TorchModel):
     def __init__(self, configs):
         super().__init__(configs)
         self.init_electrode_info(configs)
-        self.init_bias()
-
-        self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
-
         # Freeze parameters
         for params in self.parameters():
             params.requires_grad = False
+        self.init_bias()
+
+        self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
 
     def init_electrode_info(self, configs):
         self.nr_inputs = len(configs['input_indices'])
