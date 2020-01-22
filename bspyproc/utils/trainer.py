@@ -37,6 +37,16 @@ import numpy as np
 import torch
 
 
+def batch_generator(data, batch_size):
+    nr_samples = len(data[0])
+    permutation = torch.randperm(nr_samples)  # Permute indices
+    i = 0
+    while i < nr_samples:
+        indices = permutation[i:i + batch_size]
+        yield data[0][indices], data[1][indices]
+        i += batch_size
+
+
 def trainer(network, training_data, validation_data=(None, None),
             loss_fn=torch.nn.MSELoss(), learning_rate=1e-2,
             nr_epochs=3000, batch_size=128, cv_penalty=0.5,
@@ -61,51 +71,39 @@ def trainer(network, training_data, validation_data=(None, None),
     print('Prediction using ADAM optimizer')
 
     # Define variables
-    x_train, y_train = training_data
-    x_val, y_val = validation_data
     costs = np.zeros((nr_epochs, 2))  # training and validation costs per epoch
-    if x_val is not None:
-        samples = len(x_val)
-    else:
-        samples = len(x_train)
 
     for epoch in range(nr_epochs):
 
         network.train()
-        permutation = torch.randperm(x_train.size()[0])  # Permute indices
-        nr_minibatches = 0
-
-        for i in range(0, len(permutation), batch_size):
-
+        for batch_nr, batch in enumerate(batch_generator(training_data, batch_size)):
             # Get prediction
-            indices = permutation[i:i + batch_size]
-            x = x_train[indices]
-            y_pred = network(x)
+            y_pred = network(batch[0])
+            y_targets = batch[1]
             # GD step
             if 'regularizer' in dir(network):
-                loss = loss_fn(
-                    y_pred, y_train[indices]) + cv_penalty * network.regularizer()
+                loss = loss_fn(y_pred, y_targets) + cv_penalty * network.regularizer()
             else:
-                loss = loss_fn(y_pred, y_train[indices])
+                loss = loss_fn(y_pred, y_targets)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            nr_minibatches += 1
-
         network.eval()
+
         # Evaluate training error
-        get_indices = torch.randperm(len(x_train))[:samples]
-        x = x_train[get_indices]
-        prediction = network(x)
-        target = y_train[get_indices]
-        costs[epoch, 0] = loss_fn(prediction, target).item()
-        # assert not np.isnan(costs[epoch, 0]), "Loss is NaN!"
+        if validation_data is not None:
+            samples = len(validation_data[0])
+        else:
+            samples = len(training_data[0])
+        train_batch = next(batch_generator(training_data, samples))
+        prediction = network(train_batch[0])
+        costs[epoch, 0] = loss_fn(prediction, train_batch[1]).item()
         # Evaluate Validation error
-        if x_val is not None and y_val is not None:
-            prediction = network(x_val)
-            costs[epoch, 1] = loss_fn(prediction, y_val).item()
+        if validation_data is not None:
+            prediction = network(validation_data[0])
+            costs[epoch, 1] = loss_fn(prediction, validation_data[1]).item()
         else:
             costs[epoch, 1] = np.nan
 
@@ -115,7 +113,7 @@ def trainer(network, training_data, validation_data=(None, None),
             costs[-1, 0] = np.nan
             print('--------- Training interrupted value was Nan!! ---------')
             break
-        if epoch % 300 == 0:
+        if epoch % 100 == 0:
             print('Epoch:', epoch,
                   'Val. Error:', costs[epoch, 1],
                   'Training Error:', costs[epoch, 0])
@@ -146,7 +144,7 @@ if __name__ == '__main__':
     from bspyproc.utils.pytorch import TorchUtils
 
     # Generate model
-    NODE_CONFIGS = load_configs('configs/configs_nn_model.json')
+    NODE_CONFIGS = load_configs('/home/hruiz/Documents/PROJECTS/DARWIN/Code/packages/brainspy/brainspy-processors/configs/configs_nn_model.json')
     nr_nodes = 5
     input_list = [[0, 3, 4]] * nr_nodes
     data_dim = 20
@@ -162,21 +160,27 @@ if __name__ == '__main__':
 
     inp_train = x[:nr_train_samples]
     t_train = y[:nr_train_samples]
-    inp_val = x[:nr_val_samples]
-    t_val = y[:nr_val_samples]
+    inp_val = x[nr_train_samples:]
+    t_val = y[nr_train_samples:]
 
     node_params_start = [p.clone().cpu().detach() for p in model.parameters() if not p.requires_grad]
     learnable_params_start = [p.clone().cpu().detach() for p in model.parameters() if p.requires_grad]
-
+    # batch_iterator = batch_generator(training_data, batch_size)
     costs = trainer(model, (inp_train, t_train), validation_data=(inp_val, t_val),
-                    nr_epochs=5000,
-                    batch_size=len(t_train),
-                    learning_rate=3e-5,
+                    nr_epochs=3000,
+                    batch_size=int(len(t_train) / 10),
+                    learning_rate=3e-3,
                     save_dir='test/dnpu_arch_test/',
                     save_interval=np.inf)
 
-    out = model(inp_val)
-    print(f'OUTPUT: {out.data.cpu().numpy()}')
+    model.eval()
+    out_val = model(inp_val).cpu().detach().numpy()
+    out_train = model(inp_train).cpu().detach().numpy()
+
+    plt.figure()
+    plt.hist(out_train.flatten())
+    plt.hist(out_val.flatten())
+    plt.show()
 
     node_params_end = [p.clone().cpu().detach() for p in model.parameters() if not p.requires_grad]
     learnable_params_end = [p.clone().cpu().detach() for p in model.parameters() if p.requires_grad]
