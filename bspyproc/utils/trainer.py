@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Sep 10 17:18:34 2019
-Trains a neural network given data.
+Trains a neural network given data. This trainer is intended for exploration of new designs of DNPU architectures,
+so it is a convenience function. If you want to train standard tasks or the model, use the GD class in brainspy-algorithm package.
 ---------------
 Arguments
 data : List containing 2 tuples; the first with a training set (inputs,targets),
@@ -10,10 +11,9 @@ data : List containing 2 tuples; the first with a training set (inputs,targets),
         torch.Tensors (shape: nr_samplesXinput_dim, nr_samplesXoutput_dim).
 network : The network to be trained
 conf_dict : Configuration dictionary with hyper parameters for training
-save_dir (kwarg, str)  : Path to save the results
 ---------------
 Returns:
-network (torch.nn.Module) : trained network
+???? network (torch.nn.Module) : trained network
 costs (np.array)    : array with the costs (training,validation) per epoch
 
 Notes:
@@ -38,7 +38,7 @@ import torch
 
 
 def trainer(network, training_data, validation_data=(None, None),
-            loss_fn=torch.nn.MSELoss(), learning_rate=1e-4,
+            loss_fn=torch.nn.MSELoss(), learning_rate=1e-2,
             nr_epochs=3000, batch_size=128, cv_penalty=0.5,
             save_dir='../../test/NN_test/',
             save_interval=10, **kwargs):
@@ -78,13 +78,13 @@ def trainer(network, training_data, validation_data=(None, None),
         for i in range(0, len(permutation), batch_size):
 
             # Get prediction
-            indices = permutation[i:i+batch_size]
+            indices = permutation[i:i + batch_size]
             x = x_train[indices]
             y_pred = network(x)
             # GD step
             if 'regularizer' in dir(network):
                 loss = loss_fn(
-                    y_pred, y_train[indices]) + cv_penalty*network.regularizer()
+                    y_pred, y_train[indices]) + cv_penalty * network.regularizer()
             else:
                 loss = loss_fn(y_pred, y_train[indices])
 
@@ -137,43 +137,59 @@ def save_model(model, path):
 
 if __name__ == '__main__':
 
-    import matplotlib.pyplot as plt
+    import torch
+    import torch.nn as nn
     import numpy as np
-    from dopantNet import dopantNet
+    import matplotlib.pyplot as plt
+    from bspyalgo.utils.io import load_configs
+    from bspyproc.architectures.dnpu.modules import DNPU_Layer
+    from bspyproc.utils.pytorch import TorchUtils
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    in_list = [0, 3]
-    x = 0.5*np.random.randn(10, len(in_list))
-    inp_train = torch.Tensor(x).to(device)
-    # torch.Tensor(np.random.randn(10,1)).to(device)
-    t_train = torch.Tensor(5.*np.ones(10)).to(device)
-    x = 0.5*np.random.randn(4, len(in_list))
-    inp_val = torch.Tensor(x).to(device)
-    # torch.Tensor(np.random.randn(4,1)).to(device)
-    t_val = torch.Tensor(5.*np.ones(4)).to(device)
-    data = [(inp_train, t_train), (inp_val, t_val)]
+    # Generate model
+    NODE_CONFIGS = load_configs('configs/configs_nn_model.json')
+    nr_nodes = 5
+    input_list = [[0, 3, 4]] * nr_nodes
+    data_dim = 20
+    linear_layer = nn.Linear(data_dim, len(input_list[0]) * nr_nodes).to(device=TorchUtils.get_accelerator_type())
+    dnpu_layer = DNPU_Layer(input_list, NODE_CONFIGS)
+    model = nn.Sequential(linear_layer, dnpu_layer)
 
-    node = dopantNet(in_list)
+    # Generate data
+    nr_train_samples = 50
+    nr_val_samples = 10
+    x = TorchUtils.format_tensor(torch.rand(nr_train_samples + nr_val_samples, data_dim))
+    y = TorchUtils.format_tensor(5. * torch.ones(nr_train_samples + nr_val_samples, nr_nodes))
 
-    loss_array = []
+    inp_train = x[:nr_train_samples]
+    t_train = y[:nr_train_samples]
+    inp_val = x[:nr_val_samples]
+    t_val = y[:nr_val_samples]
 
-    start_params = [p.clone().detach() for p in node.parameters()]
+    node_params_start = [p.clone().cpu().detach() for p in model.parameters() if not p.requires_grad]
+    learnable_params_start = [p.clone().cpu().detach() for p in model.parameters() if p.requires_grad]
 
-    costs = trainer(data, node, batch_size=len(t_train),
+    costs = trainer(model, (inp_train, t_train), validation_data=(inp_val, t_val),
+                    nr_epochs=5000,
+                    batch_size=len(t_train),
                     learning_rate=3e-5,
-                    save_dir='../../test/NN_test/',
+                    save_dir='test/dnpu_arch_test/',
                     save_interval=np.inf)
 
-    out = node(inp_val)
-    end_params = [p.clone().detach() for p in node.parameters()]
-    print("CV params at the beginning: \n ", start_params[0])
-    print("CV params at the end: \n", end_params[0])
-    print("Example params at the beginning: \n", start_params[-1][:8])
-    print("Example params at the end: \n", end_params[-1][:8])
-    print("Length of elements in node.parameters(): \n",
-          [len(p) for p in end_params])
-    print("and their shape: \n", [p.shape for p in end_params])
-    print(f'OUTPUT: {out.data.cpu()}')
+    out = model(inp_val)
+    print(f'OUTPUT: {out.data.cpu().numpy()}')
+
+    node_params_end = [p.clone().cpu().detach() for p in model.parameters() if not p.requires_grad]
+    learnable_params_end = [p.clone().cpu().detach() for p in model.parameters() if p.requires_grad]
+
+    print("CV params at the beginning: \n ", learnable_params_start[2:])
+    print("CV params at the end: \n", learnable_params_end[2:])
+    abs_diff_cv_params = [np.sum(np.abs(b.numpy() - a.numpy())) for b, a in zip(learnable_params_start, learnable_params_end)]
+    print(f'Abs. difference between CV parameters before-after: {sum(abs_diff_cv_params)}')
+
+    print("Example node params at the beginning: \n", node_params_start[1])
+    print("Example node params at the end: \n", node_params_end[1])
+    abs_diff_node_params = [np.sum(np.abs(b.numpy() - a.numpy())) for b, a in zip(node_params_start, node_params_end)]
+    print(f'Abs. difference between node parameters before-after: {sum(abs_diff_node_params)}')
 
     plt.figure()
     plt.plot(costs)
