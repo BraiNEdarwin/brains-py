@@ -64,8 +64,8 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         self.input_indices = self.get_input_indices(configs['input_indices'])
         self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'] * 5)
 
-    def current_to_voltage(self, x, std):
-        return (self.current_to_voltage_conversion_amplitude * self.clip(x, cut_min=-self.cut, cut_max=self.cut)) + self.current_to_voltage_conversion_offset
+    def current_to_voltage(self, x, electrode):
+        return (self.current_to_voltage_conversion_amplitude[electrode] * self.clip(x, cut_min=-self.cut, cut_max=self.cut)) + self.current_to_voltage_conversion_offset[electrode]
 
     def get_input_indices(self, input_indices):
         result = np.zeros(len(input_indices) * 5, dtype=int)
@@ -85,24 +85,24 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         np.save(os.path.join(self.output_path, 'raw_input'), x)
         x1 = self.processor.get_output(x[:, 0:7])
 
-        bnx1 = self.process_layer(x1, self.bn1, 1, 0)
+        bnx1 = self.process_layer(x1, self.bn1, 1, 0, self.configs['input_indices'][0])
         x[:, 14 + self.configs['input_indices'][0]] = bnx1
         x[:, 21 + self.configs['input_indices'][0]] = bnx1
 
         x2 = self.processor.get_output(x[:, 7:14])
-        bnx2 = self.process_layer(x2, self.bn1, 1, 1)
+        bnx2 = self.process_layer(x2, self.bn1, 1, 1, self.configs['input_indices'][1])
         # bnx1, bnx2 = self.process_layer(x1, x2, self.bn1, 1)
 
         x[:, 14 + self.configs['input_indices'][1]] = bnx2
         x[:, 21 + self.configs['input_indices'][1]] = bnx2
 
         h1 = self.processor.get_output(x[:, 14:21])
-        bnx1 = self.process_layer(h1, self.bn2, 2, 0)
+        bnx1 = self.process_layer(h1, self.bn2, 2, 0, self.configs['input_indices'][0])
         x[:, 28 + self.configs['input_indices'][0]] = bnx1
         # bnx1, bnx2 = self.process_layer(h1, h2, self.bn2, 2)
 
         h2 = self.processor.get_output(x[:, 21:28])
-        bnx2 = self.process_layer(h2, self.bn2, 2, 1)
+        bnx2 = self.process_layer(h2, self.bn2, 2, 1, self.configs['input_indices'][1])
         x[:, 28 + self.configs['input_indices'][1]] = bnx2
 
         return self.processor.get_output(x[:, 28:])
@@ -115,7 +115,7 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset, amplitudes=self.configs['waveform']['amplitude_lengths'], slopes=self.configs['waveform']['slope_lengths'])
         return self.get_output(x)
 
-    def process_layer(self, x, bn, layer, device):
+    def process_layer(self, x, bn, layer, device, electrode):
         # The input has been already scaled and offsetted
         np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_' + str(device)), x[:, 0])
 
@@ -128,7 +128,7 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
         np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_' + str(device)), generate_waveform_from_masked_data(bnx[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths']))
 
-        bnx = self.current_to_voltage(bnx, np.sqrt(bn['var'][device]))
+        bnx = self.current_to_voltage(bnx, electrode)
 
         bnx = generate_waveform_from_masked_data(bnx[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
 
