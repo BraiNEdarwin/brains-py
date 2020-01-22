@@ -19,7 +19,6 @@ class DNPUArchitecture(nn.Module):
         self.configs = configs
         self.info = {}
         self.info['smg_configs'] = configs
-        # self.conversion_offset = torch.tensor(configs['current_to_voltage']['offset'])
         self.offset = self.init_offset(configs['offset']['min'], configs['offset']['max'])
         self.scale = self.init_scale(configs['scale']['min'], configs['scale']['max'])
 
@@ -29,7 +28,7 @@ class DNPUArchitecture(nn.Module):
         return nn.Parameter(offset)
 
     def init_scale(self, scale_min, scale_max):
-        if self.info['smg_configs']['scale']['min'] == 1.0 and self.info['smg_configs']['scale']['max'] == 1.0:
+        if scale_min == 1.0 and scale_max == 1.0:
             scale = TorchUtils.get_tensor_from_numpy(np.array([1.0]))
             return scale
         else:
