@@ -136,6 +136,7 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
     def get_output_(self, inputs, mask):
         self.mask = mask
         self.plato_indices = np.arange(len(mask))[mask]
+        np.save(os.path.join(self.output_path, 'control_voltages'), self.control_voltages)
         control_voltages = np.linspace(self.control_voltages, self.control_voltages, inputs.shape[0])
 
         x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset, amplitudes=self.configs['waveform']['amplitude_lengths'], slopes=self.configs['waveform']['slope_lengths'])
