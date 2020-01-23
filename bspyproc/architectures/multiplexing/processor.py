@@ -81,31 +81,57 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         result[9] = input_indices[1] + 28
         return result
 
+    def read_from_processor(self, x, layer, device):
+        print('------------------------------------------')
+        print(f'Processing layer {layer}, device {device}:')
+
+        i = 200
+        max_threshold = x[i][x[i] > self.max_voltage]
+        min_threshold = x[i][x[i] < self.min_voltage]
+        fine = True
+        if max_threshold.size > 0:
+            print(f'Maximum threshold traspassed')
+            print(f'Value: {max_threshold}')
+            print(f'Threshold: {self.max_voltage[x[i] > self.max_voltage]}')
+        if min_threshold.size > 0:
+            print(f'Minimum threshold traspassed')
+            print(f'Value: {min_threshold}')
+            print(f'Threshold: {self.min_voltage[x[i] < self.min_voltage]}')
+        if min_threshold.size > 0 or max_threshold.size > 0:
+            print('Control voltages: ')
+            print(x[i])
+            fine = False
+        results = self.processor.get_output(x)
+        if fine:
+            print('Finished fine')
+        print('------------------------------------------')
+        return results
+
     def get_output(self, x):
         np.save(os.path.join(self.output_path, 'raw_input'), x)
-        x1 = self.processor.get_output(x[:, 0:7])
+        x1 = self.read_from_processor(x[:, 0:7], 1, 0)
 
         bnx1 = self.process_layer(x1, self.bn1, 1, 0, self.configs['input_indices'][0])
         x[:, 14 + self.configs['input_indices'][0]] = bnx1
         x[:, 21 + self.configs['input_indices'][0]] = bnx1
 
-        x2 = self.processor.get_output(x[:, 7:14])
+        x2 = self.read_from_processor(x[:, 7:14], 1, 1)
         bnx2 = self.process_layer(x2, self.bn1, 1, 1, self.configs['input_indices'][1])
         # bnx1, bnx2 = self.process_layer(x1, x2, self.bn1, 1)
 
         x[:, 14 + self.configs['input_indices'][1]] = bnx2
         x[:, 21 + self.configs['input_indices'][1]] = bnx2
 
-        h1 = self.processor.get_output(x[:, 14:21])
+        h1 = self.read_from_processor(x[:, 14:21], 2, 0)
         bnx1 = self.process_layer(h1, self.bn2, 2, 0, self.configs['input_indices'][0])
         x[:, 28 + self.configs['input_indices'][0]] = bnx1
         # bnx1, bnx2 = self.process_layer(h1, h2, self.bn2, 2)
 
-        h2 = self.processor.get_output(x[:, 21:28])
+        h2 = self.read_from_processor(x[:, 21:28], 2, 1)
         bnx2 = self.process_layer(h2, self.bn2, 2, 1, self.configs['input_indices'][1])
         x[:, 28 + self.configs['input_indices'][1]] = bnx2
 
-        return self.processor.get_output(x[:, 28:])
+        return self.read_from_processor(x[:, 28:], 3, 0)
 
     def get_output_(self, inputs, mask):
         self.mask = mask
