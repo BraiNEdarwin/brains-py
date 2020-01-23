@@ -1,4 +1,6 @@
 import torch
+import numpy as np
+import random
 
 
 class TorchUtils:
@@ -76,3 +78,17 @@ class TorchUtils:
     @staticmethod
     def get_numpy_from_tensor(data):
         return data.cpu().numpy()
+
+    @staticmethod
+    def init_seed(seed=None, deterministic=False):
+        if seed is None:
+            seed = random.randint(0, (2**32) - 1)
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        if deterministic:
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
+
+        return seed
