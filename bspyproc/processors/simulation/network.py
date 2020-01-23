@@ -20,6 +20,7 @@ class TorchModel(nn.Module):
         super().__init__()
 
         self.configs = configs
+        self.info = {}
         if type(configs['torch_model_dict']) is str:
             self.load_model(configs['torch_model_dict'])
         elif type(configs['torch_model_dict']) is dict:
