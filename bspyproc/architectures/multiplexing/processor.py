@@ -21,6 +21,10 @@ class ArchitectureProcessor():
         self.output_path = os.path.join('tmp', 'architecture_debug')
         if not os.path.exists(self.output_path):
             os.makedirs(self.output_path)
+        if configs['batch_norm']['use_running_stats']:
+            self.batch_norm_operation = self.batch_norm_running_stats
+        else:
+            self.batch_norm_operation = self.batch_norm_batch_stats
 
     def clip(self, x, cut_min, cut_max):
         x[x > cut_max] = cut_max
@@ -37,10 +41,23 @@ class ArchitectureProcessor():
         #     h = torch.tensor(1.8 / (4 * std1)) * \
         #         torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
         #     return h.numpy()
+    def debug_batch_norm(self, x, mean, var):
+        print(f"Using dataset mean and var: {self.configs['batch_norm']['use_running_stats']}")
+        print(f'Running mean: {mean}')
+        print(f'Current batch mean: {np.mean(x)}')
+        print(f'Running var: {var}')
+        print(f'Current batch mean: {np.var(x)}')
 
     def batch_norm(self, x, mean, var):
-        return (x - np.mean(x)) / np.sqrt(np.var(x) + 1e-05)
+        self.debug_batch_norm(x, mean, var)
+        return self.batch_norm_operation(x, mean, var)
         # return (x - mean) / np.sqrt(var + 1e-05)
+
+    def batch_norm_batch_stats(self, x, mean, var):
+        return (x - np.mean(x)) / np.sqrt(np.var(x) + 1e-05)
+
+    def batch_norm_running_stats(self, x, mean, var):
+        return (x - mean) / np.sqrt(var + 1e-05)
 
     # def current_to_voltage(self, x, std):
     #     return (self.current_to_voltage_conversion_amplitude * x) + self.current_to_voltage_conversion_offset
