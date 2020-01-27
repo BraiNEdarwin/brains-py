@@ -35,6 +35,24 @@ Notes:
 import numpy as np
 # from bspyproc.utils.pytorch import TorchUtils
 import torch
+import os
+from tqdm import trange
+from bspyalgo.utils.io import create_directory_timestamp, save_pickle, save_configs
+
+
+def save_model(model, path, name):
+    """
+    Saves the model in given path.
+    """
+    state_dic = model.state_dict()
+    file_path = os.path.join(path, name + '.pt')
+    torch.save(state_dic, file_path)
+
+
+def save_parameters_as_numpy(model, path):
+    parameters = {k: v.cpu().detach().numpy()
+                  for k, v in model.named_parameters() if v.requires_grad}
+    save_pickle(parameters, os.path.join(path, 'learned_parameters.dat'))
 
 
 def batch_generator(data, batch_size):
@@ -47,57 +65,60 @@ def batch_generator(data, batch_size):
         i += batch_size
 
 
-def trainer(network, training_data, validation_data=(None, None),
-            loss_fn=torch.nn.MSELoss(), learning_rate=1e-2,
-            nr_epochs=3000, batch_size=128, cv_penalty=0.5,
-            save_dir='../../test/NN_test/',
-            save_interval=10, **kwargs):
+def batch_training(batch_iter, network, optimizer, loss_fn, config_dict):
+    for _, batch in enumerate(batch_iter):
+        # Get prediction
+        y_pred = network(batch[0].to('cuda', non_blocking=True))
+        y_targets = batch[1].to('cuda', non_blocking=True)
+        # GD step
+        if 'regularizer' in dir(network):
+            loss = loss_fn(y_pred, y_targets) + config_dict["cv_penalty"] * network.regularizer()  # usually set to cv_penalty=0.5
+        else:
+            loss = loss_fn(y_pred, y_targets)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    network.to(device)
-    # set configurations
-    if "seed" in kwargs.keys():
-        seed = kwargs["seed"]
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+
+def set_optimizer(network, config_dict):
+    print('Prediction using ADAM optimizer')
+    if "seed" in config_dict.keys():
+        seed = config_dict["seed"]
         torch.manual_seed(seed)
         print(f'The torch RNG is seeded with {seed}')
-    if "betas" in kwargs.keys():
-        optimizer = torch.optim.Adam(network.parameters(),
-                                     lr=learning_rate,
-                                     betas=kwargs["betas"])
-        print("Set betas to values: ", {kwargs["betas"]})
+    if "betas" in config_dict.keys():
+        print("Set betas to values: ", {config_dict["betas"]})
+        return torch.optim.Adam(network.parameters(),
+                                lr=config_dict["learning_rate"],
+                                betas=config_dict["betas"])
     else:
-        optimizer = torch.optim.Adam(network.parameters(),
-                                     lr=learning_rate)
-    print('Prediction using ADAM optimizer')
+        return torch.optim.Adam(network.parameters(),
+                                lr=config_dict["learning_rate"])
 
+
+def accuracy(output, targets):
+    predicted_labels = torch.argmax(output, 1).data.detach().numpy()
+    return sum(targets.data.detach().numpy() == predicted_labels) / len(targets)
+
+
+def train_with_generator(network, training_data, config_dict, validation_data=None,
+                         loss_fn=torch.nn.MSELoss()):
+    print('------- TRAINING WITH GENERATOR ---------')
+    # set configurations
+    optimizer = set_optimizer(network, config_dict)
+    config_dict["save_dir"] = create_directory_timestamp(config_dict["save_dir"], config_dict["name"])
     # Define variables
-    costs = np.zeros((nr_epochs, 2))  # training and validation costs per epoch
+    costs = np.zeros((config_dict["nr_epochs"], 2))  # training and validation costs per epoch
 
-    for epoch in range(nr_epochs):
-
+    for epoch in range(config_dict["nr_epochs"]):
         network.train()
-        for batch_nr, batch in enumerate(batch_generator(training_data, batch_size)):
-            # Get prediction
-            y_pred = network(batch[0])
-            y_targets = batch[1]
-            # GD step
-            if 'regularizer' in dir(network):
-                loss = loss_fn(y_pred, y_targets) + cv_penalty * network.regularizer()
-            else:
-                loss = loss_fn(y_pred, y_targets)
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
+        batch_training(batch_generator(training_data, config_dict["batch_size"]),
+                       network, optimizer, loss_fn, config_dict)
         network.eval()
 
         # Evaluate training error
-        if validation_data is not None:
-            samples = len(validation_data[0])
-        else:
-            samples = len(training_data[0])
-        train_batch = next(batch_generator(training_data, samples))
+        train_batch = next(batch_generator(training_data, len(training_data[0])))
         prediction = network(train_batch[0])
         costs[epoch, 0] = loss_fn(prediction, train_batch[1]).item()
         # Evaluate Validation error
@@ -106,9 +127,8 @@ def trainer(network, training_data, validation_data=(None, None),
             costs[epoch, 1] = loss_fn(prediction, validation_data[1]).item()
         else:
             costs[epoch, 1] = np.nan
-
-        # if save_dir and epoch % save_interval == 0:
-        #     save_model(network, save_dir+f'checkpoint_epoch{epoch}.pt')
+        if 'save_interval' in config_dict.keys() and epoch % config_dict["save_interval"] == 0:
+            save_model(network, config_dict["save_dir"], f'checkpoint_epoch{epoch}')
         if np.isnan(costs[epoch, 0]):
             costs[-1, 0] = np.nan
             print('--------- Training interrupted value was Nan!! ---------')
@@ -121,23 +141,54 @@ def trainer(network, training_data, validation_data=(None, None),
     return costs
 
 
-def save_model(model, path):
-    """
-    Saves the model in given path, all other attributes are saved under
-    the 'info' key as a new dictionary.
-    """
-    model.eval()
-    state_dic = model.state_dict()
-    if 'info' in dir(model):
-        state_dic['info'] = model.info
-    torch.save(state_dic, path)
+def train_with_loader(network, training_data, config_dict, validation_data=None,
+                      loss_fn=torch.nn.MSELoss()):
+    print('------- TRAINING WITH LOADER ---------')
+    # set configurations
+    optimizer = set_optimizer(network, config_dict)
+    config_dict["save_dir"] = create_directory_timestamp(config_dict["save_dir"], config_dict["name"])
+    save_configs(config_dict, os.path.join(config_dict["save_dir"], "training_configs.json"))
+    # Define variables
+    costs = np.zeros((config_dict["nr_epochs"], 2))  # training and validation costs per epoch
+    accuracy_over_epochs = np.zeros((config_dict["nr_epochs"], 2))
+    looper = trange(config_dict["nr_epochs"], desc='Initialising')
+    for epoch in looper:
+        network.train()
+        batch_training(training_data, network, optimizer, loss_fn, config_dict)
+        network.eval()
+
+        # Evaluate training error
+        training_losses = [loss_fn(network(x.to('cuda', non_blocking=True)).cpu(), y).item() for x, y in training_data]
+        costs[epoch, 0] = np.mean(training_losses)
+        accuracy_over_epochs[epoch, 0] = np.mean([accuracy(network(x.to('cuda', non_blocking=True)).cpu(), y).item() for x, y in training_data])
+        # Evaluate Validation error
+        if validation_data is not None:
+            data, targets = iter(validation_data).next()
+            prediction = network(data.squeeze().to('cuda', non_blocking=True)).cpu()
+            costs[epoch, 1] = loss_fn(prediction, targets).item()
+            accuracy_over_epochs[epoch, 1] = accuracy(prediction, targets).item()
+        else:
+            costs[epoch, 1] = np.nan
+
+        if 'save_interval' in config_dict.keys() and epoch % config_dict["save_interval"] == 10:
+            save_model(network, config_dict["save_dir"], f'checkpoint_{epoch}')
+        if np.isnan(costs[epoch, 0]):
+            costs[-1, 0] = np.nan
+            print('--------- Training interrupted value was Nan!! ---------')
+            break
+        looper.set_description(
+            f' Epoch: {epoch} | Training Error:{costs[epoch, 0]:7.3f} | Val. Error:{costs[epoch, 1]:7.3f}')
+
+    save_model(network, config_dict["save_dir"], 'final_model')
+    save_parameters_as_numpy(network, config_dict["save_dir"])
+    np.savez(os.path.join(config_dict["save_dir"], 'training_history'), costs=costs, accuracy=accuracy)
+    return costs, accuracy_over_epochs
 
 
 if __name__ == '__main__':
 
     import torch
     import torch.nn as nn
-    import numpy as np
     import matplotlib.pyplot as plt
     from bspyalgo.utils.io import load_configs
     from bspyproc.architectures.dnpu.modules import DNPU_Layer
@@ -165,13 +216,12 @@ if __name__ == '__main__':
 
     node_params_start = [p.clone().cpu().detach() for p in model.parameters() if not p.requires_grad]
     learnable_params_start = [p.clone().cpu().detach() for p in model.parameters() if p.requires_grad]
-    # batch_iterator = batch_generator(training_data, batch_size)
-    costs = trainer(model, (inp_train, t_train), validation_data=(inp_val, t_val),
-                    nr_epochs=3000,
-                    batch_size=int(len(t_train) / 10),
-                    learning_rate=3e-3,
-                    save_dir='test/dnpu_arch_test/',
-                    save_interval=np.inf)
+    costs = train_with_generator(model, (inp_train, t_train), validation_data=(inp_val, t_val),
+                                 nr_epochs=3000,
+                                 batch_size=int(len(t_train) / 10),
+                                 learning_rate=3e-3,
+                                 save_dir='test/dnpu_arch_test/',
+                                 save_interval=np.inf)
 
     model.eval()
     out_val = model(inp_val).cpu().detach().numpy()
