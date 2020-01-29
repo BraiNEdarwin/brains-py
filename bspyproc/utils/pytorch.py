@@ -77,6 +77,8 @@ class TorchUtils:
 
     @staticmethod
     def get_numpy_from_tensor(data):
+        if data.requires_grad:
+            return data.detach().cpu().numpy()
         return data.cpu().numpy()
 
     @staticmethod
