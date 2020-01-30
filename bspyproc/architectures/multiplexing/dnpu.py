@@ -175,9 +175,8 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.output_node.reset()
         self.offset.data.uniform_(self.info['smg_configs']['offset']['min'], self.info['smg_configs']['offset']['max'])
         self.scale = self.init_scale(self.info['smg_configs']['scale']['min'], self.info['smg_configs']['scale']['max'])
-        if self.info['smg_configs']['batch_norm']:
-            self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
-            self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
+        self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
+        self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
 
     def get_control_voltages(self):
         w1 = next(self.input_node1.parameters())  # .detach().cpu().numpy()
