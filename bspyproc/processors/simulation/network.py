@@ -41,12 +41,24 @@ class TorchModel(nn.Module):
             del state_dict['info']
             if 'amplification' not in info['data_info']['processor'].keys():
                 info['data_info']['processor']['amplification'] = 1
+            self.init_noise_configs(info['data_info']['mse'])
         elif file_type == 'json':
             state_dict = None
             # TODO: Implement loading from a json file
             raise NotImplementedError(f"Loading file from a json file in TorchModel has not been implemented yet. ")
             # info = model_info loaded from a json file
         return info, state_dict
+
+    def init_noise_configs(self, mse):
+        if 'noise' in self.configs:
+            if self.configs['noise']:
+                self.error = torch.sqrt(torch.Tensor([mse]))
+            else:
+                self.error = torch.Tensor([0])
+        else:
+            print('Warning: Noise variable not found. Adding zero noise and setting the noise variable as false')
+            self.configs['noise'] = False
+            self.error = torch.Tensor([0])
 
     def load_model(self, data_dir):
         """Loads a pytorch model from a directory string."""
@@ -99,7 +111,8 @@ class TorchModel(nn.Module):
         return self.get_output(y)
 
     def forward(self, x):
-        return self.model(x) * self.amplification
+        noise = self.error * torch.randn(x.shape)
+        return self.model(x + noise) * self.amplification
 
     def get_amplification_value(self):
         return self.info['data_info']['processor']['amplification']
