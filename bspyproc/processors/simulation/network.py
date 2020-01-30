@@ -50,14 +50,12 @@ class TorchModel(nn.Module):
         return info, state_dict
 
     def init_noise_configs(self, mse):
-        if 'noise' in self.configs:
-            if self.configs['noise']:
-                self.error = torch.sqrt(torch.Tensor([mse]))
-            else:
-                self.error = torch.Tensor([0])
+        if 'noise' in self.configs and self.configs['noise']:
+            self.error = TorchUtils.format_tensor(torch.sqrt(torch.Tensor([mse])))
         else:
-            print('Warning: Noise variable not found. Adding zero noise and setting the noise variable as false')
-            self.configs['noise'] = False
+            if 'noise' not in self.configs:
+                print('Warning: Noise variable not found. Adding zero noise and setting the noise variable as false')
+                self.configs['noise'] = False
             self.error = torch.Tensor([0])
 
     def load_model(self, data_dir):
