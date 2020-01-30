@@ -52,13 +52,14 @@ class DNPU(TorchModel):
             output = self.forward(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output)
 
-    def forward(self, x):
-        expand_cv = self.bias.expand(x.size()[0], -1)
-        inp = torch.empty((x.size()[0], x.size()[1] + self.nr_cv))
-        inp = TorchUtils.format_tensor(inp)
+    def add_control_voltages_to_input(self, x):
+        inp = TorchUtils.format_tensor(torch.empty((x.size()[0], x.size()[1] + self.nr_cv)))
         inp[:, self.in_list] = x
-        inp[:, self.indx_cv] = expand_cv
+        inp[:, self.indx_cv] = self.bias.expand(x.size()[0], -1)
+        return inp
 
+    def forward(self, x):
+        inp = self.add_control_voltages_to_input(x)
         return self.model(inp) * self.amplification
 
     def regularizer(self):
