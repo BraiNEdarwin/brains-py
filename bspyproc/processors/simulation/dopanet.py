@@ -26,8 +26,6 @@ class DNPU(TorchModel):
             params.requires_grad = False
         self.init_bias()
 
-        self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
-
     def init_electrode_info(self, configs):
         self.nr_inputs = len(configs['input_indices'])
         self.in_list = TorchUtils.get_tensor_from_list(configs['input_indices'], torch.int64)
@@ -60,7 +58,7 @@ class DNPU(TorchModel):
 
     def forward(self, x):
         inp = self.add_control_voltages_to_input(x)
-        return self.model(inp) * self.amplification
+        return super().forward(inp)
 
     def regularizer(self):
         assert any(self.control_low < 0), \
