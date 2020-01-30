@@ -56,7 +56,7 @@ class TorchModel(nn.Module):
             if 'noise' not in self.configs:
                 print('Warning: Noise variable not found. Adding zero noise and setting the noise variable as false')
                 self.configs['noise'] = False
-            self.error = torch.Tensor([0])
+            self.error = TorchUtils.format_tensor(torch.Tensor([0]))
 
     def load_model(self, data_dir):
         """Loads a pytorch model from a directory string."""
@@ -109,7 +109,7 @@ class TorchModel(nn.Module):
         return self.get_output(y)
 
     def forward(self, x):
-        noise = self.error * torch.randn(x.shape)
+        noise = self.error * TorchUtils.format_tensor(torch.randn(x.shape))
         return self.model(x + noise) * self.amplification
 
     def get_amplification_value(self):
