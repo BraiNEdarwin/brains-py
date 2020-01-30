@@ -52,11 +52,12 @@ class TorchModel(nn.Module):
     def init_noise_configs(self, mse):
         if 'use_noise' in self.configs and self.configs['use_noise']:
             self.error = TorchUtils.format_tensor(torch.sqrt(torch.Tensor([mse])))
+            self.forward_processed = self.forward_amplification_and_noise
         else:
             if 'use_noise' not in self.configs:
                 print('Warning: Noise variable not found. Adding zero noise and setting the noise variable as false')
                 self.configs['use_noise'] = False
-            self.error = TorchUtils.format_tensor(torch.Tensor([0]))
+            self.forward_processed = self.forward_amplification
 
     def load_model(self, data_dir):
         """Loads a pytorch model from a directory string."""
@@ -101,7 +102,7 @@ class TorchModel(nn.Module):
     def get_output(self, input_matrix):
         with torch.no_grad():
             inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
-            output = self.forward_amplification_and_noise(inputs_torch)
+            output = self.forward_processed(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output)
 
     def get_output_(self, inputs, control_voltages):

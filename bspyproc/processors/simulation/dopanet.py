@@ -58,7 +58,7 @@ class DNPU(TorchModel):
 
     def forward(self, x):
         inp = self.add_control_voltages_to_input(x)
-        return self.forward_amplification_and_noise(inp)
+        return self.forward_processed(inp)
 
     def regularizer(self):
         assert any(self.control_low < 0), \
