@@ -12,6 +12,7 @@ import numpy as np
 import torch.nn as nn
 from bspyproc.processors.simulation.network import TorchModel
 from bspyproc.utils.pytorch import TorchUtils
+from bspyproc.utils.control import merge_inputs_and_control_voltages_in_torch
 
 
 class DNPU(TorchModel):
@@ -27,20 +28,20 @@ class DNPU(TorchModel):
         self.init_bias()
 
     def init_electrode_info(self, configs):
-        self.nr_inputs = len(configs['input_indices'])
-        self.in_list = TorchUtils.get_tensor_from_list(configs['input_indices'], torch.int64)
-        self.nr_electodes = len(self.info['data_info']['input_data']['offset'])
-        self.indx_cv = np.delete(np.arange(self.nr_electodes), configs['input_indices'])
-        self.indx_cv = TorchUtils.get_tensor_from_list(self.indx_cv, torch.int64)  # IndexError: tensors used as indices must be long, byte or bool tensors
-        self.nr_cv = len(self.indx_cv)
+        self.input_no = len(configs['input_indices'])
+        self.input_indices = TorchUtils.get_tensor_from_list(configs['input_indices'], torch.int64)
+        self.electrode_no = len(self.info['data_info']['input_data']['offset'])
+        self.control_voltage_indices = np.delete(np.arange(self.electrode_no), configs['input_indices'])
+        self.control_voltage_indices = TorchUtils.get_tensor_from_list(self.control_voltage_indices, torch.int64)  # IndexError: tensors used as indices must be long, byte or bool tensors
+        self.control_voltage_no = len(self.control_voltage_indices)
 
     def init_bias(self):
-        self.control_low = self.min_voltage[self.indx_cv]
-        self.control_high = self.max_voltage[self.indx_cv]
+        self.control_low = self.min_voltage[self.control_voltage_indices]
+        self.control_high = self.max_voltage[self.control_voltage_indices]
 
-        bias = self.min_voltage[self.indx_cv] + \
-            (self.max_voltage[self.indx_cv] - self.min_voltage[self.indx_cv]) * \
-            TorchUtils.get_tensor_from_numpy(np.random.rand(1, self.nr_cv))
+        bias = self.min_voltage[self.control_voltage_indices] + \
+            (self.max_voltage[self.control_voltage_indices] - self.min_voltage[self.control_voltage_indices]) * \
+            TorchUtils.get_tensor_from_numpy(np.random.rand(1, self.control_voltage_no))
 
         self.bias = nn.Parameter(TorchUtils.get_tensor_from_numpy(bias))
 
@@ -50,21 +51,13 @@ class DNPU(TorchModel):
             output = self.forward(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output)
 
-    def add_control_voltages_to_input(self, x):
-        inp = TorchUtils.format_tensor(torch.empty((x.size()[0], x.size()[1] + self.nr_cv)))
-        inp[:, self.in_list] = x
-        inp[:, self.indx_cv] = self.bias.expand(x.size()[0], -1)
-        return inp
-
     def forward(self, x):
-        inp = self.add_control_voltages_to_input(x)
+        inp = merge_inputs_and_control_voltages_in_torch(x, self.bias.expand(x.size()[0], -1), self.input_indices, self.control_voltage_indices)
         return self.forward_processed(inp)
 
     def regularizer(self):
-        assert any(self.control_low < 0), \
-            "Min. Voltage is assumed to be negative, but value is positive!"
-        assert any(self.control_high > 0), \
-            "Max. Voltage is assumed to be positive, but value is negative!"
+        assert any(self.control_low < 0), "Min. Voltage is assumed to be negative, but value is positive!"
+        assert any(self.control_high > 0), "Max. Voltage is assumed to be positive, but value is negative!"
         return torch.sum(torch.relu(self.control_low - self.bias) + torch.relu(self.bias - self.control_high))
 
     def reset(self):

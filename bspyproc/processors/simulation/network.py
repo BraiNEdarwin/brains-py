@@ -4,7 +4,7 @@
 import torch
 import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.control import merge_inputs_and_control_voltages, get_control_voltage_indices
+from bspyproc.utils.control import merge_inputs_and_control_voltages_in_numpy, get_control_voltage_indices
 
 
 class TorchModel(nn.Module):
@@ -106,7 +106,7 @@ class TorchModel(nn.Module):
         return TorchUtils.get_numpy_from_tensor(output)
 
     def get_output_(self, inputs, control_voltages):
-        y = merge_inputs_and_control_voltages(inputs, control_voltages, self.input_indices, self.control_voltage_indices)
+        y = merge_inputs_and_control_voltages_in_numpy(inputs, control_voltages, self.input_indices, self.control_voltage_indices)
         return self.get_output(y)
 
     def forward_amplification(self, x):
