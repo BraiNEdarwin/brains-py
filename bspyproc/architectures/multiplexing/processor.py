@@ -6,7 +6,7 @@ import os
 from bspyproc.processors.processor_mgr import get_processor
 from bspyproc.utils.waveform import generate_waveform
 # from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_architecture
+from bspyproc.utils.control import get_control_voltage_indices
 from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.utils.waveform import generate_slopped_plato, generate_waveform, generate_waveform_from_masked_data
 
@@ -41,6 +41,7 @@ class ArchitectureProcessor():
         #     h = torch.tensor(1.8 / (4 * std1)) * \
         #         torch.clamp(h, min=-cut, max=cut) + self.conversion_offset
         #     return h.numpy()
+
     def debug_batch_norm(self, x, mean, var):
         print(f"Using dataset mean and var: {self.configs['batch_norm']['use_running_stats']}")
         print(f'Running mean: {mean}')
@@ -80,6 +81,32 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         super().__init__(configs)
         self.input_indices = self.get_input_indices(configs['input_indices'])
         self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'] * 5)
+
+    def process_input(self, x, input_no=2):
+        inputs = (self.scale * x) + self.offset
+        clipped_inputs = np.empty((inputs.shape))
+        for i in range(input_no):
+            clipped_inputs[:, i] = self.clip(inputs[:, i].copy(), cut_min=self.min_voltage[self.input_indices[i]], cut_max=self.max_voltage[self.input_indices[i]])
+            if not (inputs[:, i] == clipped_inputs[:, i]).all():
+                print(f'Warning. Scale {self.scale} and offset {self.offset} caused inputs to go off limits. Input has been clipped for the security of the device. ')
+                inputs[:, i] = clipped_inputs[:, i]
+
+        return generate_waveform(inputs, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+
+    def process_control_voltages(self, shape):
+        control_voltages = np.linspace(self.control_voltages, self.control_voltages, shape)
+        np.save(os.path.join(self.output_path, 'control_voltages'), self.control_voltages)
+        return generate_waveform(control_voltages, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+
+    def merge_inputs_and_control_voltages(self, inputs, control_voltages, node_no=5, node_electrode_no=7):
+        result = np.zeros((inputs.shape[0], len(self.input_indices * node_no) + len(self.control_voltage_indices)))
+        result[:, self.input_indices[:2]] = inputs
+        result[:, self.input_indices[2:4]] = inputs
+        result[:, node_electrode_no + self.input_indices[0]] = inputs[:, 0]
+        result[:, node_electrode_no + self.input_indices[1]] = inputs[:, 1]
+        result[:, self.control_voltage_indices] = control_voltages
+
+        return result
 
     def current_to_voltage(self, x, electrode):
         return (self.current_to_voltage_conversion_amplitude[electrode] * self.clip(x, cut_min=-self.cut, cut_max=self.cut)) + self.current_to_voltage_conversion_offset[electrode]
@@ -152,11 +179,9 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
     def get_output_(self, inputs, mask):
         self.mask = mask
-        self.plato_indices = np.arange(len(mask))[mask]
-        np.save(os.path.join(self.output_path, 'control_voltages'), self.control_voltages)
-        control_voltages = np.linspace(self.control_voltages, self.control_voltages, inputs.shape[0])
-
-        x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset, amplitudes=self.configs['waveform']['amplitude_lengths'], slopes=self.configs['waveform']['slope_lengths'])
+        # self.plato_indices = np.arange(len(mask))[mask]
+        x = self.merge_inputs_and_control_voltages(self.process_input(inputs), self.process_control_voltages(inputs.shape[0]))
+        # x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset, amplitudes=self.configs['waveform']['amplitude_lengths'], slopes=self.configs['waveform']['slope_lengths'])
         return self.get_output(x)
 
     def process_layer(self, x, bn, layer, device, electrode):
