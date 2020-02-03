@@ -19,8 +19,8 @@ class DNPUArchitecture(nn.Module):
         self.configs = configs
         self.info = {}
         self.info['smg_configs'] = configs
-        self.offset = self.init_offset(configs['offset']['min'], configs['offset']['max'])
-        self.scale = self.init_scale(configs['scale']['min'], configs['scale']['max'])
+        # self.offset = self.init_offset(configs['offset']['min'], configs['offset']['max'])
+        # self.scale = self.init_scale(configs['scale']['min'], configs['scale']['max'])
         self.alpha = 0.5
         self.beta = 0.5
 
@@ -37,11 +37,11 @@ class DNPUArchitecture(nn.Module):
             scale = TorchUtils.get_tensor_from_numpy(scale_min + scale_max * np.random.rand(1))
             return nn.Parameter(scale)
 
-    def offset_penalty(self):
-        return torch.sum(torch.relu(self.info['smg_configs']['offset']['min'] - self.offset) + torch.relu(self.offset - self.info['smg_configs']['offset']['max']))
+    # def offset_penalty(self):
+    #     return torch.sum(torch.relu(self.info['smg_configs']['offset']['min'] - self.offset) + torch.relu(self.offset - self.info['smg_configs']['offset']['max']))
 
-    def scale_penalty(self):
-        return torch.sum(torch.relu(self.info['smg_configs']['scale']['min'] - self.scale) + torch.relu(self.scale - self.info['smg_configs']['scale']['max']))
+    # def scale_penalty(self):
+    #     return torch.sum(torch.relu(self.info['smg_configs']['scale']['min'] - self.scale) + torch.relu(self.scale - self.info['smg_configs']['scale']['max']))
 
     def batch_norm(self, bn, x1, x2):
         # h = bn(torch.cat((x1, x2), dim=1))
@@ -110,7 +110,7 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
 
     def forward_with_debug(self, x):
         # Scale and offset
-        x = (self.scale * x) + self.offset
+        # x = (self.scale * x) + self.offset
         torch.save(x, os.path.join(self.output_path, 'raw_input.pt'))
         x = self.process_layer_with_debug(self.input_node1(x), self.input_node2(x), self.bn1, self.input_node1_clipping_value, self.input_node2_clipping_value, 1)
         x = self.process_layer_with_debug(self.hidden_node1(x), self.hidden_node2(x), self.bn2, self.hidden_node1_clipping_value, self.hidden_node2_clipping_value, 2)
@@ -118,7 +118,7 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         return self.output_node(x)
 
     def forward_(self, x):
-        x = (self.scale * x) + self.offset
+        # x = (self.scale * x) + self.offset
         x = self.process_layer(self.input_node1(x), self.input_node2(x), self.bn1, self.input_node1_clipping_value, self.input_node2_clipping_value, 1)
         x = self.process_layer(self.hidden_node1(x), self.hidden_node2(x), self.bn2, self.hidden_node1_clipping_value, self.hidden_node2_clipping_value, 2)
 
@@ -129,7 +129,7 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
             + self.hidden_node1.regularizer() + self.hidden_node2.regularizer() \
             + self.output_node.regularizer()
 
-        affine_penalty = self.offset_penalty() + self.scale_penalty()
+        affine_penalty = 0  # self.offset_penalty() + self.scale_penalty()
 
         return (self.alpha * control_penalty) + (self.beta * affine_penalty)
 
@@ -176,8 +176,8 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.hidden_node1.reset()
         self.hidden_node2.reset()
         self.output_node.reset()
-        self.offset.data.uniform_(self.info['smg_configs']['offset']['min'], self.info['smg_configs']['offset']['max'])
-        self.scale = self.init_scale(self.info['smg_configs']['scale']['min'], self.info['smg_configs']['scale']['max'])
+        # self.offset.data.uniform_(self.info['smg_configs']['offset']['min'], self.info['smg_configs']['offset']['max'])
+        # self.scale = self.init_scale(self.info['smg_configs']['scale']['min'], self.info['smg_configs']['scale']['max'])
         self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
         self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
 
