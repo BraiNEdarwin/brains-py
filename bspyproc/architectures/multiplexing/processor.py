@@ -82,21 +82,22 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         self.input_indices = self.get_input_indices(configs['input_indices'])
         self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'] * 5)
 
-    def process_input(self, x, input_no=2):
-        inputs = (self.scale * x) + self.offset
-        clipped_inputs = np.empty((inputs.shape))
-        for i in range(input_no):
-            clipped_inputs[:, i] = self.clip(inputs[:, i].copy(), cut_min=self.min_voltage[self.input_indices[i]], cut_max=self.max_voltage[self.input_indices[i]])
-            if not (inputs[:, i] == clipped_inputs[:, i]).all():
-                print(f'Warning. Scale {self.scale} and offset {self.offset} caused inputs to go off limits. Input has been clipped for the security of the device. ')
-                inputs[:, i] = clipped_inputs[:, i]
+    # def process_input(self, x, input_no=2):
+    #     inputs = (self.scale * x) + self.offset
+    #     clipped_inputs = np.empty((inputs.shape))
+    #     for i in range(input_no):
+    #         clipped_inputs[:, i] = self.clip(inputs[:, i].copy(), cut_min=self.min_voltage[self.input_indices[i]], cut_max=self.max_voltage[self.input_indices[i]])
+    #         if not (inputs[:, i] == clipped_inputs[:, i]).all():
+    #             print(f'Warning. Scale {self.scale} and offset {self.offset} caused inputs to go off limits. Input has been clipped for the security of the device. ')
+    #             inputs[:, i] = clipped_inputs[:, i]
 
-        return generate_waveform(inputs, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+    #     return generate_waveform(inputs, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
 
     def process_control_voltages(self, shape):
         control_voltages = np.linspace(self.control_voltages, self.control_voltages, shape)
         np.save(os.path.join(self.output_path, 'control_voltages'), self.control_voltages)
-        return generate_waveform(control_voltages, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+        return control_voltages
+        # return generate_waveform(control_voltages, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
 
     def merge_inputs_and_control_voltages(self, inputs, control_voltages, node_no=5, node_electrode_no=7):
         result = np.zeros((inputs.shape[0], len(self.input_indices * node_no) + len(self.control_voltage_indices)))
@@ -180,7 +181,8 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
     def get_output_(self, inputs, mask):
         self.mask = mask
         # self.plato_indices = np.arange(len(mask))[mask]
-        x = self.merge_inputs_and_control_voltages(self.process_input(inputs), self.process_control_voltages(inputs.shape[0]))
+        # inputs = self.process_inputs(inputs)
+        x = self.merge_inputs_and_control_voltages(inputs, self.process_control_voltages(inputs.shape[0]))
         # x = merge_inputs_and_control_voltages_in_architecture(inputs, control_voltages, self.configs['input_indices'], self.control_voltage_indices, node_no=5, node_electrode_no=7, scale=self.scale, offset=self.offset, amplitudes=self.configs['waveform']['amplitude_lengths'], slopes=self.configs['waveform']['slope_lengths'])
         return self.get_output(x)
 
@@ -215,15 +217,15 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         self.bn2['var'] = TorchUtils.get_numpy_from_tensor(state_dict['bn2.running_var'])
         self.bn2['batch_no'] = TorchUtils.get_numpy_from_tensor(state_dict['bn2.num_batches_tracked'])
 
-    def set_scale_and_offset(self, state_dict):
-        if 'scale' in state_dict:
-            self.scale = TorchUtils.get_numpy_from_tensor(state_dict['scale'])
-        else:
-            self.scale = 1
-        self.offset = TorchUtils.get_numpy_from_tensor(state_dict['offset'])
+    # def set_scale_and_offset(self, state_dict):
+    #     if 'scale' in state_dict:
+    #         self.scale = TorchUtils.get_numpy_from_tensor(state_dict['scale'])
+    #     else:
+    #         self.scale = 1
+    #     self.offset = TorchUtils.get_numpy_from_tensor(state_dict['offset'])
 
     def load_state_dict(self, model_dict):
-        self.set_scale_and_offset(model_dict['state_dict'])
+        # self.set_scale_and_offset(model_dict['state_dict'])
         self.set_batch_normalistaion_values(model_dict['state_dict'])
         self.set_control_voltages(model_dict['state_dict'])
         self.set_current_to_voltage_conversion_params(model_dict['info'])
