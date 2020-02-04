@@ -130,7 +130,7 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         print('------------------------------------------')
         print(f'Processing layer {layer}, device {device}:')
 
-        i = 200
+        i = int(x.shape[0] / 2)  # Get a value from the middle, where the control voltage should be in its plato
         max_threshold = x[i][x[i] > self.max_voltage]
         min_threshold = x[i][x[i] < self.min_voltage]
         fine = True
