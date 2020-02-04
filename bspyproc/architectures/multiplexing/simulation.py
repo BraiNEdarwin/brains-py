@@ -108,6 +108,10 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.hidden_node2_clipping_value = base_clipping_value * self.hidden_node2.get_amplification_value()
         self.output_node_clipping_value = base_clipping_value * self.output_node.get_amplification_value()
 
+    def get_amplification_value(self):
+        print('Warning: Getting amplification value from the first input node only!')
+        return self.input_node1.get_amplification_value()
+
     def forward_with_debug(self, x):
         # Scale and offset
         # x = (self.scale * x) + self.offset
