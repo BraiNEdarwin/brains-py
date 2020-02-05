@@ -45,12 +45,6 @@ class DNPU(TorchModel):
 
         self.bias = nn.Parameter(TorchUtils.get_tensor_from_numpy(bias))
 
-    def get_output(self, input_matrix):
-        with torch.no_grad():
-            inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
-            output = self.forward(inputs_torch)
-        return TorchUtils.get_numpy_from_tensor(output)
-
     def forward(self, x):
         inp = merge_inputs_and_control_voltages_in_torch(x, self.bias.expand(x.size()[0], -1), self.input_indices, self.control_voltage_indices)
         return self.forward_processed(inp)
