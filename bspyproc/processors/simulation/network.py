@@ -105,9 +105,9 @@ class TorchModel(nn.Module):
             output = self.forward_processed(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output)
 
-    def get_output_(self, inputs, control_voltages):
-        y = merge_inputs_and_control_voltages_in_numpy(inputs, control_voltages, self.input_indices, self.control_voltage_indices)
-        return self.get_output(y)
+    # def get_output_(self, inputs, control_voltages):
+    #     y = merge_inputs_and_control_voltages_in_numpy(inputs, control_voltages, self.input_indices, self.control_voltage_indices)
+    #     return self.get_output(y)
 
     def forward_amplification(self, x):
         return self.model(x) * self.amplification
