@@ -192,3 +192,8 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         w4 = next(self.hidden_node2.parameters())  # .detach().cpu().numpy()
         w5 = next(self.output_node.parameters())  # .detach().cpu().numpy()
         return torch.stack([w1, w2, w3, w4, w5]).detach()  # .cpu().numpy()
+
+    def load_state_dict(self, state_dict):
+        self.info = state_dict['info']
+        del state_dict['info']
+        super().load_state_dict(state_dict['state_dict'])
