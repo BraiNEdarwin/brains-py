@@ -37,11 +37,11 @@ class TorchModel(nn.Module):
         if file_type == 'pt':
             state_dict = torch.load(data_dir, map_location=TorchUtils.get_accelerator_type())
             info = state_dict['info']
-            info['smg_configs'] = self._info_consistency_check(info['smg_configs'])
             del state_dict['info']
+            info['smg_configs'] = self._info_consistency_check(info['smg_configs'])
             if 'amplification' not in info['data_info']['processor'].keys():
                 info['data_info']['processor']['amplification'] = 1
-            self.init_noise_configs(info['data_info']['mse'])
+            self.init_noise_configs(info['data_info'])
         elif file_type == 'json':
             state_dict = None
             # TODO: Implement loading from a json file
@@ -49,14 +49,16 @@ class TorchModel(nn.Module):
             # info = model_info loaded from a json file
         return info, state_dict
 
-    def init_noise_configs(self, mse):
-        if 'use_noise' in self.configs and self.configs['use_noise']:
-            self.error = TorchUtils.format_tensor(torch.sqrt(torch.Tensor([mse])))
+    def init_noise_configs(self, data_info):
+
+        if 'use_noise' not in self.configs:
+            print('Warning: Noise variable not found. Adding zero noise and setting the noise variable as false')
+            self.configs['use_noise'] = False
+
+        if self.configs['use_noise']:
+            self.error = TorchUtils.format_tensor(torch.sqrt(torch.Tensor([data_info['mse']])))
             self.forward_processed = self.forward_amplification_and_noise
         else:
-            if 'use_noise' not in self.configs:
-                print('Warning: Noise variable not found. Adding zero noise and setting the noise variable as false')
-                self.configs['use_noise'] = False
             self.forward_processed = self.forward_amplification
 
     def load_model(self, data_dir):
@@ -67,7 +69,7 @@ class TorchModel(nn.Module):
         else:
             model_dict = self.info
         self.build_model(model_dict)
-        self.model.load_state_dict(state_dict)
+        self.load_state_dict(state_dict)
         self.init_max_and_min_values()
         self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
 
