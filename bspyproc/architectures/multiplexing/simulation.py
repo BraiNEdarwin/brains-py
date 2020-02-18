@@ -21,8 +21,8 @@ class DNPUArchitecture(nn.Module):
         self.info['smg_configs'] = configs
         # self.offset = self.init_offset(configs['offset']['min'], configs['offset']['max'])
         # self.scale = self.init_scale(configs['scale']['min'], configs['scale']['max'])
-        self.alpha = 0.5
-        self.beta = 0.5
+        self.alpha = TorchUtils.format_tensor(torch.Tensor([100]))
+        # self.beta = 0.5
 
     def init_offset(self, offset_min, offset_max):
         offset = offset_min + offset_max * np.random.rand(1, 2)
@@ -133,9 +133,9 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
             + self.hidden_node1.regularizer() + self.hidden_node2.regularizer() \
             + self.output_node.regularizer()
 
-        affine_penalty = 0  # self.offset_penalty() + self.scale_penalty()
+        # affine_penalty = 0  # self.offset_penalty() + self.scale_penalty()
 
-        return (self.alpha * control_penalty) + (self.beta * affine_penalty)
+        return (self.alpha * control_penalty) # + (self.beta * affine_penalty)
 
     def process_layer(self, x1, x2, bn, clipping_value_1, clipping_value_2, i):
         # Clip values at 400
