@@ -21,7 +21,7 @@ class DNPUArchitecture(nn.Module):
         self.info['smg_configs'] = configs
         # self.offset = self.init_offset(configs['offset']['min'], configs['offset']['max'])
         # self.scale = self.init_scale(configs['scale']['min'], configs['scale']['max'])
-        self.alpha = TorchUtils.format_tensor(torch.Tensor([100]))
+        self.alpha = TorchUtils.format_tensor(torch.tensor([100]))
         # self.beta = 0.5
 
     def init_offset(self, offset_min, offset_max):

@@ -56,7 +56,7 @@ class TorchModel(nn.Module):
             self.configs['use_noise'] = False
 
         if self.configs['use_noise']:
-            self.error = TorchUtils.format_tensor(torch.sqrt(torch.Tensor([data_info['mse']])))
+            self.error = TorchUtils.format_tensor(torch.sqrt(torch.tensor([data_info['mse']])))
             self.forward_processed = self.forward_amplification_and_noise
         else:
             self.forward_processed = self.forward_amplification
