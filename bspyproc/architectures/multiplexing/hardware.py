@@ -226,8 +226,8 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
     def load_state_dict(self, model_dict):
         # self.set_scale_and_offset(model_dict['state_dict'])
-        self.set_batch_normalistaion_values(model_dict['state_dict'])
-        self.set_control_voltages(model_dict['state_dict'])
+        self.set_batch_normalistaion_values(model_dict)
+        self.set_control_voltages(model_dict)
         self.set_current_to_voltage_conversion_params(model_dict['info'])
         self.model_dict = model_dict
 

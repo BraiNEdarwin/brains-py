@@ -135,7 +135,7 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
 
         # affine_penalty = 0  # self.offset_penalty() + self.scale_penalty()
 
-        return (self.alpha * control_penalty) # + (self.beta * affine_penalty)
+        return (self.alpha * control_penalty)  # + (self.beta * affine_penalty)
 
     def process_layer(self, x1, x2, bn, clipping_value_1, clipping_value_2, i):
         # Clip values at 400
@@ -196,4 +196,4 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
     def load_state_dict(self, state_dict):
         self.info = state_dict['info']
         del state_dict['info']
-        super().load_state_dict(state_dict['state_dict'])
+        super().load_state_dict(state_dict)
