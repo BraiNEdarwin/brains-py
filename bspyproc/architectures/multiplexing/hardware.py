@@ -18,13 +18,17 @@ class ArchitectureProcessor():
         self.clipping_value = configs['waveform']['output_clipping_value'] * self.get_amplification_value()
         # self.conversion_offset = configs['current_to_voltage']['offset']
         self.control_voltage_indices = get_control_voltage_indices(configs['input_indices'], configs['input_electrode_no'])
-        self.output_path = os.path.join('tmp', 'architecture_debug')
-        if not os.path.exists(self.output_path):
-            os.makedirs(self.output_path)
+
         if configs['batch_norm']['use_running_stats']:
             self.batch_norm_operation = self.batch_norm_running_stats
         else:
             self.batch_norm_operation = self.batch_norm_batch_stats
+
+    def init_dirs(self, base_dir):
+        if self.configs['debug']:
+            self.output_path = os.path.join(base_dir, 'validation', 'debug','hardware')
+            if not os.path.exists(self.output_path):
+                os.makedirs(self.output_path)
 
     def clip(self, x, cut_min, cut_max):
         x[x > cut_max] = cut_max
