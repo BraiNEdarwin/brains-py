@@ -56,9 +56,9 @@ if __name__ == '__main__':
     from torch import nn
     import numpy as np
     x = 0.5 * np.random.randn(10, 7)
-    # x = torch.Tensor(x).to(DEVICE)
+    # x = torch.tensor(x).to(DEVICE)
     x = TorchUtils.get_tensor_from_numpy(x)
-    # target = torch.Tensor([[5]] * 10).to(DEVICE)
+    # target = torch.tensor([[5]] * 10).to(DEVICE)
     target = TorchUtils.get_tensor_from_list([[5]] * 10)
     node = get_processor(PROCESSOR_CONFIGS)  # ([0, 4])
     loss = nn.MSELoss()

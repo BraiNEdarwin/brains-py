@@ -4,5 +4,7 @@ dependencies:
    - ipython
    - pip
    - pip:
+     - Pyro4
+     - nidaqmx
      - numpy
      - git+https://github.com/BraiNEdarwin/brainspy-instruments.git

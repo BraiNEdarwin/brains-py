@@ -1,6 +1,6 @@
 from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.architectures.multiplexing.dnpu import TwoToOneDNPU, TwoToTwoToOneDNPU
-from bspyproc.architectures.multiplexing.processor import TwoToOneProcessor, TwoToTwoToOneProcessor
+from bspyproc.architectures.multiplexing.simulation import TwoToOneDNPU, TwoToTwoToOneDNPU
+from bspyproc.architectures.multiplexing.hardware import TwoToOneProcessor, TwoToTwoToOneProcessor
 
 
 def get_architecture(configs):
