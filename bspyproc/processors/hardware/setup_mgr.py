@@ -12,7 +12,7 @@ SECURITY_THRESHOLD = 1.5  # Voltage input security threshold
 
 class NationalInstrumentsSetup():
 
-    def __init__(self, reset_mgr, configs):
+    def __init__(self, configs):
         self.configs = configs
         self.input_indices = configs['input_indices']
         self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])

@@ -74,13 +74,24 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
         self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
         self.init_current_to_voltage_conversion_variables()
-        if configs['debug']:
-            self.output_path = os.path.join('tmp', 'architecture_debug')
-            if not os.path.exists(self.output_path):
-                os.makedirs(self.output_path)
+        self.init_control_voltage_no()
+        if self.configs['debug']:
             self.forward = self.forward_with_debug
         else:
             self.forward = self.forward_
+
+    def init_control_voltage_no(self):
+        self.control_voltage_no = self.input_node1.control_voltage_no + self.input_node2.control_voltage_no + self.hidden_node1.control_voltage_no + self.hidden_node2.control_voltage_no + self.output_node.control_voltage_no
+
+    def init_dirs(self, base_dir, is_main=True):
+        if self.configs['debug']:
+            if is_main:
+                self.output_path = os.path.join(base_dir, 'validation', 'task_debug','simulation')
+            else:
+                self.output_path = os.path.join(base_dir, 'debug','simulation')
+            if not os.path.exists(self.output_path):
+                os.makedirs(self.output_path)
+
 
     def init_current_to_voltage_conversion_variables(self):
         self.std = 1
@@ -186,12 +197,12 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
 
     def get_control_voltages(self):
-        w1 = next(self.input_node1.parameters())  # .detach().cpu().numpy()
-        w2 = next(self.input_node2.parameters())  # .detach().cpu().numpy()
-        w3 = next(self.hidden_node1.parameters())  # .detach().cpu().numpy()
-        w4 = next(self.hidden_node2.parameters())  # .detach().cpu().numpy()
-        w5 = next(self.output_node.parameters())  # .detach().cpu().numpy()
-        return torch.stack([w1, w2, w3, w4, w5]).detach()  # .cpu().numpy()
+        w1 = next(self.input_node1.parameters())[0]
+        w2 = next(self.input_node2.parameters())[0]
+        w3 = next(self.hidden_node1.parameters())[0]
+        w4 = next(self.hidden_node2.parameters())[0]
+        w5 = next(self.output_node.parameters())[0]
+        return torch.stack([w1, w2, w3, w4, w5]).flatten().detach() #.cpu().numpy()
 
     def load_state_dict(self, state_dict):
         self.info = state_dict['info']
