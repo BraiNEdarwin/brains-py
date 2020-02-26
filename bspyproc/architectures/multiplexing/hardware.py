@@ -24,9 +24,12 @@ class ArchitectureProcessor():
         else:
             self.batch_norm_operation = self.batch_norm_batch_stats
 
-    def init_dirs(self, base_dir):
+    def init_dirs(self, base_dir, is_main=True):
         if self.configs['debug']:
-            self.output_path = os.path.join(base_dir, 'validation', 'debug','hardware')
+            if is_main:
+                self.output_path = os.path.join(base_dir, 'validation', 'task_debug','hardware')
+            else:
+                self.output_path = os.path.join(base_dir, 'debug','hardware')
             if not os.path.exists(self.output_path):
                 os.makedirs(self.output_path)
 

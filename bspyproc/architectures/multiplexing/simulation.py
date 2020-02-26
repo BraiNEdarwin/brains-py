@@ -75,18 +75,23 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
         self.init_current_to_voltage_conversion_variables()
         self.init_control_voltage_no()
+        if self.configs['debug']:
+            self.forward = self.forward_with_debug
+        else:
+            self.forward = self.forward_
 
     def init_control_voltage_no(self):
         self.control_voltage_no = self.input_node1.control_voltage_no + self.input_node2.control_voltage_no + self.hidden_node1.control_voltage_no + self.hidden_node2.control_voltage_no + self.output_node.control_voltage_no
 
-    def init_dirs(self, base_dir):
+    def init_dirs(self, base_dir, is_main=True):
         if self.configs['debug']:
-            self.output_path = os.path.join(base_dir, 'validation', 'debug','simulation')
+            if is_main:
+                self.output_path = os.path.join(base_dir, 'validation', 'task_debug','simulation')
+            else:
+                self.output_path = os.path.join(base_dir, 'debug','simulation')
             if not os.path.exists(self.output_path):
                 os.makedirs(self.output_path)
-            self.forward = self.forward_with_debug
-        else:
-            self.forward = self.forward_
+
 
     def init_current_to_voltage_conversion_variables(self):
         self.std = 1
