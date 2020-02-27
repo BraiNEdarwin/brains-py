@@ -27,9 +27,9 @@ class ArchitectureProcessor():
     def init_dirs(self, base_dir, is_main=True):
         if self.configs['debug']:
             if is_main:
-                self.output_path = os.path.join(base_dir, 'validation', 'task_debug','hardware')
+                self.output_path = os.path.join(base_dir, 'validation', 'task_debug', 'hardware')
             else:
-                self.output_path = os.path.join(base_dir, 'debug','hardware')
+                self.output_path = os.path.join(base_dir, 'debug', 'hardware')
             if not os.path.exists(self.output_path):
                 os.makedirs(self.output_path)
 
@@ -101,10 +101,11 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
     #     return generate_waveform(inputs, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
 
     def process_control_voltages(self, shape):
-        control_voltages = np.linspace(self.control_voltages, self.control_voltages, shape)
-        np.save(os.path.join(self.output_path, 'control_voltages'), self.control_voltages)
-        return control_voltages
-        # return generate_waveform(control_voltages, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+        # control_voltages = np.linspace(self.control_voltages, self.control_voltages, shape)
+        # np.save(os.path.join(self.output_path, 'control_voltages'), self.control_voltages)
+        # return control_voltages
+        return np.linspace(self.control_voltages, self.control_voltages, shape)
+        # # return generate_waveform(control_voltages, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
 
     def merge_inputs_and_control_voltages(self, inputs, control_voltages, node_no=5, node_electrode_no=7):
         result = np.zeros((inputs.shape[0], len(self.input_indices * node_no) + len(self.control_voltage_indices)))
@@ -160,7 +161,8 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
         return results
 
     def get_output(self, x):
-        np.save(os.path.join(self.output_path, 'raw_input'), x)
+        if self.configs['debug']:
+            np.save(os.path.join(self.output_path, 'raw_input'), x)
         x1 = self.read_from_processor(x[:, 0:7], 1, 0)
 
         bnx1 = self.process_layer(x1, self.bn1, 1, 0, self.configs['input_indices'][0])
@@ -195,22 +197,24 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
 
     def process_layer(self, x, bn, layer, device, electrode):
         # The input has been already scaled and offsetted
-        np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_' + str(device)), x[:, 0])
+        if self.configs['debug']:
+            np.save(os.path.join(self.output_path, 'device_layer_' + str(layer) + '_output_' + str(device)), x[:, 0])
 
         # Clip current
         x = self.clip(x, cut_min=-self.clipping_value, cut_max=self.clipping_value)
-        np.save(os.path.join(self.output_path, 'bn_afterclip_' + str(layer) + '_' + str(device)), x[:, 0])
+        if self.configs['debug']:
+            np.save(os.path.join(self.output_path, 'bn_afterclip_' + str(layer) + '_' + str(device)), x[:, 0])
 
         # Batch normalisation
         bnx = self.batch_norm(x[self.mask], bn['mean'][device], bn['var'][device])
-
-        np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_' + str(device)), generate_waveform_from_masked_data(bnx[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths']))
+        if self.configs['debug']:
+            np.save(os.path.join(self.output_path, 'bn_afterbatch_' + str(layer) + '_' + str(device)), generate_waveform_from_masked_data(bnx[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths']))
 
         bnx = self.current_to_voltage(bnx, electrode)
 
         bnx = generate_waveform_from_masked_data(bnx[:, 0], self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
-
-        np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_' + str(device)), bnx)
+        if self.configs['debug']:
+            np.save(os.path.join(self.output_path, 'bn_aftercv_' + str(layer) + '_' + str(device)), bnx)
 
         return bnx
 
