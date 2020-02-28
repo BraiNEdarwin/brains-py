@@ -51,12 +51,12 @@ class TorchModel(nn.Module):
 
     def init_noise_configs(self, data_info):
 
-        if 'use_noise' not in self.configs:
+        if 'noise' not in self.configs:
             print('Warning: Noise variable not found. Adding zero noise and setting the noise variable as false')
-            self.configs['use_noise'] = False
+            self.configs['noise'] = False
 
-        if self.configs['use_noise']:
-            self.error = TorchUtils.format_tensor(torch.sqrt(torch.tensor([data_info['mse']])))
+        if 'noise' in self.configs:
+            self.error = TorchUtils.format_tensor(torch.sqrt(torch.tensor([self.configs['noise']])))
             self.forward_processed = self.forward_amplification_and_noise
         else:
             self.forward_processed = self.forward_amplification
