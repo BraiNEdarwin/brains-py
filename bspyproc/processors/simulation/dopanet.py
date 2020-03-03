@@ -10,12 +10,12 @@ Created on Mon Sep  2 11:33:38 2019
 import torch
 import numpy as np
 import torch.nn as nn
-from bspyproc.processors.simulation.network import TorchModel
+from bspyproc.processors.simulation.surrogate import SurrogateModel
 from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.utils.control import merge_inputs_and_control_voltages_in_torch
 
 
-class DNPU(TorchModel):
+class DNPU(SurrogateModel):
     '''
     '''
 

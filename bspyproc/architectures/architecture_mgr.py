@@ -13,22 +13,14 @@ def get_architecture(configs):
 
 
 def get_simulation_architecture(configs):
-    if configs['simulation_type'] == 'neural_network':
-        return get_neural_network_simulation_architecture(configs)
-    elif configs['simulation_type'] == 'kinetic_monte_carlo':
-        raise NotImplementedError(f"{configs['simulation_type']} 'simulation_type' configuration is not yet implemented.")
-    else:
-        raise NotImplementedError(f"{configs['simulation_type']} 'simulation_type' configuration is not recognised. The simulation type has to be defined as 'neural_network' or 'kinetic_monte_carlo'. ")
-
-
-def get_neural_network_simulation_architecture(configs):
-    if configs['network_type'] == 'device_model' or configs['network_type'] == 'nn_model':
-        # raise NotImplementedError(f"{configs['network_type']} 'network_type' configuration is not implemented. ")
+    if configs['processor_type'] == 'nn':
+        raise NotImplementedError(f"{configs['processor_type']} 'processor_type' nn configuration is not implemented yet. ")
+    if configs['processor_type'] == 'surrogate':
         return get_processor_architecture(configs)
-    elif configs['network_type'] == 'dnpu':
+    elif configs['processor_type'] == 'dnpu':
         return get_dnpu_architecture(configs).to(device=TorchUtils.get_accelerator_type())
     else:
-        raise NotImplementedError(f"{configs['network_type']} 'network_type' configuration is not recognised. The simulation type has to be defined as 'device_model', 'nn_model' or 'dpnu'. ")
+        raise NotImplementedError(f"{configs['processor_type']} 'processor_type' configuration is not recognised. The simulation type has to be defined as 'nn', 'surrogate' or 'dpnu'. ")
 
 
 def get_processor_architecture(configs):

@@ -7,7 +7,7 @@ from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.utils.control import merge_inputs_and_control_voltages_in_numpy, get_control_voltage_indices
 
 
-class TorchModel(nn.Module):
+class NeuralNetworkModel(nn.Module):
     """
         The TorchModel class is used to manage together a torch model and its state dictionary. The usage is expected to be as follows
         mymodel = TorchModel()
@@ -18,69 +18,11 @@ class TorchModel(nn.Module):
 
     def __init__(self, configs):
         super().__init__()
-
-        self.configs = configs
-        self.info = {}
-        if type(configs['torch_model_dict']) is str:
-            self.load_model(configs['torch_model_dict'])
-        elif type(configs['torch_model_dict']) is dict:
-            self.build_model(configs['torch_model_dict'])
-        if 'input_indices' in configs and 'input_electrode_no' in configs:
-            self.input_indices = configs['input_indices']
-            self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
-        else:
-            print('Warning: Input indices and control voltage indices have not been defined.')
+        self.configs=configs
+        self.build_model(configs['torch_model_dict'])
         if TorchUtils.get_accelerator_type() == torch.device('cuda'):
             self.model.cuda()
 
-    def load_file(self, data_dir, file_type):
-        if file_type == 'pt':
-            state_dict = torch.load(data_dir, map_location=TorchUtils.get_accelerator_type())
-            info = state_dict['info']
-            del state_dict['info']
-            info['smg_configs'] = self._info_consistency_check(info['smg_configs'])
-            if 'amplification' not in info['data_info']['processor'].keys():
-                info['data_info']['processor']['amplification'] = 1
-            self.init_noise_configs(info['data_info'])
-        elif file_type == 'json':
-            state_dict = None
-            # TODO: Implement loading from a json file
-            raise NotImplementedError(f"Loading file from a json file in TorchModel has not been implemented yet. ")
-            # info = model_info loaded from a json file
-        return info, state_dict
-
-    def init_noise_configs(self, data_info):
-
-        # if 'noise' not in self.configs:
-        #     print('Warning: Noise variable not found. Adding zero noise and setting the noise variable as false')
-        #     self.configs['noise'] = False
-
-        if 'noise' in self.configs:
-            print(f"The model has a gaussian noise based on a MSE of {torch.sqrt(torch.tensor([self.configs['noise']]))}")
-            self.error = TorchUtils.format_tensor(torch.sqrt(torch.tensor([self.configs['noise']])))
-            self.forward_processed = self.forward_amplification_and_noise
-        else:
-            print(f"The model has been initialised without noise.")
-            self.error = TorchUtils.format_tensor(torch.tensor([0]))
-            self.forward_processed = self.forward_amplification
-
-    def load_model(self, data_dir):
-        """Loads a pytorch model from a directory string."""
-        self.info, state_dict = self.load_file(data_dir, 'pt')
-        if 'smg_configs' in self.info.keys():
-            model_dict = self.info['smg_configs']['processor']['torch_model_dict']
-        else:
-            model_dict = self.info
-        self.build_model(model_dict)
-        self.load_state_dict(state_dict)
-        self.init_max_and_min_values()
-        self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
-
-    def init_max_and_min_values(self):
-        self.offset = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['offset'])
-        self.amplitude = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['amplitude'])
-        self.min_voltage = self.offset - self.amplitude
-        self.max_voltage = self.offset + self.amplitude
 
     def build_model(self, model_info):
 
@@ -102,7 +44,7 @@ class TorchModel(nn.Module):
         print('Model built with the following modules: \n', modules)
 
     def reset(self):
-        print("Warning: Reset function in nn_model not implemented.")
+        print("Warning: Reset function in TorchModel not implemented.")
 
     def get_output(self, input_matrix):
         with torch.no_grad():
@@ -110,23 +52,8 @@ class TorchModel(nn.Module):
             output = self.forward_processed(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output)
 
-    # def get_output_(self, inputs, control_voltages):
-    #     y = merge_inputs_and_control_voltages_in_numpy(inputs, control_voltages, self.input_indices, self.control_voltage_indices)
-    #     return self.get_output(y)
-
-    def forward_amplification(self, x):
-        return self.model(x) * self.amplification
-
-    def forward_amplification_and_noise(self, x):
-        output = self.forward_amplification(x)
-        noise = self.error * TorchUtils.format_tensor(torch.randn(output.shape))
-        return output + noise
-
     def forward(self, x):
         return self.model(x)
-
-    def get_amplification_value(self):
-        return self.info['data_info']['processor']['amplification']
 
     def _info_consistency_check(self, model_info):
         """ It checks if the model info follows the expected standards.
