@@ -32,7 +32,6 @@ class SurrogateModel(NeuralNetworkModel):
             info['smg_configs'] = self._info_consistency_check(info['smg_configs'])
             if 'amplification' not in info['data_info']['processor'].keys():
                 info['data_info']['processor']['amplification'] = 1
-            self.init_noise_configs(info['data_info'])
         elif file_type == 'json':
             state_dict = None
             # TODO: Implement loading from a json file
@@ -40,7 +39,7 @@ class SurrogateModel(NeuralNetworkModel):
             # info = model_info loaded from a json file
         return info, state_dict
 
-    def init_noise_configs(self, data_info):
+    def init_noise_configs(self):
         if 'noise' in self.configs:
             print(f"The model has a gaussian noise based on a MSE of {torch.sqrt(torch.tensor([self.configs['noise']]))}")
             self.error = TorchUtils.format_tensor(torch.sqrt(torch.tensor([self.configs['noise']])))
@@ -62,6 +61,7 @@ class SurrogateModel(NeuralNetworkModel):
         self.load_state_dict(state_dict)
         self.init_max_and_min_values()
         self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
+        self.init_noise_configs()
 
     def init_max_and_min_values(self):
         self.offset = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['offset'])
