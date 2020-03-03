@@ -17,8 +17,7 @@ class SurrogateModel(NeuralNetworkModel):
 # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
 
     def __init__(self, configs):
-        self.configs = configs
-        self.load_model(configs['torch_model_dict'])
+        self.load_model(configs)
         if 'input_indices' in configs and 'input_electrode_no' in configs:
             self.input_indices = configs['input_indices']
             self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
@@ -51,14 +50,15 @@ class SurrogateModel(NeuralNetworkModel):
             self.error = TorchUtils.format_tensor(torch.tensor([0]))
             self.forward_processed = self.forward_amplification
 
-    def load_model(self, data_dir):
+    def load_model(self, configs):
         """Loads a pytorch model from a directory string."""
-        self.info, state_dict = self.load_file(data_dir, 'pt')
+        self.info, state_dict = self.load_file(configs['torch_model_dict'], 'pt')
         if 'smg_configs' in self.info.keys():
             model_dict = self.info['smg_configs']['processor']
         else:
             model_dict = self.info
         super().__init__(model_dict)
+        self.configs = configs
         self.load_state_dict(state_dict)
         self.init_max_and_min_values()
         self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
