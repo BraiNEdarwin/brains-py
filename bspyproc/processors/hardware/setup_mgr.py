@@ -6,6 +6,8 @@ import math
 import time
 from bspyproc.processors.hardware import task_mgr
 from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
+import nidaqmx.system.device as device
+
 
 SECURITY_THRESHOLD = 1.5  # Voltage input security threshold
 
@@ -14,8 +16,8 @@ class NationalInstrumentsSetup():
 
     def __init__(self, configs):
         self.configs = configs
-        self.input_indices = configs['input_indices']
-        self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
+        # self.input_indices = configs['input_indices']
+        # self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
         self.driver = task_mgr.get_driver(configs['driver'])
         self.offsetted_shape = configs['shape'] + configs['offset']
         self.ceil = math.ceil((self.offsetted_shape) / self.configs['sampling_frequency']) + 1
@@ -37,7 +39,6 @@ class NationalInstrumentsSetup():
         self.driver.start_tasks(y, self.configs['auto_start'])
         read_data = self.driver.read(self.offsetted_shape, self.ceil)
         self.driver.stop_tasks()
-
         return read_data
 
     def close_tasks(self):
@@ -46,9 +47,9 @@ class NationalInstrumentsSetup():
     def get_amplification_value(self):
         return self.configs["amplification"]
 
-    def get_output_(self, inputs, control_voltages):
-        y = merge_inputs_and_control_voltages_in_numpy(inputs, control_voltages, self.input_indices, self.control_voltage_indices)
-        return self.get_output(y)
+    # def get_output_(self, inputs, control_voltages):
+    #     y = merge_inputs_and_control_voltages_in_numpy(inputs, control_voltages, self.input_indices, self.control_voltage_indices)
+    #     return self.get_output(y)s
 
     def get_output(self):
         pass
