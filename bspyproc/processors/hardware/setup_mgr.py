@@ -25,6 +25,11 @@ class NationalInstrumentsSetup():
         time.sleep(1)
         self.driver.init_input(self.configs['output_channels'], self.configs['input_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)
 
+    def reset(self):
+        self.close_tasks()
+        device.Device(name=self.configs['input_instrument']).reset_device()
+        device.Device(name=self.configs['output_instrument']).reset_device()
+
     def process_output_data(self, data):
         data = np.asarray(data)
         if len(data.shape) == 1:
@@ -32,7 +37,7 @@ class NationalInstrumentsSetup():
         return data * self.configs["amplification"]
 
     def read_data(self, y):
-        p = Process(target=self.download_for, args=(y,))
+        p = Process(target=self._read_data, args=(y,))
         p.start()
         p.join()
 
