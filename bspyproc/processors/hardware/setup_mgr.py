@@ -1,13 +1,18 @@
 '''
 
 '''
+import os
+import sys
 import numpy as np
 import math
 import time
 from bspyproc.processors.hardware import task_mgr
 from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
 import nidaqmx.system.device as device
-from multiprocessing import Process
+import signal 
+import threading
+from threading import Thread
+import queue
 
 SECURITY_THRESHOLD = 1.5  # Voltage input security threshold
 
@@ -15,6 +20,7 @@ SECURITY_THRESHOLD = 1.5  # Voltage input security threshold
 class NationalInstrumentsSetup():
 
     def __init__(self, configs):
+        self.enable_os_signals()
         self.configs = configs
         # self.input_indices = configs['input_indices']
         # self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
@@ -24,6 +30,11 @@ class NationalInstrumentsSetup():
         self.driver.init_output(self.configs['input_channels'], self.configs['output_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)
         time.sleep(1)
         self.driver.init_input(self.configs['output_channels'], self.configs['input_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)
+        global event
+        global semaphore
+        event = threading.Event()
+        semaphore = threading.Semaphore()
+        # self.results_queue = queue.Queue()
 
     def reset(self):
         self.close_tasks()
@@ -37,9 +48,19 @@ class NationalInstrumentsSetup():
         return data * self.configs["amplification"]
 
     def read_data(self, y):
-        p = Process(target=self._read_data, args=(y,))
-        p.start()
-        p.join()
+        global p
+        # p = Thread(target=lambda q, arg1: q.put(self._read_data(arg1)), args=(self.results_queue, y))
+        p = Thread(target=self._read_data, args=(y,))
+        if not event.is_set():
+            semaphore.acquire()
+            p = Thread(target=self._read_data, args=(y,))
+            p.start()
+            p.join()
+            semaphore.release()
+        return self.data_results
+        # results = self.results_queue.get()
+        # self.results_queue.task_done()
+        # return 
 
     def _read_data(self, y):
         '''
@@ -47,8 +68,12 @@ class NationalInstrumentsSetup():
         '''
         # assert self.offsetted_shape[self.offsetted_shape > SECURITY_THRESHOLD].shape[0] > 0 or self.offsetted_shape[self.offsetted_shape < -SECURITY_THRESHOLD].shape[0] > 0, f"A value is higher/lower than the threshold of +/-{SECURITY_THRESHOLD}. Stopping the program in order to avoid damage to the device."
         self.driver.start_tasks(y, self.configs['auto_start'])
+        # for i in range(8):
+        #     print('reading')
+        #     time.sleep(1)
         read_data = self.driver.read(self.offsetted_shape, self.ceil)
         self.driver.stop_tasks()
+        self.data_results = read_data
         return read_data
 
     def close_tasks(self):
@@ -63,6 +88,37 @@ class NationalInstrumentsSetup():
 
     def get_output(self):
         pass
+
+    # These functions are used to handle the termination of the read task in such a way that enables the last read to finish, and closes the tasks afterwards
+    def os_signal_handler(self, signum, frame=None):
+        event.set()
+        print('Interruption/Termination signal received. Waiting for the reader to finish.')
+        p.join()
+        # print('Emptying the results queue')
+        # if not self.results_queue.empty():
+        #     self.results_queue.get()
+        # print('Waiting for the queue to finish')
+        # self.results_queue.join()
+        print("Closing nidaqmx tasks")
+        self.close_tasks()
+        sys.exit(0)
+
+    def enable_os_signals(self):
+        if sys.platform == "win32":
+            import win32api
+            win32api.SetConsoleCtrlHandler(self.os_signal_handler, True)
+        else:
+            signal.signal(signal.SIGTERM, self.os_signal_handler)
+            signal.signal(signal.SIGINT, self.os_signal_handler)
+
+    def disable_os_signals(self):
+        if sys.platform == "win32":
+            import win32api # ignoring the signal
+            win32api.SetConsoleCtrlHandler(None, True)
+        else:
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+
 
 
 class CDAQtoCDAQ(NationalInstrumentsSetup):
@@ -139,3 +195,5 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
     def synchronise_output_data(self, read_data):
         cut_value = self.get_output_cut_value(read_data)
         return read_data[:-1, cut_value:self.configs['shape'] + cut_value]
+
+    
