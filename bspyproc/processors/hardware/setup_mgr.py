@@ -14,7 +14,12 @@ import threading
 from threading import Thread
 import queue
 
-SECURITY_THRESHOLD = 1.5  # Voltage input security threshold
+# SECURITY FLAGS.
+# WARNING - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
+INPUT_VOLTAGE_THRESHOLD = 1.5
+CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS = 0.1
+CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS = 0.03
+SYNCHRONISATION_VALUE = 0.04 # do not reduce to less than 0.02
 
 
 class NationalInstrumentsSetup():
@@ -22,6 +27,9 @@ class NationalInstrumentsSetup():
     def __init__(self, configs):
         self.enable_os_signals()
         self.configs = configs
+        if configs['max_ramping_time_seconds'] == 0:
+            input("WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n The security check for the ramping time has been disabled. Steep rampings can can damage the device. Proceed only if you are sure that you will not damage the device. If you want to avoid damagesimply exit the execution. \n ONLY If you are sure about what you are doing press ENTER to continue. Otherwise STOP the execution of this program.")
+        assert configs['waveform']['slope_lengths'] / configs['sampling_frequency'] >= configs['max_ramping_time_seconds']
         # self.input_indices = configs['input_indices']
         # self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
         self.driver = task_mgr.get_driver(configs['driver'])
@@ -66,15 +74,16 @@ class NationalInstrumentsSetup():
         '''
             y = It represents the input data as matrix where the shpe is defined by the "number of inputs to the device" times "input points that you want to input to the device".
         '''
-        # assert self.offsetted_shape[self.offsetted_shape > SECURITY_THRESHOLD].shape[0] > 0 or self.offsetted_shape[self.offsetted_shape < -SECURITY_THRESHOLD].shape[0] > 0, f"A value is higher/lower than the threshold of +/-{SECURITY_THRESHOLD}. Stopping the program in order to avoid damage to the device."
+        self.read_security_checks(y)
         self.driver.start_tasks(y, self.configs['auto_start'])
-        # for i in range(8):
-        #     print('reading')
-        #     time.sleep(1)
         read_data = self.driver.read(self.offsetted_shape, self.ceil)
         self.driver.stop_tasks()
         self.data_results = read_data
         return read_data
+
+    def read_security_checks(self, y):
+        assert y[y <= INPUT_VOLTAGE_THRESHOLD].size > 0 or y[y >= -INPUT_VOLTAGE_THRESHOLD].size > 0, f"A value is higher/lower than the threshold of +/-{INPUT_VOLTAGE_THRESHOLD}. Stopping the program in order to avoid damage to the device."
+        assert np.argwhere(y[:,0] != 0).size == 0 and np.argwhere(y[:,-1] != 0).size == 0
 
     def close_tasks(self):
         self.driver.close_tasks()
@@ -90,6 +99,7 @@ class NationalInstrumentsSetup():
         pass
 
     # These functions are used to handle the termination of the read task in such a way that enables the last read to finish, and closes the tasks afterwards
+
     def os_signal_handler(self, signum, frame=None):
         event.set()
         print('Interruption/Termination signal received. Waiting for the reader to finish.')
@@ -126,6 +136,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
     def __init__(self, configs):
         configs['auto_start'] = True
         configs['offset'] = 0
+        configs['max_ramping_time_seconds'] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.driver.start_trigger(self.configs['trigger_source'])
 
@@ -141,8 +152,8 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def __init__(self, configs):
         configs['auto_start'] = False
-
-        configs['offset'] = int(configs['sampling_frequency'] * 0.04)  # do not reduce to less than 0.02
+        configs['offset'] = int(configs['sampling_frequency'] * SYNCHRONISATION_VALUE)
+        configs['max_ramping_time_seconds'] = CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.driver.add_channels(self.configs['output_instrument'], self.configs['input_instrument'])
 
