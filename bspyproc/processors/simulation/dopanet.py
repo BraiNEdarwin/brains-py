@@ -22,6 +22,11 @@ class DNPU(SurrogateModel):
     def __init__(self, configs):
         super().__init__(configs)
         self.init_electrode_info(configs)
+        if 'regularisation_factor' in configs['hyperparameters']:
+            self.alpha = TorchUtils.format_tensor(configs['hyperparameters']['regularisation_factor'])
+        else:
+            print('No regularisation factor set.')
+            self.alpha = TorchUtils.format_tensor(torch.tensor([1]))
         # Freeze parameters
         for params in self.parameters():
             params.requires_grad = False
@@ -51,7 +56,7 @@ class DNPU(SurrogateModel):
         return self.forward_processed(inp)
 
     def regularizer(self):
-        return torch.sum(torch.relu(self.control_low - self.bias) + torch.relu(self.bias - self.control_high))
+        return self.alpha * (torch.sum(torch.relu(self.control_low - self.bias) + torch.relu(self.bias - self.control_high)))
 
     def reset(self):
         for k in range(len(self.control_low)):

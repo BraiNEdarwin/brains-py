@@ -12,17 +12,10 @@ from bspyproc.processors.processor_mgr import get_processor
 
 class DNPUArchitecture(nn.Module):
     def __init__(self, configs):
-        # offset min = -0.35 max = 0.7
-        # scale min = 0.1 max = 1.5
-        # conversion offset = -0.6
         super().__init__()
         self.configs = configs
         self.info = {}
         self.info['smg_configs'] = configs
-        # self.offset = self.init_offset(configs['offset']['min'], configs['offset']['max'])
-        # self.scale = self.init_scale(configs['scale']['min'], configs['scale']['max'])
-        self.alpha = TorchUtils.format_tensor(torch.tensor([1e4]))
-        # self.beta = 0.5
 
     def init_offset(self, offset_min, offset_max):
         offset = offset_min + offset_max * np.random.rand(1, 2)
@@ -36,12 +29,6 @@ class DNPUArchitecture(nn.Module):
         else:
             scale = TorchUtils.get_tensor_from_numpy(scale_min + scale_max * np.random.rand(1))
             return nn.Parameter(scale)
-
-    # def offset_penalty(self):
-    #     return torch.sum(torch.relu(self.info['smg_configs']['offset']['min'] - self.offset) + torch.relu(self.offset - self.info['smg_configs']['offset']['max']))
-
-    # def scale_penalty(self):
-    #     return torch.sum(torch.relu(self.info['smg_configs']['scale']['min'] - self.scale) + torch.relu(self.scale - self.info['smg_configs']['scale']['max']))
 
     def batch_norm(self, bn, x1, x2):
         # h = bn(torch.cat((x1, x2), dim=1))
@@ -140,13 +127,9 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         return self.output_node(x)
 
     def regularizer(self):
-        control_penalty = self.input_node1.regularizer() + self.input_node2.regularizer() \
+        return self.input_node1.regularizer() + self.input_node2.regularizer() \
             + self.hidden_node1.regularizer() + self.hidden_node2.regularizer() \
             + self.output_node.regularizer()
-
-        # affine_penalty = 0  # self.offset_penalty() + self.scale_penalty()
-
-        return (self.alpha * control_penalty)  # + (self.beta * affine_penalty)
 
     def process_layer(self, x1, x2, bn, clipping_value_1, clipping_value_2, i):
         # Clip values at 400
@@ -191,8 +174,6 @@ class TwoToTwoToOneDNPU(DNPUArchitecture):
         self.hidden_node1.reset()
         self.hidden_node2.reset()
         self.output_node.reset()
-        # self.offset.data.uniform_(self.info['smg_configs']['offset']['min'], self.info['smg_configs']['offset']['max'])
-        # self.scale = self.init_scale(self.info['smg_configs']['scale']['min'], self.info['smg_configs']['scale']['max'])
         self.bn1 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
         self.bn2 = TorchUtils.format_tensor(nn.BatchNorm1d(2, affine=False))
 
