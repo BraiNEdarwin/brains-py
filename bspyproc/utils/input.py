@@ -37,3 +37,8 @@ def map_to_voltage(x, v_min, v_max):
     a = ((v_min - v_max) / (x.min() - x.max()))
     b = v_max - a * x.max()
     return (a * x) + b
+
+def get_map_to_voltage_vars(v_min, v_max, x=np.array([-1,1])):
+    scale = ((v_min - v_max) / (x.min() - x.max()))
+    offset = v_max - scale * x.max()
+    return scale, offset
