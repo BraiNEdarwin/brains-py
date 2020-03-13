@@ -23,7 +23,7 @@ class DNPU(SurrogateModel):
         super().__init__(configs)
         self.init_electrode_info(configs)
         if 'regularisation_factor' in configs:
-            self.alpha = TorchUtils.format_tensor(configs['hyperparameters']['regularisation_factor'])
+            self.alpha = TorchUtils.format_tensor(torch.tensor(configs['regularisation_factor']))
         else:
             print('No regularisation factor set.')
             self.alpha = TorchUtils.format_tensor(torch.tensor([1]))
