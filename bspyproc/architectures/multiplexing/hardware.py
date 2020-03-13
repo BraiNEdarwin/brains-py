@@ -4,7 +4,7 @@
 import numpy as np
 import os
 from bspyproc.processors.processor_mgr import get_processor
-from bspyproc.utils.waveform import generate_waveform
+from bspyproc.utils.waveform import generate_waveform, generate_slopped_plato
 # from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.utils.control import get_control_voltage_indices
 from bspyproc.utils.pytorch import TorchUtils
@@ -101,11 +101,11 @@ class TwoToTwoToOneProcessor(ArchitectureProcessor):
     #     return generate_waveform(inputs, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
 
     def process_control_voltages(self, shape):
-        # control_voltages = np.linspace(self.control_voltages, self.control_voltages, shape)
-        # np.save(os.path.join(self.output_path, 'control_voltages'), self.control_voltages)
-        # return control_voltages
-        return np.linspace(self.control_voltages, self.control_voltages, shape)
-        # # return generate_waveform(control_voltages, self.configs['waveform']['amplitude_lengths'], self.configs['waveform']['slope_lengths'])
+        result = np.zeros([shape,len(self.control_voltages)])
+        slopped_plato = generate_slopped_plato(self.configs['waveform']['slope_lengths'], shape)
+        for i in range(len(self.control_voltages)):
+            result[:,i] = self.control_voltages[i] * slopped_plato
+        return result
 
     def merge_inputs_and_control_voltages(self, inputs, control_voltages, node_no=5, node_electrode_no=7):
         result = np.zeros((inputs.shape[0], len(self.input_indices * node_no) + len(self.control_voltage_indices)))
