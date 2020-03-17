@@ -64,6 +64,9 @@ class NationalInstrumentsSetup():
             p = Thread(target=self._read_data, args=(y,))
             p.start()
             p.join()
+            if self.data_results is None:
+                print('Nothing could be read. Stopping program')
+                self.os_signal_handler(None)
             semaphore.release()
         return self.data_results
         # results = self.results_queue.get()
@@ -74,6 +77,7 @@ class NationalInstrumentsSetup():
         '''
             y = It represents the input data as matrix where the shpe is defined by the "number of inputs to the device" times "input points that you want to input to the device".
         '''
+        self.data_results = None
         self.read_security_checks(y)
         self.driver.start_tasks(y, self.configs['auto_start'])
         read_data = self.driver.read(self.offsetted_shape, self.ceil)
@@ -144,7 +148,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
 
     def get_output(self, y):
         y = y.T
-        assert self.configs['shape'] == y.shape[1]
+        assert self.configs['shape'] == y.shape[1], f"configs value with key 'shape' must be {y.shape[1]}"
         data = self.read_data(y)
         data = self.process_output_data(data)
         return data.T
@@ -161,7 +165,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def get_output(self, y):
         y = y.T
-        assert self.configs['shape'] == y.shape[1]
+        assert self.configs['shape'] == y.shape[1], f"configs value with key 'shape' must be {y.shape[1]}"
         y = self.synchronise_input_data(y)
         max_attempts = 5
         attempts = 1
