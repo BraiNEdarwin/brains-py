@@ -141,16 +141,17 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
 
     def __init__(self, configs):
         configs['auto_start'] = True
-        configs['offset'] = 0
+        configs['offset'] = 1
         configs['max_ramping_time_seconds'] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.driver.start_trigger(self.configs['trigger_source'])
 
     def get_output(self, y):
+        y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
         y = y.T
-        assert self.configs['shape'] == y.shape[1], f"configs value with key 'shape' must be {y.shape[1]}"
+        assert self.configs['shape'] + 1 == y.shape[1], f"configs value with key 'shape' must be {y.shape[1]-1}"
         data = self.read_data(y)
-        data = self.process_output_data(data)
+        data = -1 * self.process_output_data(data)[:, 1:]
         return data.T
 
 
