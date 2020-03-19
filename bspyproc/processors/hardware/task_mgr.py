@@ -91,6 +91,7 @@ class LocalTasks():
 
     @Pyro4.oneway
     def start_tasks(self, y, auto_start):
+        y = np.require(y, dtype=y.dtype, requirements=['C', 'W'])
         self.output_task.write(y, auto_start=auto_start)
         if not auto_start:
             self.output_task.start()
