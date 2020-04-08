@@ -41,8 +41,8 @@ class SurrogateModel(NeuralNetworkModel):
 
     def init_noise_configs(self):
         if 'noise' in self.configs:
-            print(f"The model has a gaussian noise based on a MSE of {torch.sqrt(torch.tensor([self.configs['noise']]))}")
-            self.error = TorchUtils.format_tensor(torch.sqrt(torch.tensor([self.configs['noise']])))
+            print(f"The model has a gaussian noise based on a MSE of {torch.tensor([self.configs['noise']])}")
+            self.error = torch.sqrt(TorchUtils.format_tensor(torch.tensor([self.configs['noise']])))
             self.forward_processed = self.forward_amplification_and_noise
         else:
             print(f"The model has been initialised without noise.")
