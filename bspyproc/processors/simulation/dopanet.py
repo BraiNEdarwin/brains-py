@@ -49,7 +49,7 @@ class DNPU(SurrogateModel):
             (self.max_voltage[self.control_voltage_indices] - self.min_voltage[self.control_voltage_indices]) * \
             TorchUtils.get_tensor_from_numpy(np.random.rand(1, self.control_voltage_no))
 
-        self.bias = nn.Parameter(TorchUtils.get_tensor_from_numpy(bias))
+        self.bias = nn.Parameter(bias)
 
     def forward(self, x):
         inp = merge_inputs_and_control_voltages_in_torch(x, self.bias.expand(x.size()[0], -1), self.input_indices, self.control_voltage_indices)
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     loss = nn.MSELoss()
     optimizer = torch.optim.Adam([{'params': node.parameters()}], lr=0.01)
 
-    LOSS_LIST = []
+    LOSS_LIST = [] 
     CHANGE_PARAMS_NET = []
     CHANGE_PARAMS0 = []
 
