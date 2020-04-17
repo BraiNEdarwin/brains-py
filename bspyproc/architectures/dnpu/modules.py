@@ -11,7 +11,7 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as nf
 from more_itertools import grouper
-from bspyproc.processors.simulation.network import TorchModel
+from bspyproc.processors.simulation.surrogate import SurrogateModel
 from bspyproc.utils.pytorch import TorchUtils
 
 
@@ -64,14 +64,16 @@ class DNPU_Base(nn.Module):
         return self.node(data) * self.node.amplification
 
     def regularizer(self):
-        assert any(self.control_low.min(dim=0)[0] < 0), \
-            "Min. Voltage is assumed to be negative, but value is positive!"
-        assert any(self.control_high.max(dim=0)[0] > 0), \
-            "Max. Voltage is assumed to be positive, but value is negative!"
         buff = 0.
-        for i, p in enumerate(self.all_controls):
-            buff += torch.sum(torch.relu(self.control_low[i] - p)
-                              + torch.relu(p - self.control_high[i]))
+        if self.control_low.shape[-1] > 0:
+            assert any(self.control_low.min(dim=0)[0] < 0), \
+                "Min. Voltage is assumed to be negative, but value is positive!"
+            assert any(self.control_high.max(dim=0)[0] > 0), \
+                "Max. Voltage is assumed to be positive, but value is negative!"
+
+            for i, p in enumerate(self.all_controls):
+                buff += torch.sum(torch.relu(self.control_low[i] - p)
+                                  + torch.relu(p - self.control_high[i]))
         return buff
 
     def reset(self):

@@ -103,9 +103,9 @@ def batch_training(batch_iter, network, optimizer, loss_fn, regularization):
         cost_per_minibatch.append(cost_mb.detach().item())
         penalty_per_minibatch.append(penalty.detach().item())
         # cv_grads.append([p.grad.detach().cpu().numpy() for p in network.dnpu_layer.parameters() if p.requires_grad])
-        bn_params.append([p.detach().cpu().numpy() for p in network.bn0.parameters()])
-        bn_mean.append(network.bn0.running_mean.detach().cpu().numpy())
-        bn_var.append(network.bn0.running_var.detach().cpu().numpy())
+        # bn_params.append([p.detach().cpu().numpy() for p in network.bn0.parameters()])
+        # bn_mean.append(network.bn0.running_mean.detach().cpu().numpy())
+        # bn_var.append(network.bn0.running_var.detach().cpu().numpy())
 
     # plt.figure()
     # plt.plot(np.asarray(cost_per_minibatch))
