@@ -18,14 +18,12 @@ class NeuralNetworkModel(nn.Module):
 
     def __init__(self, configs):
         super().__init__()
-        self.configs=configs
-        self.build_model(configs['torch_model_dict'])
+        self.configs = configs
+        self.load_model(configs['torch_model_dict'])
         if TorchUtils.get_accelerator_type() == torch.device('cuda'):
             self.model.cuda()
 
-
-    def build_model(self, model_info):
-
+    def load_model(self, model_info):
         hidden_sizes = model_info['hidden_sizes']
         input_layer = nn.Linear(model_info['D_in'], hidden_sizes[0])
         activ_function = self._get_activation(model_info['activation'])
@@ -43,34 +41,18 @@ class NeuralNetworkModel(nn.Module):
 
         print('Model built with the following modules: \n', modules)
 
-    def reset(self):
-        print("Warning: Reset function in TorchModel not implemented.")
-
-    def get_output(self, input_matrix):
+    def forward_numpy(self, input_matrix):
         with torch.no_grad():
             inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
-            output = self.forward_processed(inputs_torch)
+            output = self.forward(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output)
 
     def forward(self, x):
         return self.model(x)
 
-    def _info_consistency_check(self, model_info):
-        """ It checks if the model info follows the expected standards.
-        If it does not follow the standards, it forces the model to
-        follow them and throws an exception. """
-        # if type(model_info['activation']) is str:
-        #    model_info['activation'] = nn.ReLU()
-        if 'D_in' not in model_info['processor']['torch_model_dict']:
-            model_info['processor']['torch_model_dict']['D_in'] = 7
-            print('WARNING: The model loaded does not define the input dimension as expected. Changed it to default value: 7')
-        if 'D_out' not in model_info['processor']['torch_model_dict']:
-            model_info['processor']['torch_model_dict']['D_out'] = 1
-            print('WARNING: The model loaded does not define the output dimension as expected. Changed it to default value: %d.' % 1)
-        if 'hidden_sizes' not in model_info['processor']['torch_model_dict']:
-            model_info['processor']['torch_model_dict']['hidden_sizes'] = [90] * 6
-            print('WARNING: The model loaded does not define the input dimension as expected. Changed it to default value: %d.' % 90)
-        return model_info
+    def reset(self):
+        self.model.reset_parameters()
+
 # TODO: generalize get_activation function to allow for several options, e.g. relu, tanh, hard-tanh, sigmoid
 
     def _get_activation(self, activation):

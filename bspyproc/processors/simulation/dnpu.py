@@ -15,50 +15,54 @@ from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.utils.control import merge_inputs_and_control_voltages_in_torch
 
 
-class DNPU(SurrogateModel):
+class DNPU(nn.Module):
     '''
     '''
 
     def __init__(self, configs):
-        super().__init__(configs)
-        self.init_electrode_info(configs)
+        super().__init__()
+        self.model = SurrogateModel(configs)
+        self._init_electrode_info(configs)
+        self._init_alpha(configs)
+        # Freeze parameters
+        for params in self.parameters():
+            params.requires_grad = False
+        self._init_bias()
+
+    def _init_electrode_info(self, configs):
+        # self.input_no = len(configs['input_indices'])
+        self.input_indices = TorchUtils.get_tensor_from_list(configs['input_indices'], torch.int64)
+        electrode_no = len(self.model.info['data_info']['input_data']['offset'])
+        self.control_indices = np.delete(np.arange(electrode_no), configs['input_indices'])
+        self.control_indices = TorchUtils.get_tensor_from_list(self.control_indices, torch.int64)  # IndexError: tensors used as indices must be long, byte or bool tensors
+
+    def _init_alpha(self, configs):
         if 'regularisation_factor' in configs:
             self.alpha = TorchUtils.format_tensor(torch.tensor(configs['regularisation_factor']))
         else:
             print('No regularisation factor set.')
             self.alpha = TorchUtils.format_tensor(torch.tensor([1]))
-        # Freeze parameters
-        for params in self.parameters():
-            params.requires_grad = False
-        self.init_bias()
 
-    def init_electrode_info(self, configs):
-        self.input_no = len(configs['input_indices'])
-        self.input_indices = TorchUtils.get_tensor_from_list(configs['input_indices'], torch.int64)
-        self.electrode_no = len(self.info['data_info']['input_data']['offset'])
-        self.control_voltage_indices = np.delete(np.arange(self.electrode_no), configs['input_indices'])
-        self.control_voltage_indices = TorchUtils.get_tensor_from_list(self.control_voltage_indices, torch.int64)  # IndexError: tensors used as indices must be long, byte or bool tensors
-        self.control_voltage_no = len(self.control_voltage_indices)
-
-    def init_bias(self):
-        self.control_low = self.min_voltage[self.control_voltage_indices]
-        self.control_high = self.max_voltage[self.control_voltage_indices]
+    def _init_bias(self):
+        self.control_low = self.model.min_voltage[self.control_indices]
+        self.control_high = self.model.max_voltage[self.control_indices]
         assert any(self.control_low < 0), "Min. Voltage is assumed to be negative, but value is positive!"
         assert any(self.control_high > 0), "Max. Voltage is assumed to be positive, but value is negative!"
-        bias = self.min_voltage[self.control_voltage_indices] + \
-            (self.max_voltage[self.control_voltage_indices] - self.min_voltage[self.control_voltage_indices]) * \
-            TorchUtils.get_tensor_from_numpy(np.random.rand(1, self.control_voltage_no))
+        bias = self.model.min_voltage[self.control_indices] + \
+            (self.max_voltage[self.control_indices] - self.model.min_voltage[self.control_indices]) * \
+            TorchUtils.get_tensor_from_numpy(np.random.rand(1, len(self.control_indices)))
 
         self.bias = nn.Parameter(bias)
 
     def forward(self, x):
         inp = merge_inputs_and_control_voltages_in_torch(x, self.bias.expand(x.size()[0], -1), self.input_indices, self.control_voltage_indices)
-        return self.forward_processed(inp)
+        return self.model(inp)
 
-    def regularizer(self):
+    def get_regularization(self):
         return self.alpha * (torch.sum(torch.relu(self.control_low - self.bias) + torch.relu(self.bias - self.control_high)))
 
     def reset(self):
+        self.model.reset()
         for k in range(len(self.control_low)):
             # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
             self.bias.data[:, k].uniform_(self.control_low[k], self.control_high[k])
@@ -77,7 +81,7 @@ if __name__ == '__main__':
     loss = nn.MSELoss()
     optimizer = torch.optim.Adam([{'params': node.parameters()}], lr=0.01)
 
-    LOSS_LIST = [] 
+    LOSS_LIST = []
     CHANGE_PARAMS_NET = []
     CHANGE_PARAMS0 = []
 
