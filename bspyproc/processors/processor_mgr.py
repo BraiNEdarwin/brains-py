@@ -5,13 +5,13 @@ from bspyproc.processors.simulation.network import NeuralNetworkModel
 from bspyproc.processors.hardware.setup_mgr import CDAQtoCDAQ, CDAQtoNiDAQ
 
 
-def get_processor(configs):
-    if configs['platform'] == 'hardware':
-        return get_hardware_processor(configs)
-    elif configs['platform'] == 'simulation':
-        return get_simulation_processor(configs)
-    else:
-        raise NotImplementedError(f"Platform {configs['platform']} is not recognised. The platform has to be either 'hardware' or 'simulation'")
+# def get_processor(configs):
+#     if configs['platform'] == 'hardware':
+#         return get_hardware_processor(configs)
+#     elif configs['platform'] == 'simulation':
+#         return get_simulation_processor(configs)
+#     else:
+#         raise NotImplementedError(f"Platform {configs['platform']} is not recognised. The platform has to be either 'hardware' or 'simulation'")
 
 
 def get_hardware_processor(configs):
@@ -28,7 +28,7 @@ def get_hardware_processor(configs):
         raise NotImplementedError(f"{configs['processor_type']} 'processor_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. ")
 
 
-def get_simulation_processor(configs):
+def get_processor(configs):
     if configs['processor_type'] == 'nn':
         return NeuralNetworkModel(configs)
     elif configs['processor_type'] == 'surrogate':

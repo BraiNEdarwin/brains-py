@@ -14,6 +14,8 @@ from bspyproc.processors.simulation.surrogate import SurrogateModel
 from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.utils.control import merge_inputs_and_control_voltages_in_torch
 
+from bspyproc.processors.processor_mgr import get_hardware_processor
+
 
 class DNPU(nn.Module):
     '''
@@ -21,7 +23,7 @@ class DNPU(nn.Module):
 
     def __init__(self, configs):
         super().__init__()
-        self.model = SurrogateModel(configs)
+        self._load_processor(configs)
         self._init_electrode_info(configs)
         self._init_alpha(configs)
         # Freeze parameters
@@ -29,11 +31,20 @@ class DNPU(nn.Module):
             params.requires_grad = False
         self._init_bias()
 
+    def _load_processor(self, configs):
+        if configs['platform'] == 'hardware':
+            self.processor = get_hardware_processor(configs)
+            self.electrode_no = len(configs["input_channels"])
+        elif configs['platform'] == 'simulation':
+            self.processor = SurrogateModel(configs)
+            self.electrode_no = len(self.processor.info['data_info']['input_data']['offset'])
+        else:
+            raise NotImplementedError(f"Platform {configs['platform']} is not recognised. The platform has to be either 'hardware' or 'simulation'")
+
     def _init_electrode_info(self, configs):
         # self.input_no = len(configs['input_indices'])
         self.input_indices = TorchUtils.get_tensor_from_list(configs['input_indices'], torch.int64)
-        electrode_no = len(self.model.info['data_info']['input_data']['offset'])
-        self.control_indices = np.delete(np.arange(electrode_no), configs['input_indices'])
+        self.control_indices = np.delete(np.arange(self.electrode_no), configs['input_indices'])
         self.control_indices = TorchUtils.get_tensor_from_list(self.control_indices, torch.int64)  # IndexError: tensors used as indices must be long, byte or bool tensors
 
     def _init_alpha(self, configs):
