@@ -6,8 +6,8 @@ import sys
 import numpy as np
 import math
 import time
-from bspyproc.processors.hardware import task_mgr
-from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
+from bspyproc.processors.hardware.drivers.tasks import get_driver
+# from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
 import nidaqmx.system.device as device
 import signal
 import threading
@@ -32,7 +32,7 @@ class NationalInstrumentsSetup():
         assert configs['waveform']['slope_lengths'] / configs['sampling_frequency'] >= configs['max_ramping_time_seconds']
         # self.input_indices = configs['input_indices']
         # self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
-        self.driver = task_mgr.get_driver(configs['driver'])
+        self.driver = get_driver(configs['driver'])
         self.offsetted_shape = configs['shape'] + configs['offset']
         self.ceil = math.ceil((self.offsetted_shape) / self.configs['sampling_frequency']) + 1
         self.driver.init_output(self.configs['input_channels'], self.configs['output_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)

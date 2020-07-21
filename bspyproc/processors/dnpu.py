@@ -12,7 +12,7 @@ import numpy as np
 import torch.nn as nn
 from bspyproc.processors.simulation.surrogate import SurrogateModel
 from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.control import merge_inputs_and_control_voltages_in_torch
+from bspyproc.utils.electrodes import merge_inputs_and_control_voltages_in_torch
 
 from bspyproc.processors.processor_mgr import get_hardware_processor
 

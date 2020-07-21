@@ -2,12 +2,12 @@
 (CUDA or CPU) that is used in the computer. The aim is to support both platforms seemlessly. """
 
 import torch
-import torch.nn
+import torch.nn as nn
 from bspyproc.processors.simulation.network import NeuralNetworkModel
 from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.control import get_control_voltage_indices
-from utils.dictionaries import info_consistency_check
-from utils.waveform import WaveformManager
+from bspyproc.processors.hardware.drivers.driver_mgr import get_driver
+
+from bspyproc.utils.waveform import WaveformManager
 
 
 class HardwareProcessor(nn.Module):
@@ -23,10 +23,13 @@ class HardwareProcessor(nn.Module):
         super().__init__()
         self.load_model(configs)
         self._init_voltage_range()
+        self.driver = get_driver(configs)
         self.waveform_mgr = WaveformManager(configs)
 
     def load(self, configs):
         pass
+
+    # TODO: Manage amplification from this class
 
     def _init_voltage_range(self):
         offset = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['offset'])
@@ -35,7 +38,7 @@ class HardwareProcessor(nn.Module):
         self.max_voltage = offset + amplitude
 
     def forward(self, x):
-        return (self.model(x) * self.amplification) + (self.error * TorchUtils.format_tensor(torch.randn(output.shape)))
+        return self.driver.get_output(x)
 
     def forward_numpy(self, input_matrix):
         with torch.no_grad():

@@ -1,8 +1,8 @@
 from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.processors.simulation.dopanet import DNPU
+from bspyproc.processors.dnpu import DNPU
 from bspyproc.processors.simulation.surrogate import SurrogateModel
 from bspyproc.processors.simulation.network import NeuralNetworkModel
-from bspyproc.processors.hardware.setup_mgr import CDAQtoCDAQ, CDAQtoNiDAQ
+from bspyproc.processors.hardware.drivers.setups import CDAQtoCDAQ, CDAQtoNiDAQ
 
 
 # def get_processor(configs):
@@ -14,7 +14,7 @@ from bspyproc.processors.hardware.setup_mgr import CDAQtoCDAQ, CDAQtoNiDAQ
 #         raise NotImplementedError(f"Platform {configs['platform']} is not recognised. The platform has to be either 'hardware' or 'simulation'")
 
 
-def get_hardware_processor(configs):
+def get_driver(configs):
     if configs['processor_type'] == 'cdaq_to_cdaq':
         # configs['input_instrument'] = 'cDAQ1Mod2'
         # configs['output_instrument'] = 'cDAQ1Mod1'
@@ -28,12 +28,12 @@ def get_hardware_processor(configs):
         raise NotImplementedError(f"{configs['processor_type']} 'processor_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. ")
 
 
-def get_processor(configs):
-    if configs['processor_type'] == 'nn':
-        return NeuralNetworkModel(configs)
-    elif configs['processor_type'] == 'surrogate':
-        return SurrogateModel(configs)
-    elif configs['processor_type'] == 'dnpu':
-        return DNPU(configs)
-    else:
-        raise NotImplementedError(f"{configs['processor_type']} 'processor_type' configuration is not recognised. The simulation type has to be defined as 'nn', 'surrogate' or 'dpnu'. ")
+# def get_processor(configs):
+#     if configs['processor_type'] == 'nn':
+#         return NeuralNetworkModel(configs)
+#     elif configs['processor_type'] == 'surrogate':
+#         return SurrogateModel(configs)
+#     elif configs['processor_type'] == 'dnpu':
+#         return DNPU(configs)
+#     else:
+#         raise NotImplementedError(f"{configs['processor_type']} 'processor_type' configuration is not recognised. The simulation type has to be defined as 'nn', 'surrogate' or 'dpnu'. ")
