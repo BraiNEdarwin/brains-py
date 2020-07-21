@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Nov 16 14:36:36 2018
 Generate a piecewise linear wave form with general amplitudes and intervals.
-@author: hruiz and ualegre
 """
 import numpy as np
 import warnings

@@ -6,7 +6,7 @@ import random
 class TorchUtils:
     """ A class to consistently manage declarations of torch variables for CUDA and CPU. """
     force_cpu = False
-    data_type = torch.float
+    data_type = torch.float32
 
     @staticmethod
     def set_force_cpu(force):

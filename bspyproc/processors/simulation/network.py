@@ -10,6 +10,7 @@ from bspyproc.utils.control import merge_inputs_and_control_voltages_in_numpy, g
 class NeuralNetworkModel(nn.Module):
     """
         The TorchModel class is used to manage together a torch model and its state dictionary. The usage is expected to be as follows
+        Loads a neural network from a custom dictionary
         mymodel = TorchModel()
         mymodel.load_model('my_path/my_model.pt')
         mymodel.model
@@ -23,7 +24,7 @@ class NeuralNetworkModel(nn.Module):
         if TorchUtils.get_accelerator_type() == torch.device('cuda'):
             self.model.cuda()
 
-    def load_model(self, model_info):
+    def load(self, model_info):
         hidden_sizes = model_info['hidden_sizes']
         input_layer = nn.Linear(model_info['D_in'], hidden_sizes[0])
         activ_function = self._get_activation(model_info['activation'])
@@ -41,21 +42,11 @@ class NeuralNetworkModel(nn.Module):
 
         print('Model built with the following modules: \n', modules)
 
-    def forward_numpy(self, input_matrix):
-        with torch.no_grad():
-            inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
-            output = self.forward(inputs_torch)
-        return TorchUtils.get_numpy_from_tensor(output)
-
     def forward(self, x):
         return self.model(x)
 
-    def reset(self):
-        self.model.reset_parameters()
-
-# TODO: generalize get_activation function to allow for several options, e.g. relu, tanh, hard-tanh, sigmoid
-
     def _get_activation(self, activation):
+        # TODO: generalize get_activation function to allow for several options, e.g. relu, tanh, hard-tanh, sigmoid
         if type(activation) is str:
             print('Activation function is set as ReLU')
             return nn.ReLU()
