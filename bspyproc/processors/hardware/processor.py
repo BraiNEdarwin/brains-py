@@ -3,10 +3,9 @@
 
 import torch
 import torch.nn as nn
-from bspyproc.processors.simulation.network import NeuralNetworkModel
-from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.processors.hardware.drivers.driver_mgr import get_driver
 
+from bspyproc.processors.hardware.drivers.driver_mgr import get_driver
+from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.utils.waveform import WaveformManager
 
 
@@ -25,11 +24,8 @@ class HardwareProcessor(nn.Module):
         self._init_voltage_range()
         self.driver = get_driver(configs)
         self.waveform_mgr = WaveformManager(configs)
-
-    def load(self, configs):
-        pass
-
-    # TODO: Manage amplification from this class
+        # TODO: Manage amplification from this class
+        self.amplification = self.info['data_info']['processor']['amplification']
 
     def _init_voltage_range(self):
         offset = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['offset'])
@@ -38,17 +34,17 @@ class HardwareProcessor(nn.Module):
         self.max_voltage = offset + amplitude
 
     def forward(self, x):
-        return self.driver.get_output(x)
-
-    def forward_numpy(self, input_matrix):
         with torch.no_grad():
-            inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
-            output = self.forward(inputs_torch)
-        return TorchUtils.get_numpy_from_tensor(output)
+            inputs_numpy = TorchUtils.get_numpy_from_tensor(x)
+            output = self.forward_numpy(inputs_numpy)
+        return TorchUtils.get_tensor_from_numpy(output)
+
+    def forward_numpy(self, x):
+        return self.driver.get_output(x)
 
     def reset(self):
         print("Warning: Reset function in Surrogate Model not implemented.")
-        self.model.reset()
+        self.driver.reset()
 
     def close(self):
         pass

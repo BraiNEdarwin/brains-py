@@ -20,10 +20,6 @@ class WaveformManager():
             return [parameter] * length
         return parameter
 
-    def points_to_plateau(self, data):
-        assert False, 'Function not yet implemented'
-        pass
-
     def points_to_waveform(self, data):
         '''
         Generates a waveform (voltage input over time) with constant intervals of value amplitudes[i] for interval i of length[i].
@@ -52,6 +48,14 @@ class WaveformManager():
 
         else:
             assert False, 'Assignment of amplitudes and lengths/slopes is not unique!'
+        return output
+
+    def points_to_plateau(self, data):
+        # output = np.ndarray([])
+        amplitude_lengths = self._expand(self.amplitude_lengths, len(data))
+        output = np.array(([data[0]] * amplitude_lengths[0]))
+        for i in range(1, len(data)):
+            output = np.concatenate((output, np.array(([data[i]] * amplitude_lengths[i]))))
         return output
 
     def plateaus_to_waveform(self, data):

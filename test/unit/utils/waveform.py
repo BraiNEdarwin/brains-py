@@ -17,24 +17,31 @@ class WaveformTest(unittest.TestCase):
         self.configs = configs
         self.waveform_mgr = WaveformManager(configs)
 
-    def test_point_to_waveform(self):
+    def full_check(self, point_no):
         points = np.random.rand(10)
         waveform = self.waveform_mgr.points_to_waveform(points)
-        processed_points = self.waveform_mgr.waveform_to_points(waveform)
-        assert (np.float32(processed_points) == np.float32(points)).all(), "It was not possible to transform back the points into waveforms"
+        assert waveform[0] == 0.0 and waveform[-1] == 0.0, 'Waveforms do not start and end with zero'
+        assert len(waveform) == ((self.waveform_mgr.amplitude_lengths * len(points)) + (self.waveform_mgr.slope_lengths * (len(points) + 1))), 'Waveform has an incorrect shape'
 
-    def test_plateau_to_waveform(self):
-        points = np.random.rand(3)
-        waveform = self.waveform_mgr.points_to_waveform(points)
         mask = self.waveform_mgr.generate_mask(len(waveform))
-        waveform_processed = self.waveform_mgr.plateaus_to_waveform(waveform[mask])
-        assert (waveform == waveform_processed).all(), "It was not possible to transform back the plateaus into waveforms"
-        assert (waveform[mask] == self.waveform_mgr.waveform_to_plateaus(waveform)).all(), "It was not possible to transform waveform into plateaus"
-        # print(waveform_processed)
+        assert len(mask) == len(waveform)
+
+        waveform_to_points = self.waveform_mgr.waveform_to_points(waveform)
+        plateaus_to_points = self.waveform_mgr.plateaus_to_points(waveform[mask])
+        assert (np.float32(points) == np.float32(waveform_to_points)).all() == (np.float32(points) == np.float32(plateaus_to_points)).all(), "Inconsistent to_point conversion"
+
+        points_to_plateau = self.waveform_mgr.points_to_plateau(points)
+        waveform_to_plateau = self.waveform_mgr.waveform_to_plateaus(waveform)
+        assert (waveform[mask] == points_to_plateau).all() == (waveform[mask] == waveform_to_plateau).all(), "Inconsistent plateau conversion"
+
+        plateaus_to_waveform = self.waveform_mgr.plateaus_to_waveform(waveform[mask])
+        assert (waveform == plateaus_to_waveform).all(), "Inconsistent waveform conversion"
 
     def runTest(self):
-        self.test_point_to_waveform()
-        self.test_plateau_to_waveform()
+        self.full_check(0)
+        self.full_check(1)
+        self.full_check(10)
+        self.full_check(100)
 
 
 if __name__ == '__main__':

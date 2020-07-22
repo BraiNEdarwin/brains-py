@@ -4,7 +4,6 @@
 import torch
 import torch.nn as nn
 from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.control import merge_inputs_and_control_voltages_in_numpy, get_control_voltage_indices
 
 
 class NeuralNetworkModel(nn.Module):
@@ -20,9 +19,9 @@ class NeuralNetworkModel(nn.Module):
     def __init__(self, configs):
         super().__init__()
         self.configs = configs
-        self.load_model(configs['torch_model_dict'])
+        self.load(configs['torch_model_dict'])
         if TorchUtils.get_accelerator_type() == torch.device('cuda'):
-            self.model.cuda()
+            self.raw_model.cuda()
 
     def load(self, model_info):
         hidden_sizes = model_info['hidden_sizes']
@@ -38,12 +37,12 @@ class NeuralNetworkModel(nn.Module):
             modules.append(activ_function)
 
         modules.append(output_layer)
-        self.model = nn.Sequential(*modules)
+        self.raw_model = nn.Sequential(*modules)
 
         print('Model built with the following modules: \n', modules)
 
     def forward(self, x):
-        return self.model(x)
+        return self.raw_model(x)
 
     def _get_activation(self, activation):
         # TODO: generalize get_activation function to allow for several options, e.g. relu, tanh, hard-tanh, sigmoid

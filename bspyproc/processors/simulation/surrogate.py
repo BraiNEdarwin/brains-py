@@ -2,13 +2,12 @@
 (CUDA or CPU) that is used in the computer. The aim is to support both platforms seemlessly. """
 
 import torch
-import torch.nn
+import torch.nn as nn
+
 from bspyproc.processors.simulation.network import NeuralNetworkModel
 from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.control import get_control_voltage_indices
-from utils.dictionaries import info_consistency_check
-
-from bspyproc.simulation.noise import get_noise
+from bspyproc.utils.loader import load_file
+from bspyproc.processors.simulation.noise.noise import get_noise
 
 
 class SurrogateModel(nn.Module):
@@ -22,18 +21,17 @@ class SurrogateModel(nn.Module):
 
     def __init__(self, configs):
         super().__init__()
-        self.load_model(configs)
+        self._load(configs)
         self._init_voltage_range()
         self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
         self.noise = get_noise(configs)
 
-    def load(self, configs):
+    def _load(self, configs):
         """Loads a pytorch model from a directory string."""
         self.configs = configs
-        self.info, state_dict = self._load_file(configs['torch_model_dict'], 'pt')
+        self.info, state_dict = load_file(configs['torch_model_dict'], 'pt')
         self.model = NeuralNetworkModel(self.info['smg_configs']['processor'])
         self.load_state_dict(state_dict)
-        self._init_info()
 
     def _init_voltage_range(self):
         offset = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['offset'])
@@ -42,7 +40,7 @@ class SurrogateModel(nn.Module):
         self.max_voltage = offset + amplitude
 
     def forward(self, x):
-        return self.error(self.model(x) * self.amplification)
+        return self.noise(self.model(x) * self.amplification)
 
     def forward_numpy(self, input_matrix):
         with torch.no_grad():
@@ -52,4 +50,4 @@ class SurrogateModel(nn.Module):
 
     def reset(self):
         print("Warning: Reset function in Surrogate Model not implemented.")
-        self.model.reset()
+        pass
