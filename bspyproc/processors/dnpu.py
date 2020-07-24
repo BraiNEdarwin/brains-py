@@ -59,8 +59,8 @@ class DNPU(nn.Module):
         self.control_high = self.processor.max_voltage[self.control_indices]
         assert any(self.control_low < 0), "Min. Voltage is assumed to be negative, but value is positive!"
         assert any(self.control_high > 0), "Max. Voltage is assumed to be positive, but value is negative!"
-        bias = self.processor.min_voltage[self.control_indices] + \
-            (self.processor.max_voltage[self.control_indices] - self.processor.min_voltage[self.control_indices]) * \
+        bias = self.control_low + \
+            (self.control_high - self.control_low) * \
             TorchUtils.get_tensor_from_numpy(np.random.rand(1, len(self.control_indices)))
 
         self.bias = nn.Parameter(bias)
