@@ -2,7 +2,7 @@
 (CUDA or CPU) that is used in the computer. The aim is to support both platforms seemlessly. """
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from bspyproc.processors.hardware.drivers.driver_mgr import get_driver
 from bspyproc.utils.pytorch import TorchUtils
