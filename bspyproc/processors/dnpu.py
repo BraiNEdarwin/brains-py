@@ -7,7 +7,7 @@ Created on Mon Sep  2 11:33:38 2019
 """
 
 import torch
-import torch.nn as nn
+from torch import nn
 import numpy as np
 
 from bspyproc.utils.pytorch import TorchUtils
@@ -77,5 +77,13 @@ class DNPU(nn.Module):
             # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
             self.bias.data[:, k].uniform_(self.control_low[k], self.control_high[k])
 
+    def get_input_range(self):
+        return self.processor.min_voltage[self.input_indices], self.processor.max_voltage[self.input_indices]
+
     def get_control_voltages(self):
         return next(self.parameters()).detach()
+
+    def hw_eval(self, hw_processor_configs):
+        self.eval()
+        self._load_processor(hw_processor_configs)
+        self._init_electrode_info(configs)
