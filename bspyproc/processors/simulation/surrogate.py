@@ -2,7 +2,7 @@
 (CUDA or CPU) that is used in the computer. The aim is to support both platforms seemlessly. """
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from bspyproc.processors.simulation.network import NeuralNetworkModel
 from bspyproc.utils.pytorch import TorchUtils
@@ -24,6 +24,7 @@ class SurrogateModel(nn.Module):
         self._load(configs)
         self._init_voltage_range()
         self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
+        self.clipping_value = TorchUtils.get_tensor_from_list(self.info['data_info']['clipping_value'])
         self.noise = get_noise(configs)
 
     def _load(self, configs):
