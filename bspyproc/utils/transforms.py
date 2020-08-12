@@ -1,9 +1,9 @@
 import torch
-import numpy as np
+
 from bspyproc.utils.pytorch import TorchUtils
 
 
-class CurrentToVoltage(object):
+class CurrentToVoltage():
     def __init__(self, v_min, v_max, x_min=-1, x_max=1, cut=True):
         self.scale, self.offset = get_map_to_voltage_vars(v_min, v_max, x_min, x_max)
         self.x_min = x_min
