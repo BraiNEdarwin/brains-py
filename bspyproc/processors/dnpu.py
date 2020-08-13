@@ -34,7 +34,7 @@ class DNPU(nn.Module):
     def _load_processor(self, configs):
         if configs['platform'] == 'hardware':
             self.processor = HardwareProcessor(configs)
-            self.electrode_no = len(configs["input_channels"])
+            self.electrode_no = len(configs["activation_channels"])
         elif configs['platform'] == 'simulation':
             self.processor = SurrogateModel(configs)
             self.electrode_no = len(self.processor.info['data_info']['input_data']['offset'])
@@ -86,4 +86,4 @@ class DNPU(nn.Module):
     def hw_eval(self, hw_processor_configs):
         self.eval()
         self._load_processor(hw_processor_configs)
-        self._init_electrode_info(configs)
+        self._init_electrode_info(hw_processor_configs)
