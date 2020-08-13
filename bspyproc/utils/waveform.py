@@ -99,8 +99,12 @@ class WaveformManager():
             output = np.concatenate((output, current_slope))
             j += amplitude_lengths[i]
         i = data_size
-        output = np.concatenate((output, np.array(data[j:j + amplitude_lengths[i]])))
-        output = np.concatenate((output, np.linspace(data[j + amplitude_lengths[i] - 1], 0, slope_lengths[i])))
+        current_plateau = np.array(data[j:j + amplitude_lengths[i]])
+        current_slope = np.linspace(data[j + amplitude_lengths[i] - 1], 0, slope_lengths[i])
+        mask += [True] * len(current_plateau)
+        mask += [False] * len(current_slope)
+        output = np.concatenate((output, current_plateau))
+        output = np.concatenate((output, current_slope))
         return output, mask
 
     def plateaus_to_points(self, data):
