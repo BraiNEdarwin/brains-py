@@ -3,6 +3,7 @@
 """
 Generate a piecewise linear wave form with general amplitudes and intervals.
 """
+import torch
 import numpy as np
 import warnings
 
@@ -50,13 +51,24 @@ class WaveformManager():
             assert False, 'Assignment of amplitudes and lengths/slopes is not unique!'
         return output
 
+    # def points_to_plateau(self, data):
+    #     # output = np.ndarray([])
+    #     amplitude_lengths = self._expand(self.amplitude_lengths, len(data))
+    #     output = np.array(([data[0]] * amplitude_lengths[0]))
+    #     for i in range(1, len(data)):
+    #         output = np.concatenate((output, np.array(([data[i]] * amplitude_lengths[i]))))
+    #     return output
+
     def points_to_plateau(self, data):
         # output = np.ndarray([])
-        amplitude_lengths = self._expand(self.amplitude_lengths, len(data))
-        output = np.array(([data[0]] * amplitude_lengths[0]))
+        result = data[0].repeat(self.amplitude_lengths, 1)
         for i in range(1, len(data)):
-            output = np.concatenate((output, np.array(([data[i]] * amplitude_lengths[i]))))
-        return output
+            result = torch.cat((result, data[i].repeat(self.amplitude_lengths, 1)), dim=0)
+        # amplitude_lengths = self._expand(self.amplitude_lengths, len(data))
+        # output = data[0].expand(data.shape[0] * amplitude_lengths[0], -1)
+        # for i in range(1, data.shape[1]):
+        #     output = torch.cat((output, data[i].expand(data.shape[0] * amplitude_lengths[i], -1)))
+        return result
 
     def plateaus_to_waveform(self, data):
         '''
@@ -74,17 +86,22 @@ class WaveformManager():
         slope_lengths = self._expand(self.slope_lengths, point_length)
         i = 0
         j = 0
-
+        mask = []
         output = np.linspace(0, data[0], slope_lengths[0])
+        mask += [False] * slope_lengths[0]
         data_size = point_length - 1
         for i in range(data_size):
-            output = np.concatenate((output, np.array(data[j:j + amplitude_lengths[i]])))
-            output = np.concatenate((output, np.linspace(data[j + amplitude_lengths[i] - 1], data[j + amplitude_lengths[i]], slope_lengths[i])))
+            current_plateau = np.array(data[j:j + amplitude_lengths[i]])
+            mask += [True] * len(current_plateau)
+            current_slope = np.linspace(data[j + amplitude_lengths[i] - 1], data[j + amplitude_lengths[i]], slope_lengths[i])
+            mask += [False] * len(current_slope)
+            output = np.concatenate((output, current_plateau))
+            output = np.concatenate((output, current_slope))
             j += amplitude_lengths[i]
         i = data_size
         output = np.concatenate((output, np.array(data[j:j + amplitude_lengths[i]])))
         output = np.concatenate((output, np.linspace(data[j + amplitude_lengths[i] - 1], 0, slope_lengths[i])))
-        return output
+        return output, mask
 
     def plateaus_to_points(self, data):
         amplitude_lengths = self._expand(self.amplitude_lengths, int(len(data) / self.amplitude_lengths))
