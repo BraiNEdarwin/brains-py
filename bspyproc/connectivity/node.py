@@ -28,7 +28,13 @@ class DNPUBN(nn.Module):
 
     def forward(self, x):
         x = self.dnpu(x)
-        x = torch.clamp(x, min=self.dnpu.processor.clipping_value[0], max=self.dnpu.processor.clipping_value[1])  # Cut off values out of the clipping value
-        x = self.bn(x)  # Apply batch normalisation
+        # Cut off values out of the clipping value
+        x = torch.clamp(x, min=self.dnpu.processor.clipping_value[0], max=self.dnpu.processor.clipping_value[1])
+        # Apply batch normalisation
+        x = self.bn(x)
+        # Apply current to voltage transformation
         x = self.current_to_voltage(x)
         return x
+
+    def hw_eval(self, hw_processor_configs):
+        self.dnpu.hw_eval(hw_processor_configs)
