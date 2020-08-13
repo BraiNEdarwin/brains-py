@@ -8,6 +8,9 @@ from bspyproc.processors.hardware.drivers.driver_mgr import get_driver
 from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.utils.waveform import WaveformManager
 
+# deleteme
+from bspyproc.processors.simulation.surrogate import SurrogateModel
+
 
 class HardwareProcessor(nn.Module):
     """
@@ -18,33 +21,35 @@ class HardwareProcessor(nn.Module):
     """
 # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
 
-    def __init__(self, configs):
+    def __init__(self, configs, logger=None):
         super().__init__()
-        self.load_model(configs)
-        self._init_voltage_range()
+        self._init_voltage_range(configs)
         self.driver = get_driver(configs)
-        self.waveform_mgr = WaveformManager(configs)
+        self.waveform_mgr = WaveformManager(configs['waveform'])
+        self.logger = logger
         # TODO: Manage amplification from this class
-        self.amplification = self.info['data_info']['processor']['amplification']
+        self.amplification = configs['amplification']
 
-    def _init_voltage_range(self):
-        offset = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['offset'])
-        amplitude = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['amplitude'])
+    def _init_voltage_range(self, configs):
+        offset = TorchUtils.get_tensor_from_list(configs['offset'])
+        amplitude = TorchUtils.get_tensor_from_list(configs['amplitude'])
         self.min_voltage = offset - amplitude
         self.max_voltage = offset + amplitude
 
     def forward(self, x):
         with torch.no_grad():
-            inputs_numpy = TorchUtils.get_numpy_from_tensor(x)
-            output = self.forward_numpy(inputs_numpy)
-        return TorchUtils.get_tensor_from_numpy(output)
+            x = TorchUtils.get_numpy_from_tensor(x)
+            x, mask = self.waveform_mgr.plateaus_to_waveform(x)
+            output = self.forward_numpy(x)
+            if self.logger is not None:
+                self.logger.log_output(x)
+        return TorchUtils.get_tensor_from_numpy(output[mask])
 
     def forward_numpy(self, x):
         return self.driver.get_output(x)
 
     def reset(self):
-        print("Warning: Reset function in Surrogate Model not implemented.")
         self.driver.reset()
 
     def close(self):
-        pass
+        self.driver.close_tasks()
