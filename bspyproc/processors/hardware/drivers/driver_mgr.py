@@ -1,6 +1,6 @@
 from bspyproc.utils.pytorch import TorchUtils
 #from bspyproc.processors.dnpu import DNPU
-#from bspyproc.processors.simulation.surrogate import SurrogateModel
+from bspyproc.processors.simulation.surrogate import SurrogateModel
 #from bspyproc.processors.simulation.network import NeuralNetworkModel
 from bspyproc.processors.hardware.drivers.setups import CDAQtoCDAQ, CDAQtoNiDAQ
 
@@ -24,6 +24,8 @@ def get_driver(configs):
         # configs['input_instrument'] = 'dev1'
         # configs['output_instrument'] = 'cDAQ1Mod1'
         return CDAQtoNiDAQ(configs)
+    elif configs['processor_type'] == 'simulation_debug':
+        return SurrogateModel(configs)
     else:
         raise NotImplementedError(f"{configs['processor_type']} 'processor_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. ")
 
