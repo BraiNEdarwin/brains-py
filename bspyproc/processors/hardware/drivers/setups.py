@@ -102,7 +102,7 @@ class NationalInstrumentsSetup():
     #     y = merge_inputs_and_control_voltages_in_numpy(inputs, control_voltages, self.input_indices, self.control_voltage_indices)
     #     return self.get_output(y)s
 
-    def get_output(self):
+    def forward_numpy(self):
         pass
 
     # These functions are used to handle the termination of the read task in such a way that enables the last read to finish, and closes the tasks afterwards
@@ -146,7 +146,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         super().__init__(configs)
         self.driver.start_trigger(self.configs['trigger_source'])
 
-    def get_output(self, y):
+    def forward_numpy(self, y):
         y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
         y = y.T
         assert self.configs['shape'] + 1 == y.shape[1], f"configs value with key 'shape' must be {y.shape[1]-1}"
@@ -164,7 +164,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         super().__init__(configs)
         self.driver.add_channels(self.configs['output_instrument'], self.configs['input_instrument'])
 
-    def get_output(self, y):
+    def forward_numpy(self, y):
         y = y.T
         assert self.configs['shape'] == y.shape[1], f"configs value with key 'shape' must be {y.shape[1]}"
         y = self.synchronise_input_data(y)

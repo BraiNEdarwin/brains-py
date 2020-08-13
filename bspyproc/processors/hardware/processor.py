@@ -46,7 +46,7 @@ class HardwareProcessor(nn.Module):
         return TorchUtils.get_tensor_from_numpy(output[mask])
 
     def forward_numpy(self, x):
-        return self.driver.get_output(x)
+        return self.driver.forward_numpy(x)
 
     def reset(self):
         self.driver.reset()
