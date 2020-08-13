@@ -11,7 +11,7 @@ from torch import nn
 import numpy as np
 
 from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.electrodes import merge_inputs_and_control_voltages_in_torch
+from bspyproc.utils.electrodes import merge_electrode_data
 
 from bspyproc.processors.simulation.surrogate import SurrogateModel
 from bspyproc.processors.hardware.processor import HardwareProcessor
@@ -66,7 +66,7 @@ class DNPU(nn.Module):
         self.bias = nn.Parameter(bias)
 
     def forward(self, x):
-        inp = merge_inputs_and_control_voltages_in_torch(x, self.bias.expand(x.size()[0], -1), self.input_indices, self.control_indices)
+        inp = merge_electrode_data(x, self.bias.expand(x.size()[0], -1), self.input_indices, self.control_indices)
         return self.processor(inp)
 
     def regularizer(self):
