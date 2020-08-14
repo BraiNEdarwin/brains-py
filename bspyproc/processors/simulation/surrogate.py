@@ -22,7 +22,7 @@ class SurrogateModel(nn.Module):
     def __init__(self, configs):
         super().__init__()
         self._load(configs)
-        self._init_voltage_range()
+        self._init_voltage_ranges()
         self.amplification = TorchUtils.get_tensor_from_list(self.info['data_info']['processor']['amplification'])
         self.clipping_value = TorchUtils.get_tensor_from_list(self.info['data_info']['clipping_value'])
         self.noise = get_noise(configs)
@@ -34,11 +34,12 @@ class SurrogateModel(nn.Module):
         self.model = NeuralNetworkModel(self.info['smg_configs']['processor'])
         self.load_state_dict(state_dict)
 
-    def _init_voltage_range(self):
+    def _init_voltage_ranges(self):
         offset = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['offset'])
         amplitude = TorchUtils.get_tensor_from_list(self.info['data_info']['input_data']['amplitude'])
-        self.min_voltage = offset - amplitude
-        self.max_voltage = offset + amplitude
+        min_voltage = (offset - amplitude).unsqueeze(dim=1)
+        max_voltage = (offset + amplitude).unsqueeze(dim=1)
+        self.voltage_ranges = torch.cat((min_voltage, max_voltage), dim=1)
 
     def forward(self, x):
         return self.noise(self.model(x) * self.amplification)
