@@ -29,6 +29,7 @@ class HardwareProcessor(nn.Module):
         self.logger = logger
         # TODO: Manage amplification from this class
         self.amplification = configs['amplification']
+        self.clipping_value = configs['clipping_value']
 
     def _init_voltage_range(self, configs):
         offset = TorchUtils.get_tensor_from_list(configs['offset'])
