@@ -87,7 +87,7 @@ class DNPU(nn.Module):
         with torch.no_grad():
             bias = bias.unsqueeze(dim=0)
             assert self.bias.shape == bias.shape, 'Control voltages could not be set due to a shape missmatch with regard to the ones already in the model.'
-            self.bias = nn.Parameter(bias)
+            self.bias = nn.Parameter(TorchUtils.format_tensor(bias))
 
     def get_control_voltages(self):
         return next(self.parameters()).detach()
