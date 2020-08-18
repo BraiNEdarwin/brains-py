@@ -59,7 +59,7 @@ class WaveformManager():
     #         output = np.concatenate((output, np.array(([data[i]] * amplitude_lengths[i]))))
     #     return output
 
-    def points_to_plateau(self, data):
+    def points_to_plateaus(self, data):
         # output = np.ndarray([])
         result = data[0].repeat(self.amplitude_lengths, 1)
         for i in range(1, len(data)):
@@ -151,7 +151,7 @@ class WaveformManager():
                 odd = True
         return mask
 
-    def generate_slopped_plato(self, total_length, value=1):
+    def generate_slopped_plateau(self, total_length, value=1):
         length = total_length - (2 * self.slope_lengths)
         up = np.linspace(0, value, self.slope_lengths)
         down = np.linspace(value, 0, self.slope_lengths)
