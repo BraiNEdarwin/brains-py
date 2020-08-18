@@ -1,6 +1,7 @@
 import torch
 
 from bspyproc.utils.pytorch import TorchUtils
+from bspyproc.utils.electrodes import get_map_to_voltage_vars
 
 
 class CurrentToVoltage():
@@ -15,9 +16,3 @@ class CurrentToVoltage():
             x = torch.clamp(x, min=self.x_min, max=self.x_max)
         x = (x * self.scale) + self.offset
         return x
-
-
-def get_map_to_voltage_vars(v_min, v_max, x_min, x_max):
-    scale = ((v_min - v_max) / (x_min - x_max))
-    offset = v_max - scale * x_max
-    return scale, offset
