@@ -29,13 +29,14 @@ class HardwareProcessor(nn.Module):
         self.logger = logger
         # TODO: Manage amplification from this class
         self.amplification = configs['amplification']
-        self.clipping_value = configs['clipping_value']
+        self.clipping_value = [configs['output_clipping_range'][0] * self.amplification, configs['output_clipping_range'][1] * self.amplification]
 
     def _init_voltage_range(self, configs):
         offset = TorchUtils.get_tensor_from_list(configs['offset'])
         amplitude = TorchUtils.get_tensor_from_list(configs['amplitude'])
-        self.min_voltage = offset - amplitude
-        self.max_voltage = offset + amplitude
+        min_voltage = (offset - amplitude).unsqueeze(dim=1)
+        max_voltage = (offset + amplitude).unsqueeze(dim=1)
+        self.voltage_ranges = torch.cat((min_voltage, max_voltage), dim=1)
 
     def forward(self, x):
         with torch.no_grad():
