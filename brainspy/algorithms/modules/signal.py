@@ -6,8 +6,8 @@ Created on Wed Aug 21 13:14:52 2019
 """
 import torch
 import numpy as np
-from bspyalgo.algorithms.modules.performance.accuracy import get_accuracy
-from bspyproc.utils.pytorch import TorchUtils
+from brainspy.algorithms.modules.performance.accuracy import get_accuracy
+from brainspy.utils.pytorch import TorchUtils
 
 # TODO: implement corr_lin_fit (AF's last fitness function)?
 

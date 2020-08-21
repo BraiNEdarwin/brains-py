@@ -3,8 +3,8 @@ import torch
 import numpy as np
 from tqdm import trange
 
-from bspyalgo.algorithms.criterion import corr_coeff
-from bspyproc.utils.pytorch import TorchUtils
+from brainspy.algorithms.criterion import corr_coeff
+from brainspy.utils.pytorch import TorchUtils
 
 
 def train(model, dataloaders, criterion, optimizer, configs, logger=None, save_dir=None, waveform_transforms=None, return_best_model=True):

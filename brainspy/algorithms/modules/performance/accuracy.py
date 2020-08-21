@@ -14,8 +14,8 @@ from tqdm import trange
 import matplotlib.pyplot as plt
 from torch.utils.data import random_split, SubsetRandomSampler
 
-from bspyalgo.algorithms.modules.performance.perceptron import Perceptron, PerceptronDataset
-from bspyproc.utils.pytorch import TorchUtils
+from brainspy.algorithms.modules.performance.perceptron import Perceptron, PerceptronDataset
+from brainspy.utils.pytorch import TorchUtils
 
 
 def get_accuracy(inputs, targets, split=[1, 0], node=None):
