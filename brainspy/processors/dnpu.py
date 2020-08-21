@@ -10,11 +10,11 @@ import torch
 from torch import nn
 import numpy as np
 
-from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.electrodes import merge_electrode_data
+from brainspy.utils.pytorch import TorchUtils
+from brainspy.utils.electrodes import merge_electrode_data
 
-from bspyproc.processors.simulation.surrogate import SurrogateModel
-from bspyproc.processors.hardware.processor import HardwareProcessor
+from brainspy.processors.simulation.surrogate import SurrogateModel
+from brainspy.processors.hardware.processor import HardwareProcessor
 
 
 class DNPU(nn.Module):

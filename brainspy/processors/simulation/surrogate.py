@@ -4,10 +4,10 @@
 import torch
 from torch import nn
 
-from bspyproc.processors.simulation.network import NeuralNetworkModel
-from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.loader import load_file
-from bspyproc.processors.simulation.noise.noise import get_noise
+from brainspy.processors.simulation.network import NeuralNetworkModel
+from brainspy.utils.pytorch import TorchUtils
+from brainspy.utils.loader import load_file
+from brainspy.processors.simulation.noise.noise import get_noise
 
 
 class SurrogateModel(nn.Module):

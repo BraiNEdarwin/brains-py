@@ -1,5 +1,5 @@
 import torch
-from bspyproc.utils.pytorch import TorchUtils
+from brainspy.utils.pytorch import TorchUtils
 
 
 class NoNoise():

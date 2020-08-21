@@ -4,12 +4,12 @@
 import torch
 from torch import nn
 
-from bspyproc.processors.hardware.drivers.driver_mgr import get_driver
-from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.waveform import WaveformManager
+from brainspy.processors.hardware.drivers.driver_mgr import get_driver
+from brainspy.utils.pytorch import TorchUtils
+from brainspy.utils.waveform import WaveformManager
 
 # deleteme
-from bspyproc.processors.simulation.surrogate import SurrogateModel
+from brainspy.processors.simulation.surrogate import SurrogateModel
 
 
 class HardwareProcessor(nn.Module):

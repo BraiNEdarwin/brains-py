@@ -3,7 +3,7 @@
 
 import torch
 from torch import nn
-from bspyproc.utils.pytorch import TorchUtils
+from brainspy.utils.pytorch import TorchUtils
 
 
 class NeuralNetworkModel(nn.Module):

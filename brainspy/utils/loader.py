@@ -1,6 +1,6 @@
 
 import torch
-from bspyproc.utils.pytorch import TorchUtils
+from brainspy.utils.pytorch import TorchUtils
 
 
 def load_file(data_dir, file_type):

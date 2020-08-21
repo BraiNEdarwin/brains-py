@@ -8,9 +8,9 @@ import torch
 from torch import nn
 import numpy as np
 
-from bspyproc.processors.dnpu import DNPU
-from bspyproc.utils.pytorch import TorchUtils
-from bspyproc.utils.transforms import CurrentToVoltage
+from brainspy.processors.dnpu import DNPU
+from brainspy.utils.pytorch import TorchUtils
+from brainspy.utils.transforms import CurrentToVoltage
 
 
 class DNPUBN(nn.Module):

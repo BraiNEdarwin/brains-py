@@ -1,4 +1,4 @@
-name: bspyproc
+name: brainspy
 dependencies:
    - python=3.6
    - ipython

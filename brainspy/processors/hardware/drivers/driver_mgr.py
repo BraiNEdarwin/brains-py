@@ -1,8 +1,8 @@
-from bspyproc.utils.pytorch import TorchUtils
-#from bspyproc.processors.dnpu import DNPU
-from bspyproc.processors.simulation.surrogate import SurrogateModel
-#from bspyproc.processors.simulation.network import NeuralNetworkModel
-from bspyproc.processors.hardware.drivers.setups import CDAQtoCDAQ, CDAQtoNiDAQ
+from brainspy.utils.pytorch import TorchUtils
+#from brainspy.processors.dnpu import DNPU
+from brainspy.processors.simulation.surrogate import SurrogateModel
+#from brainspy.processors.simulation.network import NeuralNetworkModel
+from brainspy.processors.hardware.drivers.setups import CDAQtoCDAQ, CDAQtoNiDAQ
 
 
 # def get_processor(configs):

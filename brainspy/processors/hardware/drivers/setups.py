@@ -6,8 +6,8 @@ import sys
 import numpy as np
 import math
 import time
-from bspyproc.processors.hardware.drivers.tasks import get_driver
-# from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
+from brainspy.processors.hardware.drivers.tasks import get_driver
+# from brainspy.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
 import nidaqmx.system.device as device
 import signal
 import threading

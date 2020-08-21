@@ -1,6 +1,6 @@
 import numpy as np
 
-from bspyproc.utils.pytorch import TorchUtils
+from brainspy.utils.pytorch import TorchUtils
 
 
 def merge_electrode_data(inputs, control_voltages, input_indices, control_voltage_indices, use_torch=True):

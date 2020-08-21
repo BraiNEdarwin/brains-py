@@ -11,8 +11,8 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as nf
 from more_itertools import grouper
-from bspyproc.processors.simulation.network import TorchModel
-from bspyproc.utils.pytorch import TorchUtils
+from brainspy.processors.simulation.network import TorchModel
+from brainspy.utils.pytorch import TorchUtils
 
 
 class DNPU_Base(nn.Module):
@@ -149,7 +149,7 @@ class Local_Receptive_Field(DNPU_Base):
 
 
 if __name__ == '__main__':
-    from bspyalgo.utils.io import load_configs
+    from brainspy.utils.io import load_configs
     import matplotlib.pyplot as plt
     import time
 

@@ -40,21 +40,23 @@ def get_accuracy(inputs, targets, split=[1, 0], node=None):
     if train:
         # Prepare perceptron data
         dataset = PerceptronDataset(results['norm_inputs'], results['targets'])
-        dataloaders = random_split(dataset, split)
+        lengths = [len(dataset) * split[0], len(dataset) * split[1]]
+        dataloaders = random_split(dataset, lengths)
+        # If there is no validation dataloader, remove it
         if len(dataloaders[1]) == 0:
-            dataloaders[1] = dataloaders[0]
+            del dataloaders[1]
         # Train the perceptron
-        accuracy, predictions, threshold, node = train_perceptron(dataloaders, node)
-        print('Best accuracy: ' + str(accuracy.item()))
+        accuracy, predicted_labels, threshold, node = train_perceptron(dataloaders, node)
+        #print('Best accuracy: ' + str(accuracy.item()))
     else:
-        accuracy, predicted_class = evaluate_accuracy(results['norm_inputs'], results['targets'], node)
+        accuracy, predicted_labels = evaluate_accuracy(results['norm_inputs'], results['targets'], node)
         threshold = get_decision_boundary(node)
         print('Best accuracy: ' + str(accuracy.item()))
 
     # Save remaining results dictionary
-    results['predictions'] = predictions
+    # results['predictions'] = predictions
     results['threshold'] = threshold
-    results['predicted_class'] = predicted_class
+    results['predicted_labels'] = predicted_labels
     results['node'] = node
     results['accuracy_value'] = accuracy
 
@@ -77,18 +79,28 @@ def train_perceptron(dataloaders, node=None, lrn_rate=0.0007, mini_batch=8, epoc
             cost.backward()
             optimizer.step()
         with torch.no_grad():
-            inputs, targets = dataloaders[1].dataset[:]
-            accuracy, predicted_class = evaluate_accuracy(inputs, targets, node)
+            inputs, targets = dataloaders[get_index(dataloaders)].dataset[:]
+            accuracy, predicted_labels = evaluate_accuracy(inputs, targets, node)
             if accuracy > best_accuracy:
                 best_accuracy = accuracy
                 decision_boundary = get_decision_boundary(node)
+                # TODO: Add a more efficient stopping mechanism ?
                 if best_accuracy >= 100.:
                     looper.set_description(f'Reached 100/% accuracy. Stopping at Epoch: {epoch+1}  Accuracy {best_accuracy}, loss: {cost.item()}')
                     break
         if verbose:
-            looper.set_description(f'Epoch: {epoch+1}  Accuracy {best_accuracy}, loss: {cost.item()}')
+            looper.set_description(f'Epoch: {epoch+1}  Accuracy {accuracy}, loss: {cost.item()}')
+    looper.set_description(f'Best Accuracy {best_accuracy}')
 
-    return best_accuracy, predicted_class, decision_boundary, node
+    return best_accuracy, predicted_labels, decision_boundary, node
+
+
+def get_index(dataloaders):
+    # Takes the validation dataloader, if exists
+    if len(dataloaders) > 1:
+        return 1
+    else:
+        return 0
 
 
 def get_decision_boundary(node):
@@ -109,10 +121,10 @@ def plot_perceptron(results, save_dir=None, show_plot=False, name='train'):
     fig = plt.figure()
     plt.title(f"Accuracy: {results['accuracy_value']:.2f} %")
     plt.plot(TorchUtils.get_numpy_from_tensor(results['norm_inputs']), label='Norm. Waveform')
-    plt.plot(TorchUtils.get_numpy_from_tensor(results['predictions']), '.', label='Predicted labels')
+    plt.plot(TorchUtils.get_numpy_from_tensor(results['predicted_labels']), '.', label='Predicted labels')
     plt.plot(TorchUtils.get_numpy_from_tensor(results['targets']), 'g', label='Targets')
-    plt.plot(np.arange(len(results['predictions'])),
-             TorchUtils.get_numpy_from_tensor(torch.ones_like(results['predictions']) * results['threshold']), 'k:', label='Threshold')
+    plt.plot(np.arange(len(results['predicted_labels'])),
+             TorchUtils.get_numpy_from_tensor(torch.ones_like(results['predicted_labels']) * results['threshold']), 'k:', label='Threshold')
     plt.legend()
     if show_plot:
         plt.show()

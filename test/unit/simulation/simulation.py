@@ -5,9 +5,9 @@ import numpy as np
 
 
 import matplotlib.pyplot as plt
-from bspyproc.utils.pytorch import TorchUtils
+from brainspy.utils.pytorch import TorchUtils
 
-from bspyproc.processors.dnpu import DNPU
+from brainspy.processors.dnpu import DNPU
 
 
 configs = {}

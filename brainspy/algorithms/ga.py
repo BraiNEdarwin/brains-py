@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from tqdm import trange
 
-from brainspy.algorithms.criterion import corr_coeff
+from brainspy.algorithms.modules.signal import corr_coeff
 from brainspy.utils.pytorch import TorchUtils
 
 

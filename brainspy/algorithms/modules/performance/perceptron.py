@@ -28,3 +28,6 @@ class PerceptronDataset(Dataset):
         targets = self.targets[index, :]
 
         return (inputs, targets)
+
+    def __len__(self):
+        return len(self.inputs)

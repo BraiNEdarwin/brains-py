@@ -3,7 +3,7 @@ import torch
 from torch.distributions.uniform import Uniform as uniform
 import numpy as np
 
-from bspyproc.utils.pytorch import TorchUtils
+from brainspy.utils.pytorch import TorchUtils
 
 # %%
 #    ##########################################################################

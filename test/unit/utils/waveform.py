@@ -4,7 +4,7 @@ Unit tests for the waveform manager
 """
 import unittest
 import numpy as np
-from bspyproc.utils.waveform import WaveformManager
+from brainspy.utils.waveform import WaveformManager
 
 
 class WaveformTest(unittest.TestCase):
