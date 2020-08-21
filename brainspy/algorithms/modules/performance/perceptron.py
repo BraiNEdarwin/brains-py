@@ -20,6 +20,7 @@ class PerceptronDataset(Dataset):
     def __init__(self, inputs, targets):
         # Normalise inputs
         assert len(inputs) > 10, "Not enough data, at least 10 points are required."
+        assert not torch.isnan(inputs).all(), "NaN values detected."
         self.inputs = inputs
         self.targets = targets
 
