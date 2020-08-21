@@ -18,7 +18,7 @@ from brainspy.algorithms.modules.performance.perceptron import Perceptron, Perce
 from brainspy.utils.pytorch import TorchUtils
 
 
-def get_accuracy(inputs, targets, split=[1, 0], node=None):
+def get_accuracy(inputs, targets, configs, node=None):
     # Assumes that the input_waveform and the target_waveform have the shape (n_total,1)
     # Normalizes the data; it is assumed that the target_waveform has binary values
 
@@ -40,13 +40,13 @@ def get_accuracy(inputs, targets, split=[1, 0], node=None):
     if train:
         # Prepare perceptron data
         dataset = PerceptronDataset(results['norm_inputs'], results['targets'])
-        lengths = [len(dataset) * split[0], len(dataset) * split[1]]
+        lengths = [len(dataset) * configs['split'][0], len(dataset) * configs['split'][1]]
         dataloaders = random_split(dataset, lengths)
         # If there is no validation dataloader, remove it
         if len(dataloaders[1]) == 0:
             del dataloaders[1]
         # Train the perceptron
-        accuracy, predicted_labels, threshold, node = train_perceptron(dataloaders, node)
+        accuracy, predicted_labels, threshold, node = train_perceptron(dataloaders, configs, node)
         #print('Best accuracy: ' + str(accuracy.item()))
     else:
         accuracy, predicted_labels = evaluate_accuracy(results['norm_inputs'], results['targets'], node)
@@ -63,13 +63,13 @@ def get_accuracy(inputs, targets, split=[1, 0], node=None):
     return results
 
 
-def train_perceptron(dataloaders, node=None, lrn_rate=0.0007, mini_batch=8, epochs=100, validation=False, verbose=True):
+def train_perceptron(dataloaders, configs, node=None):
     # Initialise key elements of the trainer
     node = TorchUtils.format_tensor(node)
     loss = torch.nn.BCELoss()
-    optimizer = torch.optim.Adam(node.parameters(), lr=lrn_rate, betas=(0.999, 0.999))
+    optimizer = torch.optim.Adam(node.parameters(), lr=configs['learning_rate'], betas=configs['betas'])
     best_accuracy = -1
-    looper = trange(epochs, desc='Calculating accuracy')
+    looper = trange(configs['epochs'], desc='Calculating accuracy', leave=True)
 
     for epoch in looper:
         for inputs, targets in dataloaders[0]:
@@ -88,9 +88,8 @@ def train_perceptron(dataloaders, node=None, lrn_rate=0.0007, mini_batch=8, epoc
                 if best_accuracy >= 100.:
                     looper.set_description(f'Reached 100/% accuracy. Stopping at Epoch: {epoch+1}  Accuracy {best_accuracy}, loss: {cost.item()}')
                     break
-        if verbose:
-            looper.set_description(f'Epoch: {epoch+1}  Accuracy {accuracy}, loss: {cost.item()}')
-    looper.set_description(f'Best Accuracy {best_accuracy}')
+        looper.set_description(f'Epoch: {epoch+1}  Accuracy {accuracy}, loss: {cost.item()}')
+    print(f'Best Accuracy {best_accuracy}')
 
     return best_accuracy, predicted_labels, decision_boundary, node
 
