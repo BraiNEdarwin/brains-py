@@ -99,3 +99,6 @@ class DNPU(nn.Module):
         self.eval()
         self._load_processor(hw_processor_configs)
         self._init_electrode_info(hw_processor_configs)
+
+    def close(self):
+        self.processor.close()

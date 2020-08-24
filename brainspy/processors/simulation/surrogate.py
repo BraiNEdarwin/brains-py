@@ -53,3 +53,6 @@ class SurrogateModel(nn.Module):
     def reset(self):
         print("Warning: Reset function in Surrogate Model not implemented.")
         pass
+
+    def close(self):
+        print('The surrogate model does not have a clossing function. ')

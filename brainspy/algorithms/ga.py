@@ -58,7 +58,8 @@ def train(model, dataloaders, criterion, optimizer, configs, logger=None, save_d
 
         pool = optimizer.step(fitness)
 
-    model.close()
+    if 'close' in dir(model):  # check if the close function exists in the model for using GA on-chip
+        model.close()
     return model, {'best_result_index': best_result_index, 'genome_history': genome_history, 'performance_history': performance_history, 'correlation_history': correlation_history, 'best_output': best_output}
 
 
