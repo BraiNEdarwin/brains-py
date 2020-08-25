@@ -42,7 +42,10 @@ def get_criterion(configs):
 def get_optimizer(model, configs):
     if configs['optimizer'] == 'genetic':
         # TODO: get gene ranges from model
-        return bspyoptim.GeneticOptimizer(model.get_control_ranges(), configs['partition'], configs['mutation_rate'], configs['epochs'])
+        if 'gene_range' in configs:
+            return bspyoptim.GeneticOptimizer(configs['gene_range'], configs['partition'], configs['epochs'])
+        else:
+            return bspyoptim.GeneticOptimizer(model.get_control_ranges(), configs['partition'], configs['epochs'])
     elif configs['optimizer'] == 'elm':
         print('ELM optimizer not implemented yet')
         # return get_adam(parameters, configs)
