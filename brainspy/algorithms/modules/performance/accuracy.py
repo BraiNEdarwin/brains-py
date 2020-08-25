@@ -18,12 +18,14 @@ from brainspy.algorithms.modules.performance.perceptron import Perceptron, Perce
 from brainspy.utils.pytorch import TorchUtils
 
 
-def get_accuracy(inputs, targets, configs, node=None):
+def get_accuracy(inputs, targets, configs=None, node=None):
     # Assumes that the input_waveform and the target_waveform have the shape (n_total,1)
     # Normalizes the data; it is assumed that the target_waveform has binary values
 
     assert len(inputs.shape) != 1 and len(targets.shape) != 1, "Please unsqueeze inputs and targets"
 
+    if configs is None:
+        configs = get_default_node_configs()
     # Initialise perceptron
     if node is None:
         train = True
@@ -61,6 +63,16 @@ def get_accuracy(inputs, targets, configs, node=None):
     results['accuracy_value'] = accuracy
 
     return results
+
+
+def get_default_node_configs():
+    configs = {}
+    configs['epochs'] = 100
+    configs['learning_rate'] = 0.0007
+    configs['betas'] = [0.999, 0.999]
+    configs['split'] = [1, 0]
+    configs['mini_batch'] = 256
+    return configs
 
 
 def train_perceptron(dataloaders, configs, node=None):
