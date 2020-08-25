@@ -53,7 +53,7 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     else:
         accuracy, predicted_labels = evaluate_accuracy(results['norm_inputs'], results['targets'], node)
         threshold = get_decision_boundary(node)
-        print('Best accuracy: ' + str(accuracy.item()))
+        #print('Best accuracy: ' + str(accuracy.item()))
 
     # Save remaining results dictionary
     # results['predictions'] = predictions
@@ -81,7 +81,7 @@ def train_perceptron(dataloaders, configs, node=None):
     loss = torch.nn.BCELoss()
     optimizer = torch.optim.Adam(node.parameters(), lr=configs['learning_rate'], betas=configs['betas'])
     best_accuracy = -1
-    looper = trange(configs['epochs'], desc='Calculating accuracy', leave=True)
+    looper = trange(configs['epochs'], desc='Calculating accuracy')
 
     for epoch in looper:
         for inputs, targets in dataloaders[0]:
@@ -99,6 +99,7 @@ def train_perceptron(dataloaders, configs, node=None):
                 # TODO: Add a more efficient stopping mechanism ?
                 if best_accuracy >= 100.:
                     looper.set_description(f'Reached 100/% accuracy. Stopping at Epoch: {epoch+1}  Accuracy {best_accuracy}, loss: {cost.item()}')
+                    looper.close()
                     break
         looper.set_description(f'Epoch: {epoch+1}  Accuracy {accuracy}, loss: {cost.item()}')
     print(f'Best Accuracy {best_accuracy}')
