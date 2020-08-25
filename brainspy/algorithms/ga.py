@@ -21,7 +21,10 @@ def train(model, dataloaders, criterion, optimizer, configs, logger=None, save_d
 
     with torch.no_grad():
         for epoch in looper:
-            inputs, targets = dataloaders[0].dataset[:]
+            if waveform_transforms is None:
+                inputs, targets = dataloaders[0].dataset[:]
+            else:
+                inputs, targets = waveform_transforms(dataloaders[0].dataset[:])
             outputs, criterion_pool = evaluate_population(inputs, targets, pool, model, criterion, clipvalue=model.get_clipping_value())
 
             # log results
