@@ -16,9 +16,10 @@ class NeuralNetworkModel(nn.Module):
     """
 # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
 
-    def __init__(self, configs):
+    def __init__(self, configs, verbose=False):
         super().__init__()
         self.configs = configs
+        self.verbose = verbose
         self.load(configs['torch_model_dict'])
         if TorchUtils.get_accelerator_type() == torch.device('cuda'):
             self.raw_model.cuda()
@@ -38,8 +39,8 @@ class NeuralNetworkModel(nn.Module):
 
         modules.append(output_layer)
         self.raw_model = nn.Sequential(*modules)
-
-        print('Model built with the following modules: \n', modules)
+        if self.verbose:
+            print('Model built with the following modules: \n', modules)
 
     def forward(self, x):
         return self.raw_model(x)
@@ -47,6 +48,7 @@ class NeuralNetworkModel(nn.Module):
     def _get_activation(self, activation):
         # TODO: generalize get_activation function to allow for several options, e.g. relu, tanh, hard-tanh, sigmoid
         if type(activation) is str:
-            print('Activation function is set as ReLU')
+            if self.verbose:
+                print('Activation function is set as ReLU')
             return nn.ReLU()
         return activation

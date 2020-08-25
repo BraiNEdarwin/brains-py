@@ -51,7 +51,7 @@ class DNPU(nn.Module):
         if 'regularisation_factor' in configs:
             self.alpha = TorchUtils.format_tensor(torch.tensor(configs['regularisation_factor']))
         else:
-            print('No regularisation factor set.')
+            #print('No regularisation factor set.')
             self.alpha = TorchUtils.format_tensor(torch.tensor([1]))
 
     def _init_bias(self):
