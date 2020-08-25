@@ -31,7 +31,7 @@ class GeneticOptimizer:
 
     def step(self, criterion_pool):
         # Sort gene pool based on fitness and copy it
-        self.pool = self.pool[torch.argsort(criterion_pool)]  # WARNING: old code was np.argsort(fitness)[::-1], changed it as it is because it was giving an error. I assume that fitness will always have one dimension, with the number of genomes.
+        self.pool = self.pool[torch.flip(torch.argsort(criterion_pool), dims=[0])]  # WARNING: old code was np.argsort(fitness)[::-1], changed it as it is because it was giving an error. I assume that fitness will always have one dimension, with the number of genomes.
 
         # Generate offspring by means of crossover. The crossover method returns 1 genome from 2 parents.
         new_pool = self.crossover(self.pool.clone())
