@@ -3,9 +3,9 @@
 """
 Generate a piecewise linear wave form with general amplitudes and intervals.
 """
+
 import torch
 import numpy as np
-import warnings
 
 
 class WaveformManager():
@@ -133,7 +133,7 @@ class WaveformManager():
 
         The output is in list format
         '''
-        assert type(self.slope_lengths) is int and type(self.amplitude_lengths) is int, "Generate mask operation is only supported by integer slope and amplitude lengths"
+        assert isinstance(self.slope_lengths, int) and isinstance(self.amplitude_lengths, int), "Generate mask operation is only supported by integer slope and amplitude lengths"
         mask = []
         # amplitude_lengths = self.expand(self.amplitude_lengths, data_length)
         # slope_lengths = self.expand(self.slope_lengths, data_length)
@@ -153,7 +153,7 @@ class WaveformManager():
 
     def generate_slopped_plateau(self, total_length, value=1):
         length = total_length - (2 * self.slope_lengths)
-        up = np.linspace(0, value, self.slope_lengths)
-        down = np.linspace(value, 0, self.slope_lengths)
+        ramping_up = np.linspace(0, value, self.slope_lengths)
+        ramping_down = np.linspace(value, 0, self.slope_lengths)
         plato = np.broadcast_to(value, length)
-        return np.concatenate((up, plato, down))
+        return np.concatenate((ramping_up, plato, ramping_down))
