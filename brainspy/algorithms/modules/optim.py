@@ -18,37 +18,29 @@ Created on Thu May 16 18:16:36 2019
 
 class GeneticOptimizer:
 
-    def __init__(self, gene_ranges, partition, mutation_rate, epochs):
-        self.mutation_rate = mutation_rate
+    def __init__(self, gene_ranges, partition, epochs, alpha=0.6, beta=0.4):
         self.epoch = 0
         self.epochs = epochs  # Number of generations
         self.gene_range = gene_ranges
         self.partition = partition
         self.genome_no = sum(self.partition)
         self.pool = self._init_pool()
+        # Parameters for crossover
+        self.alpha = alpha
+        self.beta = beta
 
-    def step(self, fitness):
-        # creates a pool with the next generation
+    def step(self, criterion_pool):
         # Sort gene pool based on fitness and copy it
-        # fitness = fitness[indices]
-        # assert len(fitness) == len(self.pool)
-        # assert False, 'Check if the len(fitness) can bechanged by len(pool)'
-        self.pool = self.pool[torch.argsort(fitness)]  # WARNING: old code was np.argsort(fitness)[::-1], changed it as it is because it was giving an error. I assume that fitness will always have one dimension, with the number of genomes.
-        new_pool = self.pool.clone()
+        self.pool = self.pool[torch.argsort(criterion_pool)]  # WARNING: old code was np.argsort(fitness)[::-1], changed it as it is because it was giving an error. I assume that fitness will always have one dimension, with the number of genomes.
 
-        # Generate offspring by means of crossover.
-        # The crossover method returns 1 genome from 2 parents
-        new_pool = self.crossover(new_pool)
+        # Generate offspring by means of crossover. The crossover method returns 1 genome from 2 parents.
+        new_pool = self.crossover(self.pool.clone())
 
-        # The mutation rate is updated based on the generation counter
-        self.update_mutation_rate()
+        # Mutate every genome except the partition[0]
+        self.pool = self.mutation(new_pool).clone()
 
-        # Every genome, except the partition[0] genomes are mutated
-        new_pool = self.mutation(new_pool)
-        new_pool = self.remove_duplicates(new_pool)
-        self.pool = new_pool.clone()
+        # Free memory space and count epoch (generation)
         del new_pool
-        # self.pool = self.newpool.copy()
         self.epoch += 1
         return self.pool
 
@@ -71,6 +63,7 @@ class GeneticOptimizer:
                     chosen[i] = chosen[i] + 1
                 else:
                     chosen[i] = chosen[i] - 1
+
             # The individual with the highest fitness score is given as input first
             if chosen[i] < chosen[i + 1]:
                 new_pool[index_newpool, :] = self.crossover_blxab(self.pool[chosen[i], :], self.pool[chosen[i + 1], :])
@@ -120,8 +113,6 @@ class GeneticOptimizer:
         from two parents. Here, parent 1 has a higher fitness than parent 2
         '''
 
-        alpha = 0.6
-        beta = 0.4
         # check this in pytorch
         maximum = torch.max(parent1, parent2)
         minimum = torch.min(parent1, parent2)
@@ -129,9 +120,9 @@ class GeneticOptimizer:
         offspring = TorchUtils.format_tensor(torch.zeros((parent1.shape)))
         for i in range(len(parent1)):
             if parent1[i] > parent2[i]:
-                offspring[i] = TorchUtils.format_tensor(uniform(minimum[i] - diff_maxmin[i] * beta, maximum[i] + diff_maxmin[i] * alpha).sample())
+                offspring[i] = TorchUtils.format_tensor(uniform(minimum[i] - diff_maxmin[i] * self.beta, maximum[i] + diff_maxmin[i] * self.alpha).sample())
             else:
-                offspring[i] = TorchUtils.format_tensor(uniform(minimum[i] - diff_maxmin[i] * alpha, maximum[i] + diff_maxmin[i] * beta).sample())
+                offspring[i] = TorchUtils.format_tensor(uniform(minimum[i] - diff_maxmin[i] * self.alpha, maximum[i] + diff_maxmin[i] * self.beta).sample())
         for i in range(0, len(self.gene_range)):
             if offspring[i] < self.gene_range[i][0]:
                 offspring[i] = self.gene_range[i][0]
@@ -145,17 +136,21 @@ class GeneticOptimizer:
         rate based on the generation counter
         '''
         pm_inv = 2 + 5 / (self.epochs - 1) * self.epoch
-        self.mutation_rate = 0.625 / pm_inv
-        # return self.mutation_rate
+        assert pm_inv > 0
+        return 0.625 / pm_inv
 
     def mutation(self, pool):
         '''
         Mutate all genes but the first partition[0] with a triangular
         distribution in gene range with mode=gene to be mutated.
         '''
+
+        # The mutation rate is updated based on the generation counter
+        mutation_rate = self.update_mutation_rate()
+
         # Check if the mask requires to
         mask = TorchUtils.get_tensor_from_numpy(np.random.choice([0, 1], size=pool[self.partition[0]:].shape,
-                                                                 p=[1 - self.mutation_rate, self.mutation_rate]))
+                                                                 p=[1 - mutation_rate, mutation_rate]))
         mutated_pool = np.zeros((self.genome_no - self.partition[0], len(self.gene_range)))
         gene_range = TorchUtils.get_numpy_from_tensor(self.gene_range)
         for i in range(0, len(gene_range)):
@@ -166,6 +161,11 @@ class GeneticOptimizer:
 
         mutated_pool = TorchUtils.get_tensor_from_numpy(mutated_pool)
         pool[self.partition[0]:] = ((TorchUtils.format_tensor(torch.ones(pool[self.partition[0]:].shape)) - mask) * pool[self.partition[0]:] + mask * mutated_pool)
+
+        # Remove duplicates (Only if they are)
+        if len(pool.unique(dim=1)) < len(pool):
+            pool = self.remove_duplicates(pool)
+
         return pool
 
     def remove_duplicates(self, pool):

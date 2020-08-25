@@ -23,14 +23,14 @@ def train(model, dataloaders, criterion, optimizer, configs, logger=None, save_d
     for epoch in looper:
         inputs, targets = dataloaders[0].dataset[:]
         outputs = evaluate_population(inputs, pool, model)
-        fitness = evaluate_criterion(outputs, targets, criterion, clipvalue=model.get_clipping_value())
+        criterion_pool = evaluate_criterion(outputs, targets, criterion, clipvalue=model.get_clipping_value())
 
         # log results
-        no_nan_mask = fitness == fitness
-        current_best_index = torch.argmax(fitness[no_nan_mask])  # Best output index ignoring nan values
+        no_nan_mask = criterion_pool == criterion_pool
+        current_best_index = torch.argmax(criterion_pool[no_nan_mask])  # Best output index ignoring nan values
 
         best_current_output = outputs[no_nan_mask][current_best_index]
-        performance_history.append(fitness[no_nan_mask][current_best_index].detach().cpu())
+        performance_history.append(criterion_pool[no_nan_mask][current_best_index].detach().cpu())
 
         genome_history.append(optimizer.pool[no_nan_mask][current_best_index].detach().cpu())
         correlation_history.append(corr_coeff(best_current_output.T, targets.T).detach().cpu())
@@ -56,7 +56,7 @@ def train(model, dataloaders, criterion, optimizer, configs, logger=None, save_d
         # if (self.use_checkpoints is True and epoch % self.checkpoint_frequency == 0):
         #    save(mode='pickle', file_path=os.path.join(self.default_checkpoints_dir, 'result.pickle'), data=self.data.results)
 
-        pool = optimizer.step(fitness)
+        pool = optimizer.step(criterion_pool)
 
     if 'close' in dir(model):  # check if the close function exists in the model for using GA on-chip
         model.close()
@@ -81,11 +81,8 @@ def evaluate_criterion(outputs_pool, target, criterion, clipvalue=[-np.inf, np.i
     genome_no = len(outputs_pool)
     criterion_pool = TorchUtils.format_tensor(torch.zeros(genome_no))
     for j in range(genome_no):
-        output = outputs_pool[j]
-        if torch.any(output < clipvalue[0]) or torch.any(output > clipvalue[1]):
-            # print(f'Clipped at {clipvalue} nA')
-            result = criterion(None, None, default_value=True)
+        if torch.any(outputs_pool[j] < clipvalue[0]) or torch.any(outputs_pool[j] > clipvalue[1]):
+            criterion_pool[j] = criterion(None, None, default_value=True)
         else:
-            result = criterion(output, target)
-        criterion_pool[j] = result
+            criterion_pool[j] = criterion(outputs_pool[j], target)
     return criterion_pool
