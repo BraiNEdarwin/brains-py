@@ -55,4 +55,5 @@ class SurrogateModel(nn.Module):
         pass
 
     def close(self):
-        print('The surrogate model does not have a closing function. ')
+        #print('The surrogate model does not have a closing function. ')
+        pass
