@@ -21,10 +21,7 @@ def accuracy_fit(output, target, default_value=False):
         return 0
         # print(f'Clipped at {clipvalue} nA')
     else:
-        # TODO: make adding an axis an assertion
-        x = output[:, np.newaxis]
-        y = target[:, np.newaxis]
-        acc, _, _ = get_accuracy(x, y)
+        acc, _, _ = get_accuracy(output, target)
         return acc
 
 # %% Correlation between output and target: measures similarity
@@ -35,11 +32,7 @@ def corr_fit(output, target, default_value=False):
         # print(f'Clipped at {clipvalue} nA')
         return -1
     else:
-        # TODO: make adding an axis an assertion
-        x = output[:, np.newaxis]
-        y = target[:, np.newaxis]
-        X = torch.stack((x, y), axis=0)[:, :, 0]
-        return corrcoef(X)[0, 1]
+        return corrcoef(output, target)
 
 
 # %% Combination of a sigmoid with pre-defined separation threshold (2.5 nA) and
@@ -51,8 +44,7 @@ def corrsig_fit(output, target, default_value=False):
         # print(f'Clipped at {torch.abs(output)} nA')
         return -1
     else:
-        x = torch.stack((output, target), axis=0).squeeze(dim=2)
-        corr = corrcoef(x)[0, 1]
+        corr = corrcoef(output, target)
         buff0 = target == 0
         buff1 = target == 1
         sep = output[buff1].mean() - output[buff0].mean()
@@ -60,7 +52,19 @@ def corrsig_fit(output, target, default_value=False):
         return corr * sig
 
 
-def corrcoef(x):
+def corrcoef(x, y):
+    assert len(x.shape) == 2 and x.shape[1] == 1
+    assert len(y.shape) == 2 and y.shape[1] == 1
+    #tmp = torch.stack((x, y), axis=0).squeeze(dim=2)
+    # coef = _corrcoef(tmp)[0, 1]
+    x_tmp = TorchUtils.get_numpy_from_tensor(x[:, 0].detach())
+    y_tmp = TorchUtils.get_numpy_from_tensor(y[:, 0].detach())
+    coef = TorchUtils.get_tensor_from_numpy(np.corrcoef(x_tmp, y_tmp)[0, 1])
+    #assert (coef1 == coef2).all() == True
+    return coef
+
+
+def _corrcoef(x):
     """
     Mimics `np.corrcoef`
 
@@ -73,6 +77,7 @@ def corrcoef(x):
     c : torch.Tensor
         if x.size() = (5, 100), then return val will be of size (5,5)
     """
+
     # calculate covariance matrix of rows
     mean_x = torch.mean(x, 1).unsqueeze(dim=1)
     xm = x.sub(mean_x.expand_as(x))
@@ -146,9 +151,9 @@ def fisher_multipled_corr(output, target):
     return (1 - corr) * (s0 + s1) / mean_separation
 
 
-def corr_coeff(x, y):
-    # TODO: More efficient implementation in Torch of this function
-    x = TorchUtils.get_numpy_from_tensor(x)
-    y = TorchUtils.get_numpy_from_tensor(y)
-    result = np.corrcoef(np.concatenate((x, y), axis=0))[0, 1]
-    return TorchUtils.get_tensor_from_numpy(result)
+# def corr_coeff(x, y):
+#     # TODO: More efficient implementation in Torch of this function
+#     x = TorchUtils.get_numpy_from_tensor(x)
+#     y = TorchUtils.get_numpy_from_tensor(y)
+#     result = np.corrcoef(np.concatenate((x, y), axis=0))[0, 1]
+#     return TorchUtils.get_tensor_from_numpy(result)
