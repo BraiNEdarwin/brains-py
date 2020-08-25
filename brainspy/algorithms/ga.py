@@ -49,6 +49,7 @@ def train(model, dataloaders, criterion, optimizer, configs, logger=None, save_d
             # Check if the best correlation has reached the desired threshold
             if best_correlation >= configs['stop_threshold']:
                 looper.set_description(f"  STOPPED: Correlation {best_correlation} > {configs['stop_threshold']} stopping threshold. ")
+                looper.close()
                 break
 
             pool = optimizer.step(criterion_pool)
