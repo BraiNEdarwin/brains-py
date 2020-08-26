@@ -36,7 +36,10 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     # Initialise results dictionary
     results = {}
     results['inputs'] = inputs.clone()
-    results['norm_inputs'] = (inputs - torch.mean(inputs, axis=0)) / torch.std(inputs, axis=0)
+    std = inputs.std(axis=0)
+    if std == 0:  # This is to avoid nan values when normalising the input.
+        std = 1
+    results['norm_inputs'] = (inputs - inputs.mean(axis=0)) / std
     results['targets'] = targets
 
     if train:
@@ -49,11 +52,10 @@ def get_accuracy(inputs, targets, configs=None, node=None):
             del dataloaders[1]
         # Train the perceptron
         accuracy, predicted_labels, threshold, node = train_perceptron(dataloaders, configs, node)
-        #print('Best accuracy: ' + str(accuracy.item()))
     else:
         accuracy, predicted_labels = evaluate_accuracy(results['norm_inputs'], results['targets'], node)
         threshold = get_decision_boundary(node)
-        #print('Best accuracy: ' + str(accuracy.item()))
+        print('Best accuracy: ' + str(accuracy.item()))
 
     # Save remaining results dictionary
     # results['predictions'] = predictions
