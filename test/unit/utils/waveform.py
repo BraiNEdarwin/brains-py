@@ -2,12 +2,12 @@
 Unit tests for the waveform manager
 @author: ualegre
 """
-import unittest
+import unittest2
 import numpy as np
 from brainspy.utils.waveform import WaveformManager
 
 
-class WaveformTest(unittest.TestCase):
+class WaveformTest(unittest2.TestCase):
 
     def __init__(self, test_name):
         super(WaveformTest, self).__init__()
@@ -46,8 +46,7 @@ class WaveformTest(unittest.TestCase):
 
 if __name__ == '__main__':
 
-    from matplotlib import pyplot as plt
+    # from matplotlib import pyplot as plt
     # suite = unittest.TestSuite()
     # suite.addTest(WaveformTest('test1'))
     # unittest.TextTestRunner().run(suite)
-    unittest.main()
