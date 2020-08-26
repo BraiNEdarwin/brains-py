@@ -8,6 +8,7 @@ import torch
 import numpy as np
 from brainspy.algorithms.modules.performance.accuracy import get_accuracy
 from brainspy.utils.pytorch import TorchUtils
+import warnings
 
 # TODO: implement corr_lin_fit (AF's last fitness function)?
 
@@ -32,7 +33,7 @@ def corr_fit(output, target, default_value=False):
         # print(f'Clipped at {clipvalue} nA')
         return -1
     else:
-        return corrcoef(output, target)
+        return pearsons_correlation(output[:, 0], target[:, 0])
 
 
 # %% Combination of a sigmoid with pre-defined separation threshold (2.5 nA) and
@@ -44,7 +45,7 @@ def corrsig_fit(output, target, default_value=False):
         # print(f'Clipped at {torch.abs(output)} nA')
         return -1
     else:
-        corr = corrcoef(output, target)
+        corr = pearsons_correlation(output[:, 0], target[:, 0])
         buff0 = target == 0
         buff1 = target == 1
         sep = output[buff1].mean() - output[buff0].mean()
@@ -52,51 +53,10 @@ def corrsig_fit(output, target, default_value=False):
         return corr * sig
 
 
-def corrcoef(x, y):
-    assert len(x.shape) == 2 and x.shape[1] == 1
-    assert len(y.shape) == 2 and y.shape[1] == 1
-    #tmp = torch.stack((x, y), axis=0).squeeze(dim=2)
-    # coef = _corrcoef(tmp)[0, 1]
-    x_tmp = TorchUtils.get_numpy_from_tensor(x[:, 0].detach())
-    y_tmp = TorchUtils.get_numpy_from_tensor(y[:, 0].detach())
-    coef = TorchUtils.get_tensor_from_numpy(np.corrcoef(x_tmp, y_tmp)[0, 1])
-    #assert (coef1 == coef2).all() == True
-    return coef
-
-
-def _corrcoef(x):
-    """
-    Mimics `np.corrcoef`
-
-    Arguments
-    ---------
-    x : 2D torch.Tensor
-
-    Returns
-    -------
-    c : torch.Tensor
-        if x.size() = (5, 100), then return val will be of size (5,5)
-    """
-
-    # calculate covariance matrix of rows
-    mean_x = torch.mean(x, 1).unsqueeze(dim=1)
-    xm = x.sub(mean_x.expand_as(x))
-    c = xm.mm(xm.t())
-    c = c / (x.size(1) - 1)
-
-    # normalize covariance matrix
-    d = torch.diag(c)
-    stddev = torch.pow(d, 0.5)
-    c = c.div(stddev.expand_as(c))
-    c = c.div(stddev.expand_as(c).t())
-
-    # clamp between -1 and 1
-    # probably not necessary but numpy does it
-    c = torch.clamp(c, -1.0, 1.0)
-
-    return c
-
-#### GD ###
+def pearsons_correlation(x, y):
+    vx = x - x.mean(dim=0)
+    vy = y - y.mean(dim=0)
+    return torch.sum(vx * vy) / (torch.sqrt(torch.sum(vx ** 2)) * torch.sqrt(torch.sum(vy ** 2)))
 
 
 def corrsig(output, target):
@@ -149,11 +109,3 @@ def fisher_multipled_corr(output, target):
     corr = torch.mean((output - torch.mean(output)) * (target - torch.mean(target))) / \
         (torch.std(output) * torch.std(target) + 1e-10)
     return (1 - corr) * (s0 + s1) / mean_separation
-
-
-# def corr_coeff(x, y):
-#     # TODO: More efficient implementation in Torch of this function
-#     x = TorchUtils.get_numpy_from_tensor(x)
-#     y = TorchUtils.get_numpy_from_tensor(y)
-#     result = np.corrcoef(np.concatenate((x, y), axis=0))[0, 1]
-#     return TorchUtils.get_tensor_from_numpy(result)

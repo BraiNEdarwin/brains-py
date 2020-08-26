@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from tqdm import trange
 
-from brainspy.algorithms.modules.signal import corrcoef
+from brainspy.algorithms.modules.signal import pearsons_correlation
 from brainspy.utils.pytorch import TorchUtils
 
 
@@ -35,7 +35,7 @@ def train(model, dataloaders, criterion, optimizer, configs, logger=None, save_d
             performance_history.append(criterion_pool[no_nan_mask][current_best_index].detach().cpu())
 
             genome_history.append(pool[no_nan_mask][current_best_index].detach().cpu())
-            correlation_history.append(corrcoef(best_current_output, targets).detach().cpu())
+            correlation_history.append(pearsons_correlation(best_current_output, targets).detach().cpu())
             looper.set_description("  Gen: " + str(epoch + 1) + ". Max fitness: " + str(performance_history[-1].item()) + ". Corr: " + str(correlation_history[-1].item()))
             if performance_history[-1] > best_fitness:
                 best_fitness = performance_history[-1]
@@ -75,9 +75,11 @@ def evaluate_population(inputs, targets, pool, model, criterion, clipvalue=[-np.
         # assert False, 'Check the case for inputing voltages with plateaus to check if it works when merging control voltages and inputs'
         model.set_control_voltages(pool[j])
         outputs_pool[j] = model(inputs)
+
         if torch.any(outputs_pool[j] < clipvalue[0]) or torch.any(outputs_pool[j] > clipvalue[1]):
             criterion_pool[j] = criterion(None, None, default_value=True)
         else:
             criterion_pool[j] = criterion(outputs_pool[j], targets)
+
         # output_popul[j] = self.processor.get_output(merge_inputs_and_control_voltages_in_numpy(inputs_without_offset_and_scale, control_voltage_genes, self.input_indices, self.control_voltage_indices))
     return outputs_pool, criterion_pool
