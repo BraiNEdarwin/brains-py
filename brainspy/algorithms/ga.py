@@ -61,7 +61,7 @@ def train(model, dataloaders, criterion, optimizer, configs, logger=None, save_d
             model = torch.load(os.path.join(save_dir, 'model.pt'))
 
         print('Best fitness: ' + str(best_fitness.item()))
-        return model, {'best_result_index': best_result_index, 'genome_history': genome_history, 'performance_history': performance_history, 'correlation_history': correlation_history, 'best_output': best_output}
+        return model, {'best_result_index': best_result_index, 'genome_history': genome_history, 'performance_history': TorchUtils.get_tensor_from_list(performance_history), 'correlation_history': correlation_history, 'best_output': best_output}
 
 
 def evaluate_population(inputs, targets, pool, model, criterion, clipvalue=[-np.inf, np.inf]):
