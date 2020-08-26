@@ -28,14 +28,20 @@ class CurrentToVoltage():
         self.cut = cut
 
     def __call__(self, x):
+        aux1 = x.clone()
+        aux2 = torch.zeros_like(x)
         assert len(x.shape) == 2 and x.shape[1] == len(self.map_variables), 'Input shape not supported.'
         for i in range(len(self.map_variables)):
             # Linear transformation variables are as follows
             # SCALE: self.map_variables[i][0]
             # OFFSET: self.map_variables[i][1]
             if self.cut:
-                x[:, i] = torch.clamp(x[:, i], min=self.current_range[i][0], max=self.current_range[i][1])
-            x[:, i] = (x[:, i] * self.map_variables[i][0]) + self.map_variables[i][1]
+                aux1[:, i] = torch.clamp(x[:, i], min=self.current_range[i][0], max=self.current_range[i][1])
+            aux2[:, i] = (aux1[:, i] * self.map_variables[i][0]) + self.map_variables[i][1]
+        x = aux2.clone()
+        del aux1
+        del aux2
+        assert x.min() >= -1.2 and x.max() <= 0.6
         return x
 
 
