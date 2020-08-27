@@ -41,7 +41,6 @@ class CurrentToVoltage():
         x = aux2.clone()
         del aux1
         del aux2
-        assert x.min() >= -1.2 and x.max() <= 0.6
         return x
 
 
