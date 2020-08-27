@@ -104,7 +104,7 @@ def train_perceptron(dataloaders, configs, node=None):
                     looper.close()
                     break
         looper.set_description(f'Epoch: {epoch+1}  Accuracy {accuracy}, loss: {cost.item()}')
-    print(f'Best Accuracy {best_accuracy}')
+    print(f'Best accuracy: {best_accuracy}')
 
     return best_accuracy, predicted_labels, decision_boundary, node
 
