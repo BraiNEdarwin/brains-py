@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name='brainspy-processors',
+setup(name='brains-py',
       version='0.0.0',
       description='A python package created and maintained by the Brains team of the NanoElectronics group at the University of Twente for managing different hardware boron-doped silicon chip processors and their simulations. ',
       url='https://github.com/BraiNEdarwin/brainspy-instruments',
@@ -11,6 +11,7 @@ setup(name='brainspy-processors',
       install_requires=[
       'numpy',
 	  'nidaqmx',
+      'pyyaml',
 	  'Pyro4'
       ],
       python_requires='~=3.6',

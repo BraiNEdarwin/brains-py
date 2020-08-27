@@ -1,10 +1,10 @@
-name: brainspy
+name: brains-py
 dependencies:
-   - python=3.6
+   - python
    - ipython
    - pip
    - pip:
      - Pyro4
      - nidaqmx
      - numpy
-     - git+https://github.com/BraiNEdarwin/brainspy-instruments.git
+     - pyyaml
