@@ -31,9 +31,7 @@ def get_criterion(configs):
     elif configs['criterion'] == 'fisher_multipled_corr':
         return criterion.fisher_multipled_corr
     elif configs['criterion'] == 'bce':
-        bce = torch.nn.BCELoss()
-        bce.cuda(TorchUtils.get_accelerator_type()).to(TorchUtils.data_type)
-        return bce
+        return torch.nn.BCEWithLogitsLoss()
 
     else:
         raise NotImplementedError(f"Criterion {configs['criterion']} is not recognised.")
