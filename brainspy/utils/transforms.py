@@ -44,6 +44,20 @@ class CurrentToVoltage():
         return x
 
 
+class MinMaxScaler():
+
+    def __init__(self):
+        pass
+
+    def __call__(self, x):
+        assert len(x.shape) == 2, 'Only two dimensional tensors supported'
+        aux = x.clone()
+        for i in range(x.shape[1]):
+            aux[:, i] = (x[:, i] - x[:, i].min()) / (x[:, i].max() - x[:, i].min())
+        x = aux.clone()
+        return x
+
+
 class DataToTensor():
     """Convert labelled data to pytorch tensor."""
 
