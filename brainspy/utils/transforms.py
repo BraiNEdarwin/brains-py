@@ -19,38 +19,55 @@ from brainspy.utils.electrodes import get_map_to_voltage_vars
 #         x = (x * self.scale) + self.offset
 #         return x
 
-class CurrentToVoltage():
+
+class CurrentToVoltage:
     def __init__(self, current_range, voltage_range, cut=True):
-        assert len(current_range) == len(voltage_range), 'Mapping ranges are different in length'
-        self.map_variables = TorchUtils.get_tensor_from_list([get_map_to_voltage_vars(voltage_range[i][0], voltage_range[i][1],
-                                                                                      current_range[i][0], current_range[i][1]) for i in range(len(current_range))])
+        assert len(current_range) == len(
+            voltage_range
+        ), "Mapping ranges are different in length"
+        self.map_variables = TorchUtils.get_tensor_from_list(
+            [
+                get_map_to_voltage_vars(
+                    voltage_range[i][0],
+                    voltage_range[i][1],
+                    current_range[i][0],
+                    current_range[i][1],
+                )
+                for i in range(len(current_range))
+            ]
+        )
         self.current_range = current_range
         self.cut = cut
 
     def __call__(self, x):
         aux1 = x.clone()
         aux2 = torch.zeros_like(x)
-        assert len(x.shape) == 2 and x.shape[1] == len(self.map_variables), 'Input shape not supported.'
+        assert len(x.shape) == 2 and x.shape[1] == len(
+            self.map_variables
+        ), "Input shape not supported."
         for i in range(len(self.map_variables)):
             # Linear transformation variables are as follows
             # SCALE: self.map_variables[i][0]
             # OFFSET: self.map_variables[i][1]
             if self.cut:
-                aux1[:, i] = torch.clamp(x[:, i], min=self.current_range[i][0], max=self.current_range[i][1])
-            aux2[:, i] = (aux1[:, i] * self.map_variables[i][0]) + self.map_variables[i][1]
+                aux1[:, i] = torch.clamp(
+                    x[:, i], min=self.current_range[i][0], max=self.current_range[i][1]
+                )
+            aux2[:, i] = (aux1[:, i] * self.map_variables[i][0]) + self.map_variables[
+                i
+            ][1]
         x = aux2.clone()
         del aux1
         del aux2
         return x
 
 
-class MinMaxScaler():
-
+class MinMaxScaler:
     def __init__(self):
         pass
 
     def __call__(self, x):
-        assert len(x.shape) == 2, 'Only two dimensional tensors supported'
+        assert len(x.shape) == 2, "Only two dimensional tensors supported"
         aux = x.clone()
         for i in range(x.shape[1]):
             aux[:, i] = (x[:, i] - x[:, i].min()) / (x[:, i].max() - x[:, i].min())
@@ -58,7 +75,7 @@ class MinMaxScaler():
         return x
 
 
-class DataToTensor():
+class DataToTensor:
     """Convert labelled data to pytorch tensor."""
 
     def __call__(self, data):
@@ -68,10 +85,11 @@ class DataToTensor():
         return (inputs, targets)
 
 
-class DataToVoltageRange():
-
+class DataToVoltageRange:
     def __init__(self, v_min, v_max, x_min=-1, x_max=1):
-        self.scale, self.offset = get_map_to_voltage_vars(np.array(v_min), np.array(v_max), np.array(x_min), np.array(x_max))
+        self.scale, self.offset = get_map_to_voltage_vars(
+            np.array(v_min), np.array(v_max), np.array(x_min), np.array(x_max)
+        )
 
     def __call__(self, data):
         inputs = data[0]
@@ -79,8 +97,7 @@ class DataToVoltageRange():
         return (inputs, data[1])
 
 
-class DataPointsToPlateau():
-
+class DataPointsToPlateau:
     def __init__(self, configs):
         self.mgr = WaveformManager(configs)
 
@@ -93,8 +110,7 @@ class DataPointsToPlateau():
         return (inputs, targets)
 
 
-class PointsToPlateau():
-
+class PointsToPlateau:
     def __init__(self, configs):
         self.mgr = WaveformManager(configs)
 

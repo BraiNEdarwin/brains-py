@@ -6,15 +6,15 @@ import torch
 import numpy as np
 
 
-class WaveformManager():
+class WaveformManager:
     """This class helps managing the waveforms of the signals sent to and
     received by the hardware DNPUs (Dopant Network Processing Units).
 
-    The waveform represents a set of points. Each of the points is represented 
-    with a slope, a plateau and another slope. The first slope is a line that 
-    goes from the previous point to the current point value. The plateau repeats 
-    the same point a specified number of times. The second slope is a line that 
-    goes from the current point to the next point. The starting and ending points 
+    The waveform represents a set of points. Each of the points is represented
+    with a slope, a plateau and another slope. The first slope is a line that
+    goes from the previous point to the current point value. The plateau repeats
+    the same point a specified number of times. The second slope is a line that
+    goes from the current point to the next point. The starting and ending points
     are considered zero.
 
     - **parameters**, **types**, **return** and **return types**::
@@ -32,28 +32,29 @@ class WaveformManager():
     """
 
     def __init__(self, configs):
-        self.plateau_lengths = configs['plateau_lengths']
-        self.slope_lengths = configs['slope_lengths']
+        self.plateau_lengths = configs["plateau_lengths"]
+        self.slope_lengths = configs["slope_lengths"]
 
     def _expand(self, parameter, length):
-        '''The aim of this function is to format the amplitudes and 
-        slopes to have the same length as the amplitudes, in case 
-        they are specified with an integer number.'''
+        """The aim of this function is to format the amplitudes and
+        slopes to have the same length as the amplitudes, in case
+        they are specified with an integer number."""
         # output_data = list(data)
         if isinstance(parameter, int):
             return [parameter] * length
         return parameter
 
     def points_to_waveform(self, data):
-        '''
+        """
         Generates a waveform (voltage input over time) with constant intervals of value amplitudes[i] for interval i of length[i].
 
         amplitudes = The input from which a waveform will be generated. The input is in form of a list.
-        plateau_lengths = The number of points used to represent the amplitudes. It can be provided as a single number or as a list in which all the length values will correspond to its corresponding amplitude value.
+        plateau_lengths = The number of points used to represent the amplitudes. It can be provided as a single
+        number or as a list in which all the length values will correspond to its corresponding amplitude value.
         slope_lengths = The number of points of the slope.
 
         The output is in list format
-        '''
+        """
         output = np.ndarray([])
         # data = list(self.safety_format(data, safety_formatting))
         plateau_lengths = self._expand(self.plateau_lengths, len(data))
@@ -64,14 +65,20 @@ class WaveformManager():
             output = np.linspace(0, data[0], slope_lengths[0])
             data_size = len(data) - 1
             for i in range(data_size):
-                output = np.concatenate((output, np.array(([data[i]] * plateau_lengths[i]))))
-                output = np.concatenate((output, np.linspace(data[i], data[i + 1], slope_lengths[i])))
+                output = np.concatenate(
+                    (output, np.array(([data[i]] * plateau_lengths[i])))
+                )
+                output = np.concatenate(
+                    (output, np.linspace(data[i], data[i + 1], slope_lengths[i]))
+                )
             i = data_size
-            output = np.concatenate((output, np.array(([data[i]] * plateau_lengths[i]))))
+            output = np.concatenate(
+                (output, np.array(([data[i]] * plateau_lengths[i])))
+            )
             output = np.concatenate((output, np.linspace(data[i], 0, slope_lengths[i])))
 
         else:
-            assert False, 'Assignment of amplitudes and lengths/slopes is not unique!'
+            assert False, "Assignment of amplitudes and lengths/slopes is not unique!"
         return output
 
     # def points_to_plateau(self, data):
@@ -94,7 +101,7 @@ class WaveformManager():
         return result
 
     def plateaus_to_waveform(self, data):
-        '''
+        """
         Generates a waveform (voltage input over time) with constant intervals of value amplitudes[i] for interval i of length[i].
 
         amplitudes = The input from which a waveform will be generated. The input is in form of a list.
@@ -102,7 +109,7 @@ class WaveformManager():
         slope_lengths = The number of points of the slope.
 
         The output is in list format
-        '''
+        """
         output = np.ndarray([])
         point_length = int(len(data) / self.plateau_lengths)
         plateau_lengths = self._expand(self.plateau_lengths, point_length)
@@ -114,16 +121,22 @@ class WaveformManager():
         mask += [False] * slope_lengths[0]
         data_size = point_length - 1
         for i in range(data_size):
-            current_plateau = np.array(data[j:j + plateau_lengths[i]])
+            current_plateau = np.array(data[j: j + plateau_lengths[i]])
             mask += [True] * len(current_plateau)
-            current_slope = np.linspace(data[j + plateau_lengths[i] - 1], data[j + plateau_lengths[i]], slope_lengths[i])
+            current_slope = np.linspace(
+                data[j + plateau_lengths[i] - 1],
+                data[j + plateau_lengths[i]],
+                slope_lengths[i],
+            )
             mask += [False] * len(current_slope)
             output = np.concatenate((output, current_plateau))
             output = np.concatenate((output, current_slope))
             j += plateau_lengths[i]
         i = data_size
-        current_plateau = np.array(data[j:j + plateau_lengths[i]])
-        current_slope = np.linspace(data[j + plateau_lengths[i] - 1], 0, slope_lengths[i])
+        current_plateau = np.array(data[j: j + plateau_lengths[i]])
+        current_slope = np.linspace(
+            data[j + plateau_lengths[i] - 1], 0, slope_lengths[i]
+        )
         mask += [True] * len(current_plateau)
         mask += [False] * len(current_slope)
         output = np.concatenate((output, current_plateau))
@@ -131,11 +144,13 @@ class WaveformManager():
         return output, mask
 
     def plateaus_to_points(self, data):
-        plateau_lengths = self._expand(self.plateau_lengths, int(len(data) / self.plateau_lengths))
+        plateau_lengths = self._expand(
+            self.plateau_lengths, int(len(data) / self.plateau_lengths)
+        )
         output = np.array([])
         i = 0
         for amplitude_length in plateau_lengths:
-            output = np.append(output, data[i:i + amplitude_length].mean())
+            output = np.append(output, data[i: i + amplitude_length].mean())
             i += amplitude_length
         return output
 
@@ -147,7 +162,7 @@ class WaveformManager():
         return data[self.generate_mask(len(data))]
 
     def generate_mask(self, data_size):
-        '''
+        """
         Generates a waveform (voltage input over time) with constant intervals of value amplitudes[i] for interval i of length[i].
 
         amplitudes = The input from which a waveform will be generated. The input is in form of a list.
@@ -155,8 +170,10 @@ class WaveformManager():
         slope_lengths = The number of points of the slope.
 
         The output is in list format
-        '''
-        assert isinstance(self.slope_lengths, int) and isinstance(self.plateau_lengths, int), "Generate mask operation is only supported by integer slope and amplitude lengths"
+        """
+        assert isinstance(self.slope_lengths, int) and isinstance(
+            self.plateau_lengths, int
+        ), "Generate mask operation is only supported by integer slope and amplitude lengths"
         mask = []
         # plateau_lengths = self.expand(self.plateau_lengths, data_length)
         # slope_lengths = self.expand(self.slope_lengths, data_length)

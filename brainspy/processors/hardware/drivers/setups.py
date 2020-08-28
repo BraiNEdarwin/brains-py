@@ -1,12 +1,13 @@
-'''
+"""
 
-'''
+"""
 import os
 import sys
 import numpy as np
 import math
 import time
 from brainspy.processors.hardware.drivers.tasks import get_driver
+
 # from brainspy.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
 import nidaqmx.system.device as device
 import signal
@@ -22,22 +23,38 @@ CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS = 0.03
 SYNCHRONISATION_VALUE = 0.04  # do not reduce to less than 0.02
 
 
-class NationalInstrumentsSetup():
-
+class NationalInstrumentsSetup:
     def __init__(self, configs):
         self.enable_os_signals()
         self.configs = configs
-        if configs['max_ramping_time_seconds'] == 0:
-            input("WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n The security check for the ramping time has been disabled. Steep rampings can can damage the device. Proceed only if you are sure that you will not damage the device. If you want to avoid damagesimply exit the execution. \n ONLY If you are sure about what you are doing press ENTER to continue. Otherwise STOP the execution of this program.")
-        assert configs['waveform']['slope_lengths'] / configs['sampling_frequency'] >= configs['max_ramping_time_seconds']
+        if configs["max_ramping_time_seconds"] == 0:
+            input(
+                "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n The security check for the ramping time has been disabled. Steep rampings can can damage the device. Proceed only if you are sure that you will not damage the device. If you want to avoid damagesimply exit the execution. \n ONLY If you are sure about what you are doing press ENTER to continue. Otherwise STOP the execution of this program."
+            )
+        assert (
+            configs["waveform"]["slope_lengths"] / configs["sampling_frequency"]
+            >= configs["max_ramping_time_seconds"]
+        )
         # self.input_indices = configs['input_indices']
         # self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
-        self.driver = get_driver(configs['driver'])
-        self.offsetted_shape = configs['shape'] + configs['offset']
-        self.ceil = math.ceil((self.offsetted_shape) / self.configs['sampling_frequency']) + 1
-        self.driver.init_output(self.configs['input_channels'], self.configs['output_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)
+        self.driver = get_driver(configs["driver"])
+        self.offsetted_shape = configs["shape"] + configs["offset"]
+        self.ceil = (
+            math.ceil((self.offsetted_shape) / self.configs["sampling_frequency"]) + 1
+        )
+        self.driver.init_output(
+            self.configs["input_channels"],
+            self.configs["output_instrument"],
+            self.configs["sampling_frequency"],
+            self.offsetted_shape,
+        )
         time.sleep(1)
-        self.driver.init_input(self.configs['output_channels'], self.configs['input_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)
+        self.driver.init_input(
+            self.configs["output_channels"],
+            self.configs["input_instrument"],
+            self.configs["sampling_frequency"],
+            self.offsetted_shape,
+        )
         global event
         global semaphore
         event = threading.Event()
@@ -46,8 +63,8 @@ class NationalInstrumentsSetup():
 
     def reset(self):
         self.close_tasks()
-        device.Device(name=self.configs['input_instrument']).reset_device()
-        device.Device(name=self.configs['output_instrument']).reset_device()
+        device.Device(name=self.configs["input_instrument"]).reset_device()
+        device.Device(name=self.configs["output_instrument"]).reset_device()
 
     def process_output_data(self, data):
         data = np.asarray(data)
@@ -65,7 +82,7 @@ class NationalInstrumentsSetup():
             p.start()
             p.join()
             if self.data_results is None:
-                print('Nothing could be read. Stopping program')
+                print("Nothing could be read. Stopping program")
                 self.os_signal_handler(None)
             semaphore.release()
         return self.data_results
@@ -74,12 +91,12 @@ class NationalInstrumentsSetup():
         # return
 
     def _read_data(self, y):
-        '''
-            y = It represents the input data as matrix where the shpe is defined by the "number of inputs to the device" times "input points that you want to input to the device".
-        '''
+        """
+        y = It represents the input data as matrix where the shpe is defined by the "number of inputs to the device" times "input points that you want to input to the device".
+        """
         self.data_results = None
         self.read_security_checks(y)
-        self.driver.start_tasks(y, self.configs['auto_start'])
+        self.driver.start_tasks(y, self.configs["auto_start"])
         read_data = self.driver.read(self.offsetted_shape, self.ceil)
         self.driver.stop_tasks()
         self.data_results = read_data
@@ -87,10 +104,18 @@ class NationalInstrumentsSetup():
 
     def read_security_checks(self, y):
         for n, y_i in enumerate(y):
-            assert all(y_i < INPUT_VOLTAGE_THRESHOLD), f"Voltages in electrode {n} higher ({y_i.max()}) than the max. allowed value ({INPUT_VOLTAGE_THRESHOLD} V)"
-            assert all(y_i > -INPUT_VOLTAGE_THRESHOLD), f"Voltages in electrode {n} lower ({y_i.min()}) than the min. allowed value ({-INPUT_VOLTAGE_THRESHOLD} V)"
-            assert y_i[0] == 0., f"First value of input stream in electrode {n} is non-zero ({y_i[0]})"
-            assert y_i[-1] == 0., f"Last value of input stream in electrode {n} is non-zero ({y_i[-1]})"
+            assert all(
+                y_i < INPUT_VOLTAGE_THRESHOLD
+            ), f"Voltages in electrode {n} higher ({y_i.max()}) than the max. allowed value ({INPUT_VOLTAGE_THRESHOLD} V)"
+            assert all(
+                y_i > -INPUT_VOLTAGE_THRESHOLD
+            ), f"Voltages in electrode {n} lower ({y_i.min()}) than the min. allowed value ({-INPUT_VOLTAGE_THRESHOLD} V)"
+            assert (
+                y_i[0] == 0.0
+            ), f"First value of input stream in electrode {n} is non-zero ({y_i[0]})"
+            assert (
+                y_i[-1] == 0.0
+            ), f"Last value of input stream in electrode {n} is non-zero ({y_i[-1]})"
 
     def close_tasks(self):
         self.driver.close_tasks()
@@ -109,7 +134,9 @@ class NationalInstrumentsSetup():
 
     def os_signal_handler(self, signum, frame=None):
         event.set()
-        print('Interruption/Termination signal received. Waiting for the reader to finish.')
+        print(
+            "Interruption/Termination signal received. Waiting for the reader to finish."
+        )
         p.join()
         # print('Emptying the results queue')
         # if not self.results_queue.empty():
@@ -123,6 +150,7 @@ class NationalInstrumentsSetup():
     def enable_os_signals(self):
         if sys.platform == "win32":
             import win32api
+
             win32api.SetConsoleCtrlHandler(self.os_signal_handler, True)
         else:
             signal.signal(signal.SIGTERM, self.os_signal_handler)
@@ -131,6 +159,7 @@ class NationalInstrumentsSetup():
     def disable_os_signals(self):
         if sys.platform == "win32":
             import win32api  # ignoring the signal
+
             win32api.SetConsoleCtrlHandler(None, True)
         else:
             signal.signal(signal.SIGTERM, signal.SIG_IGN)
@@ -138,35 +167,39 @@ class NationalInstrumentsSetup():
 
 
 class CDAQtoCDAQ(NationalInstrumentsSetup):
-
     def __init__(self, configs):
-        configs['auto_start'] = True
-        configs['offset'] = 1
-        configs['max_ramping_time_seconds'] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
+        configs["auto_start"] = True
+        configs["offset"] = 1
+        configs["max_ramping_time_seconds"] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
-        self.driver.start_trigger(self.configs['trigger_source'])
+        self.driver.start_trigger(self.configs["trigger_source"])
 
     def forward_numpy(self, y):
         y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
         y = y.T
-        assert self.configs['shape'] + 1 == y.shape[1], f"configs value with key 'shape' must be {y.shape[1]-1}"
+        assert (
+            self.configs["shape"] + 1 == y.shape[1]
+        ), f"configs value with key 'shape' must be {y.shape[1]-1}"
         data = self.read_data(y)
         data = -1 * self.process_output_data(data)[:, 1:]
         return data.T
 
 
 class CDAQtoNiDAQ(NationalInstrumentsSetup):
-
     def __init__(self, configs):
-        configs['auto_start'] = False
-        configs['offset'] = int(configs['sampling_frequency'] * SYNCHRONISATION_VALUE)
-        configs['max_ramping_time_seconds'] = CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS
+        configs["auto_start"] = False
+        configs["offset"] = int(configs["sampling_frequency"] * SYNCHRONISATION_VALUE)
+        configs["max_ramping_time_seconds"] = CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
-        self.driver.add_channels(self.configs['output_instrument'], self.configs['input_instrument'])
+        self.driver.add_channels(
+            self.configs["output_instrument"], self.configs["input_instrument"]
+        )
 
     def forward_numpy(self, y):
         y = y.T
-        assert self.configs['shape'] == y.shape[1], f"configs value with key 'shape' must be {y.shape[1]}"
+        assert (
+            self.configs["shape"] == y.shape[1]
+        ), f"configs value with key 'shape' must be {y.shape[1]}"
         y = self.synchronise_input_data(y)
         max_attempts = 5
         attempts = 1
@@ -175,15 +208,20 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             data, finished = self.readout_trial(y)
             attempts += 1
 
-        assert finished, ('Error: output data not same size as input data. Output: ' +
-                          str(data.shape[1]) + ' points, input: ' + str(self.configs['shape']) + ' points.')
+        assert finished, (
+            "Error: output data not same size as input data. Output: "
+            + str(data.shape[1])
+            + " points, input: "
+            + str(self.configs["shape"])
+            + " points."
+        )
         return data.T
 
     def readout_trial(self, y):
         data = self.read_data(y)
         data = self.process_output_data(data)
         data = self.synchronise_output_data(data)
-        finished = data.shape[1] == self.configs['shape']
+        finished = data.shape[1] == self.configs["shape"]
         return data, finished
 
     def synchronise_input_data(self, y):
@@ -193,23 +231,29 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             y = y[np.newaxis, :]
         # Append some zeros to the initial signal such that no input data is lost
         # This should be handled with proper synchronization
-        y_corr = np.zeros((y.shape[0], y.shape[1] + self.configs['offset']))  # Add 200ms of reaction in terms of zeros
-        y_corr[:, self.configs['offset']:] = y[:]
+        y_corr = np.zeros(
+            (y.shape[0], y.shape[1] + self.configs["offset"])
+        )  # Add 200ms of reaction in terms of zeros
+        y_corr[:, self.configs["offset"] :] = y[:]
         # TODO: Is this if really necessary?
         if len(y_corr.shape) == 1:
-            y_corr = np.concatenate((y_corr[np.newaxis], np.zeros((1, y_corr.shape[1]))))   # Set the trigger
+            y_corr = np.concatenate(
+                (y_corr[np.newaxis], np.zeros((1, y_corr.shape[1])))
+            )  # Set the trigger
         else:
-            y_corr = np.concatenate((y_corr, np.zeros((1, y_corr.shape[1]))))   # Set the trigger
-        y_corr[-1, self.configs['offset']] = 1  # Start input data
+            y_corr = np.concatenate(
+                (y_corr, np.zeros((1, y_corr.shape[1])))
+            )  # Set the trigger
+        y_corr[-1, self.configs["offset"]] = 1  # Start input data
 
         return y_corr
 
     def get_output_cut_value(self, read_data):
         cut_value = np.argmax(read_data[-1, :])
         if read_data[-1, cut_value] < 0.05:
-            print('Warning: initialize spike not recognized')
+            print("Warning: initialize spike not recognized")
         return cut_value
 
     def synchronise_output_data(self, read_data):
         cut_value = self.get_output_cut_value(read_data)
-        return read_data[:-1, cut_value:self.configs['shape'] + cut_value]
+        return read_data[:-1, cut_value : self.configs["shape"] + cut_value]

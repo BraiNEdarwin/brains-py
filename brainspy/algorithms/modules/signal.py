@@ -25,6 +25,7 @@ def accuracy_fit(output, target, default_value=False):
         acc, _, _ = get_accuracy(output, target)
         return acc
 
+
 # %% Correlation between output and target: measures similarity
 
 
@@ -56,12 +57,15 @@ def corrsig_fit(output, target, default_value=False):
 def pearsons_correlation(x, y):
     vx = x - x.mean(dim=0)
     vy = y - y.mean(dim=0)
-    return torch.sum(vx * vy) / (torch.sqrt(torch.sum(vx ** 2)) * torch.sqrt(torch.sum(vy ** 2)))
+    return torch.sum(vx * vy) / (
+        torch.sqrt(torch.sum(vx ** 2)) * torch.sqrt(torch.sum(vy ** 2))
+    )
 
 
 def corrsig(output, target):
-    corr = torch.mean((output - torch.mean(output)) * (target - torch.mean(target))) / \
-        (torch.std(output) * torch.std(target) + 1e-10)
+    corr = torch.mean((output - torch.mean(output)) * (target - torch.mean(target))) / (
+        torch.std(output) * torch.std(target) + 1e-10
+    )
     x_high_min = torch.min(output[(target == 1)])
     x_low_max = torch.max(output[(target == 0)])
     delta = x_high_min - x_low_max
@@ -69,23 +73,24 @@ def corrsig(output, target):
 
 
 def sqrt_corrsig(output, target):
-    corr = torch.mean((output - torch.mean(output)) * (target - torch.mean(target))) / \
-        (torch.std(output) * torch.std(target) + 1e-10)
+    corr = torch.mean((output - torch.mean(output)) * (target - torch.mean(target))) / (
+        torch.std(output) * torch.std(target) + 1e-10
+    )
     x_high_min = torch.min(output[(target == 1)])
     x_low_max = torch.max(output[(target == 0)])
     delta = x_high_min - x_low_max
     # 5/3 works for 0.2 V gap
-    return (1. - corr)**(1 / 2) / torch.sigmoid((delta - 2) / 5)
+    return (1.0 - corr) ** (1 / 2) / torch.sigmoid((delta - 2) / 5)
 
 
 def fisher(output, target):
-    '''Separates classes irrespective of assignments.
-    Reliable, but insensitive to actual classes'''
+    """Separates classes irrespective of assignments.
+    Reliable, but insensitive to actual classes"""
     x_high = output[(target == 1)]
     x_low = output[(target == 0)]
     m0, m1 = torch.mean(x_low), torch.mean(x_high)
     s0, s1 = torch.var(x_low), torch.var(x_high)
-    mean_separation = (m1 - m0)**2
+    mean_separation = (m1 - m0) ** 2
     return -mean_separation / (s0 + s1)
 
 
@@ -94,9 +99,10 @@ def fisher_added_corr(output, target):
     x_low = output[(target == 0)]
     m0, m1 = torch.mean(x_low), torch.mean(x_high)
     s0, s1 = torch.var(x_low), torch.var(x_high)
-    mean_separation = (m1 - m0)**2
-    corr = torch.mean((output - torch.mean(output)) * (target - torch.mean(target))) / \
-        (torch.std(output) * torch.std(target) + 1e-10)
+    mean_separation = (m1 - m0) ** 2
+    corr = torch.mean((output - torch.mean(output)) * (target - torch.mean(target))) / (
+        torch.std(output) * torch.std(target) + 1e-10
+    )
     return (1 - corr) - 0.5 * mean_separation / (s0 + s1)
 
 
@@ -105,7 +111,8 @@ def fisher_multipled_corr(output, target):
     x_low = output[(target == 0)]
     m0, m1 = torch.mean(x_low), torch.mean(x_high)
     s0, s1 = torch.var(x_low), torch.var(x_high)
-    mean_separation = (m1 - m0)**2
-    corr = torch.mean((output - torch.mean(output)) * (target - torch.mean(target))) / \
-        (torch.std(output) * torch.std(target) + 1e-10)
+    mean_separation = (m1 - m0) ** 2
+    corr = torch.mean((output - torch.mean(output)) * (target - torch.mean(target))) / (
+        torch.std(output) * torch.std(target) + 1e-10
+    )
     return (1 - corr) * (s0 + s1) / mean_separation

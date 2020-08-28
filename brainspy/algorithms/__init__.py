@@ -1,1 +1,1 @@
-__all__ = ['genetic','gradient']
+__all__ = ["genetic", "gradient"]

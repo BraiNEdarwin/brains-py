@@ -17,11 +17,11 @@ from brainspy.utils.transforms import CurrentToVoltage
 
 
 class DNPU_Base(nn.Module):
-    '''DNPU Base class with activation nodes. All nodes are given by the same function loaded using the config dictionary configs_model.
+    """DNPU Base class with activation nodes. All nodes are given by the same function loaded using the config dictionary configs_model.
     The argument inputs_list is a list containing the indices for the data inputs in each node. The length of this list defines the number
     of nodes and the elements of this list, are lists of integers. The number of inputs to the layer is defined by the total
     number of integers in these lists.
-    '''
+    """
 
     def __init__(self, inputs_list, model):
         super().__init__()
@@ -37,14 +37,19 @@ class DNPU_Base(nn.Module):
 
         ###### Set everything as torch Tensors and send to DEVICE ######
         self.inputs_list = TorchUtils.get_tensor_from_list(inputs_list, torch.int64)
-        self.control_list = TorchUtils.get_tensor_from_list(control_list, torch.int64)  # IndexError: tensors used as indices must be long, byte or bool tensors
+        self.control_list = TorchUtils.get_tensor_from_list(
+            control_list, torch.int64
+        )  # IndexError: tensors used as indices must be long, byte or bool tensors
 
     def set_controls(self, inputs_list):
         control_list = [np.delete(self.indices_node, indx) for indx in inputs_list]
         control_low = [self.node.min_voltage[indx_cv] for indx_cv in control_list]
         control_high = [self.node.max_voltage[indx_cv] for indx_cv in control_list]
         # Sample control parameters
-        controls = [self.sample_controls(low, high) for low, high in zip(control_low, control_high)]
+        controls = [
+            self.sample_controls(low, high)
+            for low, high in zip(control_low, control_high)
+        ]
         # Register as learnable parameters
         self.all_controls = nn.ParameterList([nn.Parameter(cv) for cv in controls])
         # Set everything as torch Tensors and send to DEVICE
@@ -65,14 +70,18 @@ class DNPU_Base(nn.Module):
         return self.node(data) * self.node.amplification
 
     def regularizer(self):
-        assert any(self.control_low.min(dim=0)[0] < 0), \
-            "Min. Voltage is assumed to be negative, but value is positive!"
-        assert any(self.control_high.max(dim=0)[0] > 0), \
-            "Max. Voltage is assumed to be positive, but value is negative!"
-        buff = 0.
+        assert any(
+            self.control_low.min(dim=0)[0] < 0
+        ), "Min. Voltage is assumed to be negative, but value is positive!"
+        assert any(
+            self.control_high.max(dim=0)[0] > 0
+        ), "Max. Voltage is assumed to be positive, but value is negative!"
+        buff = 0.0
         for i, p in enumerate(self.all_controls):
-            buff += torch.sum(torch.relu(self.control_low[i] - p)
-                              + torch.relu(p - self.control_high[i]))
+            buff += torch.sum(
+                torch.relu(self.control_low[i] - p)
+                + torch.relu(p - self.control_high[i])
+            )
         return buff
 
     def reset(self):
@@ -83,56 +92,69 @@ class DNPU_Base(nn.Module):
 
 
 class DNPU_Layer(DNPU_Base):
-    '''Layer with DNPUs as activation nodes. It is a child of the DNPU_base class that implements
+    """Layer with DNPUs as activation nodes. It is a child of the DNPU_base class that implements
     the evaluation of this activation layer given by the model provided.
     The input data is partitioned into chunks of equal length assuming that this is the
     input dimension for each node. This partition is done by a generator method
     self.partition_input(data).
-    '''
+    """
 
     def __init__(self, model, inputs_list):
         super().__init__(inputs_list, model)
 
     def forward(self, x):
-        assert x.shape[-1] == self.inputs_list.numel(), f'size mismatch: data is {x.shape}, DNPU_Layer expecting {self.inputs_list.numel()}'
-        outputs = [self.evaluate_node(partition, self.inputs_list[i_node],
-                                      self.all_controls[i_node], self.control_list[i_node])
-                   for i_node, partition in enumerate(self.partition_input(x))]
+        assert (
+            x.shape[-1] == self.inputs_list.numel()
+        ), f"size mismatch: data is {x.shape}, DNPU_Layer expecting {self.inputs_list.numel()}"
+        outputs = [
+            self.evaluate_node(
+                partition,
+                self.inputs_list[i_node],
+                self.all_controls[i_node],
+                self.control_list[i_node],
+            )
+            for i_node, partition in enumerate(self.partition_input(x))
+        ]
 
         return torch.cat(outputs, dim=1)
 
     def partition_input(self, x):
         i = 0
         while i + self.inputs_list.shape[-1] <= x.shape[-1]:
-            yield x[:, i:i + self.inputs_list.shape[-1]]
+            yield x[:, i : i + self.inputs_list.shape[-1]]
             i += self.inputs_list.shape[-1]
 
 
 class DNPU_Channels(DNPU_Base):
-    '''Layer with DNPU activation nodes expanding a small dimensional <7 input
+    """Layer with DNPU activation nodes expanding a small dimensional <7 input
     into a N-dimensional output where N is the number of nodes.
     It is a child of the DNPU_base class that implements the evaluation of this
     activation layer using the model provided.
     The input data to each node is assumed equal but it can be fed to each node
     differently. This is regulated with the list of input indices.
-    '''
+    """
 
     def __init__(self, model, inputs_list):
         super().__init__(inputs_list, model)
 
     def forward(self, x):
-        assert x.shape[-1] == len(self.inputs_list[0]), f'size mismatch: data is {x.shape}, DNPU_Channels expecting {len(self.inputs_list[0])}'
-        outputs = [self.evaluate_node(x, self.inputs_list[i_node],
-                                      self.all_controls[i_node], controls)
-                   for i_node, controls in enumerate(self.control_list)]
+        assert x.shape[-1] == len(
+            self.inputs_list[0]
+        ), f"size mismatch: data is {x.shape}, DNPU_Channels expecting {len(self.inputs_list[0])}"
+        outputs = [
+            self.evaluate_node(
+                x, self.inputs_list[i_node], self.all_controls[i_node], controls
+            )
+            for i_node, controls in enumerate(self.control_list)
+        ]
 
         return torch.cat(outputs, dim=1)
 
 
 class Local_Receptive_Field(DNPU_Base):
-    '''Layer of DNPU nodes taking squared patches of images as inputs. The patch size is 2x2 so
-     the number of inputs in the inputs_list elements must be 4. The pathes are non-overlapping.
-    '''
+    """Layer of DNPU nodes taking squared patches of images as inputs. The patch size is 2x2 so
+    the number of inputs in the inputs_list elements must be 4. The pathes are non-overlapping.
+    """
 
     def __init__(self, model, inputs_list, out_size):
         super().__init__(inputs_list, model)
@@ -143,19 +165,34 @@ class Local_Receptive_Field(DNPU_Base):
     def forward(self, x):
         x = nf.unfold(x, kernel_size=self.window_size, stride=self.window_size)
         # x = (x[:, 1] * torch.tensor([2], dtype=torch.float32) + x[:, 0]) * (x[:, 2] * torch.tensor([2], dtype=torch.float32) + x[:, 3])
-        x = torch.cat([self.evaluate_node(x[:, :, i_node], self.inputs_list[i_node],
-                                          self.all_controls[i_node], self.control_list[i_node])
-                       for i_node, controls in enumerate(self.control_list)], dim=1)
+        x = torch.cat(
+            [
+                self.evaluate_node(
+                    x[:, :, i_node],
+                    self.inputs_list[i_node],
+                    self.all_controls[i_node],
+                    self.control_list[i_node],
+                )
+                for i_node, controls in enumerate(self.control_list)
+            ],
+            dim=1,
+        )
         return x.view(-1, self.out_size, self.out_size)
 
 
 class DNPUBN(nn.Module):
-    '''
-        v_min value is the minimum voltage value of the electrode of the next dnpu to which the output is going to be connected
-        v_max value is the maximum voltage value of the electrode of the next dnpu to which the output is going to be connected 
-    '''
+    """
+    v_min value is the minimum voltage value of the electrode of the next dnpu to which the output is going to be connected
+    v_max value is the maximum voltage value of the electrode of the next dnpu to which the output is going to be connected
+    """
 
-    def __init__(self, configs, current_range=torch.tensor([[-2, 2], [-2, 2]]), current_to_voltage=True, batch_norm=True):
+    def __init__(
+        self,
+        configs,
+        current_range=torch.tensor([[-2, 2], [-2, 2]]),
+        current_to_voltage=True,
+        batch_norm=True,
+    ):
         # default current_range = 2  * std, where std is assumed to be 1
         super().__init__()
         self.dnpu = DNPU(configs)
@@ -164,7 +201,9 @@ class DNPUBN(nn.Module):
         else:
             self.bn = batch_norm
         if current_to_voltage:
-            self.current_to_voltage = CurrentToVoltage(current_range, self.dnpu.get_input_ranges())
+            self.current_to_voltage = CurrentToVoltage(
+                current_range, self.dnpu.get_input_ranges()
+            )
         else:
             self.current_to_voltage = current_to_voltage
 
@@ -173,7 +212,11 @@ class DNPUBN(nn.Module):
             x = self.current_to_voltage(x)
         x = self.dnpu(x)
         # Cut off values out of the clipping value
-        x = torch.clamp(x, min=self.dnpu.processor.clipping_value[0], max=self.dnpu.processor.clipping_value[1])
+        x = torch.clamp(
+            x,
+            min=self.dnpu.processor.clipping_value[0],
+            max=self.dnpu.processor.clipping_value[1],
+        )
         # Apply batch normalisation
         if self.bn:
             x = self.bn(x)
@@ -185,12 +228,14 @@ class DNPUBN(nn.Module):
         self.dnpu.hw_eval(hw_processor_configs)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from brainspy.utils.io import load_configs
     import matplotlib.pyplot as plt
     import time
 
-    NODE_CONFIGS = load_configs('/home/hruiz/Documents/PROJECTS/DARWIN/Code/packages/brainspy/brainspy-processors/configs/configs_nn_model.json')
+    NODE_CONFIGS = load_configs(
+        "/home/hruiz/Documents/PROJECTS/DARWIN/Code/packages/brainspy/brainspy-processors/configs/configs_nn_model.json"
+    )
     node = DNPU(NODE_CONFIGS)
     # linear_layer = nn.Linear(20, 3).to(device=TorchUtils.get_accelerator_type())
     # dnpu_layer = DNPU_Channels([[0, 3, 4]] * 1000, node)
@@ -205,8 +250,10 @@ if __name__ == '__main__':
     end = time.time()
 
     # print([param.shape for param in model.parameters() if param.requires_grad])
-    print(f'(inputs,outputs) = {output.shape} of layer evaluated in {end-start} seconds')
-    print(f'Output range : [{output.min()},{output.max()}]')
+    print(
+        f"(inputs,outputs) = {output.shape} of layer evaluated in {end-start} seconds"
+    )
+    print(f"Output range : [{output.min()},{output.max()}]")
 
     plt.hist(output.flatten().cpu().detach().numpy(), bins=100)
     plt.show()

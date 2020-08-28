@@ -17,7 +17,6 @@ Created on Thu May 16 18:16:36 2019
 
 
 class GeneticOptimizer:
-
     def __init__(self, gene_ranges, partition, epochs, alpha=0.6, beta=0.4):
         self.epoch = 0
         self.epochs = epochs  # Number of generations
@@ -31,7 +30,9 @@ class GeneticOptimizer:
 
     def step(self, criterion_pool):
         # Sort gene pool based on fitness and copy it
-        self.pool = self.pool[torch.flip(torch.argsort(criterion_pool), dims=[0])]  # WARNING: old code was np.argsort(fitness)[::-1], changed it as it is because it was giving an error. I assume that fitness will always have one dimension, with the number of genomes.
+        self.pool = self.pool[
+            torch.flip(torch.argsort(criterion_pool), dims=[0])
+        ]  # WARNING: old code was np.argsort(fitness)[::-1], changed it as it is because it was giving an error. I assume that fitness will always have one dimension, with the number of genomes.
 
         # Generate offspring by means of crossover. The crossover method returns 1 genome from 2 parents.
         new_pool = self.crossover(self.pool.clone())
@@ -45,9 +46,15 @@ class GeneticOptimizer:
         return self.pool
 
     def _init_pool(self):
-        pool = TorchUtils.format_tensor(torch.zeros((self.genome_no, len(self.gene_range))))  # Dimensions (Genome number, gene number)
+        pool = TorchUtils.format_tensor(
+            torch.zeros((self.genome_no, len(self.gene_range)))
+        )  # Dimensions (Genome number, gene number)
         for i in range(0, len(self.gene_range)):
-            pool[:, i] = TorchUtils.format_tensor(uniform(self.gene_range[i][0], self.gene_range[i][1]).sample((self.genome_no,)))
+            pool[:, i] = TorchUtils.format_tensor(
+                uniform(self.gene_range[i][0], self.gene_range[i][1]).sample(
+                    (self.genome_no,)
+                )
+            )
         return pool
 
     def crossover(self, new_pool):
@@ -66,16 +73,20 @@ class GeneticOptimizer:
 
             # The individual with the highest fitness score is given as input first
             if chosen[i] < chosen[i + 1]:
-                new_pool[index_newpool, :] = self.crossover_blxab(self.pool[chosen[i], :], self.pool[chosen[i + 1], :])
+                new_pool[index_newpool, :] = self.crossover_blxab(
+                    self.pool[chosen[i], :], self.pool[chosen[i + 1], :]
+                )
             else:
-                new_pool[index_newpool, :] = self.crossover_blxab(self.pool[chosen[i + 1], :], self.pool[chosen[i], :])
+                new_pool[index_newpool, :] = self.crossover_blxab(
+                    self.pool[chosen[i + 1], :], self.pool[chosen[i], :]
+                )
         return new_pool
 
     def universal_sampling(self):
-        '''
+        """
         Sampling method: Stochastic universal sampling returns the chosen 'parents'
         length: len(self.fitness) == len(self.pool)
-        '''
+        """
         no_genomes = 2 * self.partition[1]
         chosen = []
         probabilities = self.linear_rank()
@@ -96,33 +107,45 @@ class GeneticOptimizer:
         return chosen
 
     def linear_rank(self):
-        '''
+        """
         Assigning probabilities: Linear ranking scheme used for stochastic universal sampling method.
         It returns an array with the probability that a genome will be chosen.
         The first probability corresponds to the genome with the highest fitness etc.
-        '''
+        """
         maximum = 1.5
         rank = np.arange(self.genome_no) + 1
         minimum = 2 - maximum
-        probability = (minimum + ((maximum - minimum) * (rank - 1) / (self.genome_no - 1))) / self.genome_no
+        probability = (
+            minimum + ((maximum - minimum) * (rank - 1) / (self.genome_no - 1))
+        ) / self.genome_no
         return probability[::-1]
 
     def crossover_blxab(self, parent1, parent2):
-        '''
+        """
         Crossover method: Blend alpha beta crossover returns a new genome (voltage combination)
         from two parents. Here, parent 1 has a higher fitness than parent 2
-        '''
+        """
 
         # check this in pytorch
         maximum = torch.max(parent1, parent2)
         minimum = torch.min(parent1, parent2)
-        diff_maxmin = (maximum - minimum)
+        diff_maxmin = maximum - minimum
         offspring = TorchUtils.format_tensor(torch.zeros((parent1.shape)))
         for i in range(len(parent1)):
             if parent1[i] > parent2[i]:
-                offspring[i] = TorchUtils.format_tensor(uniform(minimum[i] - diff_maxmin[i] * self.beta, maximum[i] + diff_maxmin[i] * self.alpha).sample())
+                offspring[i] = TorchUtils.format_tensor(
+                    uniform(
+                        minimum[i] - diff_maxmin[i] * self.beta,
+                        maximum[i] + diff_maxmin[i] * self.alpha,
+                    ).sample()
+                )
             else:
-                offspring[i] = TorchUtils.format_tensor(uniform(minimum[i] - diff_maxmin[i] * self.alpha, maximum[i] + diff_maxmin[i] * self.beta).sample())
+                offspring[i] = TorchUtils.format_tensor(
+                    uniform(
+                        minimum[i] - diff_maxmin[i] * self.alpha,
+                        maximum[i] + diff_maxmin[i] * self.beta,
+                    ).sample()
+                )
         for i in range(0, len(self.gene_range)):
             if offspring[i] < self.gene_range[i][0]:
                 offspring[i] = self.gene_range[i][0]
@@ -131,36 +154,51 @@ class GeneticOptimizer:
         return offspring
 
     def update_mutation_rate(self):
-        '''
+        """
         Dynamic parameter control of mutation rate: This formula updates the mutation
         rate based on the generation counter
-        '''
+        """
         pm_inv = 2 + 5 / (self.epochs - 1) * self.epoch
         assert pm_inv > 0
         return 0.625 / pm_inv
 
     def mutation(self, pool):
-        '''
+        """
         Mutate all genes but the first partition[0] with a triangular
         distribution in gene range with mode=gene to be mutated.
-        '''
+        """
 
         # The mutation rate is updated based on the generation counter
         mutation_rate = self.update_mutation_rate()
 
         # Check if the mask requires to
-        mask = TorchUtils.get_tensor_from_numpy(np.random.choice([0, 1], size=pool[self.partition[0]:].shape,
-                                                                 p=[1 - mutation_rate, mutation_rate]))
-        mutated_pool = np.zeros((self.genome_no - self.partition[0], len(self.gene_range)))
+        mask = TorchUtils.get_tensor_from_numpy(
+            np.random.choice(
+                [0, 1],
+                size=pool[self.partition[0] :].shape,
+                p=[1 - mutation_rate, mutation_rate],
+            )
+        )
+        mutated_pool = np.zeros(
+            (self.genome_no - self.partition[0], len(self.gene_range))
+        )
         gene_range = TorchUtils.get_numpy_from_tensor(self.gene_range)
         for i in range(0, len(gene_range)):
             if gene_range[i][0] == gene_range[i][1]:
-                mutated_pool[:, i] = gene_range[i][0] * np.ones(mutated_pool[:, i].shape)
+                mutated_pool[:, i] = gene_range[i][0] * np.ones(
+                    mutated_pool[:, i].shape
+                )
             else:
-                mutated_pool[:, i] = np.random.triangular(gene_range[i][0], TorchUtils.get_numpy_from_tensor(pool[self.partition[0]:, i]), gene_range[i][1])
+                mutated_pool[:, i] = np.random.triangular(
+                    gene_range[i][0],
+                    TorchUtils.get_numpy_from_tensor(pool[self.partition[0] :, i]),
+                    gene_range[i][1],
+                )
 
         mutated_pool = TorchUtils.get_tensor_from_numpy(mutated_pool)
-        pool[self.partition[0]:] = ((TorchUtils.format_tensor(torch.ones(pool[self.partition[0]:].shape)) - mask) * pool[self.partition[0]:] + mask * mutated_pool)
+        pool[self.partition[0] :] = (
+            TorchUtils.format_tensor(torch.ones(pool[self.partition[0] :].shape)) - mask
+        ) * pool[self.partition[0] :] + mask * mutated_pool
 
         # Remove duplicates (Only if they are)
         if len(pool.unique(dim=1)) < len(pool):
@@ -169,17 +207,23 @@ class GeneticOptimizer:
         return pool
 
     def remove_duplicates(self, pool):
-        '''
+        """
         Check the entire pool for any duplicate genomes and replace them by
         the genome put through a triangular distribution
-        '''
+        """
         if torch.unique(pool, dim=0).shape != pool.shape:
             for i in range(self.genome_no):
                 for j in range(self.genome_no):
-                    if(j != i and torch.eq(pool[i], pool[j]).all()):
+                    if j != i and torch.eq(pool[i], pool[j]).all():
                         for k in range(0, len(self.gene_range)):
                             if self.gene_range[k][0] != self.gene_range[k][1]:
-                                pool[j][k] = TorchUtils.get_tensor_from_numpy(np.random.triangular(self.gene_range[k][0], pool[j][k], self.gene_range[k][1]))
+                                pool[j][k] = TorchUtils.get_tensor_from_numpy(
+                                    np.random.triangular(
+                                        self.gene_range[k][0],
+                                        pool[j][k],
+                                        self.gene_range[k][1],
+                                    )
+                                )
                             else:
                                 pool[j][k] = self.gene_range[k][0]
         return pool

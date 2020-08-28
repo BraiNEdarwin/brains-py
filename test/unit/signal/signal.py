@@ -1,4 +1,3 @@
-
 import torch
 import numpy as np
 
@@ -7,7 +6,6 @@ from brainspy.algorithms.modules.signal import pearsons_correlation
 
 
 class SignalTests(unittest.TestCase):
-
     def __init__(self, test_name):
         super(SignalTests, self).__init__()
 
@@ -29,9 +27,10 @@ class SignalTests(unittest.TestCase):
         return self.is_equal_to_numpy()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     from matplotlib import pyplot as plt
+
     suite = unittest.TestSuite()
-    suite.addTest(SignalTests('test1'))
+    suite.addTest(SignalTests("test1"))
     unittest.TextTestRunner().run(suite)

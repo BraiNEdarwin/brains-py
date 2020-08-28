@@ -2,13 +2,12 @@ import torch
 from brainspy.utils.pytorch import TorchUtils
 
 
-class NoNoise():
+class NoNoise:
     def __call__(self, x):
         return x
 
 
-class GaussianNoise():
-
+class GaussianNoise:
     def __init__(self, mse):
         self.std = torch.sqrt(TorchUtils.format_tensor(torch.tensor([mse])))
 
@@ -17,10 +16,12 @@ class GaussianNoise():
 
 
 def get_noise(configs):
-    if 'noise' not in configs:
+    if "noise" not in configs:
         return NoNoise()
-    elif configs['noise']['type'] == 'gaussian':
-        return GaussianNoise(configs['noise']['mse'])
+    elif configs["noise"]["type"] == "gaussian":
+        return GaussianNoise(configs["noise"]["mse"])
     else:
-        print('Warning: Noise configuration not recognised. No noise is being simulated for the model.')
+        print(
+            "Warning: Noise configuration not recognised. No noise is being simulated for the model."
+        )
         return NoNoise()
