@@ -12,7 +12,7 @@ class WaveformTest(unittest2.TestCase):
     def __init__(self, test_name):
         super(WaveformTest, self).__init__()
         configs = {}
-        configs['amplitude_lengths'] = 80
+        configs['plateau_lengths'] = 80
         configs['slope_lengths'] = 20
         self.configs = configs
         self.waveform_mgr = WaveformManager(configs)
@@ -21,7 +21,7 @@ class WaveformTest(unittest2.TestCase):
         points = np.random.rand(point_no)
         waveform = self.waveform_mgr.points_to_waveform(points)
         assert waveform[0] == 0.0 and waveform[-1] == 0.0, 'Waveforms do not start and end with zero'
-        assert len(waveform) == ((self.waveform_mgr.amplitude_lengths * len(points)) + (self.waveform_mgr.slope_lengths * (len(points) + 1))), 'Waveform has an incorrect shape'
+        assert len(waveform) == ((self.waveform_mgr.plateau_lengths * len(points)) + (self.waveform_mgr.slope_lengths * (len(points) + 1))), 'Waveform has an incorrect shape'
 
         mask = self.waveform_mgr.generate_mask(len(waveform))
         assert len(mask) == len(waveform)
