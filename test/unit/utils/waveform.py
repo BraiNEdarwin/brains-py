@@ -5,6 +5,7 @@ Unit tests for the waveform manager
 import unittest2 as unittest
 import torch
 from brainspy.utils.waveform import WaveformManager
+from brainspy.utils.pytorch import TorchUtils
 
 
 class WaveformTest(unittest.TestCase):
@@ -17,10 +18,10 @@ class WaveformTest(unittest.TestCase):
         self.waveform_mgr = WaveformManager(configs)
 
     def full_check(self, point_no):
-        points = torch.rand(point_no)
+        points = TorchUtils.format_tensor(torch.rand(point_no))  # .unsqueeze(dim=1)
         waveform = self.waveform_mgr.points_to_waveform(points)
         assert (
-            waveform[0] == 0.0 and waveform[-1] == 0.0
+            (waveform[0, :] == 0.0).all() and (waveform[-1, :] == 0.0).all()
         ), "Waveforms do not start and end with zero"
         assert len(waveform) == (
             (self.waveform_mgr.plateau_length * len(points))
@@ -44,7 +45,7 @@ class WaveformTest(unittest.TestCase):
             waveform[mask] == waveform_to_plateau
         ).all(), "Inconsistent plateau conversion"
 
-        plateaus_to_waveform, mask = self.waveform_mgr.plateaus_to_waveform(
+        plateaus_to_waveform = self.waveform_mgr.plateaus_to_waveform(
             waveform[mask]
         )
         assert (
@@ -52,10 +53,11 @@ class WaveformTest(unittest.TestCase):
         ).all(), "Inconsistent waveform conversion"
 
     def runTest(self):
-        # self.full_check(0)
-        self.full_check(1)
-        self.full_check(10)
-        self.full_check(100)
+        self.full_check((1, 1))
+        self.full_check((10, 1))
+        self.full_check((100, 1))
+        self.full_check((10, 2))
+        self.full_check((100, 7))
 
 
 if __name__ == "__main__":

@@ -3,8 +3,8 @@
     received by the hardware DNPUs (Dopant Network Processing Units).
 """
 import torch
-
-# import numpy as np
+from brainspy.utils.pytorch import TorchUtils
+import numpy as np
 
 
 class WaveformManager:
@@ -71,18 +71,17 @@ class WaveformManager:
         # plateau_lengths = self._expand(self.plateau_lengths, len(data))
         # slope_lengths = self._expand(self.slope_lengths, len(data))
         # amplitudes, plateau_lengths, slope_lengths = self.format_amplitudes_and_slopes(amplitudes, self.plateau_lengths, self.slope_lengths)
-
+        tmp = TorchUtils.get_numpy_from_tensor(data)
         # if len(data) == len(plateau_lengths) == len(slope_lengths):
-        output = torch.linspace(0, data[0], self.slope_length)
+        output = TorchUtils.get_tensor_from_numpy(np.linspace(0, tmp[0], self.slope_length))
         for i in range(data_size):
-            output = torch.cat((output, data[i].repeat(self.plateau_length)))
+            output = torch.cat((output, data[i].repeat(self.plateau_length, 1)))
             output = torch.cat(
-                (output, torch.linspace(data[i], data[i + 1], self.slope_length))
+                (output, TorchUtils.get_tensor_from_numpy(np.linspace(tmp[i], tmp[i + 1], self.slope_length)))
             )
-        i = data_size
-        output = torch.cat((output, data[i].repeat(self.plateau_length)))
-        output = torch.cat((output, torch.linspace(data[i], 0, self.slope_length)))
-
+        output = torch.cat((output, data[-1].repeat(self.plateau_length, 1)))
+        output = torch.cat((output, TorchUtils.get_tensor_from_numpy(np.linspace(tmp[-1], 0, self.slope_length))))
+        del tmp
         # else:
         #     assert False, "Assignment of amplitudes and lengths/slopes is not unique!"
         return output
@@ -104,7 +103,15 @@ class WaveformManager:
         # output = data[0].expand(data.shape[0] * plateau_lengths[0], -1)
         # for i in range(1, data.shape[1]):
         #     output = torch.cat((output, data[i].expand(data.shape[0] * plateau_lengths[i], -1)))
-        return data.repeat(self.plateau_length, 1).T.flatten()
+        return self.tile(data, 0, self.plateau_length)
+
+    def tile(self, t, dim, n_tile):
+        init_dim = t.size(dim)
+        repeat_idx = [1] * t.dim()
+        repeat_idx[dim] = n_tile
+        t = t.repeat(*(repeat_idx))
+        order_index = TorchUtils.format_tensor(torch.cat([init_dim * torch.arange(n_tile) + i for i in range(init_dim)])).long()
+        return torch.index_select(t, dim, order_index)
 
     def plateaus_to_waveform(self, data):
         """
@@ -116,38 +123,37 @@ class WaveformManager:
 
         The output is in list format
         """
-        # output = np.ndarray([])
-        point_length = int(len(data) / self.plateau_length)
-        # plateau_lengths = self._expand(self.plateau_length, point_length)
-        # slope_lengths = self._expand(self.slope_length, point_length)
-        i = 0
-        j = 0
-        mask = []
-        output = torch.linspace(0, data[0], self.slope_length)
-        mask += [False] * self.slope_length
-        data_size = point_length - 1
+        # The function np.linspace supports multiple dimension while torch.linspace does not. Data is transformed from tensor to numpy and then returned back to tensor.
+        assert (len(data) % self.plateau_length == 0), f'Incorrect data shape with respect to plateau length {self.plateau_length}.'
+        data_size = int(len(data) / self.plateau_length) - 1
+        tmp = TorchUtils.get_numpy_from_tensor(data)
+        output = np.ndarray([])
+        # data = list(self.safety_format(data, safety_formatting))
+        # plateau_lengths = self._expand(self.plateau_length, len(tmp))
+        # slope_lengths = self._expand(self.slope_length, len(tmp))
+        # amplitudes, plateau_lengths, slope_lengths = self.format_amplitudes_and_slopes(amplitudes, self.plateau_lengths, self.slope_lengths)
+
+        # if len(tmp) == len(self.plateau_length) == len(self.slope_length):
+        start = 0
+        output = np.linspace(0, tmp[start], self.slope_length)
+
         for i in range(data_size):
-            current_plateau = data[j : j + self.plateau_length]
-            mask += [True] * len(current_plateau)
-            current_slope = torch.linspace(
-                data[j + self.plateau_length - 1],
-                data[j + self.plateau_length],
-                self.slope_length,
+            end = start + self.plateau_length
+            output = np.concatenate(
+                (output, tmp[start:end])
             )
-            mask += [False] * len(current_slope)
-            output = torch.cat((output, current_plateau))
-            output = torch.cat((output, current_slope))
-            j += self.plateau_length
-        i = data_size
-        current_plateau = data[j : j + self.plateau_length]
-        current_slope = torch.linspace(
-            data[j + self.plateau_length - 1], 0, self.slope_length
+            output = np.concatenate(
+                (output, np.linspace(tmp[end - 1], tmp[end], self.slope_length))
+            )
+            start = end
+        output = np.concatenate(
+            (output, tmp[start:])
         )
-        mask += [True] * len(current_plateau)
-        mask += [False] * len(current_slope)
-        output = torch.cat((output, current_plateau))
-        output = torch.cat((output, current_slope))
-        return output, mask
+        output = np.concatenate((output, np.linspace(tmp[-1], 0, self.slope_length)))
+
+        # else:
+        #     assert False, "Assignment of amplitudes and lengths/slopes is not unique!"
+        return TorchUtils.get_tensor_from_numpy(output)
 
     def plateaus_to_points(self, data):
         # plateau_lengths = self._expand(
@@ -158,8 +164,12 @@ class WaveformManager:
         # for i in range(len(data)):
         #     output = np.append(output, data[j: j + self.plateau_length].mean())
         #     j += self.plateau_length
+        assert (len(data) % self.plateau_length == 0), f'Incorrect data shape {data.shape} with respect to the number of points for plateau length {self.plateau_length}.'
         point_no = int(len(data) / self.plateau_length)
-        return data.view(point_no, self.plateau_length).mean(dim=1)
+        result = data.view(point_no, self.plateau_length, data.shape[1]).mean(dim=1)
+        if len(result.shape) == 1:
+            result = result.unsqueeze(dim=1)
+        return result
 
     def waveform_to_points(self, data, mask=None):
         if mask is None:
