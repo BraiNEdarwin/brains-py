@@ -75,6 +75,7 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     results["predicted_labels"] = predicted_labels
     results["node"] = node
     results["accuracy_value"] = accuracy
+    results['configs'] = configs
 
     return results
 
