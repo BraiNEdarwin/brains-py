@@ -44,8 +44,7 @@ class HardwareProcessor(nn.Module):
 
     def forward(self, x):
         with torch.no_grad():
-            x = TorchUtils.get_numpy_from_tensor(x)
-            x, mask = self.waveform_mgr.plateaus_to_waveform(x)
+            x, mask = self.waveform_mgr.plateaus_to_waveform(x, return_pytorch=False)
             output = self.forward_numpy(x)
             if self.logger is not None:
                 self.logger.log_output(x)

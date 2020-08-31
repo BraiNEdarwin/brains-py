@@ -45,7 +45,7 @@ class WaveformTest(unittest.TestCase):
             waveform[mask] == waveform_to_plateau
         ).all(), "Inconsistent plateau conversion"
 
-        plateaus_to_waveform = self.waveform_mgr.plateaus_to_waveform(
+        plateaus_to_waveform, _ = self.waveform_mgr.plateaus_to_waveform(
             waveform[mask]
         )
         assert (

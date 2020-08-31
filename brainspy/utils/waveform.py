@@ -113,7 +113,7 @@ class WaveformManager:
         order_index = TorchUtils.format_tensor(torch.cat([init_dim * torch.arange(n_tile) + i for i in range(init_dim)])).long()
         return torch.index_select(t, dim, order_index)
 
-    def plateaus_to_waveform(self, data):
+    def plateaus_to_waveform(self, data, return_pytorch=True):
         """
         Generates a waveform (voltage input over time) with constant intervals of value amplitudes[i] for interval i of length[i].
 
@@ -136,24 +136,31 @@ class WaveformManager:
         # if len(tmp) == len(self.plateau_length) == len(self.slope_length):
         start = 0
         output = np.linspace(0, tmp[start], self.slope_length)
-
+        mask = []
         for i in range(data_size):
             end = start + self.plateau_length
+            mask += [True] * self.plateau_length
             output = np.concatenate(
                 (output, tmp[start:end])
             )
+            mask += [False] * self.slope_length
             output = np.concatenate(
                 (output, np.linspace(tmp[end - 1], tmp[end], self.slope_length))
             )
             start = end
+        mask += [True] * self.plateau_length
         output = np.concatenate(
             (output, tmp[start:])
         )
+        mask += [False] * self.slope_length
         output = np.concatenate((output, np.linspace(tmp[-1], 0, self.slope_length)))
 
         # else:
         #     assert False, "Assignment of amplitudes and lengths/slopes is not unique!"
-        return TorchUtils.get_tensor_from_numpy(output)
+        if return_pytorch:
+            return TorchUtils.get_tensor_from_numpy(output), TorchUtils.get_tensor_from_list(mask)
+        else:
+            return output, mask
 
     def plateaus_to_points(self, data):
         # plateau_lengths = self._expand(
