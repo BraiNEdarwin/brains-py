@@ -137,6 +137,7 @@ class WaveformManager:
         start = 0
         output = np.linspace(0, tmp[start], self.slope_length)
         mask = []
+        mask += [False] * self.slope_length
         for i in range(data_size):
             end = start + self.plateau_length
             mask += [True] * self.plateau_length
