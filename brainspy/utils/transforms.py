@@ -110,7 +110,15 @@ class DataPointsToPlateau:
         return (inputs, targets)
 
 
-class PointsToPlateau:
+class PlateausToPoints:
+    def __init__(self, configs):
+        self.mgr = WaveformManager(configs)
+
+    def __call__(self, x):
+        return self.mgr.plateaus_to_points(x)
+
+
+class PointsToPlateaus:
     def __init__(self, configs):
         self.mgr = WaveformManager(configs)
 
