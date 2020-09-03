@@ -93,7 +93,7 @@ def train(
         return model, {
             "best_result_index": best_result_index,
             "genome_history": genome_history,
-            "performance_history": TorchUtils.get_tensor_from_list(performance_history),
+            "performance_history": [TorchUtils.get_tensor_from_list(performance_history), TorchUtils.get_tensor_from_list([])],
             "correlation_history": correlation_history,
             "best_output": best_output,
         }
