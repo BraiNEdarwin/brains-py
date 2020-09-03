@@ -22,6 +22,8 @@ def get_criterion(configs):
         return criterion.corrsig_fit
     elif configs["criterion"] == "fisher":
         return criterion.fisher
+    elif configs["criterion"] == "fisher_fit":
+        return criterion.fisher_fit
     elif configs["criterion"] == "corrsig":
         return criterion.corrsig
     elif configs["criterion"] == "sqrt_corrsig":

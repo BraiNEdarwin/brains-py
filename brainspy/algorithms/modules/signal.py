@@ -83,6 +83,13 @@ def sqrt_corrsig(output, target):
     return (1.0 - corr) ** (1 / 2) / torch.sigmoid((delta - 2) / 5)
 
 
+def fisher_fit(output, target, default_value=False):
+    if default_value:
+        return 0
+    else:
+        return -fisher
+
+
 def fisher(output, target):
     """Separates classes irrespective of assignments.
     Reliable, but insensitive to actual classes"""
