@@ -57,4 +57,7 @@ class HardwareProcessor(nn.Module):
         self.driver.reset()
 
     def close(self):
-        self.driver.close_tasks()
+        if "close_tasks" in dir(self.driver):
+            self.driver.close_tasks()
+        else:
+            print('Warning: Driver tasks have not been closed.')
