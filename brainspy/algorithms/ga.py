@@ -90,7 +90,10 @@ def train(
             model.close()
 
         if return_best_model:  # Return the best model
-            model = torch.load(os.path.join(save_dir, "model.pt"))
+            if model.is_hardware():
+                model.load_state_dict(torch.load(os.path.join(save_dir, "model.pt")))
+            else:
+                model = torch.load(os.path.join(save_dir, "model.pt"))
 
         print("Best fitness: " + str(best_fitness.item()))
         return model, {
