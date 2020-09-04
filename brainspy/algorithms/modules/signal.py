@@ -87,7 +87,7 @@ def fisher_fit(output, target, default_value=False):
     if default_value:
         return 0
     else:
-        return -fisher
+        return -fisher(output, target)
 
 
 def fisher(output, target):
