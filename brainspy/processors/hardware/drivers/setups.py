@@ -43,14 +43,14 @@ class NationalInstrumentsSetup:
             math.ceil((self.offsetted_shape) / self.configs["sampling_frequency"]) + 1
         )
         self.driver.init_output(
-            self.configs["input_channels"],
+            self.configs["activation_channels"],
             self.configs["output_instrument"],
             self.configs["sampling_frequency"],
             self.offsetted_shape,
         )
         time.sleep(1)
         self.driver.init_input(
-            self.configs["output_channels"],
+            self.configs["readout_channels"],
             self.configs["input_instrument"],
             self.configs["sampling_frequency"],
             self.offsetted_shape,
@@ -234,7 +234,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         y_corr = np.zeros(
             (y.shape[0], y.shape[1] + self.configs["offset"])
         )  # Add 200ms of reaction in terms of zeros
-        y_corr[:, self.configs["offset"] :] = y[:]
+        y_corr[:, self.configs["offset"]:] = y[:]
         # TODO: Is this if really necessary?
         if len(y_corr.shape) == 1:
             y_corr = np.concatenate(
@@ -256,4 +256,4 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def synchronise_output_data(self, read_data):
         cut_value = self.get_output_cut_value(read_data)
-        return read_data[:-1, cut_value : self.configs["shape"] + cut_value]
+        return read_data[:-1, cut_value: self.configs["shape"] + cut_value]
