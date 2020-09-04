@@ -175,7 +175,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         configs["offset"] = 1
         configs["max_ramping_time_seconds"] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
-        self.driver.start_trigger(self.configs["trigger_source"])
+        self.driver.start_trigger(self.configs["driver"]["trigger_source"])
 
     def forward_numpy(self, y):
         y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
