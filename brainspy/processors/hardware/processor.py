@@ -36,8 +36,8 @@ class HardwareProcessor(nn.Module):
         ]
 
     def _init_voltage_range(self, configs):
-        offset = TorchUtils.get_tensor_from_list(configs["offset"])
-        amplitude = TorchUtils.get_tensor_from_list(configs["amplitude"])
+        offset = TorchUtils.get_tensor_from_list(configs["driver"]["offset"])
+        amplitude = TorchUtils.get_tensor_from_list(configs["driver"]["amplitude"])
         min_voltage = (offset - amplitude).unsqueeze(dim=1)
         max_voltage = (offset + amplitude).unsqueeze(dim=1)
         self.voltage_ranges = torch.cat((min_voltage, max_voltage), dim=1)

@@ -32,27 +32,27 @@ class NationalInstrumentsSetup:
                 "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n The security check for the ramping time has been disabled. Steep rampings can can damage the device. Proceed only if you are sure that you will not damage the device. If you want to avoid damagesimply exit the execution. \n ONLY If you are sure about what you are doing press ENTER to continue. Otherwise STOP the execution of this program."
             )
         assert (
-            configs["waveform"]["slope_lengths"] / configs["sampling_frequency"]
+            configs["data"]["waveform"]["slope_length"] / configs["driver"]["sampling_frequency"]
             >= configs["max_ramping_time_seconds"]
         )
         # self.data_input_indices = configs['data_input_indices']
         # self.control_voltage_indices = get_control_voltage_indices(self.data_input_indices, configs['input_electrode_no'])
         self.driver = get_driver(configs["driver"])
-        self.offsetted_shape = configs["shape"] + configs["offset"]
+        self.offsetted_shape = configs["data"]["shape"] + configs["offset"]
         self.ceil = (
-            math.ceil((self.offsetted_shape) / self.configs["sampling_frequency"]) + 1
+            math.ceil((self.offsetted_shape) / self.configs["driver"]["sampling_frequency"]) + 1
         )
         self.driver.init_output(
-            self.configs["activation_channels"],
-            self.configs["output_instrument"],
-            self.configs["sampling_frequency"],
+            self.configs["driver"]["activation_channels"],
+            self.configs["driver"]["output_instrument"],
+            self.configs["driver"]["sampling_frequency"],
             self.offsetted_shape,
         )
         time.sleep(1)
         self.driver.init_input(
-            self.configs["readout_channels"],
-            self.configs["input_instrument"],
-            self.configs["sampling_frequency"],
+            self.configs["driver"]["readout_channels"],
+            self.configs["driver"]["input_instrument"],
+            self.configs["driver"]["sampling_frequency"],
             self.offsetted_shape,
         )
         global event
@@ -63,14 +63,14 @@ class NationalInstrumentsSetup:
 
     def reset(self):
         self.close_tasks()
-        device.Device(name=self.configs["input_instrument"]).reset_device()
-        device.Device(name=self.configs["output_instrument"]).reset_device()
+        device.Device(name=self.configs["driver"]["input_instrument"]).reset_device()
+        device.Device(name=self.configs["driver"]["output_instrument"]).reset_device()
 
     def process_output_data(self, data):
         data = np.asarray(data)
         if len(data.shape) == 1:
             data = data[np.newaxis, :]
-        return data * self.configs["amplification"]
+        return data * self.configs["driver"]["amplification"]
 
     def read_data(self, y):
         global p
@@ -124,7 +124,7 @@ class NationalInstrumentsSetup:
         self.driver.close_tasks()
 
     def get_amplification_value(self):
-        return self.configs["amplification"]
+        return self.configs["driver"]["amplification"]
 
     # def get_output_(self, inputs, control_voltages):
     #     y = merge_inputs_and_control_voltages_in_numpy(inputs, control_voltages, self.data_input_indices, self.control_voltage_indices)
@@ -191,17 +191,17 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
 class CDAQtoNiDAQ(NationalInstrumentsSetup):
     def __init__(self, configs):
         configs["auto_start"] = False
-        configs["offset"] = int(configs["sampling_frequency"] * SYNCHRONISATION_VALUE)
+        configs["offset"] = int(configs["driver"]["sampling_frequency"] * SYNCHRONISATION_VALUE)
         configs["max_ramping_time_seconds"] = CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.driver.add_channels(
-            self.configs["output_instrument"], self.configs["input_instrument"]
+            self.configs["driver"]["output_instrument"], self.configs["driver"]["input_instrument"]
         )
 
     def forward_numpy(self, y):
         y = y.T
         assert (
-            self.configs["shape"] == y.shape[1]
+            self.configs["data"]["shape"] == y.shape[1]
         ), f"configs value with key 'shape' must be {y.shape[1]}"
         y = self.synchronise_input_data(y)
         max_attempts = 5
@@ -224,7 +224,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         data = self.read_data(y)
         data = self.process_output_data(data)
         data = self.synchronise_output_data(data)
-        finished = data.shape[1] == self.configs["shape"]
+        finished = data.shape[1] == self.configs["data"]["shape"]
         return data, finished
 
     def synchronise_input_data(self, y):
@@ -259,4 +259,4 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def synchronise_output_data(self, read_data):
         cut_value = self.get_output_cut_value(read_data)
-        return read_data[:-1, cut_value: self.configs["shape"] + cut_value]
+        return read_data[:-1, cut_value: self.configs["data"]["shape"] + cut_value]

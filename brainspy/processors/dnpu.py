@@ -40,7 +40,7 @@ class DNPU(nn.Module):
             self.electrode_no = len(
                 self.processor.info["data_info"]["input_data"]["offset"]
             )
-        elif configs["processor_type"] == "simulation_debug" or configs["platform"] == "cdaq_to_cdaq" or configs["platform"] == "cdaq_to_nidaq":
+        elif configs["processor_type"] == "simulation_debug" or configs["processor_type"] == "cdaq_to_cdaq" or configs["processor_type"] == "cdaq_to_nidaq":
             self.processor = HardwareProcessor(configs)
             self.electrode_no = len(configs["activation_channels"])
         else:
