@@ -35,7 +35,7 @@ class SurrogateModel(nn.Module):
     def _load(self, configs):
         """Loads a pytorch model from a directory string."""
         self.configs = configs
-        self.info, state_dict = load_file(configs["torch_model_dict"], "pt")
+        self.info, state_dict = load_file(configs["driver"]["torch_model_dict"], "pt")
         self.model = NeuralNetworkModel(self.info["smg_configs"]["processor"])
         self.load_state_dict(state_dict)
 

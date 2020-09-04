@@ -35,8 +35,8 @@ class NationalInstrumentsSetup:
             configs["waveform"]["slope_lengths"] / configs["sampling_frequency"]
             >= configs["max_ramping_time_seconds"]
         )
-        # self.input_indices = configs['input_indices']
-        # self.control_voltage_indices = get_control_voltage_indices(self.input_indices, configs['input_electrode_no'])
+        # self.data_input_indices = configs['data_input_indices']
+        # self.control_voltage_indices = get_control_voltage_indices(self.data_input_indices, configs['input_electrode_no'])
         self.driver = get_driver(configs["driver"])
         self.offsetted_shape = configs["shape"] + configs["offset"]
         self.ceil = (
@@ -124,8 +124,8 @@ class NationalInstrumentsSetup:
         return self.configs["amplification"]
 
     # def get_output_(self, inputs, control_voltages):
-    #     y = merge_inputs_and_control_voltages_in_numpy(inputs, control_voltages, self.input_indices, self.control_voltage_indices)
-    #     return self.get_output(y)s
+    #     y = merge_inputs_and_control_voltages_in_numpy(inputs, control_voltages, self.data_input_indices, self.control_voltage_indices)
+    #     return self.get_output(y)
 
     def forward_numpy(self):
         pass

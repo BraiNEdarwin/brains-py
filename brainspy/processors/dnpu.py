@@ -35,26 +35,26 @@ class DNPU(nn.Module):
         self._init_bias()
 
     def _load_processor(self, configs):
-        if configs["platform"] == "hardware":
-            self.processor = HardwareProcessor(configs)
-            self.electrode_no = len(configs["activation_channels"])
-        elif configs["platform"] == "simulation":
+        if configs["processor_type"] == "simulation":
             self.processor = SurrogateModel(configs)
             self.electrode_no = len(
                 self.processor.info["data_info"]["input_data"]["offset"]
             )
+        elif configs["processor_type"] == "simulation_debug" or configs["platform"] == "cdaq_to_cdaq" or configs["platform"] == "cdaq_to_nidaq":
+            self.processor = HardwareProcessor(configs)
+            self.electrode_no = len(configs["activation_channels"])
         else:
             raise NotImplementedError(
-                f"Platform {configs['platform']} is not recognised. The platform has to be either 'hardware' or 'simulation'"
+                f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "
             )
 
     def _init_electrode_info(self, configs):
-        # self.input_no = len(configs['input_indices'])
-        self.input_indices = TorchUtils.get_tensor_from_list(
-            configs["input_indices"], torch.int64
+        # self.input_no = len(configs['data_input_indices'])
+        self.data_input_indices = TorchUtils.get_tensor_from_list(
+            configs["data"]["input_indices"], torch.int64
         )
         self.control_indices = np.delete(
-            np.arange(self.electrode_no), configs["input_indices"]
+            np.arange(self.electrode_no), configs["data"]["input_indices"]
         )
         self.control_indices = TorchUtils.get_tensor_from_list(
             self.control_indices, torch.int64
@@ -90,7 +90,7 @@ class DNPU(nn.Module):
         inp = merge_electrode_data(
             x,
             self.bias.expand(x.size()[0], -1),
-            self.input_indices,
+            self.data_input_indices,
             self.control_indices,
         )
         return self.processor(inp)
@@ -109,7 +109,7 @@ class DNPU(nn.Module):
             self.bias.data[:, k].uniform_(self.control_low[k], self.control_high[k])
 
     def get_input_ranges(self):
-        return self.processor.voltage_ranges[self.input_indices]
+        return self.processor.voltage_ranges[self.data_input_indices]
 
     def get_control_ranges(self):
         return self.processor.voltage_ranges[self.control_indices]
