@@ -3,8 +3,10 @@ dependencies:
    - python
    - ipython
    - pip
+   - tqdm
+   - torch-optimizer
    - pip:
      - Pyro4
      - nidaqmx
-     - numpy
      - pyyaml
+     - pywin32

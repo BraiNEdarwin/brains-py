@@ -9,7 +9,6 @@ setup(
     author_email="u.alegre@utwente.nl",
     license="GPL-3.0",
     packages=find_packages(),
-    install_requires=["numpy", "nidaqmx", "pyyaml", "Pyro4"],
-    python_requires="~=3.6",
+    install_requires=["nidaqmx", "pyyaml", "Pyro4","tqdm","torch-optimizer","pywin32"],
     zip_safe=False,
 )
