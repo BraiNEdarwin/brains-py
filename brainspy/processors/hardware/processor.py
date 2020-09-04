@@ -61,3 +61,6 @@ class HardwareProcessor(nn.Module):
             self.driver.close_tasks()
         else:
             print('Warning: Driver tasks have not been closed.')
+
+    def is_hardware(self):
+        return self.driver.is_hardware()

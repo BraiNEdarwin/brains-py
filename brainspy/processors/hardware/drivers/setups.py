@@ -90,6 +90,9 @@ class NationalInstrumentsSetup:
         # self.results_queue.task_done()
         # return
 
+    def is_hardware(self):
+        return True
+
     def _read_data(self, y):
         """
         y = It represents the input data as matrix where the shpe is defined by the "number of inputs to the device" times "input points that you want to input to the device".

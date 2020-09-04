@@ -69,7 +69,10 @@ def train(
                 best_output = best_current_output.detach().cpu()
                 model.set_control_voltages(genome_history[best_result_index])
                 if save_dir is not None:
-                    torch.save(model, os.path.join(save_dir, "model.pt"))
+                    if model.is_hardware():
+                        torch.save(model.state_dict(), os.path.join(save_dir, "model.pt"))
+                    else:
+                        torch.save(model, os.path.join(save_dir, "model.pt"))
 
             # Check if the best correlation has reached the desired threshold
             if best_correlation >= configs["stop_threshold"]:

@@ -135,3 +135,6 @@ class DNPU(nn.Module):
 
     def close(self):
         self.processor.close()
+
+    def is_hardware(self):
+        return self.processor.is_hardware()

@@ -66,3 +66,6 @@ class SurrogateModel(nn.Module):
     def close(self):
         # print('The surrogate model does not have a closing function. ')
         pass
+
+    def is_hardware(self):
+        return False
