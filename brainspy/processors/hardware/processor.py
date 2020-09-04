@@ -26,13 +26,13 @@ class HardwareProcessor(nn.Module):
         super().__init__()
         self._init_voltage_range(configs)
         self.driver = get_driver(configs)
-        self.waveform_mgr = WaveformManager(configs["waveform"])
+        self.waveform_mgr = WaveformManager(configs["data"]["waveform"])
         self.logger = logger
         # TODO: Manage amplification from this class
-        self.amplification = configs["amplification"]
+        self.amplification = configs["driver"]["amplification"]
         self.clipping_value = [
-            configs["output_clipping_range"][0] * self.amplification,
-            configs["output_clipping_range"][1] * self.amplification,
+            configs["driver"]["output_clipping_range"][0] * self.amplification,
+            configs["driver"]["output_clipping_range"][1] * self.amplification,
         ]
 
     def _init_voltage_range(self, configs):

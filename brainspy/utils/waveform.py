@@ -33,8 +33,8 @@ class WaveformManager:
     """
 
     def __init__(self, configs):
-        self.plateau_length = configs["plateau_lengths"]
-        self.slope_length = configs["slope_lengths"]
+        self.plateau_length = configs["plateau_length"]
+        self.slope_length = configs["slope_length"]
         self.generate_mask_base()
 
     def generate_mask_base(self):
