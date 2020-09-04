@@ -181,7 +181,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
         y = y.T
         assert (
-            self.configs["shape"] + 1 == y.shape[1]
+            self.configs["data"]["shape"] + 1 == y.shape[1]
         ), f"configs value with key 'shape' must be {y.shape[1]-1}"
         data = self.read_data(y)
         data = -1 * self.process_output_data(data)[:, 1:]
