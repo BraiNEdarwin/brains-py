@@ -37,7 +37,7 @@ class SurrogateModel(nn.Module):
         self.configs = configs
         self.info, state_dict = load_file(configs["driver"]["torch_model_dict"], "pt")
         self.model = NeuralNetworkModel(self.info["smg_configs"]["processor"])
-        self.load_state_dict(state_dict)
+        self.model.load_state_dict(state_dict)
 
     def _init_voltage_ranges(self):
         offset = TorchUtils.get_tensor_from_list(
