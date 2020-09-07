@@ -49,7 +49,7 @@ def train(
                     predictions = model(inputs)
                     if logger is not None and "log_ios_val" in dir(logger):
                         logger.log_ios_val(inputs, targets, predictions)
-                    val_loss += criterion(predictions, targets)
+                    val_loss += criterion(predictions, targets).item()
 
             model.train()
 
