@@ -35,18 +35,19 @@ class DNPU(nn.Module):
         self._init_bias()
 
     def _load_processor(self, configs):
-        if configs["processor_type"] == "simulation":
-            self.processor = SurrogateModel(configs)
-            self.electrode_no = len(
-                self.processor.info["data_info"]["input_data"]["offset"]
-            )
-        elif configs["processor_type"] == "simulation_debug" or configs["processor_type"] == "cdaq_to_cdaq" or configs["processor_type"] == "cdaq_to_nidaq":
-            self.processor = HardwareProcessor(configs)
-            self.electrode_no = len(configs["driver"]["activation_channels"])
-        else:
-            raise NotImplementedError(
-                f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "
-            )
+        if self._get_configs() != configs:
+            if configs["processor_type"] == "simulation":
+                self.processor = SurrogateModel(configs)
+                self.electrode_no = len(
+                    self.processor.info["data_info"]["input_data"]["offset"]
+                )
+            elif configs["processor_type"] == "simulation_debug" or configs["processor_type"] == "cdaq_to_cdaq" or configs["processor_type"] == "cdaq_to_nidaq":
+                self.processor = HardwareProcessor(configs)
+                self.electrode_no = len(configs["driver"]["activation_channels"])
+            else:
+                raise NotImplementedError(
+                    f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "
+                )
 
     def _init_electrode_info(self, configs):
         # self.input_no = len(configs['data_input_indices'])
@@ -132,6 +133,15 @@ class DNPU(nn.Module):
         self.eval()
         self._load_processor(hw_processor_configs)
         self._init_electrode_info(hw_processor_configs)
+
+    def _get_configs(self):
+        if isinstance(self.processor, HardwareProcessor):
+            return self.processor.driver.configs
+        elif isinstance(self.processor, SurrogateModel):
+            return self.processor.configs
+        else:
+            print('Warning: Instance of processor not recognised.')
+            return None
 
     def close(self):
         self.processor.close()
