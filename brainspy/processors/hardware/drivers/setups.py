@@ -1,19 +1,20 @@
 """
 
 """
-import os
 import sys
-import numpy as np
 import math
-import time
+import signal
+import threading
+
+import numpy as np
+import nidaqmx.system.device as device
+
+from threading import Thread
+
 from brainspy.processors.hardware.drivers.tasks import get_driver
 
 # from brainspy.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
-import nidaqmx.system.device as device
-import signal
-import threading
-from threading import Thread
-import queue
+
 
 # SECURITY FLAGS.
 # WARNING - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
@@ -27,6 +28,10 @@ class NationalInstrumentsSetup:
     def __init__(self, configs):
         self.enable_os_signals()
         self.configs = configs
+        self.last_shape = -1
+        self.data_results = None
+        self.offsetted_shape = None
+        self.ceil = None
         if configs["max_ramping_time_seconds"] == 0:
             input(
                 "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n The security check for the ramping time has been disabled. Steep rampings can can damage the device. Proceed only if you are sure that you will not damage the device. If you want to avoid damagesimply exit the execution. \n ONLY If you are sure about what you are doing press ENTER to continue. Otherwise STOP the execution of this program."
@@ -38,23 +43,16 @@ class NationalInstrumentsSetup:
         # self.data_input_indices = configs['data_input_indices']
         # self.control_voltage_indices = get_control_voltage_indices(self.data_input_indices, configs['input_electrode_no'])
         self.driver = get_driver(configs["driver"])
-        self.offsetted_shape = configs["data"]["shape"] + configs["offset"]
-        self.ceil = (
-            math.ceil((self.offsetted_shape) / self.configs["driver"]["sampling_frequency"]) + 1
-        )
+
         self.driver.init_output(
             self.configs["driver"]["activation_channels"],
-            self.configs["driver"]["output_instrument"],
-            self.configs["driver"]["sampling_frequency"],
-            self.offsetted_shape,
+            self.configs["driver"]["output_instrument"]
         )
-        time.sleep(1)
         self.driver.init_input(
             self.configs["driver"]["readout_channels"],
-            self.configs["driver"]["input_instrument"],
-            self.configs["driver"]["sampling_frequency"],
-            self.offsetted_shape,
+            self.configs["driver"]["input_instrument"]
         )
+
         global event
         global semaphore
         event = threading.Event()
@@ -90,6 +88,12 @@ class NationalInstrumentsSetup:
         # self.results_queue.task_done()
         # return
 
+    def set_shape_vars(self, shape):
+        self.offsetted_shape = shape + self.configs["offset"]
+        self.ceil = (
+            math.ceil((self.offsetted_shape) / self.configs["driver"]["sampling_frequency"]) + 1
+        )
+
     def is_hardware(self):
         return True
 
@@ -99,9 +103,16 @@ class NationalInstrumentsSetup:
         """
         self.data_results = None
         self.read_security_checks(y)
+
+        if self.last_shape != y.shape[1]:
+            self.last_shape = y.shape[1]
+            self.driver.set_shape(self.configs["driver"]["sampling_frequency"], y.shape[1])
+            self.set_shape_vars(y.shape[1])
+
         self.driver.start_tasks(y, self.configs["auto_start"])
         read_data = self.driver.read(self.offsetted_shape, self.ceil)
         self.driver.stop_tasks()
+
         self.data_results = read_data
         return read_data
 
@@ -180,9 +191,6 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
     def forward_numpy(self, y):
         y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
         y = y.T
-        assert (
-            self.configs["data"]["shape"] + 1 == y.shape[1]
-        ), f"configs value with key 'shape' must be {y.shape[1]-1}"
         data = self.read_data(y)
         data = -1 * self.process_output_data(data)[:, 1:]
         return data.T

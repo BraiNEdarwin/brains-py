@@ -52,7 +52,7 @@ class LocalTasks:
 
     @Pyro4.oneway
     def init_output(
-        self, input_channels, output_instrument, sampling_frequency, offsetted_shape
+        self, input_channels, output_instrument
     ):
         """Initialises the output of the computer which is the input of the device"""
         self.output_task = nidaqmx.Task()
@@ -63,15 +63,10 @@ class LocalTasks:
                 -2,
                 2,
             )
-        self.output_task.timing.cfg_samp_clk_timing(
-            sampling_frequency,
-            sample_mode=self.acquisition_type,
-            samps_per_chan=offsetted_shape,
-        )
 
     @Pyro4.oneway
     def init_input(
-        self, output_channels, input_instrument, sampling_frequency, offsetted_shape
+        self, output_channels, input_instrument
     ):
         """Initialises the input of the computer which is the output of the device"""
         self.input_task = nidaqmx.Task()
@@ -79,10 +74,18 @@ class LocalTasks:
             self.input_task.ai_channels.add_ai_voltage_chan(
                 input_instrument + "/ai" + str(output_channels[i])
             )
+
+    @Pyro4.oneway
+    def set_shape(self, sampling_frequency, shape):
+        self.output_task.timing.cfg_samp_clk_timing(
+            sampling_frequency,
+            sample_mode=self.acquisition_type,
+            samps_per_chan=shape,
+        )
         self.input_task.timing.cfg_samp_clk_timing(
             sampling_frequency,
             sample_mode=self.acquisition_type,
-            samps_per_chan=offsetted_shape,
+            samps_per_chan=shape,
         )
 
     @Pyro4.oneway
@@ -144,18 +147,21 @@ class RemoteTasks:
         self.close_tasks()
 
     def init_output(
-        self, input_channels, output_instrument, sampling_frequency, offsetted_shape
+        self, input_channels, output_instrument
     ):
         self.tasks.init_output(
-            input_channels, output_instrument, sampling_frequency, offsetted_shape
+            input_channels, output_instrument
         )
 
     def init_input(
-        self, output_channels, input_instrument, sampling_frequency, offsetted_shape
+        self, output_channels, input_instrument
     ):
         self.tasks.init_input(
-            output_channels, input_instrument, sampling_frequency, offsetted_shape
+            output_channels, input_instrument
         )
+
+    def set_shape(self, sampling_frequency, shape):
+        self.tasks.set_shape(sampling_frequency, shape)
 
     def add_channels(self, output_instrument, input_instrument):
         self.tasks.add_channels(output_instrument, input_instrument)
