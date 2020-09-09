@@ -84,11 +84,6 @@ def train(
 
             pool = optimizer.step(criterion_pool)
 
-        if "close" in dir(
-            model
-        ):  # check if the close function exists in the model for using GA on-chip
-            model.close()
-
         if return_best_model:  # Return the best model
             if model.is_hardware():
                 model.load_state_dict(torch.load(os.path.join(save_dir, "model.pt")))
