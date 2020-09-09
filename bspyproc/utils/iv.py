@@ -23,28 +23,20 @@ class IVtest():
 
         self.processor = get_processor(self.configs['processor'])
         experiments = ["IV1", "IV2", "IV3", "IV4", "IV5", "IV6", "IV7"]
-        self.devices_in_experiments = {}
+        # self.devices_in_experiments = {}
         output = {}
         output_array = []
                 
         for exp in experiments:
             output[exp] = {}
-            self.devices_in_experiments[exp] = self.configs["processor"]['devices'].copy()
+            # self.devices_in_experiments[exp] = self.configs["processor"]['devices'].copy()
             output_array = self.processor.get_output(IVtest.create_input_arrays(self))
 
             for i, dev in enumerate(self.configs["processor"]['devices']):
-                output[exp][dev] = output_array[i, :]
+                # output[exp][dev] = output_array[i, :] old, without the transpose in setup_mgr
+                output[exp][dev] = output_array[:, i].T
 
-        self.iv_plot(output)
-        #self.plot(IVtest.gen_input_wfrm(self), output["IV7"]["E"])
-        
-        # input_data = np.zeros((2,1000))
-        # input_data[0,:] = IVtest.gen_input_wfrm(self)  
-        # input_data[1,:] = IVtest.gen_input_wfrm(self)  
-        # output_array = self.processor.get_output(input_data)
-        # self.plot(IVtest.gen_input_wfrm(self), output_array)
-        
-        
+        self.iv_plot(output)        
 
     def create_input_arrays(self):
 
@@ -59,8 +51,8 @@ class IVtest():
                 inputs_dict[dev][self.index_prog[dev], :] = IVtest.gen_input_wfrm(self)   
                 self.index_prog[dev] += 1
                 
-            else:   
-                self.devices_in_experiments["IV"+str( self.index_prog["all"] + 1)].remove(dev)
+            # else:   
+                 # self.devices_in_experiments["IV"+str( self.index_prog["all"] + 1)].remove(dev)
 
             inputs_array.extend(inputs_dict[dev])
 
@@ -116,12 +108,7 @@ class IVtest():
         else:
             print("Specify waveform type")
 
-        return input_data
-
-    # def close_test(self, results):
-        # self.excel_file.close_file()
-        # self.results = results
-        # return results
+        return input_data.T
 
     def plot(self, x, y):
         for i in range(np.shape(y)[1]):
@@ -129,25 +116,6 @@ class IVtest():
             plt.plot(x)
             plt.plot(y)
             plt.show()
-        
-        # fig, ax1 = plt.subplots()
-
-        # color = 'tab:blue'
-        # ax1.set_ylabel('input (V)', color=color)  # we already handled the x-label with ax1
-        # ax1.plot(x, color=color)
-        # ax1.tick_params(axis='y', labelcolor=color)
-
-        # color = 'tab:orange'
-        # ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-        
-        # ax2.set_xlabel('time (s)')
-        # ax2.set_ylabel('output (nA)', color=color)
-        # ax2.plot(y, color=color)
-        # ax2.tick_params(axis='y', labelcolor=color)
-
-        # fig.tight_layout()  # otherwise the right y-label is slightly clipped
-        # plt.show()
-
 
     def iv_plot(self, output):
 
@@ -157,7 +125,6 @@ class IVtest():
 
         for dev in self.configs["processor"]['devices']:
             fig, axs = plt.subplots(2, 4)
-            #plt.grid(True)
             fig.suptitle('Device ' + dev + ' - Input voltage vs Output current')
             for i in range(2):
                 for j in range(4):
