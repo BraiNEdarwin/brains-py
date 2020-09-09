@@ -167,10 +167,10 @@ class BrainsCDAQtoCDAQ(NationalInstrumentsSetup):
            
     def create_ao_channels(self, configs):
         ao_channels = []
-        if configs['architecture'] == "single_device":
+        if configs['processor_type'] == 'cdaq_to_cdaq':
             for i in range(len(configs['input_channels'])):
                 ao_channels.append(configs['output_instrument'] + "/ao" + str(configs['input_channels'][i]))
-        elif configs['architecture'] == "multi_device":          
+        elif configs['processor_type'] == 'brains_cdaq_to_cdaq'::          
             ao_channels = self.out_ch_list
         else :
             print('error in config(architecture), select single_device or multi_device')
@@ -178,10 +178,10 @@ class BrainsCDAQtoCDAQ(NationalInstrumentsSetup):
         
     def create_ai_channels(self, configs):
         ai_channels = []
-        if configs['architecture'] == "single_device":
+        if configs['processor_type'] == 'cdaq_to_cdaq':
             for i in range(len(configs['output_channels'])):
                 ai_channels.append(configs['input_instrument'] + "/ai" + str(configs['output_channels'][i]))
-        elif configs['architecture'] == "multi_device":
+        elif configs['processor_type'] == 'brains_cdaq_to_cdaq':
             ai_channels = self.in_ch_list
         else :
             print('error in config(architecture), select single_device or multi_device')
