@@ -57,7 +57,6 @@ class NationalInstrumentsSetup:
         global semaphore
         event = threading.Event()
         semaphore = threading.Semaphore()
-        # self.results_queue = queue.Queue()
 
     def reset(self):
         self.close_tasks()
@@ -72,7 +71,7 @@ class NationalInstrumentsSetup:
 
     def read_data(self, y):
         global p
-        # p = Thread(target=lambda q, arg1: q.put(self._read_data(arg1)), args=(self.results_queue, y))
+
         p = Thread(target=self._read_data, args=(y,))
         if not event.is_set():
             semaphore.acquire()
@@ -84,9 +83,6 @@ class NationalInstrumentsSetup:
                 self.os_signal_handler(None)
             semaphore.release()
         return self.data_results
-        # results = self.results_queue.get()
-        # self.results_queue.task_done()
-        # return
 
     def set_shape_vars(self, shape):
         self.offsetted_shape = shape + self.configs["offset"]
@@ -137,10 +133,6 @@ class NationalInstrumentsSetup:
     def get_amplification_value(self):
         return self.configs["driver"]["amplification"]
 
-    # def get_output_(self, inputs, control_voltages):
-    #     y = merge_inputs_and_control_voltages_in_numpy(inputs, control_voltages, self.data_input_indices, self.control_voltage_indices)
-    #     return self.get_output(y)
-
     def forward_numpy(self):
         pass
 
@@ -152,11 +144,6 @@ class NationalInstrumentsSetup:
             "Interruption/Termination signal received. Waiting for the reader to finish."
         )
         p.join()
-        # print('Emptying the results queue')
-        # if not self.results_queue.empty():
-        #     self.results_queue.get()
-        # print('Waiting for the queue to finish')
-        # self.results_queue.join()
         print("Closing nidaqmx tasks")
         self.close_tasks()
         sys.exit(0)
