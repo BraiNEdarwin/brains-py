@@ -25,7 +25,7 @@ class SurrogateModel(nn.Module):
         self._load(configs)
         self._init_voltage_ranges()
         self.amplification = TorchUtils.get_tensor_from_list(
-            self.info["data_info"]["processor"]["amplification"]
+            self.info["data_info"]["processor"]['driver']["amplification"]
         )
         self.clipping_value = TorchUtils.get_tensor_from_list(
             self.info["data_info"]["clipping_value"]
