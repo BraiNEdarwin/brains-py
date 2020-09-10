@@ -104,10 +104,13 @@ def evaluate_population(
     inputs, targets, pool, model, criterion, clipvalue=[-np.inf, np.inf]
 ):
     """Optimisation function of the platform """
-    outputs_pool = TorchUtils.format_tensor(
-        torch.zeros((len(pool),) + (len(inputs), 1))
-    )
-    criterion_pool = TorchUtils.format_tensor(torch.zeros(len(pool)))
+    outputs_pool = torch.zeros((len(pool),) + (len(inputs), 1),
+                               dtype=TorchUtils.get_data_type(),
+                               device=TorchUtils.get_accelerator_type()
+                               )
+    criterion_pool = torch.zeros(len(pool),
+                                 dtype=TorchUtils.get_data_type(),
+                                 device=TorchUtils.get_accelerator_type())
     for j in range(len(pool)):
 
         # control_voltage_genes = self.get_control_voltages(gene_pool[j], len(inputs_wfm))  # , gene_pool[j, self.gene_trafo_index]
