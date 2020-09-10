@@ -35,7 +35,7 @@ class DNPU(nn.Module):
         self._init_bias()
 
     def _load_processor(self, configs):
-        if self._get_configs() != configs:
+        if not hasattr(self, 'processor') or self._get_configs() != configs:
             if configs["processor_type"] == "simulation":
                 self.processor = SurrogateModel(configs)
                 self.electrode_no = len(
