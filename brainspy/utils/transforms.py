@@ -78,10 +78,16 @@ class MinMaxScaler:
 class DataToTensor:
     """Convert labelled data to pytorch tensor."""
 
+    def __init__(self, force_cpu=None):
+        if force_cpu is not None:
+            self.device = force_cpu
+        else:
+            self.device = TorchUtils.get_accelerator_type()
+
     def __call__(self, data):
         inputs, targets = data[0], data[1]
-        inputs = TorchUtils.get_tensor_from_numpy(inputs)
-        targets = TorchUtils.get_tensor_from_numpy(targets)
+        inputs = torch.tensor(inputs, device=self.device, dtype=TorchUtils.get_data_type())
+        targets = torch.tensor(targets, device=self.device, dtype=TorchUtils.get_data_type())
         return (inputs, targets)
 
 
