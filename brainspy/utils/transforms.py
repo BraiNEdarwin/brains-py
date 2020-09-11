@@ -78,9 +78,9 @@ class MinMaxScaler:
 class DataToTensor:
     """Convert labelled data to pytorch tensor."""
 
-    def __init__(self, force_cpu=None):
-        if force_cpu is not None:
-            self.device = force_cpu
+    def __init__(self, device=None):
+        if device is not None:
+            self.device = device
         else:
             self.device = TorchUtils.get_accelerator_type()
 
