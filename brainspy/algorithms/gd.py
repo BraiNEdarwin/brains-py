@@ -3,6 +3,8 @@ from tqdm import trange
 import numpy as np
 import os
 
+from brainspy.utils.pytorch import TorchUtils
+
 
 def train(
     model,
@@ -23,9 +25,14 @@ def train(
         val_loss = 0
         for inputs, targets in dataloaders[0]:
 
-            optimizer.zero_grad()
             if waveform_transforms is not None:
                 inputs, targets = waveform_transforms((inputs, targets))
+            if inputs.device != TorchUtils.get_accelerator_type():
+                inputs = inputs.to(device=TorchUtils.get_accelerator_type())
+            if targets.device != TorchUtils.get_accelerator_type():
+                targets = targets.to(device=TorchUtils.get_accelerator_type())
+
+            optimizer.zero_grad()
             predictions = model(inputs)
             if logger is not None and "log_ios_train" in dir(logger):
                 logger.log_ios_train(inputs, targets, predictions, epoch)
