@@ -17,9 +17,13 @@ class TorchUtils:
 
     @staticmethod
     def set_data_type(data_type):
-        """Enable setting the force CPU option for computers with an old CUDA version,
-        where torch detects that there is cuda, but the version is too old to be compatible."""
+        """."""
         TorchUtils.data_type = data_type
+
+    @staticmethod
+    def get_data_type():
+        """."""
+        return TorchUtils.data_type
 
     @staticmethod
     def get_accelerator_type():
