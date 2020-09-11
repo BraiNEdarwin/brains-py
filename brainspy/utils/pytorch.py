@@ -32,45 +32,23 @@ class TorchUtils:
             return torch.device("cuda")
         return torch.device("cpu")
 
-    # @staticmethod
-    # def get_data_type():
-    #     """It consistently returns the adequate data format for either CPU or CUDA.
-    #     When the input force_cpu is activated, it will only create variables for the """
-    #     if TorchUtils.get_accelerator_type() == 'cuda':
-    #         return TorchUtils._get_cuda_data_type()
-    #     return TorchUtils._get_cpu_data_type()
-
-    # @staticmethod
-    # def _get_cuda_data_type():
-    #     if TorchUtils.data_type == 'float':
-    #         return torch.cuda.FloatTensor
-    #     if TorchUtils.data_type == 'long':
-    #         return torch.cuda.LongTensor
-
-    # @staticmethod
-    # def _get_cpu_data_type():
-    #     if TorchUtils.data_type == 'float':
-    #         return torch.FloatTensor
-    #     if TorchUtils.data_type == 'long':
-    #         return torch.LongTensor
-    #     # _ANS = type.__func__()
-    #     # _ANS = data_type.__func__()
-
     @staticmethod
-    def get_tensor_from_list(data, *args):
+    def get_tensor_from_list(data, device=None, data_type=None):
         """Enables to create a torch variable with a consistent accelerator type and data type."""
-        if args:
-            data_type = args[0]
-        else:
-            data_type = None
-        return TorchUtils.format_tensor(torch.tensor(data), data_type=data_type)
+        if device is None:
+            device = TorchUtils.get_accelerator_type()
+        if data_type is None:
+            data_type = TorchUtils.get_data_type()
+        return torch.tensor(data, device=device, dtype=data_type)
 
     @staticmethod
-    def format_tensor(tensor, data_type=None):
+    def format_tensor(tensor, device=None, data_type=None):
         """Enables setting the data type and device consistently for all torch.tensors"""
+        if device is None:
+            device = TorchUtils.get_accelerator_type()
         if data_type is None:
-            data_type = TorchUtils.data_type
-        return tensor.to(device=TorchUtils.get_accelerator_type(), dtype=data_type)
+            data_type = TorchUtils.get_data_type()
+        return tensor.to(device=device, dtype=data_type)
 
     # _ANS = format_torch.__func__()
 

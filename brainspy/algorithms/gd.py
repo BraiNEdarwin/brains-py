@@ -17,9 +17,12 @@ def train(
     waveform_transforms=None,
     return_best_model=True,
 ):
+    # with torch.autograd.profiler.profile(use_cuda=not TorchUtils.force_cpu) as prof:
     train_losses, val_losses = [], []
     min_val_loss = np.inf
     looper = trange(configs["epochs"], desc=" Initialising")
+    model.to(device=TorchUtils.get_accelerator_type())
+
     for epoch in looper:
         running_loss = 0
         val_loss = 0
@@ -53,6 +56,10 @@ def train(
                 for inputs, targets in dataloaders[1]:
                     if waveform_transforms is not None:
                         inputs, targets = waveform_transforms((inputs, targets))
+                    if inputs.device != TorchUtils.get_accelerator_type():
+                        inputs = inputs.to(device=TorchUtils.get_accelerator_type())
+                    if targets.device != TorchUtils.get_accelerator_type():
+                        targets = targets.to(device=TorchUtils.get_accelerator_type())
                     predictions = model(inputs)
                     if logger is not None and "log_ios_val" in dir(logger):
                         logger.log_ios_val(inputs, targets, predictions)
@@ -85,6 +92,7 @@ def train(
         model = torch.load(os.path.join(save_dir, "model.pt"))
     else:
         torch.save(model, os.path.join(save_dir, "model.pt"))
+    # print(prof)
     return model, {
         "performance_history": [torch.tensor(train_losses), torch.tensor(val_losses)]
     }

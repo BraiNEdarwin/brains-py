@@ -9,10 +9,10 @@ class NoNoise:
 
 class GaussianNoise:
     def __init__(self, mse):
-        self.std = torch.sqrt(TorchUtils.format_tensor(torch.tensor([mse])))
+        self.std = torch.sqrt(torch.tensor([mse], device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type()))
 
     def __call__(self, x):
-        return x + (self.std * TorchUtils.format_tensor(torch.randn(x.shape)))
+        return x + (self.std * torch.randn(x.shape, device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type()))
 
 
 def get_noise(configs):

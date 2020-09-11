@@ -52,23 +52,21 @@ class DNPU(nn.Module):
     def _init_electrode_info(self, configs):
         # self.input_no = len(configs['data_input_indices'])
         self.data_input_indices = TorchUtils.get_tensor_from_list(
-            configs["data"]["input_indices"], torch.int64
+            configs["data"]["input_indices"], data_type=torch.int64
         )
         self.control_indices = np.delete(
             np.arange(self.electrode_no), configs["data"]["input_indices"]
         )
         self.control_indices = TorchUtils.get_tensor_from_list(
-            self.control_indices, torch.int64
+            self.control_indices, data_type=torch.int64
         )  # IndexError: tensors used as indices must be long, byte or bool tensors
 
     def _init_regularization_factor(self, configs):
         if "regularisation_factor" in configs:
-            self.alpha = TorchUtils.format_tensor(
-                torch.tensor(configs["regularisation_factor"])
-            )
+            self.alpha = torch.tensor(configs["regularisation_factor"], device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())
         else:
             # print('No regularisation factor set.')
-            self.alpha = TorchUtils.format_tensor(torch.tensor([1]))
+            self.alpha = torch.tensor([1], device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())
 
     def _init_bias(self):
         self.control_low = self.processor.voltage_ranges[self.control_indices][:, 0]

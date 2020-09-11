@@ -58,13 +58,12 @@ class DNPU_Base(nn.Module):
         return control_list
 
     def sample_controls(self, low, high):
-        samples = TorchUtils.format_tensor(torch.rand(1, len(low)))
+        samples = torch.rand(1, len(low), device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())
         return low + (high - low) * samples
 
     def evaluate_node(self, x, x_indices, controls, c_indices):
         expand_controls = controls.expand(x.size()[0], -1)
-        data = torch.empty((x.size()[0], x.size()[1] + controls.size()[1]))
-        data = TorchUtils.format_tensor(data)
+        data = torch.empty((x.size()[0], x.size()[1] + controls.size()[1]), device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())
         data[:, x_indices] = x
         data[:, c_indices] = expand_controls
         return self.node(data) * self.node.amplification
@@ -121,7 +120,7 @@ class DNPU_Layer(DNPU_Base):
     def partition_input(self, x):
         i = 0
         while i + self.inputs_list.shape[-1] <= x.shape[-1]:
-            yield x[:, i : i + self.inputs_list.shape[-1]]
+            yield x[:, i: i + self.inputs_list.shape[-1]]
             i += self.inputs_list.shape[-1]
 
 
@@ -197,7 +196,7 @@ class DNPUBN(nn.Module):
         super().__init__()
         self.dnpu = DNPU(configs)
         if batch_norm:
-            self.bn = TorchUtils.format_tensor(nn.BatchNorm1d(1, affine=False))
+            self.bn = nn.BatchNorm1d(1, affine=False).to(device=TorchUtils.get_accelerator_type())
         else:
             self.bn = batch_norm
         if current_to_voltage:

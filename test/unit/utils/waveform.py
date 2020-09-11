@@ -18,7 +18,7 @@ class WaveformTest(unittest.TestCase):
         self.waveform_mgr = WaveformManager(configs)
 
     def full_check(self, point_no):
-        points = TorchUtils.format_tensor(torch.rand(point_no))  # .unsqueeze(dim=1)
+        points = torch.rand(point_no, device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())  # .unsqueeze(dim=1)
         waveform = self.waveform_mgr.points_to_waveform(points)
         assert (
             (waveform[0, :] == 0.0).all() and (waveform[-1, :] == 0.0).all()
