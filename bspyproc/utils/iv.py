@@ -19,21 +19,16 @@ class IVtest():
 
     def run_test(self):
 
-        # save(mode='configs', path=self.configs['results_base_dir'], filename='test_configs.json', overwrite=self.configs['overwrite_results'], data=self.configs)
-
         self.processor = get_processor(self.configs['processor'])
         experiments = ["IV1", "IV2", "IV3", "IV4", "IV5", "IV6", "IV7"]
-        # self.devices_in_experiments = {}
         output = {}
         output_array = []
                 
         for exp in experiments:
             output[exp] = {}
-            # self.devices_in_experiments[exp] = self.configs["processor"]['devices'].copy()
             output_array = self.processor.get_output(IVtest.create_input_arrays(self))
 
             for i, dev in enumerate(self.configs["processor"]['devices']):
-                # output[exp][dev] = output_array[i, :] old, without the transpose in setup_mgr
                 output[exp][dev] = output_array[:, i].T
 
         self.iv_plot(output)        
@@ -51,15 +46,12 @@ class IVtest():
                 inputs_dict[dev][self.index_prog[dev], :] = IVtest.gen_input_wfrm(self)   
                 self.index_prog[dev] += 1
                 
-            # else:   
-                 # self.devices_in_experiments["IV"+str( self.index_prog["all"] + 1)].remove(dev)
-
             inputs_array.extend(inputs_dict[dev])
 
         inputs_array = np.array(inputs_array)
         self.index_prog["all"] += 1
         
-        return inputs_array
+        return inputs_array.T
 
     def gen_input_wfrm(self):
 
@@ -108,7 +100,7 @@ class IVtest():
         else:
             print("Specify waveform type")
 
-        return input_data.T
+        return input_data
 
     def plot(self, x, y):
         for i in range(np.shape(y)[1]):
