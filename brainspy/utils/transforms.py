@@ -91,6 +91,18 @@ class DataToTensor:
         return (inputs, targets)
 
 
+class ToDevice:
+    """Inputs and targets are transferred to GPU if necessary"""
+
+    def __call__(self, data):
+        inputs, targets = data[0], data[1]
+        if inputs.device != TorchUtils.get_accelerator_type():
+            inputs = inputs.to(device=TorchUtils.get_accelerator_type())
+        if targets.device != TorchUtils.get_accelerator_type():
+            targets = targets.to(device=TorchUtils.get_accelerator_type())
+        return (inputs, targets)
+
+
 class DataToVoltageRange:
     def __init__(self, v_min, v_max, x_min=-1, x_max=1):
         self.scale, self.offset = get_map_to_voltage_vars(
