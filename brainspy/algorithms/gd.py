@@ -28,13 +28,7 @@ def train(
         val_loss = 0
         for inputs, targets in dataloaders[0]:
 
-            if waveform_transforms is not None:
-                inputs, targets = waveform_transforms((inputs, targets))
-            if inputs.device != TorchUtils.get_accelerator_type():
-                inputs = inputs.to(device=TorchUtils.get_accelerator_type())
-            if targets.device != TorchUtils.get_accelerator_type():
-                targets = targets.to(device=TorchUtils.get_accelerator_type())
-
+            inputs, targets = process_data(waveform_transforms, inputs, targets)
             optimizer.zero_grad()
             predictions = model(inputs)
             if logger is not None and "log_ios_train" in dir(logger):
@@ -54,12 +48,7 @@ def train(
             with torch.no_grad():
                 model.eval()
                 for inputs, targets in dataloaders[1]:
-                    if waveform_transforms is not None:
-                        inputs, targets = waveform_transforms((inputs, targets))
-                    if inputs.device != TorchUtils.get_accelerator_type():
-                        inputs = inputs.to(device=TorchUtils.get_accelerator_type())
-                    if targets.device != TorchUtils.get_accelerator_type():
-                        targets = targets.to(device=TorchUtils.get_accelerator_type())
+                    inputs, targets = process_data(waveform_transforms, inputs, targets)
                     predictions = model(inputs)
                     if logger is not None and "log_ios_val" in dir(logger):
                         logger.log_ios_val(inputs, targets, predictions)
@@ -96,3 +85,15 @@ def train(
     return model, {
         "performance_history": [torch.tensor(train_losses), torch.tensor(val_losses)]
     }
+
+
+def process_data(waveform_transforms, inputs, targets):
+    # Data processing required to apply waveforms to the inputs and pass them onto the GPU if necessary.
+    if waveform_transforms is not None:
+        inputs, targets = waveform_transforms((inputs, targets))
+    if inputs.device != TorchUtils.get_accelerator_type():
+        inputs = inputs.to(device=TorchUtils.get_accelerator_type())
+    if targets.device != TorchUtils.get_accelerator_type():
+        targets = targets.to(device=TorchUtils.get_accelerator_type())
+
+    return inputs, targets
