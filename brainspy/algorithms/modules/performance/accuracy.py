@@ -12,12 +12,9 @@ import torch
 import numpy as np
 from tqdm import trange
 import matplotlib.pyplot as plt
-from torch.utils.data import random_split, SubsetRandomSampler
 
-from brainspy.algorithms.modules.performance.perceptron import (
-    Perceptron,
-    PerceptronDataset,
-)
+from brainspy.algorithms.modules.performance.data import get_data
+
 from brainspy.utils.pytorch import TorchUtils
 
 
@@ -34,7 +31,7 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     # Initialise perceptron
     if node is None:
         train = True
-        node = Perceptron()
+        node = torch.nn.Linear(1, 1)
     else:
         train = False
 
@@ -48,30 +45,26 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     results["targets"] = targets
 
     if train:
-        # Prepare perceptron data
-        dataset = PerceptronDataset(results["norm_inputs"], results["targets"])
-        lengths = [
-            len(dataset) * configs["split"][0],
-            len(dataset) * configs["split"][1],
-        ]
-        dataloaders = random_split(dataset, lengths)
-        # If there is no validation dataloader, remove it
-        if len(dataloaders[1]) == 0:
-            del dataloaders[1]
-        # Train the perceptron
-        accuracy, predicted_labels, threshold, node = train_perceptron(
-            dataloaders, configs, node
+        train_dataloaders = get_data(results, configs, shuffle=True)
+        accuracy, predicted_labels, node = train_perceptron(
+            train_dataloaders, configs, node
         )
-    else:
-        accuracy, predicted_labels = evaluate_accuracy(
-            results["norm_inputs"], results["targets"], node
-        )
-        threshold = get_decision_boundary(node)
-        print("Best accuracy: " + str(accuracy.item()))
+    # else:
+    #     # TODO: Support validation on this modality
+    node.eval()
+    dataloaders = get_data(results, configs, shuffle=False)
+
+    accuracy, predicted_labels = evaluate_accuracy(
+        dataloaders[0], node
+    )
+    threshold = get_decision_boundary(node)
+    #threshold = get_decision_boundary(node)
+    print("Best accuracy: " + str(accuracy))
 
     # Save remaining results dictionary
     # results['predictions'] = predictions
-    results["threshold"] = threshold
+    results["norm_threshold"] = threshold.clone()
+    results["threshold"] = threshold * inputs.std(dim=0) + inputs.mean(dim=0)
     results["predicted_labels"] = predicted_labels
     results["node"] = node
     results["accuracy_value"] = accuracy
@@ -92,40 +85,49 @@ def get_default_node_configs():
 
 def train_perceptron(dataloaders, configs, node=None):
     # Initialise key elements of the trainer
-    node = TorchUtils.format_tensor(node)
-    loss = torch.nn.BCELoss()
+
+    loss = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(
         node.parameters(), lr=configs["learning_rate"], betas=configs["betas"]
     )
     best_accuracy = -1
+    best_labels = None
     looper = trange(configs["epochs"], desc="Calculating accuracy")
+    node = node.to(device=TorchUtils.get_accelerator_type(), dtype=torch.float16)
+    validation_index = get_index(dataloaders)
 
     for epoch in looper:
         for inputs, targets in dataloaders[0]:
+            if inputs.device != TorchUtils.get_accelerator_type():
+                inputs = inputs.to(TorchUtils.get_accelerator_type())
+            if targets.device != TorchUtils.get_accelerator_type():
+                targets = targets.to(TorchUtils.get_accelerator_type())
             optimizer.zero_grad()
             predictions = node(inputs)
             cost = loss(predictions, targets)
             cost.backward()
             optimizer.step()
         with torch.no_grad():
-            inputs, targets = dataloaders[get_index(dataloaders)].dataset[:]
-            accuracy, predicted_labels = evaluate_accuracy(inputs, targets, node)
+            node.eval()
+            accuracy, labels = evaluate_accuracy(dataloaders[validation_index], node)
             if accuracy > best_accuracy:
                 best_accuracy = accuracy
-                decision_boundary = get_decision_boundary(node)
+                best_labels = labels
+                #decision_boundary = get_decision_boundary(node)
                 # TODO: Add a more efficient stopping mechanism ?
                 if best_accuracy >= 100.0:
                     looper.set_description(
-                        f"Reached 100/% accuracy. Stopping at Epoch: {epoch+1}  Accuracy {best_accuracy}, loss: {cost.item()}"
+                        f"Reached 100/% accuracy. Stopping at Epoch: {epoch+1}  Accuracy {best_accuracy}, loss: {cost}"
                     )
                     looper.close()
                     break
+            node.train()
         looper.set_description(
-            f"Epoch: {epoch+1}  Accuracy {accuracy}, loss: {cost.item()}"
+            f"Epoch: {epoch+1}  Accuracy {accuracy}, loss: {cost}"
         )
-    print(f"Best accuracy: {best_accuracy}")
+    print(f"Best perceptron accuracy during perceptron training: {best_accuracy}")
 
-    return best_accuracy, predicted_labels, decision_boundary, node
+    return best_accuracy, best_labels, node
 
 
 def get_index(dataloaders):
@@ -142,12 +144,24 @@ def get_decision_boundary(node):
         return -b / w
 
 
-def evaluate_accuracy(inputs, targets, node):
-    predictions = node(inputs)
-    labels = predictions > 0.5
-    correctly_labelled = torch.sum(labels == targets)
-    accuracy = 100.0 * correctly_labelled / len(targets)
-    return accuracy, labels
+def evaluate_accuracy(dataloader, node):
+    correctly_labelled = 0
+    i = 0
+    labels = torch.zeros(len(dataloader.dataset), device=TorchUtils.get_accelerator_type(), dtype=torch.bool)
+
+    for inputs, targets in dataloader:
+        if inputs.device != TorchUtils.get_accelerator_type():
+            inputs = inputs.to(TorchUtils.get_accelerator_type())
+        if targets.device != TorchUtils.get_accelerator_type():
+            targets = targets.to(TorchUtils.get_accelerator_type())
+        # accuracy, predicted_labels = evaluate_accuracy(inputs, targets, node)
+        predictions = node(inputs)
+        labels[i:i + len(predictions)] = (predictions > 0.).squeeze(dim=1)
+        correctly_labelled += torch.sum(labels[i:i + len(predictions)] == targets.squeeze(dim=1))
+
+        i += dataloader.batch_size
+    accuracy = 100.0 * correctly_labelled / len(dataloader.dataset)
+    return accuracy, labels.unsqueeze(dim=1)  # , inputs, targets
 
 
 def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
@@ -165,7 +179,7 @@ def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
     plt.plot(
         np.arange(len(results["predicted_labels"])),
         TorchUtils.get_numpy_from_tensor(
-            torch.ones_like(results["predicted_labels"]) * results["threshold"]
+            torch.ones_like(results["predicted_labels"]) * results["norm_threshold"]
         ),
         "k:",
         label="Threshold",
