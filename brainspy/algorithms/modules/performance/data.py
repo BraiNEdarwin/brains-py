@@ -3,6 +3,8 @@ from torch.utils.data import SubsetRandomSampler, Dataset, random_split
 
 from brainspy.utils.pytorch import TorchUtils
 
+DTYPE = torch.float32
+
 
 def get_data(results, configs, shuffle=True):
     # Prepare perceptron data
@@ -34,11 +36,11 @@ class PerceptronDataset(Dataset):
         assert len(inputs) > 10, "Not enough data, at least 10 points are required."
         assert not torch.isnan(inputs).any(), "NaN values detected."
         if device is None:
-            self.inputs = inputs.to(dtype=torch.float16)
-            self.targets = targets.to(dtype=torch.float16)
+            self.inputs = inputs.to(dtype=DTYPE)
+            self.targets = targets.to(dtype=DTYPE)
         else:
-            self.inputs = inputs.to(device=device, dtype=torch.float16)
-            self.targets = targets.to(device=device, dtype=torch.float16)
+            self.inputs = inputs.to(device=device, dtype=DTYPE)
+            self.targets = targets.to(device=device, dtype=DTYPE)
 
     def __getitem__(self, index):
         inputs = self.inputs[index, :]
