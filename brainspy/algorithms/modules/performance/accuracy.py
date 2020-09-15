@@ -45,9 +45,8 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     results["targets"] = targets
 
     if train:
-        train_dataloaders = get_data(results, configs, shuffle=True)
         accuracy, predicted_labels, node = train_perceptron(
-            train_dataloaders, configs, node
+            results, configs, node
         )
     # else:
     #     # TODO: Support validation on this modality
@@ -83,9 +82,9 @@ def get_default_node_configs():
     return configs
 
 
-def train_perceptron(dataloaders, configs, node=None):
+def train_perceptron(results, configs, node=None):
     # Initialise key elements of the trainer
-
+    dataloaders = get_data(results, configs, shuffle=True)
     loss = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(
         node.parameters(), lr=configs["learning_rate"], betas=configs["betas"]
@@ -107,27 +106,29 @@ def train_perceptron(dataloaders, configs, node=None):
             cost = loss(predictions, targets)
             cost.backward()
             optimizer.step()
-        # with torch.no_grad():
-        #     node.eval()
-        #     accuracy, labels = evaluate_accuracy(dataloaders[validation_index], node)
-        #     if accuracy > best_accuracy:
-        #         best_accuracy = accuracy
-        #         best_labels = labels
-        #         #decision_boundary = get_decision_boundary(node)
-        #         # TODO: Add a more efficient stopping mechanism ?
-        #         if best_accuracy >= 100.0:
-        #             looper.set_description(
-        #                 f"Reached 100/% accuracy. Stopping at Epoch: {epoch+1}  Accuracy {best_accuracy}, loss: {cost}"
-        #             )
-        #             looper.close()
-        #             break
-        #     node.train()
+        with torch.no_grad():
+            node.eval()
+            accuracy, labels = evaluate_accuracy(results['norm_inputs'], results['targets'], node)
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                best_labels = labels
+                w, b = [p for p in node.parameters()]
+                #decision_boundary = get_decision_boundary(node)
+                # TODO: Add a more efficient stopping mechanism ?
+                if best_accuracy >= 100.0:
+                    looper.set_description(
+                        f"Reached 100/% accuracy. Stopping at Epoch: {epoch+1}  Accuracy {best_accuracy}, loss: {cost}"
+                    )
+                    looper.close()
+                    break
+            node.train()
         looper.set_description(
-            #f"Epoch: {epoch+1}  Accuracy {accuracy}, loss: {cost}"
-            f"Epoch: {epoch+1} loss: {cost}"
+            f"Epoch: {epoch+1}  Accuracy {accuracy}, loss: {cost}"
+            #f"Epoch: {epoch+1} loss: {cost}"
         )
     #print(f"Best perceptron accuracy during perceptron training: {best_accuracy}")
-
+    node.weight = w
+    node.bias = b
     return best_accuracy, best_labels, node
 
 
