@@ -110,7 +110,7 @@ class WaveformManager:
         repeat_idx = [1] * t.dim()
         repeat_idx[dim] = n_tile
         t = t.repeat(*(repeat_idx))
-        order_index = torch.cat([init_dim * torch.arange(n_tile) + i for i in range(init_dim)]).long()
+        order_index = torch.cat([init_dim * torch.arange(n_tile, device=t.device, dtype=torch.long) + i for i in range(init_dim)])
         return torch.index_select(t, dim, order_index)
 
     def plateaus_to_waveform(self, data, return_pytorch=True):
