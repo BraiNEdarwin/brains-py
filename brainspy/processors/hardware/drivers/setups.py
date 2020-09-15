@@ -24,7 +24,8 @@ CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS = 0.03
 SYNCHRONISATION_VALUE = 0.04  # do not reduce to less than 0.02
 
 
-class NationalInstrumentsSetup:
+class NationalInstrumentsSetup():
+
     def __init__(self, configs):
         self.enable_os_signals()
         self.configs = configs
@@ -32,6 +33,7 @@ class NationalInstrumentsSetup:
         self.data_results = None
         self.offsetted_shape = None
         self.ceil = None
+
         if configs["max_ramping_time_seconds"] == 0:
             input(
                 "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n The security check for the ramping time has been disabled. Steep rampings can can damage the device. Proceed only if you are sure that you will not damage the device. If you want to avoid damagesimply exit the execution. \n ONLY If you are sure about what you are doing press ENTER to continue. Otherwise STOP the execution of this program."
@@ -42,6 +44,7 @@ class NationalInstrumentsSetup:
         )
         # self.data_input_indices = configs['data_input_indices']
         # self.control_voltage_indices = get_control_voltage_indices(self.data_input_indices, configs['input_electrode_no'])
+
         self.driver = get_driver(configs["driver"])
 
         self.driver.init_output(
@@ -85,10 +88,13 @@ class NationalInstrumentsSetup:
         return self.data_results
 
     def set_shape_vars(self, shape):
-        self.offsetted_shape = shape + self.configs["offset"]
-        self.ceil = (
-            math.ceil((self.offsetted_shape) / self.configs["driver"]["sampling_frequency"]) + 1
-        )
+        if self.last_shape != shape:
+            self.last_shape = shape
+            self.driver.set_shape(self.configs["driver"]["sampling_frequency"], shape)
+            self.offsetted_shape = shape + self.configs["offset"]
+            self.ceil = (
+                math.ceil((self.offsetted_shape) / self.configs["driver"]["sampling_frequency"]) + 1
+            )
 
     def is_hardware(self):
         return True
@@ -99,11 +105,7 @@ class NationalInstrumentsSetup:
         """
         self.data_results = None
         self.read_security_checks(y)
-
-        if self.last_shape != y.shape[1]:
-            self.last_shape = y.shape[1]
-            self.driver.set_shape(self.configs["driver"]["sampling_frequency"], y.shape[1])
-            self.set_shape_vars(y.shape[1])
+        self.set_shape_vars(y.shape[1])
 
         self.driver.start_tasks(y, self.configs["auto_start"])
         read_data = self.driver.read(self.offsetted_shape, self.ceil)
@@ -151,7 +153,6 @@ class NationalInstrumentsSetup:
     def enable_os_signals(self):
         if sys.platform == "win32":
             import win32api
-
             win32api.SetConsoleCtrlHandler(self.os_signal_handler, True)
         else:
             signal.signal(signal.SIGTERM, self.os_signal_handler)
@@ -160,7 +161,6 @@ class NationalInstrumentsSetup:
     def disable_os_signals(self):
         if sys.platform == "win32":
             import win32api  # ignoring the signal
-
             win32api.SetConsoleCtrlHandler(None, True)
         else:
             signal.signal(signal.SIGTERM, signal.SIG_IGN)
@@ -207,10 +207,8 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             attempts += 1
 
         assert finished, (
-            "Error: output data not same size as input data. Output: "
+            "Error: unable to synchronise input and output. Output: "
             + str(data.shape[1])
-            + " points, input: "
-            + str(self.configs["shape"])
             + " points."
         )
         return data.T
@@ -249,7 +247,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
     def get_output_cut_value(self, read_data):
         cut_value = np.argmax(read_data[-1, :])
         if read_data[-1, cut_value] < 0.05:
-            print("Warning: initialize spike not recognized")
+            print("Warning: initialize spike not recognised")
         return cut_value
 
     def synchronise_output_data(self, read_data):
