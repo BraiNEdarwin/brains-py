@@ -1,10 +1,7 @@
-from brainspy.utils.pytorch import TorchUtils
-
-# from brainspy.processors.dnpu import DNPU
 from brainspy.processors.simulation.surrogate import SurrogateModel
 
-# from brainspy.processors.simulation.network import NeuralNetworkModel
-from brainspy.processors.hardware.drivers.setups import CDAQtoCDAQ, CDAQtoNiDAQ
+from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
+from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 
 
 def get_driver(configs):
