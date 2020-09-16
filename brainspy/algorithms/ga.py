@@ -5,6 +5,7 @@ from tqdm import trange
 
 from brainspy.algorithms.modules.signal import pearsons_correlation
 from brainspy.utils.pytorch import TorchUtils
+from brainspy.utils.waveform import process_data
 
 
 def train(
@@ -31,10 +32,12 @@ def train(
     clipping_value = model.get_clipping_value()
     with torch.no_grad():
         for epoch in looper:
-            if waveform_transforms is None:
-                inputs, targets = dataloaders[0].dataset[:]
-            else:
-                inputs, targets = waveform_transforms(dataloaders[0].dataset[:])
+            inputs, targets = dataloaders[0].dataset[:]
+            # if waveform_transforms is None:
+            #     inputs, targets = dataloaders[0].dataset[:]
+            # else:
+            #     inputs, targets = waveform_transforms(dataloaders[0].dataset[:])
+            inputs, targets = process_data(waveform_transforms, inputs, targets)
             outputs, criterion_pool = evaluate_population(
                 inputs, targets, pool, model, criterion, clipvalue=clipping_value
             )
