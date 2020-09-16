@@ -4,7 +4,7 @@
 import torch
 from torch import nn
 
-from brainspy.processors.hardware.drivers.driver_mgr import get_driver
+from brainspy.utils.manager import get_driver
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager
 

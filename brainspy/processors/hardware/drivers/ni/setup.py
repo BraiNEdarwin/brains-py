@@ -11,7 +11,7 @@ import nidaqmx.system.device as device
 
 from threading import Thread
 
-from brainspy.processors.hardware.drivers.tasks import get_driver
+from brainspy.utils.manager import get_driver
 
 # from brainspy.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
 

@@ -1,3 +1,6 @@
+from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
+from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
+from brainspy.processors.simulation.surrogate import SurrogateModel
 import torch
 import torch_optimizer as torchoptim
 
@@ -100,3 +103,21 @@ def get_algorithm(configs):
         assert (
             False
         ), "Unrecognised algorithm field in configs. It must have the value gradient or the value genetic."
+
+
+def get_driver(configs):
+    if configs["processor_type"] == "cdaq_to_cdaq":
+        # configs['input_instrument'] = 'cDAQ1Mod2'
+        # configs['output_instrument'] = 'cDAQ1Mod1'
+        # configs['trigger_source'] = 'cDAQ1'
+        return CDAQtoCDAQ(configs)
+    elif configs["processor_type"] == "cdaq_to_nidaq":
+        # configs['input_instrument'] = 'dev1'
+        # configs['output_instrument'] = 'cDAQ1Mod1'
+        return CDAQtoNiDAQ(configs)
+    elif configs["processor_type"] == "simulation_debug":
+        return SurrogateModel(configs)
+    else:
+        raise NotImplementedError(
+            f"{configs['processor_type']} 'processor_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. "
+        )
