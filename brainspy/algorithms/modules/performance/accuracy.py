@@ -43,7 +43,7 @@ def get_accuracy(inputs, targets, configs=None, node=None):
             results, configs, node
         )
 
-    with torch.no_grad:
+    with torch.no_grad():
         node.eval()
         accuracy, predicted_labels = evaluate_accuracy(
             results['norm_inputs'], results['targets'], node
