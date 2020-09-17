@@ -11,7 +11,8 @@ import nidaqmx.system.device as device
 
 from threading import Thread
 
-from brainspy.utils.manager import get_driver
+from brainspy.processors.hardware.drivers.ni.tasks import get_tasks_driver
+from brainspy.processors.hardware.drivers.ni.channels import init_channels
 
 # from brainspy.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
 
@@ -45,15 +46,18 @@ class NationalInstrumentsSetup():
         # self.data_input_indices = configs['data_input_indices']
         # self.control_voltage_indices = get_control_voltage_indices(self.data_input_indices, configs['input_electrode_no'])
 
-        self.driver = get_driver(configs["driver"])
+        self.tasks_driver = get_tasks_driver(configs["driver"])
 
-        self.driver.init_output(
-            self.configs["driver"]["activation_channels"],
-            self.configs["driver"]["output_instrument"]
+        configs["driver"]["activation_channels"], configs["driver"]["readout_channels"] = init_channels(configs)
+
+        # The input to the NI instrument is defined in nidaqmx as output (of the computer)
+        # TODO: add a maximum and a minimum to the activation channels
+        self.tasks_driver.init_activation_channels(
+            self.configs["driver"]["activation_channels"]
         )
-        self.driver.init_input(
-            self.configs["driver"]["readout_channels"],
-            self.configs["driver"]["input_instrument"]
+        # The output from the NI instrument is defined in nidaqmx as input (to the computer)
+        self.tasks_driver.init_readout_channels(
+            self.configs["driver"]["readout_channels"]
         )
 
         global event
@@ -63,8 +67,8 @@ class NationalInstrumentsSetup():
 
     def reset(self):
         self.close_tasks()
-        device.Device(name=self.configs["driver"]["input_instrument"]).reset_device()
-        device.Device(name=self.configs["driver"]["output_instrument"]).reset_device()
+        device.Device(name=self.configs["driver"]["activation_instrument"]).reset_device()
+        device.Device(name=self.configs["driver"]["readout_instrument"]).reset_device()
 
     def process_output_data(self, data):
         return np.array([data]) * self.configs["driver"]["amplification"]  # Creates a numpy array from a list with dimensions (n,1) and multiplies it by the amplification of the device
@@ -87,7 +91,7 @@ class NationalInstrumentsSetup():
     def set_shape_vars(self, shape):
         if self.last_shape != shape:
             self.last_shape = shape
-            self.driver.set_shape(self.configs["driver"]["sampling_frequency"], shape)
+            self.tasks_driver.set_shape(self.configs["driver"]["sampling_frequency"], shape)
             self.offsetted_shape = shape + self.configs["offset"]
             self.ceil = (
                 math.ceil((self.offsetted_shape) / self.configs["driver"]["sampling_frequency"]) + 1
@@ -104,9 +108,9 @@ class NationalInstrumentsSetup():
         self.read_security_checks(y)
         self.set_shape_vars(y.shape[1])
 
-        self.driver.start_tasks(y, self.configs["auto_start"])
-        read_data = self.driver.read(self.offsetted_shape, self.ceil)
-        self.driver.stop_tasks()
+        self.tasks_driver.start_tasks(y, self.configs["auto_start"])
+        read_data = self.tasks_driver.read(self.offsetted_shape, self.ceil)
+        self.tasks_driver.stop_tasks()
 
         self.data_results = read_data
         return read_data
@@ -127,7 +131,7 @@ class NationalInstrumentsSetup():
             ), f"Last value of input stream in electrode {n} is non-zero ({y_i[-1]})"
 
     def close_tasks(self):
-        self.driver.close_tasks()
+        self.tasks_driver.close_tasks()
 
     def get_amplification_value(self):
         return self.configs["driver"]["amplification"]

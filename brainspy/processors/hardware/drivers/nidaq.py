@@ -9,8 +9,8 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         configs["offset"] = int(configs["driver"]["sampling_frequency"] * SYNCHRONISATION_VALUE)
         configs["max_ramping_time_seconds"] = CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
-        self.driver.add_channels(
-            self.configs["driver"]["output_instrument"], self.configs["driver"]["input_instrument"]
+        self.tasks_driver.add_channels(
+            self.configs["driver"]["readout_instrument"], self.configs["driver"]["activation_instrument"]
         )
 
     def forward_numpy(self, y):

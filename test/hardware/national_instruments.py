@@ -18,9 +18,9 @@ def sweepgen(v_high, v_low, n_points, direction):
         print("Specify the sweep direction")
 
     sweep = np.zeros(len(input1) + len(input2) + len(input3))
-    sweep[0 : len(input1)] = input1
-    sweep[len(input1) : len(input1) + len(input2)] = input2
-    sweep[len(input1) + len(input2) : len(input1) + len(input2) + len(input3)] = input3
+    sweep[0: len(input1)] = input1
+    sweep[len(input1): len(input1) + len(input2)] = input2
+    sweep[len(input1) + len(input2): len(input1) + len(input2) + len(input3)] = input3
     return sweep
 
 
@@ -49,8 +49,8 @@ def test_cdaq_to_nidaq():
     configs = {}
     configs["setup_type"] = "cdaq_to_nidaq"
     configs["shape"] = n_points  # y.shape[1], length of the signal
-    configs["input_channels"] = tested_inp
-    configs["output_channels"] = tested_out
+    configs["readout_channels"] = tested_inp
+    configs["activation_channels"] = tested_out
     configs["sampling_frequency"] = 1000
     instrument = get_instrument(configs)
 
@@ -70,8 +70,8 @@ def test_cdaq_to_cdaq():
     configs = {}
     configs["setup_type"] = "cdaq_to_cdaq"
     configs["shape"] = n_points  # y.shape[1], length of the signal
-    configs["input_channels"] = tested_inp
-    configs["output_channels"] = tested_out
+    configs["readout_channels"] = tested_inp
+    configs["activation_channels"] = tested_out
     configs["sampling_frequency"] = 1000
     instrument = get_instrument(configs)
 

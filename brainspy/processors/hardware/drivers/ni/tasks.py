@@ -14,14 +14,14 @@ SWITCH_ETHERNET_OFF_COMMAND = "ifconfig eth0 down"
 SWITCH_ETHERNET_ON_COMMAND = "ifconfig eth0 up"
 
 
-def get_driver(configs):
-    if configs["driver_type"] == "local":
+def get_tasks_driver(configs):
+    if configs["tasks_driver_type"] == "local":
         return LocalTasks()
-    elif configs["driver_type"] == "remote":
+    elif configs["tasks_driver_type"] == "remote":
         return RemoteTasks(configs["uri"])
     else:
         raise NotImplementedError(
-            f"{configs['driver_type']} 'driver_type' configuration is not recognised. The driver type has to be defined as 'local' or 'remote'. "
+            f"{configs['tasks_driver_type']} 'tasks_driver_type' configuration is not recognised. The driver type has to be defined as 'local' or 'remote'. "
         )
 
 
@@ -51,28 +51,30 @@ class LocalTasks:
         self.input_task = None
 
     @Pyro4.oneway
-    def init_output(
-        self, input_channels, output_instrument
+    def init_readout_channels(
+        self, readout_channels
     ):
         """Initialises the output of the computer which is the input of the device"""
         self.output_task = nidaqmx.Task()
-        for i in range(len(input_channels)):
+        for i in range(len(readout_channels)):
             self.output_task.ao_channels.add_ao_voltage_chan(
-                output_instrument + "/ao" + str(input_channels[i]),
-                "ao" + str(i) + "",
-                -2,
-                2,
+                # readout_instrument + "/ao" + str(readout_channels[i]),
+                # "ao" + str(i) + "",
+                # -2,
+                # 2,
+                str(readout_channels[i]), name_to_assign_to_channel='ao' + str(i), min_val=-2.0, max_val=2.0
             )
 
     @Pyro4.oneway
-    def init_input(
-        self, output_channels, input_instrument
+    def init_activation_channels(
+        self, activation_channels
     ):
         """Initialises the input of the computer which is the output of the device"""
         self.input_task = nidaqmx.Task()
-        for i in range(len(output_channels)):
+        for i in range(len(activation_channels)):
             self.input_task.ai_channels.add_ai_voltage_chan(
-                input_instrument + "/ai" + str(output_channels[i])
+                #activation_instrument + "/ai" + str(activation_channels[i])
+                str(activation_channels[i])
             )
 
     @Pyro4.oneway
@@ -89,12 +91,12 @@ class LocalTasks:
         )
 
     @Pyro4.oneway
-    def add_channels(self, output_instrument, input_instrument):
+    def add_channels(self, readout_instrument, activation_instrument):
         # Define ao7 as sync signal for the NI 6216 ai0
         self.output_task.ao_channels.add_ao_voltage_chan(
-            output_instrument + "/ao7", "ao7", -5, 5
+            readout_instrument + "/ao7", "ao7", -5, 5
         )
-        self.input_task.ai_channels.add_ai_voltage_chan(input_instrument + "/ai7")
+        self.input_task.ai_channels.add_ai_voltage_chan(activation_instrument + "/ai7")
 
     def read(self, offsetted_shape, ceil):
         return self.input_task.read(offsetted_shape, ceil)
@@ -147,24 +149,24 @@ class RemoteTasks:
         self.close_tasks()
 
     def init_output(
-        self, input_channels, output_instrument
+        self, readout_channels, readout_instrument
     ):
         self.tasks.init_output(
-            input_channels, output_instrument
+            readout_channels, readout_instrument
         )
 
     def init_input(
-        self, output_channels, input_instrument
+        self, activation_channels, activation_instrument
     ):
         self.tasks.init_input(
-            output_channels, input_instrument
+            activation_channels, activation_instrument
         )
 
     def set_shape(self, sampling_frequency, shape):
         self.tasks.set_shape(sampling_frequency, shape)
 
-    def add_channels(self, output_instrument, input_instrument):
-        self.tasks.add_channels(output_instrument, input_instrument)
+    def add_channels(self, readout_instrument, activation_instrument):
+        self.tasks.add_channels(readout_instrument, activation_instrument)
 
     def read(self, offsetted_shape, ceil):
         return self.tasks.remote_read(offsetted_shape, ceil)
