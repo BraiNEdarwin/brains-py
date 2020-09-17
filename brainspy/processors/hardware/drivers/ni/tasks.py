@@ -76,7 +76,7 @@ class LocalTasks:
                 # "ao" + str(i) + "",
                 # -2,
                 # 2,
-                str(readout_channels[i]), name_to_assign_to_channel=channel
+                channel, name_to_assign_to_channel=channel
             )
 
     @Pyro4.oneway
