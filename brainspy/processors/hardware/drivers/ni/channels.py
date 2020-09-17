@@ -1,9 +1,13 @@
 def init_channel_names(configs):
     if configs['devices']['device_no'] == "single":
+        instruments = []
         activation_channel_list = init_activation_channels(configs['instruments_setup'])
         readout_channel_list = init_readout_channels(configs['instruments_setup'])
+        instruments = add_uniquely(instruments, configs['activation_instrument'])
+        instruments = add_uniquely(instruments, configs['readout_instrument'])
 
     elif configs['devices']['device_no'] == "multiple":
+        instruments = []
         activation_channel_list = []
         readout_channel_list = []
         for device_name in configs['instruments_setup']:
@@ -11,10 +15,13 @@ def init_channel_names(configs):
             masked_configs = apply_channel_masks(configs['instruments_setup'][device_name], mask=mask)
             activation_channel_list = init_activation_channels(masked_configs, activation_channel_list=activation_channel_list)
             readout_channel_list = init_readout_channels(masked_configs, readout_channel_list=readout_channel_list)
+            if mask is None or sum(mask) > 0:
+                instruments = add_uniquely(instruments, configs['activation_instrument'])
+                instruments = add_uniquely(instruments, configs['readout_instrument'])
 
     else:
         print('Error in driver configuration devices device_no, select either single or multiple.')
-    return activation_channel_list, readout_channel_list
+    return activation_channel_list, readout_channel_list, instruments
 
 
 def apply_channel_masks(configs, mask=None):
@@ -45,6 +52,12 @@ def get_mask(configs, device_name):
         return configs['activation_channel_mask'][device_name]
     else:
         return None
+
+
+def add_uniquely(original_list, value):
+    if value not in original_list:
+        original_list.append(value)
+    return original_list
 
 
 if __name__ == "__main__":

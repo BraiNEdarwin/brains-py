@@ -52,7 +52,7 @@ class NationalInstrumentsSetup():
     def init_tasks(self, configs):
         self.tasks_driver = get_tasks_driver(configs)
 
-        activation_channel_names, readout_channel_names = init_channel_names(configs)
+        activation_channel_names, readout_channel_names, self.instruments = init_channel_names(configs)
 
         # TODO: add a maximum and a minimum to the activation channels
         self.tasks_driver.init_activation_channels(activation_channel_names)
@@ -66,8 +66,8 @@ class NationalInstrumentsSetup():
 
     def reset(self):
         self.close_tasks()
-        device.Device(name=self.configs["driver"]["activation_instrument"]).reset_device()
-        device.Device(name=self.configs["driver"]["readout_instrument"]).reset_device()
+        for instrument in self.instruments:
+            device.Device(name=instrument).reset_device()
 
     def process_output_data(self, data):
         return np.array([data]) * self.configs["driver"]["amplification"]  # Creates a numpy array from a list with dimensions (n,1) and multiplies it by the amplification of the device
