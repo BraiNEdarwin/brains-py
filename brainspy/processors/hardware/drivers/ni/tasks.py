@@ -60,7 +60,7 @@ class LocalTasks:
             channel = str(activation_channels[i])
             self.activation_task.ao_channels.add_ao_voltage_chan(
                 #activation_instrument + "/ai" + str(activation_channels[i])
-                channel, name_to_assign_to_channel=channel, min_val=-2.0, max_val=2.0
+                channel, min_val=-2.0, max_val=2.0
             )
 
     @Pyro4.oneway
@@ -76,7 +76,7 @@ class LocalTasks:
                 # "ao" + str(i) + "",
                 # -2,
                 # 2,
-                channel, name_to_assign_to_channel=channel
+                channel
             )
 
     @Pyro4.oneway
