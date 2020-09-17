@@ -47,99 +47,103 @@ def set_static_ip(configs):
 class LocalTasks:
     def __init__(self):
         self.acquisition_type = constants.AcquisitionType.FINITE
-        self.output_task = None
-        self.input_task = None
-
-    @Pyro4.oneway
-    def init_readout_channels(
-        self, readout_channels
-    ):
-        """Initialises the output of the computer which is the input of the device"""
-        self.output_task = nidaqmx.Task()
-        for i in range(len(readout_channels)):
-            self.output_task.ao_channels.add_ao_voltage_chan(
-                # readout_instrument + "/ao" + str(readout_channels[i]),
-                # "ao" + str(i) + "",
-                # -2,
-                # 2,
-                str(readout_channels[i]), name_to_assign_to_channel='ao' + str(i), min_val=-2.0, max_val=2.0
-            )
+        self.activation_task = None
+        self.readout_task = None
 
     @Pyro4.oneway
     def init_activation_channels(
         self, activation_channels
     ):
-        """Initialises the input of the computer which is the output of the device"""
-        self.input_task = nidaqmx.Task()
+        """Initialises the output of the computer which is the input of the device"""
+        self.activation_task = nidaqmx.Task()
         for i in range(len(activation_channels)):
-            self.input_task.ai_channels.add_ai_voltage_chan(
+            channel = str(activation_channels[i])
+            self.activation_task.ao_channels.add_ao_voltage_chan(
                 #activation_instrument + "/ai" + str(activation_channels[i])
-                str(activation_channels[i])
+                channel, name_to_assign_to_channel=channel, min_val=-2.0, max_val=2.0
+            )
+
+    @Pyro4.oneway
+    def init_readout_channels(
+        self, readout_channels
+    ):
+        """Initialises the input of the computer which is the output of the device"""
+        self.readout_task = nidaqmx.Task()
+        for i in range(len(readout_channels)):
+            channel = readout_channels[i]
+            self.readout_task.ai_channels.add_ai_voltage_chan(
+                # activation_instrument + "/ao" + str(activation_channels[i]),
+                # "ao" + str(i) + "",
+                # -2,
+                # 2,
+                str(readout_channels[i]), name_to_assign_to_channel=channel
             )
 
     @Pyro4.oneway
     def set_shape(self, sampling_frequency, shape):
-        self.output_task.timing.cfg_samp_clk_timing(
+        self.activation_task.timing.cfg_samp_clk_timing(
             sampling_frequency,
             sample_mode=self.acquisition_type,
             samps_per_chan=shape,
         )
-        self.input_task.timing.cfg_samp_clk_timing(
+        self.readout_task.timing.cfg_samp_clk_timing(
             sampling_frequency,
             sample_mode=self.acquisition_type,
-            samps_per_chan=shape,
+            samps_per_chan=shape,  # TODO: Add shape + 1 ?
         )
 
     @Pyro4.oneway
-    def add_channels(self, readout_instrument, activation_instrument):
+    def add_synchronisation_channels(self, readout_instrument, activation_instrument, activation_channel_no=7, readout_channel_no=7):
         # Define ao7 as sync signal for the NI 6216 ai0
-        self.output_task.ao_channels.add_ao_voltage_chan(
-            readout_instrument + "/ao7", "ao7", -5, 5
+        self.activation_task.ao_channels.add_ao_voltage_chan(
+            activation_instrument + "/ao" + str(activation_channel_no), name_to_assign_to_channel="activation_synchronisation_channel", min_val=-5, max_val=5
         )
-        self.input_task.ai_channels.add_ai_voltage_chan(activation_instrument + "/ai7")
+        self.readout_task.ai_channels.add_ai_voltage_chan(
+            readout_instrument + "/ai" + str(readout_channel_no), name_to_assign_to_channel="readout_synchronisation_channel", min_val=-5, max_val=5
+        )
 
     def read(self, offsetted_shape, ceil):
-        return self.input_task.read(offsetted_shape, ceil)
+        return self.readout_task.read(offsetted_shape, ceil)
 
     def remote_read(self, offsetted_shape, ceil):
         try:
-            return self.input_task.read(offsetted_shape, ceil)
+            return self.readout_task.read(offsetted_shape, ceil)
         except nidaqmx.errors.DaqError as e:
             print("Error reading: " + str(e))
         return -1
 
     @Pyro4.oneway
     def start_trigger(self, trigger_source):
-        self.output_task.triggers.start_trigger.cfg_dig_edge_start_trig(
+        self.activation_task.triggers.start_trigger.cfg_dig_edge_start_trig(
             "/" + trigger_source + "/ai/StartTrigger"
         )
 
     @Pyro4.oneway
     def remote_start_tasks(self, y, auto_start):
-        self.output_task.write(np.asarray(y), auto_start=auto_start)
+        self.activation_task.write(np.asarray(y), auto_start=auto_start)
         if not auto_start:
-            self.output_task.start()
-            self.input_task.start()
+            self.activation_task.start()
+            self.readout_task.start()
 
     @Pyro4.oneway
     def start_tasks(self, y, auto_start):
         y = np.require(y, dtype=y.dtype, requirements=["C", "W"])
-        self.output_task.write(y, auto_start=auto_start)
+        self.activation_task.write(y, auto_start=auto_start)
         if not auto_start:
-            self.output_task.start()
-            self.input_task.start()
+            self.activation_task.start()
+            self.readout_task.start()
 
     @Pyro4.oneway
     def stop_tasks(self):
-        self.input_task.stop()
-        self.output_task.stop()
+        self.readout_task.stop()
+        self.activation_task.stop()
 
     @Pyro4.oneway
     def close_tasks(self):
-        if self.input_task is not None:
-            self.input_task.close()
-        if self.output_task is not None:
-            self.output_task.close()
+        if self.readout_task is not None:
+            self.readout_task.close()
+        if self.activation_task is not None:
+            self.activation_task.close()
 
 
 class RemoteTasks:
@@ -148,25 +152,17 @@ class RemoteTasks:
         self.tasks = Pyro4.Proxy(uri)
         self.close_tasks()
 
-    def init_output(
-        self, readout_channels, readout_instrument
-    ):
-        self.tasks.init_output(
-            readout_channels, readout_instrument
-        )
+    def init_activation_channels(self, activation_channels):
+        self.tasks.init_activation_channels(activation_channels)
 
-    def init_input(
-        self, activation_channels, activation_instrument
-    ):
-        self.tasks.init_input(
-            activation_channels, activation_instrument
-        )
+    def init_readout_channels(self, readout_channels):
+        self.tasks.init_readout_channels(readout_channels)
 
     def set_shape(self, sampling_frequency, shape):
         self.tasks.set_shape(sampling_frequency, shape)
 
-    def add_channels(self, readout_instrument, activation_instrument):
-        self.tasks.add_channels(readout_instrument, activation_instrument)
+    def add_synchronisation_channels(self, readout_instrument, activation_instrument, activation_channel_no=7, readout_channel_no=7):
+        self.tasks.add_synchronisation_channels(readout_instrument, activation_instrument, activation_channel_no, readout_channel_no)
 
     def read(self, offsetted_shape, ceil):
         return self.tasks.remote_read(offsetted_shape, ceil)
