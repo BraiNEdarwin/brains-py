@@ -43,7 +43,7 @@ class DNPU(nn.Module):
                 )
             elif configs["processor_type"] == "simulation_debug" or configs["processor_type"] == "cdaq_to_cdaq" or configs["processor_type"] == "cdaq_to_nidaq":
                 self.processor = HardwareProcessor(configs)
-                self.electrode_no = len(configs["driver"]["activation_channels"])
+                self.electrode_no = configs['data']['activation_electrode_no']
             else:
                 raise NotImplementedError(
                     f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "

@@ -12,7 +12,7 @@ import nidaqmx.system.device as device
 from threading import Thread
 
 from brainspy.processors.hardware.drivers.ni.tasks import get_tasks_driver
-from brainspy.processors.hardware.drivers.ni.channels import init_channels
+from brainspy.processors.hardware.drivers.ni.channels import init_channel_names
 
 # from brainspy.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
 
@@ -28,7 +28,12 @@ SYNCHRONISATION_VALUE = 0.04  # do not reduce to less than 0.02
 class NationalInstrumentsSetup():
 
     def __init__(self, configs):
+        self.init_configs(configs)
+        self.init_tasks(configs['driver'])
         self.enable_os_signals()
+        self.init_semaphore()
+
+    def init_configs(self, configs):
         self.configs = configs
         self.last_shape = -1
         self.data_results = None
@@ -43,23 +48,17 @@ class NationalInstrumentsSetup():
             configs["data"]["waveform"]["slope_length"] / configs["driver"]["sampling_frequency"]
             >= configs["max_ramping_time_seconds"]
         )
-        # self.data_input_indices = configs['data_input_indices']
-        # self.control_voltage_indices = get_control_voltage_indices(self.data_input_indices, configs['input_electrode_no'])
 
-        self.tasks_driver = get_tasks_driver(configs["driver"])
+    def init_tasks(self, configs):
+        self.tasks_driver = get_tasks_driver(configs)
 
-        configs["driver"]["activation_channels"], configs["driver"]["readout_channels"] = init_channels(configs)
+        activation_channel_names, readout_channel_names = init_channel_names(configs)
 
-        # The input to the NI instrument is defined in nidaqmx as output (of the computer)
         # TODO: add a maximum and a minimum to the activation channels
-        self.tasks_driver.init_activation_channels(
-            self.configs["driver"]["activation_channels"]
-        )
-        # The output from the NI instrument is defined in nidaqmx as input (to the computer)
-        self.tasks_driver.init_readout_channels(
-            self.configs["driver"]["readout_channels"]
-        )
+        self.tasks_driver.init_activation_channels(activation_channel_names)
+        self.tasks_driver.init_readout_channels(readout_channel_names)
 
+    def init_semaphore(self):
         global event
         global semaphore
         event = threading.Event()

@@ -1,7 +1,8 @@
-def init_channels(configs):
+def init_channel_names(configs):
     if configs['devices']['device_no'] == "single":
-        activation_channel_list = init_activation_channels(configs)
-        readout_channel_list = init_readout_channels(configs)
+        activation_channel_list = init_activation_channels(configs['instruments_setup'])
+        readout_channel_list = init_readout_channels(configs['instruments_setup'])
+
     elif configs['devices']['device_no'] == "multiple":
         activation_channel_list = []
         readout_channel_list = []
@@ -26,17 +27,17 @@ def apply_channel_masks(configs, mask=None):
     return result
 
 
-def init_readout_channels(configs, readout_channel_list=[]):
-    for i in range(len(configs['readout_channels'])):
-        readout_channel_list.append(configs['readout_instrument'] + "/ao" + str(configs['readout_channels'][i]))
-
-    return readout_channel_list
-
-
 def init_activation_channels(configs, activation_channel_list=[]):
     for i in range(len(configs['activation_channels'])):
-        activation_channel_list.append(configs['activation_instrument'] + "/ai" + str(configs['activation_channels'][i]))
+        activation_channel_list.append(configs['activation_instrument'] + "/ao" + str(configs['activation_channels'][i]))
     return activation_channel_list
+
+
+def init_readout_channels(configs, readout_channel_list=[]):
+    for i in range(len(configs['readout_channels'])):
+        readout_channel_list.append(configs['readout_instrument'] + "/ai" + str(configs['readout_channels'][i]))
+
+    return readout_channel_list
 
 
 def get_mask(configs, device_name):
@@ -51,6 +52,6 @@ if __name__ == "__main__":
 
     configs = load_configs('/home/unai/Documents/3-programming/brainspy-tasks/configs/defaults/processors/hw.yaml')
 
-    a, r = init_channels(configs['driver'])
+    a, r = init_channel_names(configs['driver'])
     print(a)
     print(r)
