@@ -1,36 +1,53 @@
-def init_channel_names(configs):
+import numpy as np
+
+
+def init_channel_data(configs):
     if configs['devices']['device_no'] == "single":
         instruments = []
         activation_channel_list = init_activation_channels(configs['instruments_setup'])
         readout_channel_list = init_readout_channels(configs['instruments_setup'])
         instruments = add_uniquely(instruments, configs['activation_instrument'])
         instruments = add_uniquely(instruments, configs['readout_instrument'])
-
+        voltage_ranges = init_voltage_ranges(configs['min_activation_voltages'], configs['max_activation_voltages'])
     elif configs['devices']['device_no'] == "multiple":
         instruments = []
         activation_channel_list = []
         readout_channel_list = []
+        voltage_ranges_list = []
         for device_name in configs['instruments_setup']:
-            mask = get_mask(configs['devices'], device_name)
-            masked_configs = apply_channel_masks(configs['instruments_setup'][device_name], mask=mask)
-            activation_channel_list = init_activation_channels(masked_configs, activation_channel_list=activation_channel_list)
-            readout_channel_list = init_readout_channels(masked_configs, readout_channel_list=readout_channel_list)
-            if mask is None or sum(mask) > 0:
-                instruments = add_uniquely(instruments, configs['activation_instrument'])
-                instruments = add_uniquely(instruments, configs['readout_instrument'])
+            if device_name != 'trigger_source':
+                mask = np.array(get_mask(configs['devices'], device_name))
+                if mask is None or sum(mask > 0):
+                    configs['instruments_setup'][device_name]['activation_channels'] = list(np.array(configs['instruments_setup'][device_name]['activation_channels'])[mask == 1])
+                    activation_channel_list = init_activation_channels(configs['instruments_setup'][device_name], activation_channel_list=activation_channel_list)
+                    readout_channel_list = init_readout_channels(configs['instruments_setup'][device_name], readout_channel_list=readout_channel_list)
+                    instruments = add_uniquely(instruments, configs['instruments_setup'][device_name]['activation_instrument'])
+                    instruments = add_uniquely(instruments, configs['instruments_setup'][device_name]['readout_instrument'])
+                    voltage_ranges = init_voltage_ranges(configs['instruments_setup'][device_name]['min_activation_voltages'], configs['instruments_setup'][device_name]['max_activation_voltages'])
+                    if mask is not None:
+                        voltage_ranges = voltage_ranges[mask == 1]
+                    voltage_ranges_list.append(voltage_ranges)
+        voltage_ranges = concatenate_voltage_ranges(voltage_ranges_list)
 
     else:
         print('Error in driver configuration devices device_no, select either single or multiple.')
-    return activation_channel_list, readout_channel_list, instruments
+    return activation_channel_list, readout_channel_list, instruments, voltage_ranges
 
 
-def apply_channel_masks(configs, mask=None):
-    result = configs.copy()
+def init_voltage_ranges(min_voltages, max_voltages, mask=None):
+    min_voltages = np.array(min_voltages)[:, np.newaxis]
+    max_voltages = np.array(max_voltages)[:, np.newaxis]
     if mask is not None:
-        for j in range(len(mask)):
-            if mask[j] == 0:
-                del result['activation_channels'][j]
+        min_voltages = min_voltages[mask == 1]
+        max_voltages = max_voltages[mask == 1]
+    voltage_ranges = np.concatenate((min_voltages, max_voltages), axis=1)
+    return voltage_ranges
 
+
+def concatenate_voltage_ranges(voltage_ranges):
+    result = voltage_ranges[0]
+    for i in range(1, len(voltage_ranges)):
+        result = np.concatenate((result, voltage_ranges[i]), axis=0)
     return result
 
 
@@ -65,6 +82,6 @@ if __name__ == "__main__":
 
     configs = load_configs('/home/unai/Documents/3-programming/brainspy-tasks/configs/defaults/processors/hw.yaml')
 
-    a, r = init_channel_names(configs['driver'])
+    a, r, ins, vr = init_channel_data(configs['driver'])
     print(a)
     print(r)

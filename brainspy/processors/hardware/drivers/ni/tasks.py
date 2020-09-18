@@ -52,16 +52,26 @@ class LocalTasks:
 
     @Pyro4.oneway
     def init_activation_channels(
-        self, activation_channels
+        self, channel_names, voltage_ranges=None
     ):
         """Initialises the output of the computer which is the input of the device"""
         self.activation_task = nidaqmx.Task()
-        for i in range(len(activation_channels)):
-            channel = str(activation_channels[i])
-            self.activation_task.ao_channels.add_ao_voltage_chan(
-                #activation_instrument + "/ai" + str(activation_channels[i])
-                channel, min_val=-2.0, max_val=2.0
-            )
+        for i in range(len(channel_names)):
+            channel_name = str(channel_names[i])
+            if voltage_ranges is not None:
+                assert voltage_ranges[i][0] > -2 and voltage_ranges[i][0] < 2, "Minimum voltage ranges configuration outside of the allowed values -2 and 2"
+                assert voltage_ranges[i][1] > -2 and voltage_ranges[i][1] < 2, "Maximum voltage ranges configuration outside of the allowed values -2 and 2"
+                self.activation_task.ao_channels.add_ao_voltage_chan(
+                    #activation_instrument + "/ai" + str(activation_channels[i])
+                    channel_name, min_val=voltage_ranges[i][0], max_val=voltage_ranges[i][1]
+                )
+            else:
+                print('WARNING! READ CAREFULLY THIS MESSAGE. Activation channels have been initialised without a security voltage range, they will be automatically set up to a range between -2 and 2 V. This may result in damaging the device. Press ENTER only if you are sure that you want to proceed, otherwise STOP the program. Voltage ranges can be defined in the instruments setup configurations.')
+                input()
+                self.activation_task.ao_channels.add_ao_voltage_chan(
+                    #activation_instrument + "/ai" + str(activation_channels[i])
+                    channel_name, min_val=-2, max_val=2
+                )
 
     @Pyro4.oneway
     def init_readout_channels(
@@ -152,8 +162,8 @@ class RemoteTasks:
         self.tasks = Pyro4.Proxy(uri)
         self.close_tasks()
 
-    def init_activation_channels(self, activation_channels):
-        self.tasks.init_activation_channels(activation_channels)
+    def init_activation_channels(self, activation_channels, activation_voltage_ranges=None):
+        self.tasks.init_activation_channels(activation_channels, activation_voltage_ranges)
 
     def init_readout_channels(self, readout_channels):
         self.tasks.init_readout_channels(readout_channels)
