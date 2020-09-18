@@ -24,8 +24,11 @@ class HardwareProcessor(nn.Module):
 
     def __init__(self, configs, logger=None):
         super().__init__()
-        self._init_voltage_range(configs)
         self.driver = get_driver(configs)
+        if configs['processor_type'] == 'simulation_debug':
+            self.voltage_ranges = self.driver.voltage_ranges
+        else:
+            self.voltage_ranges = torch.tensor(self.driver.voltage_ranges)
         self.waveform_mgr = WaveformManager(configs["data"]["waveform"])
         self.logger = logger
         # TODO: Manage amplification from this class
@@ -34,13 +37,6 @@ class HardwareProcessor(nn.Module):
             configs["driver"]["output_clipping_range"][0] * self.amplification,
             configs["driver"]["output_clipping_range"][1] * self.amplification,
         ]
-
-    def _init_voltage_range(self, configs):
-        offset = TorchUtils.get_tensor_from_list(configs["driver"]["offset"])
-        amplitude = TorchUtils.get_tensor_from_list(configs["driver"]["amplitude"])
-        min_voltage = (offset - amplitude).unsqueeze(dim=1)
-        max_voltage = (offset + amplitude).unsqueeze(dim=1)
-        self.voltage_ranges = torch.cat((min_voltage, max_voltage), dim=1)
 
     def forward(self, x):
         with torch.no_grad():

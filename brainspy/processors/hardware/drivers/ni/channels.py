@@ -6,9 +6,9 @@ def init_channel_data(configs):
         instruments = []
         activation_channel_list = init_activation_channels(configs['instruments_setup'])
         readout_channel_list = init_readout_channels(configs['instruments_setup'])
-        instruments = add_uniquely(instruments, configs['activation_instrument'])
-        instruments = add_uniquely(instruments, configs['readout_instrument'])
-        voltage_ranges = init_voltage_ranges(configs['min_activation_voltages'], configs['max_activation_voltages'])
+        instruments = add_uniquely(instruments, configs['instruments_setup']['activation_instrument'])
+        instruments = add_uniquely(instruments, configs['instruments_setup']['readout_instrument'])
+        voltage_ranges = init_voltage_ranges(configs['instruments_setup']['min_activation_voltages'], configs['instruments_setup']['max_activation_voltages'])
     elif configs['devices']['device_no'] == "multiple":
         instruments = []
         activation_channel_list = []
