@@ -2,9 +2,8 @@
 Unit tests for iv curves
 @author: Michelangelo Barocci and Unai Alegre-Ibarra
 """
-from brainspy.processors.hardware.drivers.ni.defaults import get_default_brains_setup_dict
 import matplotlib.pyplot as plt
-from bspyalgo.utils.io import load_configs
+from brainspy.utils.io import load_configs
 from brainspy.utils.manager import get_driver
 import numpy as np
 import unittest2 as unittest
@@ -13,12 +12,15 @@ import unittest2 as unittest
 class IVtest(unittest.TestCase):
 
     def __init__(self, configs):
+        self._testMethodName = 'runTest'
+        self._cleanups = None
+        self._testMethodDoc = None
         self.configs = configs
         # self.processor = self.configs['processor']
         self.waveform = self.configs['waveform']
         self.index_prog = {}
         self.index_prog["all"] = 0
-        for dev in self.configs["processor"]['devices']:
+        for dev in self.configs['devices']:
             self.index_prog[dev] = 0
 
     def runTest(self):
@@ -33,11 +35,11 @@ class IVtest(unittest.TestCase):
 
         for exp in experiments:
             output[exp] = {}
-            self.devices_in_experiments[exp] = self.configs["processor"]['devices'].copy()
+            self.devices_in_experiments[exp] = self.configs['devices'].copy()
             output_array = self.processor.forward_numpy(IVtest.create_input_arrays(self))
 
-            for i, dev in enumerate(self.configs["processor"]['devices']):
-                output[exp][dev] = output_array[i, :]
+            for i, dev in enumerate(self.configs['devices']):
+                output[exp][dev] = output_array[i, :].T
 
         self.iv_plot(output)
         #self.plot(IVtest.gen_input_wfrm(self), output["IV7"]["E"])
@@ -53,11 +55,11 @@ class IVtest(unittest.TestCase):
         inputs_dict = {}
         inputs_array = []
 
-        for dev in self.configs["processor"]['devices']:
+        for dev in self.configs['devices']:
 
-            inputs_dict[dev] = np.zeros((self.configs["processor"]['activation_channel_mask'][dev].count(1), self.configs["processor"]['shape']))  # creates a zeros array for each '1' in the mask entry
+            inputs_dict[dev] = np.zeros((self.configs["processor"]['driver']['instruments_setup'][dev]['activation_channel_mask'].count(1), self.configs['shape']))  # creates a zeros array for each '1' in the mask entry
 
-            if self.configs["processor"]['activation_channel_mask'][dev][self.index_prog["all"]] == 1:
+            if self.configs["processor"]['driver']['instruments_setup'][dev]['activation_channel_mask'][self.index_prog["all"]] == 1:
                 inputs_dict[dev][self.index_prog[dev], :] = IVtest.gen_input_wfrm(self)
                 self.index_prog[dev] += 1
 
@@ -69,7 +71,7 @@ class IVtest(unittest.TestCase):
         inputs_array = np.array(inputs_array)
         self.index_prog["all"] += 1
 
-        return inputs_array
+        return inputs_array.T
 
     def gen_input_wfrm(self):
 
@@ -111,9 +113,9 @@ class IVtest(unittest.TestCase):
             return np.sin(phases + phase) * amplitude
 
         if self.waveform['input_type'] == 'sawtooth':
-            input_data = generate_sawtooth(self.waveform['V_high'], self.waveform['V_low'], self.configs["processor"]['shape'], self.waveform['direction'])
+            input_data = generate_sawtooth(self.waveform['V_high'], self.waveform['V_low'], self.configs['shape'], self.waveform['direction'])
         elif self.waveform['input_type'] == 'sine':
-            input_data = generate_sinewave(self.configs["processor"]['shape'], self.configs["processor"]['sampling_frequency'], self.waveform['V_high'])
+            input_data = generate_sinewave(self.configs['shape'], self.configs["processor"]['driver']['sampling_frequency'], self.waveform['V_high'])
             input_data[-1] = 0
         else:
             print("Specify waveform type")
@@ -150,10 +152,10 @@ class IVtest(unittest.TestCase):
         # fig.tight_layout()  # otherwise the right y-label is slightly clipped
         # plt.show()
 
-    def iv_plot(self, output):
+    def iv_plot(self, configs, output):
 
         xaxis = IVtest.gen_input_wfrm(self)
-        devlist = get_default_brains_setup_dict()
+        devlist = configs['instruments_setup']  # get_default_brains_setup_dict()
         ylabeldist = -5
 
         for dev in self.configs["processor"]['devices']:
@@ -187,8 +189,23 @@ class IVtest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    IV_test_configs = load_configs('configs/IV5_template.json')
+
+    from brainspy.utils.io import load_configs
+    configs = {}
+    configs['results_base_dir'] = 'tmp/tests/iv'
+    configs['show_plots'] = True
+    configs['devices'] = ['A', 'B', 'C', "D", 'E']
+    configs['shape'] = 500  # length of the experiment
+    configs['waveform'] = {}
+    configs['waveform']['V_high'] = 0.75
+    configs['waveform']['V_low'] = -0.75
+    configs['waveform']['input_type'] = 'sine'
+    configs['waveform']['frequency_NOT_USED']: 10
+    configs['waveform']['time'] = 5
+    configs['waveform']['direction'] = 'up'
+
+    configs['processor'] = load_configs('C:/Users/braml/Documents/Github/ring-example/processor.yaml')
 
     suite = unittest.TestSuite()
-    suite.addTest(IVtest(IV_test_configs))
+    suite.addTest(IVtest(configs))
     unittest.TextTestRunner().run(suite)

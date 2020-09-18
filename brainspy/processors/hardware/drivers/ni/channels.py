@@ -2,21 +2,21 @@ import numpy as np
 
 
 def init_channel_data(configs):
-    if configs['devices']['device_no'] == "single":
+    if configs['instruments_setup']['device_no'] == "single":
         instruments = []
         activation_channel_list = init_activation_channels(configs['instruments_setup'])
         readout_channel_list = init_readout_channels(configs['instruments_setup'])
         instruments = add_uniquely(instruments, configs['instruments_setup']['activation_instrument'])
         instruments = add_uniquely(instruments, configs['instruments_setup']['readout_instrument'])
         voltage_ranges = init_voltage_ranges(configs['instruments_setup']['min_activation_voltages'], configs['instruments_setup']['max_activation_voltages'])
-    elif configs['devices']['device_no'] == "multiple":
+    elif configs['instruments_setup']['device_no'] == "multiple":
         instruments = []
         activation_channel_list = []
         readout_channel_list = []
         voltage_ranges_list = []
         for device_name in configs['instruments_setup']:
-            if device_name != 'trigger_source':
-                mask = np.array(get_mask(configs['devices'], device_name))
+            if device_name != 'trigger_source' and device_name != 'device_no':
+                mask = get_mask(configs['instruments_setup'][device_name])
                 if mask is None or sum(mask > 0):
                     configs['instruments_setup'][device_name]['activation_channels'] = list(np.array(configs['instruments_setup'][device_name]['activation_channels'])[mask == 1])
                     activation_channel_list = init_activation_channels(configs['instruments_setup'][device_name], activation_channel_list=activation_channel_list)
@@ -64,9 +64,9 @@ def init_readout_channels(configs, readout_channel_list=[]):
     return readout_channel_list
 
 
-def get_mask(configs, device_name):
+def get_mask(configs):
     if 'activation_channel_mask' in configs:
-        return configs['activation_channel_mask'][device_name]
+        return np.array(configs['activation_channel_mask'])
     else:
         return None
 
