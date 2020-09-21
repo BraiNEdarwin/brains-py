@@ -15,6 +15,7 @@ class IVtest(unittest.TestCase):
         self._testMethodName = 'run_test'
         self._cleanups = None
         self._testMethodDoc = None
+        self.configs = configs
         self.waveform = self.configs['waveform']
         self.index_prog = {}
         self.index_prog["all"] = 0
