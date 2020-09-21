@@ -41,6 +41,7 @@ class IVtest(unittest.TestCase):
                 output[exp][dev] = output_array.T[i, :]
 
         self.iv_plot(configs, output)
+        self.processor.close_tasks()
 
     def create_input_arrays(self):
 
