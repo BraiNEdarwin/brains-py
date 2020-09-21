@@ -70,7 +70,10 @@ class NationalInstrumentsSetup():
             device.Device(name=instrument).reset_device()
 
     def process_output_data(self, data):
-        return np.array([data]) * self.configs["driver"]["amplification"]  # Creates a numpy array from a list with dimensions (n,1) and multiplies it by the amplification of the device
+        data = np.array(data)
+        if len(data.shape) == 1:
+            data = data[np.newaxis, :]
+        return data * self.configs["driver"]["amplification"]  # Creates a numpy array from a list with dimensions (n,1) and multiplies it by the amplification of the device
 
     def read_data(self, y):
         global p

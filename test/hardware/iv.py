@@ -12,18 +12,16 @@ import unittest2 as unittest
 class IVtest(unittest.TestCase):
 
     def __init__(self, configs):
-        self._testMethodName = 'runTest'
+        self._testMethodName = 'run_test'
         self._cleanups = None
         self._testMethodDoc = None
-        self.configs = configs
-        # self.processor = self.configs['processor']
         self.waveform = self.configs['waveform']
         self.index_prog = {}
         self.index_prog["all"] = 0
         for dev in self.configs['devices']:
             self.index_prog[dev] = 0
 
-    def runTest(self):
+    def run_test(self):
 
         # save(mode='configs', path=self.configs['results_base_dir'], filename='test_configs.json', overwrite=self.configs['overwrite_results'], data=self.configs)
 
@@ -39,16 +37,9 @@ class IVtest(unittest.TestCase):
             output_array = self.processor.forward_numpy(IVtest.create_input_arrays(self))
 
             for i, dev in enumerate(self.configs['devices']):
-                output[exp][dev] = output_array[i, :].T
+                output[exp][dev] = output_array.T[i, :]
 
-        self.iv_plot(output)
-        #self.plot(IVtest.gen_input_wfrm(self), output["IV7"]["E"])
-
-        # input_data = np.zeros((2,1000))
-        # input_data[0,:] = IVtest.gen_input_wfrm(self)
-        # input_data[1,:] = IVtest.gen_input_wfrm(self)
-        # output_array = self.processor.get_output(input_data)
-        # self.plot(IVtest.gen_input_wfrm(self), output_array)
+        self.iv_plot(configs, output)
 
     def create_input_arrays(self):
 
@@ -122,11 +113,6 @@ class IVtest(unittest.TestCase):
 
         return input_data
 
-    # def close_test(self, results):
-        # self.excel_file.close_file()
-        # self.results = results
-        # return results
-
     def plot(self, x, y):
         for i in range(np.shape(y)[1]):
             plt.figure()
@@ -134,31 +120,13 @@ class IVtest(unittest.TestCase):
             plt.plot(y)
             plt.show()
 
-        # fig, ax1 = plt.subplots()
-
-        # color = 'tab:blue'
-        # ax1.set_ylabel('input (V)', color=color)  # we already handled the x-label with ax1
-        # ax1.plot(x, color=color)
-        # ax1.tick_params(axis='y', labelcolor=color)
-
-        # color = 'tab:orange'
-        # ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-
-        # ax2.set_xlabel('time (s)')
-        # ax2.set_ylabel('output (nA)', color=color)
-        # ax2.plot(y, color=color)
-        # ax2.tick_params(axis='y', labelcolor=color)
-
-        # fig.tight_layout()  # otherwise the right y-label is slightly clipped
-        # plt.show()
-
     def iv_plot(self, configs, output):
 
         xaxis = IVtest.gen_input_wfrm(self)
-        devlist = configs['instruments_setup']  # get_default_brains_setup_dict()
+        devlist = configs['processor']['driver']['instruments_setup']  # get_default_brains_setup_dict()
         ylabeldist = -5
 
-        for dev in self.configs["processor"]['devices']:
+        for dev in self.configs['devices']:
             fig, axs = plt.subplots(2, 4)
             # plt.grid(True)
             fig.suptitle('Device ' + dev + ' - Input voltage vs Output current')
@@ -166,7 +134,7 @@ class IVtest(unittest.TestCase):
                 for j in range(4):
                     exp = "IV" + str(j + i * 4 + 1)
                     if j + i * 4 < 7:
-                        if self.configs["processor"]["activation_channel_mask"][dev][j + i * 4] == 1:
+                        if self.configs["processor"]['driver']['instruments_setup'][dev]["activation_channel_mask"][j + i * 4] == 1:
                             axs[i, j].plot(xaxis, output[exp][dev])
                             axs[i, j].set_ylabel('output (nA)', labelpad=ylabeldist)
                             axs[i, j].set_xlabel('input (V)', labelpad=1)
@@ -200,11 +168,10 @@ if __name__ == '__main__':
     configs['waveform']['V_high'] = 0.75
     configs['waveform']['V_low'] = -0.75
     configs['waveform']['input_type'] = 'sine'
-    configs['waveform']['frequency_NOT_USED']: 10
     configs['waveform']['time'] = 5
     configs['waveform']['direction'] = 'up'
 
-    configs['processor'] = load_configs('C:/Users/braml/Documents/Github/ring-example/processor.yaml')
+    configs['processor'] = load_configs('C:/Users/braml/Documents/Github/ring-example/processor_iv_curves.yaml')
 
     suite = unittest.TestSuite()
     suite.addTest(IVtest(configs))
