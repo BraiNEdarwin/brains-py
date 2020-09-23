@@ -136,8 +136,11 @@ def get_default_node_configs():
     configs["epochs"] = 100
     configs["learning_rate"] = 0.0007
     configs["betas"] = [0.999, 0.999]
-    configs["split"] = [1, 0]
-    configs["mini_batch"] = 256
+    configs["data"] = {}
+    configs["data"]["split"] = [1, 0]
+    configs["data"]["mini_batch"] = 256
+    configs["data"]["worker_no"] = 0
+    configs["data"]["pin_memory"] = False
     return configs
 
 
