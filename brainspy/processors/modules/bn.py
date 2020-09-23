@@ -27,11 +27,12 @@ class DNPU_BatchNorm(nn.Module):
         current_range=torch.tensor([[-2, 2], [-2, 2]]),
         current_to_voltage=True,
         batch_norm=True,
+        alpha=1
     ):
         # default current_range = 2  * std, where std is assumed to be 1
         super().__init__()
 
-        self.dnpu = DNPU(processor)  # DNPU(configs)
+        self.dnpu = DNPU(processor, alpha=alpha)  # DNPU(configs)
 
         if batch_norm:
             self.bn = nn.BatchNorm1d(1, affine=False).to(device=TorchUtils.get_accelerator_type())
