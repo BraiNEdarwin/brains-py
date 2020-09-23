@@ -1,6 +1,6 @@
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
-from brainspy.processors.simulation.surrogate import SurrogateModel
+from brainspy.processors.simulation.processor import SurrogateModel
 import torch
 import torch_optimizer as torchoptim
 
