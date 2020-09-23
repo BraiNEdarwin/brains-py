@@ -4,7 +4,7 @@
 import torch
 from torch import nn
 
-from brainspy.processors.simulation.network import NeuralNetworkModel
+from brainspy.processors.simulation.model import NeuralNetworkModel
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.loader import load_file
 from brainspy.processors.simulation.noise.noise import get_noise

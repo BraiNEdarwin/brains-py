@@ -23,21 +23,23 @@ class DNPU_BatchNorm(nn.Module):
 
     def __init__(
         self,
-        configs,
+        processor,  # It is either a dictionary or the reference to a processor
         current_range=torch.tensor([[-2, 2], [-2, 2]]),
         current_to_voltage=True,
         batch_norm=True,
     ):
         # default current_range = 2  * std, where std is assumed to be 1
         super().__init__()
-        self.dnpu = DNPU(configs)
+
+        self.dnpu = DNPU(processor)  # DNPU(configs)
+
         if batch_norm:
             self.bn = nn.BatchNorm1d(1, affine=False).to(device=TorchUtils.get_accelerator_type())
         else:
             self.bn = batch_norm
         if current_to_voltage:
             self.current_to_voltage = CurrentToVoltage(
-                current_range, self.dnpu.get_input_ranges()
+                current_range, self.dnpu.processor.get_input_ranges()
             )
         else:
             self.current_to_voltage = current_to_voltage
@@ -49,8 +51,8 @@ class DNPU_BatchNorm(nn.Module):
         # Cut off values out of the clipping value
         x = torch.clamp(
             x,
-            min=self.dnpu.processor.clipping_value[0],
-            max=self.dnpu.processor.clipping_value[1],
+            min=self.dnpu.processor.get_clipping_value()[0],
+            max=self.dnpu.processor.get_clipping_value()[1],
         )
         # Apply batch normalisation
         if self.bn:

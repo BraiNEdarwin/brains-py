@@ -9,7 +9,7 @@ from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager
 
 # deleteme
-from brainspy.processors.simulation.surrogate import SurrogateModel
+from brainspy.processors.simulation.processor import SurrogateModel
 
 
 class HardwareProcessor(nn.Module):
