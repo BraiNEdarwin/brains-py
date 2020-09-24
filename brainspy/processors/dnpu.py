@@ -86,6 +86,12 @@ class DNPU(nn.Module):
     def get_control_voltages(self):
         return next(self.parameters()).detach()
 
+    def get_control_ranges(self):
+        return self.processor.get_control_ranges()
+
+    def get_clipping_value(self):
+        return self.processor.get_clipping_value()
+
     def reset(self):
         for k in range(len(self.control_low)):
             # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
