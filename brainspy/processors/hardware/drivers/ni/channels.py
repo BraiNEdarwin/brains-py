@@ -4,8 +4,8 @@ import numpy as np
 def init_channel_data(configs):
     if configs['instruments_setup']['device_no'] == "single":
         instruments = []
-        activation_channel_list = init_activation_channels(configs['instruments_setup'])
-        readout_channel_list = init_readout_channels(configs['instruments_setup'])
+        activation_channel_list = init_activation_channels(configs['instruments_setup'], activation_channel_list=[])
+        readout_channel_list = init_readout_channels(configs['instruments_setup'], readout_channel_list=[])
         instruments = add_uniquely(instruments, configs['instruments_setup']['activation_instrument'])
         instruments = add_uniquely(instruments, configs['instruments_setup']['readout_instrument'])
         voltage_ranges = init_voltage_ranges(configs['instruments_setup']['min_activation_voltages'], configs['instruments_setup']['max_activation_voltages'])

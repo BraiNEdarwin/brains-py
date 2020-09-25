@@ -71,8 +71,8 @@ class DNPU(nn.Module):
             self.processor = arg
         else:
             self.processor.load_processor(arg)
-        assert (self.control_low == self.processor.get_control_ranges()[:, 0]).all(), 'Low control voltage ranges for the new processor are different than the control voltage ranges for which the DNPU was trained.'
-        assert (self.control_high == self.processor.get_control_ranges()[:, 1]).all(), 'High control voltage ranges for the new processor are different than the control voltage ranges for which the DNPU was trained.'
+        assert torch.equal(self.control_low.cpu().half(), self.processor.get_control_ranges()[:, 0].cpu().half()), 'Low control voltage ranges for the new processor are different than the control voltage ranges for which the DNPU was trained.'
+        assert torch.equal(self.control_high.cpu().half(), self.processor.get_control_ranges()[:, 1].cpu().half()), 'High control voltage ranges for the new processor are different than the control voltage ranges for which the DNPU was trained.'
         # self._init_electrode_info(hw_processor_configs)
 
     def set_control_voltages(self, bias):
