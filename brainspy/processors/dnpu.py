@@ -97,6 +97,9 @@ class DNPU(nn.Module):
             # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
             self.bias.data[:, k].uniform_(self.control_low[k], self.control_high[k])
 
+    def set_regul_factor(self, alpha):
+        self.alpha = alpha
+
     def close(self):
         self.processor.close()
 

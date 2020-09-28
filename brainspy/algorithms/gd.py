@@ -24,6 +24,9 @@ def train(
     looper = trange(configs["epochs"], desc=" Initialising")
     model.to(device=TorchUtils.get_accelerator_type())
 
+    if 'set_regul_factor' in dir(model) and 'regul_factor' in configs:
+        model.set_regul_factor(configs['regul_factor'])
+
     for epoch in looper:
         running_loss = 0
         val_loss = 0
