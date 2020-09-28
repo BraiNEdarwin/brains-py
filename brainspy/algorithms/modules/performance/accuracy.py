@@ -162,7 +162,7 @@ def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
             torch.ones_like(results["predicted_labels"]) * results["norm_threshold"]
         ),
         "k:",
-        label="Threshold",
+        label="Norm. Threshold",
     )
     plt.legend()
     if show_plot:
