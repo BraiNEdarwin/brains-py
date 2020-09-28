@@ -31,29 +31,25 @@ def train(
     correlation_history = []
     clipping_value = model.get_clipping_value()
     with torch.no_grad():
+        model.eval()
         for epoch in looper:
             inputs, targets = dataloaders[0].dataset[:]
-            # if waveform_transforms is None:
-            #     inputs, targets = dataloaders[0].dataset[:]
-            # else:
-            #     inputs, targets = waveform_transforms(dataloaders[0].dataset[:])
             inputs, targets = process_data(waveform_transforms, inputs, targets)
             outputs, criterion_pool = evaluate_population(
                 inputs, targets, pool, model, criterion, clipvalue=clipping_value
             )
 
             # log results
-            no_nan_mask = criterion_pool == criterion_pool
             current_best_index = torch.argmax(
-                criterion_pool[no_nan_mask]
+                criterion_pool
             )  # Best output index ignoring nan values
 
-            best_current_output = outputs[no_nan_mask][current_best_index]
+            best_current_output = outputs[current_best_index]
             performance_history.append(
-                criterion_pool[no_nan_mask][current_best_index].detach().cpu()
+                criterion_pool[current_best_index].detach().cpu()
             )
 
-            genome_history.append(pool[no_nan_mask][current_best_index].detach().cpu())
+            genome_history.append(pool[current_best_index].detach().cpu())
             correlation_history.append(
                 pearsons_correlation(best_current_output, targets).detach().cpu()
             )
@@ -122,9 +118,9 @@ def evaluate_population(
         model.set_control_voltages(pool[j])
         outputs_pool[j] = model(inputs)
 
-        if torch.any(outputs_pool[j] < clipvalue[0]) or torch.any(
-            outputs_pool[j] > clipvalue[1]
-        ):
+        if torch.any(outputs_pool[j] <= model.get_clipping_value()[0]) or torch.any(
+            outputs_pool[j] >= model.get_clipping_value()[1]
+        ) or (outputs_pool[j] - outputs_pool[j].mean() == 0.).all():
             criterion_pool[j] = criterion(None, None, default_value=True)
         else:
             criterion_pool[j] = criterion(outputs_pool[j], targets)
