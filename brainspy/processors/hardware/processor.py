@@ -28,7 +28,7 @@ class HardwareProcessor(nn.Module):
         if configs['processor_type'] == 'simulation_debug':
             self.voltage_ranges = self.driver.voltage_ranges
         else:
-            self.voltage_ranges = torch.tensor(self.driver.voltage_ranges)
+            self.voltage_ranges = TorchUtils.get_tensor_from_numpy(self.driver.voltage_ranges)
         self.waveform_mgr = WaveformManager(configs["data"]["waveform"])
         self.logger = logger
         # TODO: Manage amplification from this class
