@@ -128,4 +128,4 @@ class IncludeLoader(yaml.Loader):
         self.root = os.path.dirname(filename)
         self.root = oldRoot
         with open(filename, "r") as f:
-            return yaml.load(f, Loader=yaml.FullLoader)
+            return yaml.load(f, Loader=IncludeLoader)
