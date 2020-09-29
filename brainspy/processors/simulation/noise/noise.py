@@ -16,10 +16,10 @@ class GaussianNoise:
 
 
 def get_noise(configs):
-    if "noise" not in configs:
+    if "noise" not in configs['driver']:
         return NoNoise()
-    elif configs["noise"]["type"] == "gaussian":
-        return GaussianNoise(configs["noise"]["mse"])
+    elif configs['driver']["noise"]["type"] == "gaussian":
+        return GaussianNoise(configs['driver']["noise"]["mse"])
     else:
         print(
             "Warning: Noise configuration not recognised. No noise is being simulated for the model."
