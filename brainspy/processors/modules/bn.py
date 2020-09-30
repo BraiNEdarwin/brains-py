@@ -66,6 +66,9 @@ class DNPU_BatchNorm(nn.Module):
     def hw_eval(self, hw_processor_configs):
         self.dnpu.hw_eval(hw_processor_configs)
 
+    def regularizer(self):
+        return self.dnpu.regularizer()
+
 
 if __name__ == "__main__":
     from brainspy.utils.io import load_configs
