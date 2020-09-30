@@ -1,97 +1,66 @@
 
+# brains-py #
 
-# brainspy-processors #
+A python package to support the study of Dopant Network Processing Units [1][2] as hardware accelerators for non-linear operations. The package is part of the brains-py project, a set of python libraries to support the development of nano-scale in-materio hardware neural-network accelerators.
+[Insert image]
 
-A python package to support the study of the behaviour of nano-materials by enabling to seamlessly measure through a hardware connection or an equivalent simulation of a nano-device.  This package has been created and it is maintained by the [Brains](https://www.utwente.nl/en/brains/) team of the [NanoElectronics](https://www.utwente.nl/en/eemcs/ne/) research group at the University of Twente. The package is part of the [brainspy]() project, a set of python libraries to support the development of nano-scale in-materio hardware neural-network accelerators.
+ [![Theory](https://img.shields.io/badge/brainspy-tasks-lightblue.svg)](https://github.com/BraiNEdarwin/brainspy-tasks)  [![Tools](https://img.shields.io/badge/brainspy-smg-darkblue.svg)](https://github.com/BraiNEdarwin/brainspy-smg)
 
-This package has been been mainly used for experiments related to obtaining neural-network like in-materio computation from boron-doped silicon.
+## 1. General description ##
+### 1.1 DNPUs ###
+The basis of a DNPU is a lightly doped (n- or p-type) semiconductor with a nano-scale active region contacted by several electrodes [2]. Different materials can be used as dopant or host and the number of electrodes can vary. Once we choose a readout electrode, the device can be activated by applying voltages to the remaining electrodes, which we call activation electrodes. The dopants in the active region form an atomic-scale network through which the electrons can hopfrom one electrode to another. This physical process results in an output current at the readout that depends non-linearly on the voltages applied at the activation electrodes. By tuning the voltagesapplied to some of the electrodes, the output current can be controlled as a function of the voltages at the remaining electrodes. This tunability can be exploited to solve various linearly non-separable classification tasks.
+[Insert Image]
 
- [![Tools](https://img.shields.io/badge/brainspy-algorithms-blue.svg)](https://github.com/BraiNEdarwin/brainspy-algorithms)  [![Theory](https://img.shields.io/badge/brainspy-tasks-lightblue.svg)](https://github.com/BraiNEdarwin/brainspy-tasks)  [![Tools](https://img.shields.io/badge/brainspy-smg-darkblue.svg)](https://github.com/BraiNEdarwin/brainspy-smg)
+### 1.2 Training DNPUs ###
+This package supports the exploration of DNPUs and DNPU architectures in the following flavours:
 
- If you are interested in
-## 1. Supported processors ##
-  ### 1.1 Hardware processor ###
-The aim of the hardware processor is to measure a boron-doped silicon unit, or a boron-doped silicon chip architecture.
+**Genetic Algorithm**: In computer science and operations research, a genetic algorithm (GA) is a meta-heuristic inspired by the process of natural selection that belongs to the larger class of evolutionary algorithms (EA). Genetic algorithms are commonly used to generate high-quality solutions to optimization and search problems by relying on bio-inspired operators such as mutation, crossover and selection. This algorithm is suitable for experiments with reservoir computing. [Mitchell, Melanie (1996). An Introduction to Genetic Algorithms. Cambridge, MA: MIT Press. ISBN 9780585030944.](https://books.google.nl/books?hl=en&lr=&id=0eznlz0TF-IC&oi=fnd&pg=PP9&ots=shoJ1029Jc&sig=wZ2khjtK5Gf468MmMZ-xOxepr1M&redir_esc=y#v=onepage&q&f=false)
+**Gradient Descent**: Gradient descent is a first-order iterative optimization algorithm for finding the minimum of a function. To find a local minimum of a function using gradient descent, one takes steps proportional to the negative of the gradient (or approximate gradient) of the function at the current point. If, instead, one takes steps proportional to the positive of the gradient, one approaches a local maximum of that function; the procedure is then known as gradient ascent [D. P. Bertsekas (1997). Nonlinear programming. Journal of the Operational Research Society, Valume 48, Issue 3](https://doi.org/10.1057/palgrave.jors.2600425).
 
-*Missing description of the architecture for hardware processors*.
+**On-chip training** : The on-chip training enables to look for adequate control voltages for a task directly on the DNPU or on the DNPU architecture.
 
-This can be done using two main setups:
-   * **CDAQ to NiDAQ**
-	   * Missing description and reference to the manuals
-	   * Dependencies
-		   * nidaqmx
-   * **CDAQ to CDAQ**
-	   * Missing description and reference to the manuals
-	   * Dependencies
-		   * nidaqmx
+**Off-chip training** The off-chip training technique uses a Deep Neural Network to simulate the behaviour of a single DNPU [3]. This package supports to find fuctionality on surrogate models, or surrogate model architectures, and then seamlessly validate the results on hardware DNPU(s), or DNPU architectures.
 
-  ### 1.2 Simulation ###
-  There are two main approaches to simulate the behaviour of a boron-doped silicon unit, or a boron doped silicon chip architecture:
-  #### 1.2.1 Neural-network based simulation ####     
-  One approach is to use a neural network to approximate the results of the device.
+### 1.3 Processors ###
+The processor is the key unit for this package. It enables to seamlessly use Hardware or Software (Simulation) based  DNPUs. The structure of the processors is as follows:
 
-  #### 1.2.1 Kinetic Monte Carlo based simulation ####     
-Another one is to use a monte carlo algorithm to analyse the internal physics of the device.
+* **DNPU**: is the main processing unit, which contains several control voltages declared as learnable parameters.
+* **Processor**: Each DNPU contains a processor. This class enables to seamlessly handle changes of processor form Hardware to Software or viceversa. To change the processor of a DNPU simply call the hw_eval function with a new processor instance or configurations dictionary.
+	* **Software processor** (SurrogateModel): It is a deep neural network with information about the  control voltage ranges, the amplification of the device and relevant noise simulations that it may have.
+	* **Hardware processor**: It establishes a connection (for a single, or multiple hardware DNPUs) with one of the following National Instruments measurement devices:
+		* CDAQ-to-NiDAQ
+		* CDAQ-to-CDAQ
+			* With a regular rack
+			* With a real time rack
+
+[Insert image]
 
 ## 2. Installation instructions ##
-*Note: If you want to make development contributions to the code, please follow the instructions in ()[]
+The installation instructions differ depending on whether if you want to install as a developer or as a user of the library. Please follow the instructions that are most suitable for you:
+* [User instructions]()
+* [Developer instructions]()
 
-* This repository uses the Python programming language, with [Anaconda](https://en.wikipedia.org/wiki/Anaconda_(Python_distribution)) as a package manager. In order to use this code, it is recommended to [download](https://www.anaconda.com/download) Anaconda (with python3 version) for your Operating System, and install it following the official instructions:
-	* [Linux](https://docs.continuum.io/anaconda/install/linux/)
-	* [Windows](https://docs.continuum.io/anaconda/install/windows/)
-	* [Mac](https://docs.continuum.io/anaconda/install/mac-os/)
-* The Anaconda package manager, is based on [environments](https://protostar.space/why-you-need-python-environments-and-how-to-manage-them-with-conda). In order to install the corresponding environment for the code hosted in this repository, follow these instructions:
-	* [Clone](https://help.github.com/en/articles/cloning-a-repository) the repository into your computer.
-	* Open the terminal in which anaconda is installed.
-		* For Windows users, it might be installed as an independent terminal called Anaconda prompt.
-		* For Mac and Linux users, it can be run from the regular terminal.
-	* Inside the anaconda terminal, navigate to the main folder of the repository, in which the file [conda-env-conf.yml]() is, using the following commands:
-		* *list directory* command: ```` ls````
-		* *change directory* command: ```` cd my_folder````
-  * Install the environment:````conda env create -f conda-env-conf.yml ````
-* Whenever developing or executing the code from this repository, the corresponding environment needs to be activated from the terminal where Anaconda is installed. This is done with the following command:
- ````conda activate bspyinstr````
+## 3. License ##
 
+## 4. Bibliography
 
-## 3. Developer instructions ##
-This code contains useful libraries that are expected to be used and maintained by different researchers and students at [University of Twente](https://www.utwente.nl/en/). If you would like to collaborate on the development of this or any projects of the [Brains Research Group](https://www.utwente.nl/en/brains/), you will be required to create a GitHub account. GitHub is based on the Git distributed version control system, if you are not familiar with Git, you can have a look at their [documentation](https://git-scm.com/).  If Git commands feel daunting, you are also welcome to use the graphical user interface provided by [GitHub Desktop](https://desktop.github.com/).
+[1] Chen, T., van Gelder, J., van de Ven, B., Amitonov, S. V., de Wilde, B., Euler, H. C. R., ... & van der Wiel, W. G. (2020). Classification with a disordered dopant-atom network in silicon. _Nature_, _577_(7790), 341-345. [https://doi.org/10.1038/s41586-019-1901-0](https://doi.org/10.1038/s41586-019-1901-0)
 
-The development will follow the Github fork-and-pull workflow. You can have a look at how it works [here](https://reflectoring.io/github-fork-and-pull/).  Feel free to create your own fork of the repository. Make sure you [set this repository as upstream](https://help.github.com/en/articles/configuring-a-remote-for-a-fork), in order to be able to pull the latest changes of this repository to your own fork by [syncing](https://help.github.com/en/articles/syncing-a-fork). Pull requests on the original project will be accepted after maintainers have revised them. The code in this repository follows the [PEP8](https://www.python.org/dev/peps/pep-0008/) python coding style guide. Please make sure that your own fork is synced with this repository, and that it respects the PEP8 coding style.
+[2] HCR Euler, U Alegre-Ibarra, B van de Ven, H Broersma, PA Bobbert and WG van der Wiel (2020). Dopant Network Processing Units: Towards Efficient Neural-network Emulators with High-capacity Nanoelectronic Nodes. [https://arxiv.org/abs/2007.12371](https://arxiv.org/abs/2007.12371)
 
+[3] HCR Euler, MN Boon, JT Wildeboer, B van de Ven, T Chen, H Broersma, PA Bobbert, WG van der Wiel (2020). A Deep-Learning Approach to Realising Functionality in Nanoelectronic Devices.
 
-## 3.1 Development environment
-We recommend you to use the open source development environment of [Visual Studio Code](https://code.visualstudio.com/download) for python, which can be installed following the official [guide](https://code.visualstudio.com/docs/setup/setup-overview). For Ubuntu users, it is recommended to be installed using snap: ````sudo snap install --classic code````. We also recommend you to use an auto-formatter in order to follow PEP8. You can install several extensions that will help you with auto-formatting the code:
+## 5. Acknowledgements
+This package has been created and it is maintained by the [Brains](https://www.utwente.nl/en/brains/) team of the [NanoElectronics](https://www.utwente.nl/en/eemcs/ne/) research group at the University of Twente. It has been designed and developed by:
+-   **Unai Alegre-Ibarra**, [@ualegre](https://github.com/ualegre) ([u.alegre@utwente.nl](mailto:u.alegre@utwente.nl))
+-   **Hans Christian Ruiz-Euler**, [@hcruiz](https://github.com/hcruiz) ([h.ruiz@utwente.nl](mailto:h.ruiz@utwente.nl))
 
- * Open your conda terminal and activate the environment (if you do not have it activated already):  ````conda activate bspy-instr````
- * Install the auto-formatter packages from pip:
-	 * ````pip install autopep8````
-	 * ````pip install flake8````
- * From the same terminal, Open Visual Studio Code with the command: ````code````
- * Go to the extensions marketplace (Ctrl+Shift+X)  
- * Install the following extensions:  
-	 * Python (Microsoft)  
-	 * Python Extension Pack (Don Jayamanne)  
-	 * Python Docs (Mukundan)  
-	 * Python-autopep8 (himanoa)
-	 * cornflakes-linter (kevinglasson)
- * On Visual Studio Code, press Ctrl+Shif+P and write "Open Settings (JSON)". The configuration file should look like this:
-	 * Note: If you are using windows, you should add a line that points to your flake8 installation: ````"cornflakes.linter.executablePath": "C:/Users/Your_user/AppData/Local/Continuum/anaconda3/envs/Scripts/flake8.exe"````
+With the contribution of:
+-  **Bram van de Ven**, [@bbroo1](https://github.com/bbroo1) ([b.vandeven@utwente.nl](mailto:b.vandeven@utwente.nl)) : General improvements and testing of the different hardware drivers and devices.
+- **Michel P. de Jong** [@xX-Michel-Xx](https://github.com/xX-Michel-Xx) ([m.p.dejong@utwente.nl](mailto:m.p.dejong@utwente.nl)): Testing of the package and identification of bugs.
+ - **Michelangelo Barocci** [@micbar-21](https://github.com/micbar-21/).  The usage of multiple DNPUs simultaneously and the creation of an improved PCB for measuring DNPUs.
+ - **Jochem Wildeboer** [@jtwild](https://github.com/jtwild/)  Nearest neighbour loss functions.
+ - **Annefleur Uitzetter**: The genetic algorithm from SkyNEt.
+ - **Marcus Boon**: [@Mark-Boon](https://github.com/Mark-Boon): The on-chip gradient descent.
 
-````		
-{
-	"[python]": {  
-	  "editor.tabSize": 4,  
-	  "editor.insertSpaces": true,  
-	  "editor.formatOnSave": true  
-	},  
-	"python.jediEnabled": true,  
-	"editor.suggestSelection": "first",  
-	"vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue"    
-}
-````
-
-## Authors
-The code is based on similar scripts from the [skynet](https://github.com/BraiNEdarwin/SkyNEt) legacy project. The original contributions to the scripts, which are the base of this project, can be found at skynet, and the authorship remains of those people who collaborated in it. Using existing scripts from skynet, a whole new structure has been designed and developed to be used as a general purpose python library.  The code has been greatly refactored and improved, and it is currently maintained by:
--   Unai Alegre Ibarra, [@ualegre](https://github.com/ualegre) ([u.alegre@utwente.nl](mailto:u.alegre@utwente.nl))
--   Hans Christian Ruiz-Euler, [@hcruiz](https://github.com/hcruiz) ([h.ruiz@utwente.nl](mailto:h.ruiz@utwente.nl))
--   Bram van de Ven, [@bbroo1](https://github.com/bbroo1) ([b.vandeven@utwente.nl](mailto:b.vandeven@utwente.nl))
+Some of the code present in this project has been refactored from the [skynet](https://github.com/BraiNEdarwin/SkyNEt) legacy project. The original contributions to the scripts, which are the base of this project, can be found at skynet, and the authorship remains of those people who collaborated in it. Using existing scripts from skynet, a whole new structure has been designed and developed to be used as a general purpose python library.  
