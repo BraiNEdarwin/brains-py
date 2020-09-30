@@ -2,7 +2,7 @@ from bspyproc.utils.pytorch import TorchUtils
 from bspyproc.processors.simulation.dopanet import DNPU
 from bspyproc.processors.simulation.surrogate import SurrogateModel
 from bspyproc.processors.simulation.network import NeuralNetworkModel
-from bspyproc.processors.hardware.setup_mgr import CDAQtoCDAQ, CDAQtoNiDAQ
+from bspyproc.processors.hardware.setup_mgr import CDAQtoCDAQ, CDAQtoNiDAQ, BrainsCDAQtoCDAQ
 
 
 def get_processor(configs):
@@ -20,6 +20,11 @@ def get_hardware_processor(configs):
         # configs['output_instrument'] = 'cDAQ1Mod1'
         # configs['trigger_source'] = 'cDAQ1'
         return CDAQtoCDAQ(configs)
+    elif configs['processor_type'] == 'brains_cdaq_to_cdaq':
+        # configs['input_instrument'] = 'cDAQ1Mod2'
+        # configs['output_instrument'] = 'cDAQ1Mod1'
+        # configs['trigger_source'] = 'cDAQ1'
+        return BrainsCDAQtoCDAQ(configs)
     elif configs['processor_type'] == 'cdaq_to_nidaq':
         # configs['input_instrument'] = 'dev1'
         # configs['output_instrument'] = 'cDAQ1Mod1'

@@ -7,12 +7,14 @@ import numpy as np
 import math
 import time
 from bspyproc.processors.hardware import task_mgr
+from bspyproc.processors.hardware.brains_setup_list import BrainsDevices as Bsetup
 from bspyproc.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
 import nidaqmx.system.device as device
 import signal
 import threading
 from threading import Thread
 import queue
+
 
 # SECURITY FLAGS.
 # WARNING - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
@@ -35,9 +37,9 @@ class NationalInstrumentsSetup():
         self.driver = task_mgr.get_driver(configs['driver'])
         self.offsetted_shape = configs['shape'] + configs['offset']
         self.ceil = math.ceil((self.offsetted_shape) / self.configs['sampling_frequency']) + 1
-        self.driver.init_output(self.configs['input_channels'], self.configs['output_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)
+        self.driver.init_output(configs['input_channels'], self.configs['sampling_frequency'], self.offsetted_shape)
         time.sleep(1)
-        self.driver.init_input(self.configs['output_channels'], self.configs['input_instrument'], self.configs['sampling_frequency'], self.offsetted_shape)
+        self.driver.init_input(configs['output_channels'], self.configs['sampling_frequency'], self.offsetted_shape)
         global event
         global semaphore
         event = threading.Event()
@@ -135,21 +137,79 @@ class NationalInstrumentsSetup():
         else:
             signal.signal(signal.SIGTERM, signal.SIG_IGN)
             signal.signal(signal.SIGINT, signal.SIG_IGN)
+            
 
+class BrainsCDAQtoCDAQ(NationalInstrumentsSetup):
 
+    def __init__(self, configs):
+    
+        configs['auto_start'] = True
+        configs['offset'] = 1
+        configs['max_ramping_time_seconds'] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
+        BrainsCDAQtoCDAQ.get_brains_channels(self, configs)
+        configs['input_channels'] = BrainsCDAQtoCDAQ.create_ao_channels(self, configs)
+        configs['output_channels'] = BrainsCDAQtoCDAQ.create_ai_channels(self, configs)
+        super().__init__(configs)
+        self.driver.start_trigger(self.configs['trigger_source'])
+        
+    def get_brains_channels(self, configs):
+        
+        devlist = Bsetup.setup_devices_brains()
+        mask = configs['output_channel_mask']
+        self.out_ch_list = []
+        self.in_ch_list = []
+        for dev in configs['devices']:
+            dev_tmp = devlist[dev]
+            self.in_ch_list.append(dev_tmp["input_channel"])
+            for j in range(7):
+                if mask[dev][j] == 1:
+                    self.out_ch_list.append(dev_tmp["output_channels"][j])
+           
+    def create_ao_channels(self, configs):
+        ao_channels = []
+        if configs['processor_type'] == 'cdaq_to_cdaq':
+            for i in range(len(configs['input_channels'])):
+                ao_channels.append(configs['output_instrument'] + "/ao" + str(configs['input_channels'][i]))
+        elif configs['processor_type'] == 'brains_cdaq_to_cdaq'::          
+            ao_channels = self.out_ch_list
+        else :
+            print('error in config(architecture), select single_device or multi_device')
+        return ao_channels
+        
+    def create_ai_channels(self, configs):
+        ai_channels = []
+        if configs['processor_type'] == 'cdaq_to_cdaq':
+            for i in range(len(configs['output_channels'])):
+                ai_channels.append(configs['input_instrument'] + "/ai" + str(configs['output_channels'][i]))
+        elif configs['processor_type'] == 'brains_cdaq_to_cdaq':
+            ai_channels = self.in_ch_list
+        else :
+            print('error in config(architecture), select single_device or multi_device')
+        return ai_channels
+        
+    def get_output(self, y):
+        # y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
+        y = y.T
+        # assert self.configs['shape'] + 1 == y.shape[1], f"configs value with key 'shape' must be {y.shape[1]-1}"
+        data = self.read_data(y)
+        data = -1 * self.process_output_data(data)[:, 1:]
+        return data.T
+        
 class CDAQtoCDAQ(NationalInstrumentsSetup):
 
     def __init__(self, configs):
         configs['auto_start'] = True
         configs['offset'] = 1
         configs['max_ramping_time_seconds'] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
+        configs['input_channels'] = BrainsCDAQtoCDAQ.create_ao_channels(self, configs)
+        configs['output_channels'] = BrainsCDAQtoCDAQ.create_ai_channels(self, configs)
         super().__init__(configs)
         self.driver.start_trigger(self.configs['trigger_source'])
 
     def get_output(self, y):
-        y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
+        # y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
         y = y.T
-        assert self.configs['shape'] + 1 == y.shape[1], f"configs value with key 'shape' must be {y.shape[1]-1}"
+        # assert self.configs['shape'] + 1 == y.shape[1], f"configs value with key 'shape' must be {y.shape[1]-1}"
         data = self.read_data(y)
         data = -1 * self.process_output_data(data)[:, 1:]
         return data.T

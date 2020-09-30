@@ -47,19 +47,19 @@ class LocalTasks():
         self.input_task = None
 
     @Pyro4.oneway
-    def init_output(self, input_channels, output_instrument, sampling_frequency, offsetted_shape):
+    def init_output(self, input_channels, sampling_frequency, offsetted_shape):
         '''Initialises the output of the computer which is the input of the device'''
         self.output_task = nidaqmx.Task()
         for i in range(len(input_channels)):
-            self.output_task.ao_channels.add_ao_voltage_chan(output_instrument + '/ao' + str(input_channels[i]), 'ao' + str(i) + '', -2, 2)
+            self.output_task.ao_channels.add_ao_voltage_chan(str(input_channels[i]), name_to_assign_to_channel='ao' + str(i) + '', min_val = -2.0, max_val = 2.0)
         self.output_task.timing.cfg_samp_clk_timing(sampling_frequency, sample_mode=self.acquisition_type, samps_per_chan=offsetted_shape)
 
     @Pyro4.oneway
-    def init_input(self, output_channels, input_instrument, sampling_frequency, offsetted_shape):
+    def init_input(self, output_channels, sampling_frequency, offsetted_shape):
         '''Initialises the input of the computer which is the output of the device'''
         self.input_task = nidaqmx.Task()
         for i in range(len(output_channels)):
-            self.input_task.ai_channels.add_ai_voltage_chan(input_instrument + '/ai' + str(output_channels[i]))
+            self.input_task.ai_channels.add_ai_voltage_chan(str(output_channels[i]))
         self.input_task.timing.cfg_samp_clk_timing(sampling_frequency, sample_mode=self.acquisition_type, samps_per_chan=offsetted_shape)
 
     @Pyro4.oneway

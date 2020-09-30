@@ -1,0 +1,34 @@
+{
+    "results_base_dir": "tmp/output/ring/",     
+    "show_plots": true,
+    "waveform": {
+      "V_high": 0.75,
+      "V_low": -0.75,
+      "input_type": "sine",
+      "frequency_NOT_USED": 10,
+      "time": 5,
+      "direction":"up"
+                }, 
+    "processor": {
+					  "devices": ["D"],
+					  "output_channel_mask": { "A": [1,1,1,1,1,1,1],
+											   "B": [1,1,1,1,1,1,1],
+											   "C": [1,1,1,1,1,1,1],
+											   "D": [1,1,1,1,1,1,1],
+											   "E": [1,1,1,1,1,1,1] }, 
+                      "trigger_source": "cDAQ1/segment1",
+                      "architecture": "multi_device",
+                      "platform": "hardware",
+                      "processor_type": "brains_cdaq_to_cdaq",
+                      "amplification": 28.5,
+                      "shape": 1000,
+                      "sampling_frequency": 1000,
+                      "driver": {
+                        "driver_type" : "local",
+                        "uri": "PYRO:obj_62e7bb80425d432a9b2742a746624652@192.168.1.5:8081"
+                                },
+                       "waveform": {
+                        "slope_lengths":200
+						}
+                  }
+}
