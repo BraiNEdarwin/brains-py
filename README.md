@@ -1,17 +1,19 @@
 
 # brains-py #
 
-A python package to support the study of Dopant Network Processing Units [1][2] as hardware accelerators for non-linear operations. The package is part of the brains-py project, a set of python libraries to support the development of nano-scale in-materio hardware neural-network accelerators. Its aim is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.
-[Insert image]
-
+A python package to support the study of Dopant Network Processing Units [1][2] as hardware accelerators for non-linear operations. Its aim is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.  The package is part of the brains-py project, a set of python libraries to support the development of nano-scale in-materio hardware neural-network accelerators.
 
  *   [![Tools](https://img.shields.io/badge/brainspy-smg-darkblue.svg)](https://github.com/BraiNEdarwin/brainspy-smg): Library for creating surrogate models of materials.
  *  [![Theory](https://img.shields.io/badge/brainspy-tasks-lightblue.svg)](https://github.com/BraiNEdarwin/brainspy-tasks) An example library on the usage of brains-py for simple tasks such as VC-Dimension or the Ring classifier.
 
+![Insert image](https://raw.githubusercontent.com/BraiNEdarwin/brains-py/master/doc/figures/packages.png)
+
+
 ## 1. General description ##
 ### 1.1 DNPUs ###
 The basis of a DNPU is a lightly doped (n- or p-type) semiconductor with a nano-scale active region contacted by several electrodes [2]. Different materials can be used as dopant or host and the number of electrodes can vary. Once we choose a readout electrode, the device can be activated by applying voltages to the remaining electrodes, which we call activation electrodes. The dopants in the active region form an atomic-scale network through which the electrons can hopfrom one electrode to another. This physical process results in an output current at the readout that depends non-linearly on the voltages applied at the activation electrodes. By tuning the voltagesapplied to some of the electrodes, the output current can be controlled as a function of the voltages at the remaining electrodes. This tunability can be exploited to solve various linearly non-separable classification tasks.
-[Insert Image]
+
+![Insert Image](https://raw.githubusercontent.com/BraiNEdarwin/brains-py/master/doc/figures/dnpu.png)
 
 ### 1.2 Training DNPUs ###
 This package supports the exploration of DNPUs and DNPU architectures in the following flavours:
@@ -36,7 +38,6 @@ The processor is the key unit for this package. It enables to seamlessly use Har
 			* With a regular rack
 			* With a real time rack
 
-[Insert image]
 
 ## 2. Installation instructions ##
 The installation instructions differ depending on whether if you want to install as a developer or as a user of the library. Please follow the instructions that are most suitable for you:
@@ -44,7 +45,7 @@ The installation instructions differ depending on whether if you want to install
 * [Developer instructions]()
 
 ## 3. License and libraries ##
-This code is released under the GNU GENERAL PUBLIC LICENSE Version 3. Click [here]() to see the full license.
+This code is released under the GNU GENERAL PUBLIC LICENSE Version 3. Click [here](https://github.com/BraiNEdarwin/brains-py/blob/master/doc/LICENSE) to see the full license.
 The package relies on the following libraries:
 * Pytorch
 * Numpy
