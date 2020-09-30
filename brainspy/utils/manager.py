@@ -37,7 +37,8 @@ def get_criterion(configs):
         return criterion.fisher_multipled_corr
     elif configs["criterion"] == "bce":
         return torch.nn.BCEWithLogitsLoss()
-
+    elif configs["criterion"] == "sigmoid_nn_distance":
+        return criterion.sigmoid_nn_distance
     else:
         raise NotImplementedError(
             f"Criterion {configs['criterion']} is not recognised."

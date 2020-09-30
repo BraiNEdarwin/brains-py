@@ -121,3 +121,45 @@ def fisher_multipled_corr(output, target):
         torch.std(output) * torch.std(target) + 1e-10
     )
     return (1 - corr) * (s0 + s1) / mean_separation
+
+
+def sigmoid_nn_distance(outputs, target=None):
+    # Sigmoid nearest neighbour distance: a squeshed version of a sum of all internal distances between points.
+    if target != None:
+        raise Warning('This loss function does not use target values. Target ignored.')
+    dist_nn = get_clamped_intervals(outputs, mode='single_nn')
+    return -1 * torch.mean(torch.sigmoid(dist_nn / 2) - 0.5)
+
+
+def get_clamped_intervals(outputs, mode, boundaries=[-352, 77]):
+    # First we sort the output, and clip the output to a fixed interval.
+    outputs_sorted = outputs.sort(dim=0)[0]
+    outputs_clamped = outputs_sorted.clamp(boundaries[0], boundaries[1])
+
+    # THen we prepare two tensors which we subtract from each other to calculate nearest neighbour distances.
+    boundaries = torch.tensor(boundaries, dtype=outputs_sorted.dtype)
+    boundary_low = boundaries[0].unsqueeze(0).unsqueeze(1)
+    boundary_high = boundaries[1].unsqueeze(0).unsqueeze(1)
+    outputs_highside = torch.cat((outputs_clamped, boundary_high), dim=0)
+    outputs_lowside = torch.cat((boundary_low, outputs_clamped), dim=0)
+
+    # Most intervals are multiplied by 0.5 because they are shared between two neighbours
+    # The first and last interval do not get divided bu two because they are not shared
+    multiplier = 0.5 * torch.ones_like(outputs_highside)
+    multiplier[0] = 1
+    multiplier[-1] = 1
+
+    # Calculate the actual distance between points
+    dist = (outputs_highside - outputs_lowside) * multiplier
+
+    if mode == 'single_nn':
+        # Only give nearest neighbour (single!) distance
+        dist_nns = torch.cat((dist[1:], dist[:-1]), dim=1)  # both nearest neighbours
+        dist_nn = torch.min(dist_nns, dim=1)  # only the closes nearest neighbour
+        return dist_nn[0]  # entry 0 is the tensor, entry 1 are the indices
+    elif mode == 'double_nn':
+        return dist
+    elif mode == 'intervals':
+        # Determine the intervals between the points, up and down together.
+        intervals = dist[1:] + dist[:-1]
+        return intervals
