@@ -47,10 +47,8 @@ def corrsig_fit(output, target, default_value=False):
         return -1
     else:
         corr = pearsons_correlation(output[:, 0], target[:, 0])
-        buff0 = target == 0
-        buff1 = target == 1
-        sep = output[buff1].mean() - output[buff0].mean()
-        sig = 1 / (1 + torch.exp(-2 * (sep - 2)))
+        sep = output[target == 1].mean() - output[target == 0].mean()
+        sig = torch.sigmoid(-2 * (sep - 2))
         return corr * sig
 
 
