@@ -16,8 +16,9 @@ The development will follow the Github fork-and-pull workflow. You can have a lo
 	* Inside the anaconda terminal, navigate to the main folder of the repository using the following commands:
 		* *list directory* command: ```` ls````
 		* *change directory* command: ```` cd my_folder````
+  * Install pytorch. Packages corresponding to pytorch are not automatically installed, as they depend on the particular device. You can find pytorch installation instructions [here](https://pytorch.org/). Please follow those instructions for completing the installation of this package.
   * Install the environment:````python setup.py develop````
-  * Packages corresponding to pytorch are not automatically installed, as they depend on the particular device. You can find pytorch installation instructions [here](https://pytorch.org/). Please follow those instructions for completing the installation of this package.
+
 
 ## Development environment
 We recommend you to use the open source development environment of [Visual Studio Code](https://code.visualstudio.com/download) for python, which can be installed following the official [guide](https://code.visualstudio.com/docs/setup/setup-overview). For Ubuntu users, it is recommended to be installed using snap: ````sudo snap install --classic code````. We also recommend you to use an auto-formatter in order to follow PEP8. You can install several extensions that will help you with auto-formatting the code:
