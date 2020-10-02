@@ -1,14 +1,20 @@
+import platform
 from setuptools import setup, find_packages
+
+requires = ["nidaqmx", "pyyaml", "Pyro4","tqdm","torch-optimizer","tensorboard"]
+
+if platform.system() == 'Windows':
+    requires.append('pywin32')
 
 setup(
     name="brains-py",
-    version="0.0.0",
-    description="A python package created and maintained by the Brains team of the NanoElectronics group at the University of Twente for managing different hardware boron-doped silicon chip processors and their simulations. ",
-    url="https://github.com/BraiNEdarwin/brainspy-instruments",
-    author="This has adopted part of the BRAINS skynet repository code, which has been cleaned and refactored. The maintainers of the code are Unai Alegre-Ibarra, and Hans-Christian Ruiz Euler.",
+    version="0.8",
+    description="A python package to support the study of Dopant Network Processing Units as hardware accelerators for non-linear operations. Its aim is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.  ",
+    url="https://github.com/BraiNEdarwin/brains-py",
+    author="Unai Alegre-Ibarra, and Hans-Christian Ruiz Euler. Other collaborations are acknowledged in https://github.com/BraiNEdarwin/brains-py",
     author_email="u.alegre@utwente.nl",
     license="GPL-3.0",
     packages=find_packages(),
-    install_requires=["nidaqmx", "pyyaml", "Pyro4","tqdm","torch-optimizer","pywin32"],
+    install_requires=requires,
     zip_safe=False,
 )
