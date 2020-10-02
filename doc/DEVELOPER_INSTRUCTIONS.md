@@ -16,6 +16,7 @@ The development will follow the Github fork-and-pull workflow. You can have a lo
 	* Inside the anaconda terminal, navigate to the main folder of the repository using the following commands:
 		* *list directory* command: ```` ls````
 		* *change directory* command: ```` cd my_folder````
+	* Create an anaconda environment using the following command: ```` conda create -n bspy python ipython````
   * Install pytorch. Packages corresponding to pytorch are not automatically installed, as they depend on the particular device. You can find pytorch installation instructions [here](https://pytorch.org/). Please follow those instructions for completing the installation of this package.
   * Install the environment:````python setup.py develop````
 
