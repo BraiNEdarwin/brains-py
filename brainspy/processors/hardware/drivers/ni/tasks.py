@@ -12,6 +12,7 @@ DEFAULT_PORT = 8081
 
 SWITCH_ETHERNET_OFF_COMMAND = "ifconfig eth0 down"
 SWITCH_ETHERNET_ON_COMMAND = "ifconfig eth0 up"
+RANGE_MARGIN = 0.01
 
 
 def get_tasks_driver(configs):
@@ -63,7 +64,7 @@ class LocalTasks:
                 assert voltage_ranges[i][1] > -2 and voltage_ranges[i][1] < 2, "Maximum voltage ranges configuration outside of the allowed values -2 and 2"
                 self.activation_task.ao_channels.add_ao_voltage_chan(
                     #activation_instrument + "/ai" + str(activation_channels[i])
-                    channel_name, min_val=voltage_ranges[i][0].item(), max_val=voltage_ranges[i][1].item()
+                    channel_name, min_val=voltage_ranges[i][0].item() - RANGE_MARGIN, max_val=voltage_ranges[i][1].item() + RANGE_MARGIN
                 )
             else:
                 print('WARNING! READ CAREFULLY THIS MESSAGE. Activation channels have been initialised without a security voltage range, they will be automatically set up to a range between -2 and 2 V. This may result in damaging the device. Press ENTER only if you are sure that you want to proceed, otherwise STOP the program. Voltage ranges can be defined in the instruments setup configurations.')
