@@ -137,7 +137,7 @@ def get_clamped_intervals(outputs, mode, boundaries=[-352, 77]):
     outputs_clamped = outputs_sorted.clamp(boundaries[0], boundaries[1])
 
     # THen we prepare two tensors which we subtract from each other to calculate nearest neighbour distances.
-    boundaries = torch.tensor(boundaries, dtype=outputs_sorted.dtype)
+    boundaries = torch.tensor(boundaries, dtype=outputs_sorted.dtype, device=outputs_sorted.device)
     boundary_low = boundaries[0].unsqueeze(0).unsqueeze(1)
     boundary_high = boundaries[1].unsqueeze(0).unsqueeze(1)
     outputs_highside = torch.cat((outputs_clamped, boundary_high), dim=0)
