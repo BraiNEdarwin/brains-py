@@ -244,9 +244,9 @@ def process_data(waveform_transforms, inputs, targets):
     # Data processing required to apply waveforms to the inputs and pass them onto the GPU if necessary.
     if waveform_transforms is not None:
         inputs, targets = waveform_transforms((inputs, targets))
-    if inputs.device != TorchUtils.get_accelerator_type():
+    if inputs is not None and inputs.device != TorchUtils.get_accelerator_type():
         inputs = inputs.to(device=TorchUtils.get_accelerator_type())
-    if targets.device != TorchUtils.get_accelerator_type():
+    if targets is not None and targets.device != TorchUtils.get_accelerator_type():
         targets = targets.to(device=TorchUtils.get_accelerator_type())
 
     return inputs, targets
