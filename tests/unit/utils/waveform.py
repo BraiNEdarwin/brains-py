@@ -12,8 +12,8 @@ class WaveformTest(unittest.TestCase):
     def __init__(self, test_name):
         super(WaveformTest, self).__init__()
         configs = {}
-        configs["plateau_lengths"] = 80
-        configs["slope_lengths"] = 20
+        configs["plateau_length"] = 80
+        configs["slope_length"] = 20
         self.configs = configs
         self.waveform_mgr = WaveformManager(configs)
 
@@ -61,9 +61,23 @@ class WaveformTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    import HtmlTestRunner
 
-    from matplotlib import pyplot as plt
+    # unittest.main(
+    #     testRunner=xmlrunner.XMLTestRunner(output='/home/unai/Documents/3-programming/brains-py/brains-py/test-reports'),
+    #     # these make sure that some options that are not applicable
+    #     # remain hidden from the help menu.
+    #     failfast=False, buffer=False, catchbreak=False)
 
-    suite = unittest.TestSuite()
-    suite.addTest(WaveformTest("test1"))
-    unittest.TextTestRunner().run(suite)
+    unittest.main(testRunner=HtmlTestRunner.HTMLTestRunner(output='/home/unai/Documents/3-programming/brains-py/brains-py/test-reports'))
+
+    # suite = unittest.TestSuite()
+    # suite.addTest(WaveformTest("test1"))
+    # unittest.TextTestRunner(verbosity=2).run(suite)
+
+    # outfile = open("report.html", "w")
+    # runner = HTMLTestRunner.HTMLTestRunner(
+    #     stream=outfile,
+    #     title='Test Report',
+    #     description='This demonstrates the report output by Prasanna.Yelsangikar.'
+    # )
