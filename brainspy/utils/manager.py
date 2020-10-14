@@ -2,7 +2,6 @@ from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 from brainspy.processors.simulation.processor import SurrogateModel
 import torch
-import torch_optimizer as torchoptim
 
 import brainspy.algorithms.modules.signal as criterion
 import brainspy.algorithms.modules.optim as bspyoptim
@@ -59,26 +58,10 @@ def get_optimizer(model, configs):
     elif configs["optimizer"] == "elm":
         print("ELM optimizer not implemented yet")
         # return get_adam(parameters, configs)
-    elif configs["optimizer"] == "yogi":
-        return get_yogi(model, configs)
     elif configs["optimizer"] == "adam":
         return get_adam(model, configs)
     else:
         assert False, "Optimiser name {configs['optimizer']} not recognised. Please try"
-
-
-def get_yogi(model, configs):
-    print("Prediction using YOGI optimizer")
-    parameters = filter(lambda p: p.requires_grad, model.parameters())
-    if "betas" in configs.keys():
-        print("Set betas to values from the config file: ")
-        print(*configs["betas"], sep=", ")
-        return torchoptim.Yogi(
-            parameters, lr=configs["learning_rate"], betas=configs["betas"]
-        )
-
-    else:
-        return torchoptim.Yogi(parameters, lr=configs["learning_rate"])
 
 
 def get_adam(model, configs):

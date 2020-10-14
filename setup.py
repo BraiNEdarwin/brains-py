@@ -1,7 +1,7 @@
 import platform
 from setuptools import setup, find_packages
 
-requires = ["nidaqmx", "pyyaml", "Pyro4","tqdm","torch-optimizer","tensorboard","unittest2","html-testRunner"]
+requires = ["nidaqmx", "pyyaml", "Pyro4","tqdm","tensorboard","unittest2","html-testRunner"]
 
 if platform.system() == 'Windows':
     requires.append('pywin32')

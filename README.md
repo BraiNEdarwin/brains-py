@@ -53,8 +53,10 @@ The package relies on the following libraries:
 * pyyaml
 * Pyro4
 * tqdm
-* torch-optimizer
 * pywin32
+* unittest2
+* html-testRunner
+
 ## 4. Bibliography
 
 [1] Chen, T., van Gelder, J., van de Ven, B., Amitonov, S. V., de Wilde, B., Euler, H. C. R., ... & van der Wiel, W. G. (2020). Classification with a disordered dopant-atom network in silicon. _Nature_, _577_(7790), 341-345. [https://doi.org/10.1038/s41586-019-1901-0](https://doi.org/10.1038/s41586-019-1901-0)
