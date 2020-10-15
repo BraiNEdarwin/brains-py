@@ -44,6 +44,9 @@ The installation instructions differ depending on whether if you want to install
 * [User instructions](https://github.com/BraiNEdarwin/brains-py/blob/master/doc/USER_INSTRUCTIONS.md)
 * [Developer instructions](https://github.com/BraiNEdarwin/brains-py/blob/master/doc/DEVELOPER_INSTRUCTIONS.md)
 
+You can also find additional information here:
+* [Configuration files](https://github.com/BraiNEdarwin/brains-py/blob/master/doc/CONFIGURATION_FILES.md)
+
 ## 3. License and libraries ##
 This code is released under the GNU GENERAL PUBLIC LICENSE Version 3. Click [here](https://github.com/BraiNEdarwin/brains-py/blob/master/doc/LICENSE) to see the full license.
 The package relies on the following libraries:
