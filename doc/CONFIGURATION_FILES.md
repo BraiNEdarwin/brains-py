@@ -25,11 +25,11 @@ Takes additional input from other config files:
 
 Specifies whether the performed task is a simulation or is performed on hardware:
 
-``processor\_type: "simulation" # Possible values are: simulation, simulation\_debug, cdaq\_to\_cdaq, and cdaq\_to\_nidaq``
+``processor_type: "simulation" # Possible values are: simulation, simulation_debug, cdaq_to_cdaq, and cdaq_to_nidaq``
 
 For simulations, specifies the location of the model.pt file that contains the model used for the simulation, for example:
 
-``torch\_model\_dict: &#39;/home/unai/Documents/3-programming/brainspy-smg/tmp/output/new\_test\_model/training\_data\_2020\_09\_14\_190250/model.pt``
+``torch_model_dict: 'C:/Data/model.pt'``
 
 Make sure the directory names do not include spaces or special characters, like f.e. &quot;^&quot;.
 
@@ -53,7 +53,7 @@ Takes additional input from other config files:
 
 The file processor: !include defaults/processors/simulation.yaml contains the location of the file containing the model, for example:
 
-``torch\_model\_dict: &#39;/home/unai/Documents/3-programming/brainspy-smg/tmp/output/new\_test\_model/training\_data\_2020\_09\_14\_190250/model.pt``
+``torch_model_dict: 'C:/Data/model.pt'``
 
 **3) Surrogate model configs templates (..\brainspy-smg\configs\training\smg\_configs\_template.yaml)**
 
@@ -61,4 +61,4 @@ Contains input for training a model from a set of data (e.g. measurement data).
 
 Specifies the location of the data file, e.g.:
 
-``postprocessed\_data\_path: &quot;tmp/data/training/Brains\_testing\_2020\_09\_04\_182557/postprocessed\_data.npz&quot;``
+``postprocessed_data_path: 'C:/Data/postprocessed_data.npz'``
