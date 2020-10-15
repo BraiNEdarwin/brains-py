@@ -1,9 +1,9 @@
 
 # brains-py #
 
-A python package to support the study of Dopant Network Processing Units [1][2] as hardware accelerators for non-linear operations. Its aim is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.  The package is part of the brains-py project, a set of python libraries to support the development of nano-scale in-materio hardware neural-network accelerators.
+A python package to support the study of Dopant Network Processing Units (DNPUs) [1][2] as hardware accelerators for non-linear operations. Its aim is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.  The package is part of the brains-py project, a set of python libraries to support the development of nano-scale in-materio hardware neural-network accelerators.
 
- *   [![Tools](https://img.shields.io/badge/brainspy-smg-darkblue.svg)](https://github.com/BraiNEdarwin/brainspy-smg): Library for creating surrogate models of materials.
+ *   [![Tools](https://img.shields.io/badge/brainspy-smg-darkblue.svg)](https://github.com/BraiNEdarwin/brainspy-smg): Library for creating surrogate models of devices.
  *  [![Theory](https://img.shields.io/badge/brainspy-tasks-lightblue.svg)](https://github.com/BraiNEdarwin/brainspy-tasks) An example library on the usage of brains-py for simple tasks such as VC-Dimension or the Ring classifier.
 
 ![Insert image](https://raw.githubusercontent.com/BraiNEdarwin/brains-py/master/doc/figures/packages.png)
@@ -11,7 +11,7 @@ A python package to support the study of Dopant Network Processing Units [1][2] 
 
 ## 1. General description ##
 ### 1.1 DNPUs ###
-The basis of a DNPU is a lightly doped (n- or p-type) semiconductor with a nano-scale active region contacted by several electrodes [2]. Different materials can be used as dopant or host and the number of electrodes can vary. Once we choose a readout electrode, the device can be activated by applying voltages to the remaining electrodes, which we call activation electrodes. The dopants in the active region form an atomic-scale network through which the electrons can hopfrom one electrode to another. This physical process results in an output current at the readout that depends non-linearly on the voltages applied at the activation electrodes. By tuning the voltagesapplied to some of the electrodes, the output current can be controlled as a function of the voltages at the remaining electrodes. This tunability can be exploited to solve various linearly non-separable classification tasks.
+The basis of a DNPU is a lightly doped (n- or p-type) semiconductor with a nano-scale active region contacted by several electrodes [2]. Different materials can be used as dopant or host and the number of electrodes can vary. Once we choose input and readout electrodes, the device can be activated by applying voltages to the remaining electrodes, which we call activation electrodes. The dopants in the active region form an atomic-scale network through which the electrons can hop from one electrode to another. This physical process results in an output current at the readout that depends non-linearly on the voltages applied at the activation electrodes. By tuning the voltages applied to some of the electrodes, the output current can be controlled as a function of the voltages at the remaining electrodes. This tunability can be exploited to solve various linearly non-separable classification tasks.
 
 ![Insert Image](https://raw.githubusercontent.com/BraiNEdarwin/brains-py/master/doc/figures/dnpu.png)
 
@@ -24,13 +24,13 @@ This package supports the exploration of DNPUs and DNPU architectures in the fol
 
 **On-chip training** : The on-chip training enables to look for adequate control voltages for a task directly on the DNPU or on the DNPU architecture.
 
-**Off-chip training** The off-chip training technique uses a Deep Neural Network to simulate the behaviour of a single DNPU [3]. This package supports to find fuctionality on surrogate models, or surrogate model architectures, and then seamlessly validate the results on hardware DNPU(s), or DNPU architectures.
+**Off-chip training** The off-chip training technique uses a Deep Neural Network to simulate the behaviour of a single DNPU [3]. This package supports to find fuctionality on surrogate models, or surrogate model architectures, and then seamlessly validate the simulation results on hardware DNPU(s), or DNPU architectures.
 
 ### 1.3 Processors ###
 The processor is the key unit for this package. It enables to seamlessly use Hardware or Software (Simulation) based  DNPUs. The structure of the processors is as follows:
 
 * **DNPU**: is the main processing unit, which contains several control voltages declared as learnable parameters.
-* **Processor**: Each DNPU contains a processor. This class enables to seamlessly handle changes of processor form Hardware to Software or viceversa. To change the processor of a DNPU simply call the hw_eval function with a new processor instance or configurations dictionary.
+* **Processor**: Each DNPU contains a processor. This class enables to seamlessly handle changes of processor form Hardware to Software or vice versa. To change the processor of a DNPU simply call the hw_eval function with a new processor instance or configurations dictionary.
 	* **Software processor** (SurrogateModel): It is a deep neural network with information about the  control voltage ranges, the amplification of the device and relevant noise simulations that it may have.
 	* **Hardware processor**: It establishes a connection (for a single, or multiple hardware DNPUs) with one of the following National Instruments measurement devices:
 		* CDAQ-to-NiDAQ
