@@ -24,7 +24,7 @@ class DNPU_BatchNorm(nn.Module):
     def __init__(
         self,
         processor,  # It is either a dictionary or the reference to a processor
-        current_range=torch.tensor([[-2, 2], [-2, 2]]),
+        current_range=None,
         current_to_voltage=True,
         batch_norm=True,
         track_running_stats=True,
@@ -40,6 +40,10 @@ class DNPU_BatchNorm(nn.Module):
         else:
             self.bn = batch_norm
         if current_to_voltage:
+            if current_range is None:
+                current_range = torch.ones_like(self.dnpu.processor.get_input_ranges())
+                current_range[:,0] *= - 2
+                current_range[:,1] *= 2
             self.current_to_voltage = CurrentToVoltage(
                 current_range, self.dnpu.processor.get_input_ranges()
             )
