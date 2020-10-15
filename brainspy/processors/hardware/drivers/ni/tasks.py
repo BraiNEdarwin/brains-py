@@ -153,8 +153,10 @@ class LocalTasks:
     def close_tasks(self):
         if self.readout_task is not None:
             self.readout_task.close()
+            time.sleep(1)
         if self.activation_task is not None:
             self.activation_task.close()
+            time.sleep(1)
 
 
 class RemoteTasks:
