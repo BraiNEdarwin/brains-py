@@ -21,5 +21,5 @@ class T2(unittest.TestCase):
 if __name__ == "__main__":
     from HtmlTestRunner import HTMLTestRunner
 
-    modules_to_test = unittest.defaultTestLoader.discover(start_dir='test/', pattern='*.py', top_level_dir=None)
+    modules_to_test = unittest.defaultTestLoader.discover(start_dir='tests/', pattern='*.py', top_level_dir=None)
     HTMLTestRunner(output='/home/unai/Documents/3-programming/brains-py/brains-py/test-reports').run(modules_to_test)
