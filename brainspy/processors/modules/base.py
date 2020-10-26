@@ -1,0 +1,121 @@
+"""
+Created on Wed Jan 15 2020
+Here you can find all classes defining the modules of DNPU architectures. All modules are child classes of TorchModel,
+which has nn.Module of PyTorch as parent.
+@author: hruiz
+"""
+
+import torch
+import numpy as np
+import torch.nn as nn
+from brainspy.utils.pytorch import TorchUtils
+from brainspy.processors.processor import Processor
+
+
+class DNPU_Base(nn.Module):
+    """DNPU Base class with activation nodes. All nodes are given by the same function loaded using the config dictionary configs_model.
+    The argument inputs_list is a list containing the indices for the data inputs in each node. The length of this list defines the number
+    of nodes and the elements of this list, are lists of integers. The number of inputs to the layer is defined by the total
+    number of integers in these lists.
+    """
+
+    def __init__(self, processor, inputs_list):
+        super().__init__()
+        if isinstance(processor, Processor):
+            self.processor = processor
+        else:
+            self.processor = Processor(processor)  # It accepts initialising a processor as a dictionary
+        ######### Set up node #########
+        # Freeze parameters of node
+        for params in self.processor.parameters():
+            params.requires_grad = False
+
+        self.indices_node = np.arange(len(self.processor.data_input_indices) + len(self.processor.control_indices))
+        ######### set learnable parameters #########
+        self.control_list = TorchUtils.get_tensor_from_list(self.set_controls(inputs_list), data_type=torch.int64)
+
+        ######### Initialise data input ranges #########
+        self.data_input_low = torch.stack([self.processor.processor.voltage_ranges[indx_cv, 0] for indx_cv in inputs_list])
+        self.data_input_high = torch.stack([self.processor.processor.voltage_ranges[indx_cv, 1] for indx_cv in inputs_list])
+
+        ###### Set everything as torch Tensors and send to DEVICE ######
+        self.inputs_list = TorchUtils.get_tensor_from_list(inputs_list, data_type=torch.int64)
+        # IndexError: tensors used as indices must be long, byte or bool tensors
+
+    def set_controls(self, inputs_list):
+        control_list = [np.delete(self.indices_node, indx) for indx in inputs_list]
+        control_low = [self.processor.processor.voltage_ranges[indx_cv, 0] for indx_cv in control_list]
+        control_high = [self.processor.processor.voltage_ranges[indx_cv, 1] for indx_cv in control_list]
+        # Sample control parameters
+        controls = [
+            self.sample_controls(low, high)
+            for low, high in zip(control_low, control_high)
+        ]
+        # Register as learnable parameters
+        self.all_controls = nn.ParameterList([nn.Parameter(cv) for cv in controls])
+        # Set everything as torch Tensors and send to DEVICE
+
+        self.control_low = torch.stack(control_low)
+        self.control_high = torch.stack(control_high)
+
+        return control_list
+
+    def sample_controls(self, low, high):
+        samples = torch.rand(1, len(low), device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())
+        return low + (high - low) * samples
+
+    # Evaluate node
+    def forward(self, x, x_indices, controls, c_indices):
+        assert x.dtype == controls.dtype and x.device == controls.device, "Data types or devices not matching. "
+        expand_controls = controls.expand(x.size()[0], -1)
+        data = torch.empty((x.size()[0], x.size()[1] + controls.size()[1]), device=x.device, dtype=x.dtype)
+        data[:, x_indices] = x
+        data[:, c_indices] = expand_controls
+        return self.processor.processor(data)  # * self.node.amplification
+
+    def reset(self):
+        raise NotImplementedError("Resetting controls not implemented!!")
+        # for k in range(len(self.control_low)):
+        #     # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
+        #     self.controls.data[:, k].uniform_(self.control_low[k], self.control_high[k])
+
+    def regularizer(self):
+        if 'control_low' in dir(self) and 'control_high' in dir(self):
+            return 0
+        else:
+            assert any(
+                self.control_low.min(dim=0)[0] < 0
+            ), "Min. Voltage is assumed to be negative, but value is positive!"
+            assert any(
+                self.control_high.max(dim=0)[0] > 0
+            ), "Max. Voltage is assumed to be positive, but value is negative!"
+            buff = 0.0
+            for i, p in enumerate(self.all_controls):
+                buff += torch.sum(
+                    torch.relu(self.control_low[i] - p)
+                    + torch.relu(p - self.control_high[i])
+                )
+            return buff
+
+    def hw_eval(self, hw_processor_configs):
+        self.processor.hw_eval(hw_processor_configs)
+
+    def is_hardware(self):
+        return self.processor.is_hardware
+
+    def get_clipping_value(self):
+        return self.processor.get_clipping_value()
+
+    def get_control_ranges(self):
+        return torch.cat((self.control_low.unsqueeze(0), self.control_high.unsqueeze(0)), dim=0)  # Total Dimensions 3: Dim 0: 0=min volt range1=max volt range, Dim 1: Index of node, Dim 2: Index of electrode
+
+    def get_control_voltages(self):
+        return next(self.parameters()).detach()
+
+    def set_control_voltages(self, control_voltages):
+        with torch.no_grad():
+            #bias = bias.unsqueeze(dim=0)
+            assert (
+                self.all_controls.shape == control_voltages.shape
+            ), "Control voltages could not be set due to a shape missmatch with regard to the ones already in the model."
+            self.bias = torch.nn.Parameter(TorchUtils.format_tensor(control_voltages))

@@ -14,6 +14,8 @@ from brainspy.processors.dnpu import DNPU
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.transforms import CurrentToVoltage
 
+from brainspy.processors.modules.layer import DNPU_Layer
+from brainspy.processors.processor import Processor
 
 class DNPU_BatchNorm(nn.Module):
     """
@@ -23,29 +25,37 @@ class DNPU_BatchNorm(nn.Module):
 
     def __init__(
         self,
-        processor,  # It is either a dictionary or the reference to a processor
+        processor,  # It is either a dictionary or the reference to a processor or a DNPU_Base module, or any other of the modules channel, layer, lrf
+        outputs=1,
+        inputs_list=None,
         current_range=None,
         current_to_voltage=True,
         batch_norm=True,
-        track_running_stats=True,
-        alpha=1
+        track_running_stats=True
     ):
         # default current_range = 2  * std, where std is assumed to be 1
         super().__init__()
-
-        self.dnpu = DNPU(processor, alpha=alpha)  # DNPU(configs)
+        if isinstance(processor, Processor) or isinstance(processor, dict):  # It accepts initialising a processor as a dictionary
+            if inputs_list is None:
+                self.base = DNPU(processor)
+            else:
+                self.base = DNPU_Layer(processor, inputs_list)
+        elif isinstance(processor, DNPU) or isinstance(processor, DNPU_Layer):
+            self.base = processor
+        else:
+           assert False, 'The node is not recognised. It needs to be either a model dictionary or an instance of a Processor, a DNPU, or a DNPU_Layer.'
 
         if batch_norm:
-            self.bn = nn.BatchNorm1d(1, affine=False, track_running_stats=track_running_stats).to(device=TorchUtils.get_accelerator_type())
+            self.bn = nn.BatchNorm1d(outputs, affine=False, track_running_stats=track_running_stats).to(device=TorchUtils.get_accelerator_type())
         else:
             self.bn = batch_norm
         if current_to_voltage:
             if current_range is None:
-                current_range = torch.ones_like(self.dnpu.processor.get_input_ranges())
+                current_range = torch.ones_like(self.node.get_input_ranges())
                 current_range[:,0] *= - 2
                 current_range[:,1] *= 2
             self.current_to_voltage = CurrentToVoltage(
-                current_range, self.dnpu.processor.get_input_ranges()
+                current_range, self.node.get_input_ranges()
             )
         else:
             self.current_to_voltage = current_to_voltage
@@ -53,7 +63,7 @@ class DNPU_BatchNorm(nn.Module):
     def forward(self, x):
         if self.current_to_voltage:
             x = self.current_to_voltage(x)
-        x = self.dnpu(x)
+        x = self.base(x)
         # Cut off values out of the clipping value
         x = torch.clamp(
             x,
@@ -67,11 +77,26 @@ class DNPU_BatchNorm(nn.Module):
         # x = self.current_to_voltage(x)
         return x
 
-    def hw_eval(self, hw_processor_configs):
-        self.dnpu.hw_eval(hw_processor_configs)
-
     def regularizer(self):
-        return self.dnpu.regularizer()
+        return self.base.regularizer()
+
+    def hw_eval(self, hw_processor_configs):
+        self.base.hw_eval(hw_processor_configs)
+
+    def is_hardware(self):
+        return self.base.is_hardware()
+
+    def get_clipping_value(self):
+        return self.base.get_clipping_value()
+
+    def get_control_ranges(self):
+        return self.base.get_control_ranges()
+
+    def get_control_voltages(self):
+        return self.base.get_control_voltages()
+
+    def set_control_voltages(self, control_voltages):
+        return self.base.set_control_voltages(control_voltages)
 
 
 if __name__ == "__main__":
