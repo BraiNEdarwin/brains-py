@@ -1,10 +1,14 @@
 import os
 import time
+import Pyro4
 import numpy as np
 
 import nidaqmx
 import nidaqmx.constants as constants
-import Pyro4
+import nidaqmx.system.device as device
+
+
+from brainspy.processors.hardware.drivers.ni.channels import init_channel_data
 
 DEFAULT_IP = "192.168.1.5"
 DEFAULT_SUBNET_MASK = "255.255.255.0"
@@ -56,7 +60,7 @@ class LocalTasks:
         self, channel_names, voltage_ranges=None
     ):
         """Initialises the output of the computer which is the input of the device"""
-        self.activation_task = nidaqmx.Task()
+        self.activation_task = nidaqmx.Task('activation_task_' + time.strftime("%Y_%m_%d_%H%M%S"))
         for i in range(len(channel_names)):
             channel_name = str(channel_names[i])
             if voltage_ranges is not None:
@@ -79,7 +83,7 @@ class LocalTasks:
         self, readout_channels
     ):
         """Initialises the input of the computer which is the output of the device"""
-        self.readout_task = nidaqmx.Task()
+        self.readout_task = nidaqmx.Task('readout_task_' + time.strftime("%Y_%m_%d_%H%M%S"))
         for i in range(len(readout_channels)):
             channel = readout_channels[i]
             self.readout_task.ai_channels.add_ai_voltage_chan(
@@ -139,7 +143,15 @@ class LocalTasks:
     @Pyro4.oneway
     def start_tasks(self, y, auto_start):
         y = np.require(y, dtype=y.dtype, requirements=["C", "W"])
+        # try:
         self.activation_task.write(y, auto_start=auto_start)
+        # except nidaqmx.errors.DaqError as e:
+        #     print('There was an error writing to the activation task: '+self.activation_task.name)
+        #     print('Trying to close and ipen the task again.')
+        #     self.activation_task.close()
+        #     self.tasks_driver.init_activation_channels(self.activation_channel_names, self.voltage_ranges)
+        #     self.activation_task.write(y, auto_start=auto_start)
+
         if not auto_start:
             self.activation_task.start()
             self.readout_task.start()
@@ -150,13 +162,29 @@ class LocalTasks:
         self.activation_task.stop()
 
     @Pyro4.oneway
+    def init_tasks(self, configs):
+        self.activation_channel_names, self.readout_channel_names, instruments, self.voltage_ranges = init_channel_data(configs)
+        devices = []
+        for instrument in instruments:
+            devices.append(device.Device(name=instrument))
+        self.devices = devices
+        # TODO: add a maximum and a minimum to the activation channels
+        self.init_activation_channels(self.activation_channel_names, self.voltage_ranges)
+        self.init_readout_channels(self.readout_channel_names)
+
+    @Pyro4.oneway
     def close_tasks(self):
         if self.readout_task is not None:
             self.readout_task.close()
-            time.sleep(1)
+            del self.readout_task
+            self.readout_task = None
         if self.activation_task is not None:
             self.activation_task.close()
-            time.sleep(1)
+            del self.activation_task
+            self.activation_task = None
+
+        for dev in self.devices:
+            dev.reset_device()
 
 
 class RemoteTasks:

@@ -7,12 +7,10 @@ import signal
 import threading
 
 import numpy as np
-import nidaqmx.system.device as device
 
 from threading import Thread
 
 from brainspy.processors.hardware.drivers.ni.tasks import get_tasks_driver
-from brainspy.processors.hardware.drivers.ni.channels import init_channel_data
 
 # from brainspy.utils.control import get_control_voltage_indices, merge_inputs_and_control_voltages_in_numpy
 
@@ -51,12 +49,8 @@ class NationalInstrumentsSetup():
 
     def init_tasks(self, configs):
         self.tasks_driver = get_tasks_driver(configs)
-
-        activation_channel_names, readout_channel_names, self.instruments, self.voltage_ranges = init_channel_data(configs)
-
-        # TODO: add a maximum and a minimum to the activation channels
-        self.tasks_driver.init_activation_channels(activation_channel_names, self.voltage_ranges)
-        self.tasks_driver.init_readout_channels(readout_channel_names)
+        self.tasks_driver.init_tasks(configs)
+        self.voltage_ranges = self.tasks_driver.voltage_ranges  # To be improved, it should have the same form to be accessed by both SurrogateModel (SoftwareProcessor) and driver.
 
     def init_semaphore(self):
         global event
@@ -65,9 +59,7 @@ class NationalInstrumentsSetup():
         semaphore = threading.Semaphore()
 
     def reset(self):
-        self.close_tasks()
-        for instrument in self.instruments:
-            device.Device(name=instrument).reset_device()
+        self.tasks_driver.close_tasks()
 
     def process_output_data(self, data):
         data = np.array(data)
