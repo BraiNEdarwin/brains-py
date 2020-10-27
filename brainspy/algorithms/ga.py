@@ -79,6 +79,9 @@ def train(
                     f"  STOPPED: Correlation {best_correlation} > {configs['stop_threshold']} stopping threshold. "
                 )
                 looper.close()
+                # Close the model adequately if it is on hardware
+                if model.is_hardware() and "close" in dir(model):
+                    model.close()
                 break
 
             pool = optimizer.step(criterion_pool)
