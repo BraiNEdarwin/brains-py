@@ -7,7 +7,7 @@ import nidaqmx
 import nidaqmx.constants as constants
 import nidaqmx.system.device as device
 
-
+from datetime import datetime
 from brainspy.processors.hardware.drivers.ni.channels import init_channel_data
 
 DEFAULT_IP = "192.168.1.5"
@@ -60,7 +60,7 @@ class LocalTasks:
         self, channel_names, voltage_ranges=None
     ):
         """Initialises the output of the computer which is the input of the device"""
-        self.activation_task = nidaqmx.Task('activation_task_' + time.strftime("%Y_%m_%d_%H%M%S"))
+        self.activation_task = nidaqmx.Task('activation_task_' + datetime.utcnow().strftime('%Y_%m_%d_%H%M%S_%f'))
         for i in range(len(channel_names)):
             channel_name = str(channel_names[i])
             if voltage_ranges is not None:
@@ -83,7 +83,7 @@ class LocalTasks:
         self, readout_channels
     ):
         """Initialises the input of the computer which is the output of the device"""
-        self.readout_task = nidaqmx.Task('readout_task_' + time.strftime("%Y_%m_%d_%H%M%S"))
+        self.readout_task = nidaqmx.Task('readout_task_' + datetime.utcnow().strftime('%Y_%m_%d_%H%M%S_%f'))
         for i in range(len(readout_channels)):
             channel = readout_channels[i]
             self.readout_task.ai_channels.add_ai_voltage_chan(
