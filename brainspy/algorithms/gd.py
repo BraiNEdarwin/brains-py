@@ -36,11 +36,12 @@ def train(
             optimizer.zero_grad()
             predictions = model(inputs)
             if logger is not None and "log_ios_train" in dir(logger):
-                logger.log_ios_train(inputs, targets, predictions, epoch)
-            loss = criterion(predictions, targets)
-            if "regularizer" in dir(model):
-                loss = loss + model.regularizer()
+                logger.log_ios_train(inputs, targets, predictions, model, epoch)
 
+            if "regularizer" in dir(model):
+                loss = criterion(predictions, targets) + model.regularizer()
+            else:
+                loss = criterion(predictions,targets)
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
