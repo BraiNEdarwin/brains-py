@@ -15,40 +15,40 @@ class DNPU_Channels(nn.Module):
     def __init__(self, processor, inputs_list):
         super().__init__()
         if isinstance(processor, Processor) or isinstance(processor, dict):
-            self.base = DNPU_Base(processor, inputs_list) # It accepts initialising a processor as a dictionary
+            self.processor = DNPU_Base(processor, inputs_list) # It accepts initialising a processor as a dictionary
         else:
-            self.base = processor # It accepts initialising as an external DNPU_Base
+            self.processor = processor # It accepts initialising as an external DNPU_Base
 
     def forward(self, x):
         assert x.shape[-1] == len(
-            self.base.inputs_list[0]
-        ), f"size mismatch: data is {x.shape}, DNPU_Channels expecting {len(self.base.inputs_list[0])}"
+            self.processor.inputs_list[0]
+        ), f"size mismatch: data is {x.shape}, DNPU_Channels expecting {len(self.processor.inputs_list[0])}"
         outputs = [
-            self.base(
-                x, self.base.inputs_list[i_node], self.base.all_controls[i_node], controls
+            self.processor(
+                x, self.processor.inputs_list[i_node], self.processor.all_controls[i_node], controls
             )
-            for i_node, controls in enumerate(self.base.control_list)
+            for i_node, controls in enumerate(self.processor.control_list)
         ]
 
         return torch.cat(outputs, dim=1)
 
     def regularizer(self):
-        return self.base.regularizer()
+        return self.processor.regularizer()
 
     def hw_eval(self, hw_processor_configs):
-        self.base.hw_eval(hw_processor_configs)
+        self.processor.hw_eval(hw_processor_configs)
 
     def is_hardware(self):
-        return self.base.is_hardware()
+        return self.processor.is_hardware()
 
     def get_clipping_value(self):
-        return self.base.get_clipping_value()
+        return self.processor.get_clipping_value()
 
     def get_control_ranges(self):
-        return self.base.get_control_ranges()
+        return self.processor.get_control_ranges()
 
     def get_control_voltages(self):
-        return self.base.get_control_voltages()
+        return self.processor.get_control_voltages()
 
     def set_control_voltages(self, control_voltages):
-        return self.base.set_control_voltages(control_voltages)
+        return self.processor.set_control_voltages(control_voltages)

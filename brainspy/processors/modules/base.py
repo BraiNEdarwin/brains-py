@@ -106,6 +106,9 @@ class DNPU_Base(nn.Module):
     def get_clipping_value(self):
         return self.processor.get_clipping_value()
 
+    def get_input_ranges(self):
+        return torch.cat((self.data_input_low.flatten().unsqueeze(1), self.data_input_high.flatten().unsqueeze(1)), dim=1)
+
     def get_control_ranges(self):
         return torch.cat((self.control_low.unsqueeze(0), self.control_high.unsqueeze(0)), dim=0)  # Total Dimensions 3: Dim 0: 0=min volt range1=max volt range, Dim 1: Index of node, Dim 2: Index of electrode
 

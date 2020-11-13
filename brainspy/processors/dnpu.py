@@ -89,6 +89,9 @@ class DNPU(nn.Module):
     def get_control_ranges(self):
         return self.processor.get_control_ranges()
 
+    def get_input_ranges(self):
+        return self.processor.get_input_ranges()
+
     def get_clipping_value(self):
         return self.processor.get_clipping_value()
 

@@ -14,20 +14,20 @@ class DNPU_Layer(nn.Module):
     def __init__(self, processor, inputs_list):
         super().__init__()
         if isinstance(processor, Processor) or isinstance(processor, dict):
-            self.base = DNPU_Base(processor, inputs_list)  # It accepts initialising a processor as a dictionary
+            self.processor = DNPU_Base(processor, inputs_list)  # It accepts initialising a processor as a dictionary
         else:
-            self.base = processor  # It accepts initialising as an external DNPU_Base
+            self.processor = processor  # It accepts initialising as an external DNPU_Base
 
     def forward(self, x):
         assert (
-            x.shape[-1] == self.base.inputs_list.numel()
-        ), f"size mismatch: data is {x.shape}, DNPU_Layer expecting {self.base.inputs_list.numel()}"
+            x.shape[-1] == self.processor.inputs_list.numel()
+        ), f"size mismatch: data is {x.shape}, DNPU_Layer expecting {self.processor.inputs_list.numel()}"
         outputs = [
-            self.base(
+            self.processor(
                 partition,
-                self.base.inputs_list[i_node],
-                self.base.all_controls[i_node],
-                self.base.control_list[i_node],
+                self.processor.inputs_list[i_node],
+                self.processor.all_controls[i_node],
+                self.processor.control_list[i_node],
             )
             for i_node, partition in enumerate(self.partition_input(x))
         ]
@@ -36,27 +36,30 @@ class DNPU_Layer(nn.Module):
 
     def partition_input(self, x):
         i = 0
-        while i + self.base.inputs_list.shape[-1] <= x.shape[-1]:
-            yield x[:, i: i + self.base.inputs_list.shape[-1]]
-            i += self.base.inputs_list.shape[-1]
+        while i + self.processor.inputs_list.shape[-1] <= x.shape[-1]:
+            yield x[:, i: i + self.processor.inputs_list.shape[-1]]
+            i += self.processor.inputs_list.shape[-1]
 
     def regularizer(self):
-        return self.base.regularizer()
+        return self.processor.regularizer()
 
     def hw_eval(self, hw_processor_configs):
-        self.base.hw_eval(hw_processor_configs)
+        self.processor.hw_eval(hw_processor_configs)
 
     def is_hardware(self):
-        return self.base.is_hardware()
+        return self.processor.is_hardware()
 
     def get_clipping_value(self):
-        return self.base.get_clipping_value()
+        return self.processor.get_clipping_value()
+
+    def get_input_ranges(self):
+        return self.processor.get_input_ranges()
 
     def get_control_ranges(self):
-        return self.base.get_control_ranges()
+        return self.processor.get_control_ranges()
 
     def get_control_voltages(self):
-        return self.base.get_control_voltages()
+        return self.processor.get_control_voltages()
 
     def set_control_voltages(self, control_voltages):
-        return self.base.set_control_voltages(control_voltages)
+        return self.processor.set_control_voltages(control_voltages)
