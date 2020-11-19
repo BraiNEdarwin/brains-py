@@ -37,7 +37,7 @@ class DNPU_BatchNorm(nn.Module):
         track_running_stats=True # Whether the batchnorm will track the running stats.
     ):
         # default current_range = 2  * std, where std is assumed to be 1
-        super().__init__()
+        super(DNPU_BatchNorm, self).__init__()
         self.input_clip = input_clip
         self.device_output_clip = device_output_clip
         self.init_processor(processor, inputs_list)

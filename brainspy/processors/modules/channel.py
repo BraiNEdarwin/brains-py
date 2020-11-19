@@ -13,7 +13,7 @@ class DNPU_Channels(nn.Module):
     """
 
     def __init__(self, processor, inputs_list):
-        super().__init__()
+        super(DNPU_Channels, self).__init__()
         if isinstance(processor, Processor) or isinstance(processor, dict):
             self.processor = DNPU_Base(processor, inputs_list) # It accepts initialising a processor as a dictionary
         else:
