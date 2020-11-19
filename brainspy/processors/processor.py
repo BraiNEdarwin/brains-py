@@ -14,7 +14,7 @@ class Processor(nn.Module):
     # It handles merging the data with control voltages as well as relevant information for the voltage ranges
 
     def __init__(self, arg):
-        super().__init__()
+        super(Processor, self).__init__()
         self.load_processor(arg)
 
     def load_processor(self, arg):

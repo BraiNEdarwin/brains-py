@@ -20,7 +20,7 @@ class DNPU(nn.Module):
     def __init__(self, arg, alpha=1):
         # alpha is the regularisation factor
         # arg can either be a configs dictionary or an instance of a processor
-        super().__init__()
+        super(DNPU, self).__init__()
         if isinstance(arg, Processor):
             self.processor = arg
         else:

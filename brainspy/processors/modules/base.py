@@ -20,7 +20,7 @@ class DNPU_Base(nn.Module):
     """
 
     def __init__(self, processor, inputs_list):
-        super().__init__()
+        super(DNPU_Base, self).__init__()
         if isinstance(processor, Processor):
             self.processor = processor
         else:
@@ -52,7 +52,7 @@ class DNPU_Base(nn.Module):
             for low, high in zip(control_low, control_high)
         ]
         # Register as learnable parameters
-        self.all_controls = nn.ParameterList([nn.Parameter(cv) for cv in controls])
+        self.all_controls = nn.ParameterList([nn.Parameter(cv) for cv in controls]) # Throwing warning reported as bug in https://github.com/pytorch/pytorch/issues/46983
         # Set everything as torch Tensors and send to DEVICE
 
         self.control_low = torch.stack(control_low)

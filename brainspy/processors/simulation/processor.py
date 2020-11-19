@@ -21,7 +21,7 @@ class SurrogateModel(nn.Module):
     # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
 
     def __init__(self, configs):
-        super().__init__()
+        super(SurrogateModel, self).__init__()
         self._load(configs)
         self._init_voltage_ranges()
         self.amplification = TorchUtils.get_tensor_from_list(

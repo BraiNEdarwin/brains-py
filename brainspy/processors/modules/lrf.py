@@ -11,7 +11,7 @@ class Local_Receptive_Field(nn.Module):
     """
 
     def __init__(self, processor, inputs_list, out_size=None, window_size=2):
-        super().__init__()
+        super(Local_Receptive_Field, self).__init__()
         if isinstance(processor, Processor) or isinstance(processor, dict):
             self.processor = DNPU_Base(processor, inputs_list) # It accepts initialising a processor as a dictionary
         else:

@@ -23,7 +23,7 @@ class HardwareProcessor(nn.Module):
     # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
 
     def __init__(self, configs, logger=None):
-        super().__init__()
+        super(HardwareProcessor, self).__init__()
         self.driver = get_driver(configs)
         if configs['processor_type'] == 'simulation_debug':
             self.voltage_ranges = self.driver.voltage_ranges

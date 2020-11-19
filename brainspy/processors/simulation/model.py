@@ -18,7 +18,7 @@ class NeuralNetworkModel(nn.Module):
     # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
 
     def __init__(self, configs, verbose=False):
-        super().__init__()
+        super(NeuralNetworkModel, self).__init__()
         self.configs = configs
         self.verbose = verbose
         self.load(configs["torch_model_dict"])
