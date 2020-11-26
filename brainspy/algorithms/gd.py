@@ -17,16 +17,13 @@ def train(
     logger=None,
     save_dir=None,
     waveform_transforms=None,
-    return_best_model=True,
-    training_data_load_path=None
+    return_best_model=True
 ):
 
-    if training_data_load_path is not None:
-       start_epoch, model, optimizer, train_losses, val_losses, min_val_loss =  load_training(training_data_load_path,model, optimizer)
-    else:
-        start_epoch = 0
-        train_losses, val_losses = [], []
-        min_val_loss = np.inf
+
+    start_epoch = 0
+    train_losses, val_losses = [], []
+    min_val_loss = np.inf
 
     looper = trange(configs["epochs"], desc=" Initialising")
     looper.update(start_epoch)
@@ -50,7 +47,7 @@ def train(
                 min_val_loss = val_losses[-1]
                 description += " Saving model ..."
                 torch.save(model, os.path.join(save_dir, "model.pt"))
-                torch.save({'epoch':epoch,'model_state_dict':model.state_dict(),'optimizer_state_dict':optimizer.state_dict(),'train_losses':train_losses,'val_losses':val_losses, 'min_val_loss':min_val_loss},os.path.join(save_dir, "training_data.pkl"))
+                torch.save({'epoch':epoch, 'optimizer_state_dict':optimizer.state_dict(),'train_losses':train_losses,'val_losses':val_losses, 'min_val_loss':min_val_loss},os.path.join(save_dir, "training_data.pickle"))
                 
         looper.set_description(description)
         if logger is not None and "log_performance" in dir(logger):
@@ -75,16 +72,6 @@ def train(
     return model, {
         "performance_history": [torch.tensor(train_losses), torch.tensor(val_losses)]
     }
-
-def load_training(training_data_path, model, optimizer):
-    training_data = torch.load(training_data_path, map_location=TorchUtils.get_accelerator_type())
-    model.load_state_dict(training_data['model_state_dict'])
-    optimizer.load_state_dict(training_data['optimizer_state_dict'])
-    train_losses = training_data['train_losses']
-    val_losses = training_data['val_losses']
-    min_val_loss = training_data['min_val_loss']
-    epoch = training_data['epoch']
-    return epoch, model, optimizer, train_losses, val_losses, min_val_loss
 
 def default_train_step(model, dataloader, criterion, optimizer, waveform_transforms=None, logger=None):
     train_loss = 0
