@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 requires = ["nidaqmx", "pyyaml", "Pyro4","tqdm","tensorboard","unittest2","html-testRunner"]
 
 if platform.system() == 'Windows':
-    requires.append('pywin32')
+    requires.append('pipywin32')
 
 setup(
     name="brains-py",
