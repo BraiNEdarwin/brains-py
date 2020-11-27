@@ -4,11 +4,11 @@ from setuptools import setup, find_packages
 requires = ["nidaqmx", "pyyaml", "Pyro4","tqdm","tensorboard","unittest2","html-testRunner"]
 
 if platform.system() == 'Windows':
-    requires.append('pipywin32')
+    requires.append('pypiwin32')
 
 setup(
     name="brains-py",
-    version="0.8",
+    version="0.8.1",
     description="A python package to support the study of Dopant Network Processing Units as hardware accelerators for non-linear operations. Its aim is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.  ",
     url="https://github.com/BraiNEdarwin/brains-py",
     author="Unai Alegre-Ibarra, and Hans-Christian Ruiz Euler. Other collaborations are acknowledged in https://github.com/BraiNEdarwin/brains-py",

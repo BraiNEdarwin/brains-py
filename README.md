@@ -56,7 +56,7 @@ The package relies on the following libraries:
 * pyyaml
 * Pyro4
 * tqdm
-* pipywin32
+* pypiwin32
 * unittest2
 * html-testRunner
 
