@@ -173,6 +173,7 @@ class LocalTasks:
         # TODO: add a maximum and a minimum to the activation channels
         self.init_activation_channels(self.activation_channel_names, self.voltage_ranges)
         self.init_readout_channels(self.readout_channel_names)
+        return self.voltage_ranges
 
     @Pyro4.oneway
     def close_tasks(self):
@@ -220,7 +221,7 @@ class RemoteTasks:
         self.tasks.stop_tasks()
 
     def init_tasks(self, configs):
-        self.tasks.init_tasks(configs)
+        self.voltage_ranges = self.tasks.init_tasks(configs)
 
     def close_tasks(self):
         self.tasks.close_tasks()
