@@ -162,7 +162,6 @@ class LocalTasks:
         self.readout_task.stop()
         self.activation_task.stop()
 
-    @Pyro4.oneway
     def init_tasks(self, configs):
         self.configs = configs
         self.activation_channel_names, self.readout_channel_names, instruments, self.voltage_ranges = init_channel_data(configs)
@@ -173,7 +172,7 @@ class LocalTasks:
         # TODO: add a maximum and a minimum to the activation channels
         self.init_activation_channels(self.activation_channel_names, self.voltage_ranges)
         self.init_readout_channels(self.readout_channel_names)
-        return self.voltage_ranges
+        return self.voltage_ranges.tolist()
 
     @Pyro4.oneway
     def close_tasks(self):
@@ -194,7 +193,6 @@ class RemoteTasks:
     def __init__(self, uri):
         self.acquisition_type = constants.AcquisitionType.FINITE
         self.tasks = Pyro4.Proxy(uri)
-        self.close_tasks()
 
     def init_activation_channels(self, channel_names, voltage_ranges=None):
         self.tasks.init_activation_channels(channel_names, voltage_ranges)
@@ -221,7 +219,7 @@ class RemoteTasks:
         self.tasks.stop_tasks()
 
     def init_tasks(self, configs):
-        self.voltage_ranges = self.tasks.init_tasks(configs)
+        self.voltage_ranges = np.array(self.tasks.init_tasks(configs))
 
     def close_tasks(self):
         self.tasks.close_tasks()
