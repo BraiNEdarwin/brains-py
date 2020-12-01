@@ -195,8 +195,8 @@ class RemoteTasks:
         self.tasks = Pyro4.Proxy(uri)
         self.close_tasks()
 
-    def init_activation_channels(self, activation_channels, activation_voltage_ranges=None):
-        self.tasks.init_activation_channels(activation_channels, activation_voltage_ranges)
+    def init_activation_channels(self, channel_names, voltage_ranges=None):
+        self.tasks.init_activation_channels(channel_names, voltage_ranges)
 
     def init_readout_channels(self, readout_channels):
         self.tasks.init_readout_channels(readout_channels)
@@ -218,6 +218,9 @@ class RemoteTasks:
 
     def stop_tasks(self):
         self.tasks.stop_tasks()
+
+    def init_tasks(self, configs):
+        self.tasks.init_tasks(configs)
 
     def close_tasks(self):
         self.tasks.close_tasks()
