@@ -31,11 +31,11 @@ class Local_Receptive_Field(nn.Module):
                     self.processor.all_controls[i_node],
                     self.processor.control_list[i_node],
                 )
-                for i_node, controls in enumerate(self.control_list)
+                for i_node, controls in enumerate(self.processor.control_list)
             ],
             dim=1,
         )
-        if out_size is None:
+        if self.out_size is None:
             return x  
         else:
             return x.view(-1, self.out_size, self.out_size)
