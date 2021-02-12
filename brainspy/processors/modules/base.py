@@ -113,7 +113,7 @@ class DNPU_Base(nn.Module):
         return torch.cat((self.control_low.unsqueeze(0), self.control_high.unsqueeze(0)), dim=0)  # Total Dimensions 3: Dim 0: 0=min volt range1=max volt range, Dim 1: Index of node, Dim 2: Index of electrode
 
     def get_control_voltages(self):
-        return next(self.parameters()).detach()
+        return torch.vstack([cv.data.detach() for cv in self.all_controls]).flatten()
 
     def set_control_voltages(self, control_voltages):
         with torch.no_grad():
