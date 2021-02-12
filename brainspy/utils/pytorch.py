@@ -77,3 +77,10 @@ class TorchUtils:
             torch.backends.cudnn.benchmark = False
 
         return seed
+
+    @staticmethod
+    def format_model(model):
+        if torch.cuda.device_count() > 1:
+            model = torch.nn.DataParallel(model)
+        model.to(TorchUtils.get_accelerator_type())
+        return model
