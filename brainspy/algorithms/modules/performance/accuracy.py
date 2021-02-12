@@ -64,12 +64,12 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     return results
 
 
-def init_results(inputs, targets):
+def init_results(inputs, targets, eps=1e-5):
     results = {}
     results["inputs"] = inputs.clone()
     std = inputs.std(axis=0)
     if std == 0:  # This is to avoid nan values when normalising the input.
-        std = 1
+        std = eps
     results["norm_inputs"] = (inputs - inputs.mean(axis=0)) / std
     results["targets"] = targets
     return results
