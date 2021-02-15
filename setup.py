@@ -8,7 +8,7 @@ if platform.system() == 'Windows':
 
 setup(
     name="brains-py",
-    version="0.8.1",
+    version="0.8.2",
     description="A python package to support the study of Dopant Network Processing Units as hardware accelerators for non-linear operations. Its aim is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.  ",
     url="https://github.com/BraiNEdarwin/brains-py",
     author="Unai Alegre-Ibarra, and Hans-Christian Ruiz Euler. Other collaborations are acknowledged in https://github.com/BraiNEdarwin/brains-py",

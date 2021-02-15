@@ -21,6 +21,8 @@ Depending on your needs, you can install one or more of  [Clone](https://word2md
 
 If your system has a [GPU that supports CUDA](https://developer.nvidia.com/cuda-gpus), install CUDA on your system first. As of the time of writing (October 2020), Pytorch supports CUDA 10.2. We recommend that you install this version: [https://developer.nvidia.com/cuda-10.2-download-archive](https://developer.nvidia.com/cuda-10.2-download-archive). For some systems the latest version of CUDA (11.1) is also known to work, you can try this on your own risk: [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads).
 
+Below, you can find the instructions to install the environment. Please note that it is important to follow the order. Pytorch should be installed before brainspy, or numpy-related installation errors might arise. Note that pytorch installation is different depending on the system you are using. Make sure you follow the latest instructions for installation on [pytorch's official website](https://pytorch.org/). 
+
 **1. Create** an environment (choose name, e.g. "bspy"):
 
 ``conda create -n bspy python``
