@@ -36,7 +36,8 @@ class DNPU_BatchNorm(nn.Module):
         # Batch norm related configs
         batch_norm=True, # Whether if batch norm is applied
         affine=False,
-        track_running_stats=True # Whether the batchnorm will track the running stats.
+        track_running_stats=True, # Whether the batchnorm will track the running stats.
+        momentum=0.1
     ):
         # default current_range = 2  * std, where std is assumed to be 1
         super(DNPU_BatchNorm, self).__init__()
@@ -49,7 +50,7 @@ class DNPU_BatchNorm(nn.Module):
         else:
             self.init_input_range(input_range)
             self.init_transform_to_voltage(transform_to_voltage, self.input_range)
-        self.init_batch_norm(batch_norm, affine, track_running_stats)
+        self.init_batch_norm(batch_norm, affine, track_running_stats, momentum)
 
 
     def init_processor(self, processor, inputs_list):
@@ -70,10 +71,10 @@ class DNPU_BatchNorm(nn.Module):
         self.input_range[:,0] *= self.min_input
         self.input_range[:,1] *= self.max_input
 
-    def init_batch_norm(self,batch_norm, affine, track_running_stats):
+    def init_batch_norm(self,batch_norm, affine, track_running_stats, momentum):
         if batch_norm:
             self.init_output_node_no()
-            self.bn = nn.BatchNorm1d(self.bn_outputs, affine=affine, track_running_stats=track_running_stats).to(device=TorchUtils.get_accelerator_type())
+            self.bn = nn.BatchNorm1d(self.bn_outputs, affine=affine, track_running_stats=track_running_stats, momentum=momentum).to(device=TorchUtils.get_accelerator_type())
         else:
             self.bn = batch_norm
 
