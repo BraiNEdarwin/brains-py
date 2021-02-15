@@ -16,7 +16,19 @@ def merge_electrode_data(
     return result
 
 
+def transform_to_voltage(x_val,v_min,v_max,x_min,x_max):
+    w,b = get_map_to_voltage_vars(v_min, v_max, x_min, x_max)
+    return (x_val * w) + b
+
 def get_map_to_voltage_vars(v_min, v_max, x_min, x_max):
-    scale = (v_min - v_max) / (x_min - x_max)
-    offset = v_max - scale * x_max
-    return scale, offset
+    return get_scale(v_min,v_max,x_min,x_max), get_offset(v_min,v_max,x_min,x_max)
+
+def get_scale(v_min, v_max, x_min, x_max):
+    v = v_min - v_max
+    x = x_min - x_max
+    return v / x
+
+def get_offset(v_min, v_max, x_min, x_max):
+    v = (v_max * x_min) - (v_min * x_max)
+    x = x_min - x_max
+    return v / x
