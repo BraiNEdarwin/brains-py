@@ -6,7 +6,7 @@ from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
 from brainspy.processors.modules.vecbase import DNPUBase
 from brainspy.processors.modules.bn import DNPU_BatchNorm
-from brainspy.utils.mappers import SimpleMapping
+#from brainspy.utils.mappers import SimpleMapping
 from brainspy.utils.electrodes import get_map_to_voltage_vars
 import torch.nn.functional as F
 
