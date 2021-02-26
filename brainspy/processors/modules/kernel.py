@@ -10,78 +10,6 @@ from brainspy.processors.modules.bn import DNPU_BatchNorm
 from brainspy.utils.electrodes import get_map_to_voltage_vars
 import torch.nn.functional as F
 
-# class Kernel(nn.Module):
-#     def __init__(self, processor, inputs_list=[0, 1, 2, 3, 4], in_channels=1, out_channels=6, kernel_size=5, stride=1, padding=0):
-#         super(Kernel,self).__init__()
-#         self.processor = KernelBase(processor,inputs_list=inputs_list, in_channels=1, out_channels=6, kernel_size=kernel_size, stride=stride, padding=0)
-        
-#         self.bn = None
-    
-#     def forward(self,x):
-#         x = self.processor(x)
-#         if self.bn:
-#             x = self.bn(x)
-#         x = self.linear_layer(x)
-#         data_dim = self.processor.processor.data_dim
-#         x = x.reshape(data_dim[0],data_dim[1],data_dim[2],data_dim[3]) #Is there a better way to do this?
-    
-#     def add_transform(self, data_input_range, clip_input=False):
-#         self.processor.add_transform(data_input_range,clip_input=clip_input)
-    
-#     def add_batch_norm(self, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True):
-#         self.bn = nn.BatchNorm1d(self.processor.device_no, eps=eps, affine=affine, track_running_stats=track_running_stats, momentum=momentum)
-#         self.bn2 = nn.BatchNorm2d(756)
-
-#     def reset(self):
-#         raise NotImplementedError("Resetting controls not implemented!!")
-#         # for k in range(len(self.control_low)):
-#         #     # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
-#         #     self.controls.data[:, k].uniform_(self.control_low[k], self.control_high[k])
-
-#     def regularizer(self):
-#         if 'control_low' in dir(self) and 'control_high' in dir(self):
-#             return 0
-#         else:
-#             assert any(
-#                 self.control_low.min(dim=0)[0] < 0
-#             ), "Min. Voltage is assumed to be negative, but value is positive!"
-#             assert any(
-#                 self.control_high.max(dim=0)[0] > 0
-#             ), "Max. Voltage is assumed to be positive, but value is negative!"
-#             buff = 0.0
-#             for i, p in enumerate(self.all_controls):
-#                 buff += torch.sum(
-#                     torch.relu(self.control_low[i] - p)
-#                     + torch.relu(p - self.control_high[i])
-#                 )
-#             return buff
-
-#     def hw_eval(self, hw_processor_configs):
-#         self.processor.hw_eval(hw_processor_configs)
-
-#     def is_hardware(self):
-#         return self.processor.is_hardware
-
-#     def get_clipping_value(self):
-#         return self.processor.get_clipping_value()
-
-#     def get_input_ranges(self):
-#         return torch.cat((self.data_input_low.flatten().unsqueeze(1), self.data_input_high.flatten().unsqueeze(1)), dim=1)
-
-#     def get_control_ranges(self):
-#         return torch.cat((self.control_low.unsqueeze(0), self.control_high.unsqueeze(0)), dim=0)  # Total Dimensions 3: Dim 0: 0=min volt range1=max volt range, Dim 1: Index of node, Dim 2: Index of electrode
-
-#     def get_control_voltages(self):
-#         return torch.vstack([cv.data.detach() for cv in self.all_controls]).flatten()
-
-#     def set_control_voltages(self, control_voltages):
-#         with torch.no_grad():
-#             #bias = bias.unsqueeze(dim=0)
-#             assert (
-#                 self.all_controls.shape == control_voltages.shape
-#             ), "Control voltages could not be set due to a shape missmatch with regard to the ones already in the model."
-#             self.bias = torch.nn.Parameter(TorchUtils.format_tensor(control_voltages))
-
 class Kernel(nn.Module):
     def __init__(self, processor, inputs_list, in_channels=1, out_channels=6, kernel_size=5, stride=1, padding=0):
         super(Kernel,self).__init__()
@@ -156,8 +84,10 @@ class Kernel(nn.Module):
         input_range = torch.ones_like(output_range)
         input_range[0] *= min_input
         input_range[1] *= max_input
+
         self.amplitude, self.offset = get_map_to_voltage_vars(output_range[0],output_range[1],input_range[0],input_range[1])
-        #self.transform = SimpleMapping(input_range=[-0.4242,2.8215], output_range=self.get_input_ranges().flatten(1,-1), clip_input=clip_input)
+        # self.VariableRangeMapper()
+        # self.transform = SimpleMapping(input_range=[-0.4242,2.8215], output_range=self.get_input_ranges().flatten(1,-1), clip_input=clip_input)
 
     def get_output_size(self):
         return int(((self.dim + (2*self.padding) - self.kernel_size)/self.stride ) + 1)
@@ -199,10 +129,12 @@ class Kernel(nn.Module):
         data = data.reshape(-1,data.shape[-1])
 
         result = self.processor.processor(data).squeeze()
-        result = result.reshape(controls.shape[0],controls.shape[1],controls.shape[2],controls.shape[3],controls.shape[4])
-        result = result.flatten(0,3)
-        result = self.linear(result)
-        result = result.reshape(controls.shape[0],controls.shape[1]*controls.shape[2],controls.shape[3])
+        result = result.reshape(controls.shape[0],controls.shape[1],controls.shape[2],controls.shape[3],controls.shape[4]).sum(dim=4).sum(dim=2) # Sum extra dimensions
+        #result = result.reshape(controls.shape[0],controls.shape[1],controls.shape[2],controls.shape[3],controls.shape[4])
+        #result = result.flatten(0,3)
+        #result = self.linear(result)
+        #result = result.sum(dim=1)
+        #result = result.reshape(controls.shape[0],controls.shape[1]*controls.shape[2],controls.shape[3])
         result = torch.nn.functional.fold(result,kernel_size=1, output_size=self.get_output_size())
         return  result # * self.node.amplification
 
