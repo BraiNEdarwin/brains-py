@@ -80,7 +80,7 @@ class TorchUtils:
 
     @staticmethod
     def format_model(model):
-        if torch.cuda.device_count() > 1:
+        if torch.cuda.device_count() > 1 and not TorchUtils.force_cpu:
             model = torch.nn.DataParallel(model)
         model.to(TorchUtils.get_accelerator_type())
         return model
