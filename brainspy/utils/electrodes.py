@@ -130,6 +130,20 @@ def get_scale(y_min, y_max, x_min, x_max):
 def get_offset(y_min, y_max, x_min, x_max):
     """
     Get the offset/y-intercept of a line defined by two points.
+    Used to transform current data to the input voltage ranges of a device:
+    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
+    TODO copy this description to the other functions
+
+    Example
+    -------
+    Let x_min = 1
+        y_min = 1
+        x_max = 2
+        y_max = 0
+    This gives the line defined by the points (1, 1) and (2, 0),
+    which is y = 2 - x.
+    The function will return the offset, which is 2.
+    TODO copy this example to the other functions
 
     Parameters
     ----------
