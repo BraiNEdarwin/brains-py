@@ -7,12 +7,12 @@ from brainspy.processors.processor import Processor
 from brainspy.processors.modules.vecbase import DNPUBase
 from brainspy.processors.modules.bn import DNPU_BatchNorm
 #from brainspy.utils.mappers import SimpleMapping
-from brainspy.utils.electrodes import get_map_to_voltage_vars
+from brainspy.utils.electrodes import get_map_to_voltage_vars, format_input_ranges
 import torch.nn.functional as F
 
-class Kernel(nn.Module):
-    def __init__(self, processor, inputs_list, in_channels=1, out_channels=6, kernel_size=5, stride=1, padding=0):
-        super(Kernel,self).__init__()
+class DNPUConv2d(nn.Module):
+    def __init__(self, processor, inputs_list, in_channels=1, out_channels=6, kernel_size=5, stride=1, padding=0, postprocess_type='sum'):
+        super(DNPUConv2d,self).__init__()
 
         self.device_no = len(inputs_list)
         self.in_channels = in_channels
@@ -21,8 +21,7 @@ class Kernel(nn.Module):
         self.padding = padding
         self.stride = stride
 
-        self.amplitude = None
-        self.offset = None
+        self.input_transform = False
 
         if isinstance(processor, Processor):
             self.processor = processor
@@ -44,7 +43,9 @@ class Kernel(nn.Module):
         ###### Set everything as torch Tensors and send to DEVICE ######
         self.inputs_list = TorchUtils.get_tensor_from_list(inputs_list, data_type=torch.int64).unsqueeze(0).repeat_interleave(self.in_channels, dim=0).unsqueeze(0).repeat_interleave(self.out_channels, dim=0)
         # IndexError: tensors used as indices must be long, byte or bool tensors
-        self.linear = torch.nn.Linear(5,1)
+        self.postprocess_type = postprocess_type
+        if postprocess_type == 'linear':
+            self.linear = torch.nn.Linear(5,1)
 
     def set_controls(self, inputs_list):
         control_list = [np.delete(self.indices_node, indx) for indx in inputs_list]
@@ -52,67 +53,51 @@ class Kernel(nn.Module):
         control_high = [self.processor.processor.voltage_ranges[indx_cv, 1] for indx_cv in control_list]
         self.control_low = torch.stack(control_low).squeeze().unsqueeze(0).repeat_interleave(self.in_channels, dim=0).unsqueeze(0).repeat_interleave(self.out_channels, dim=0)
         self.control_high = torch.stack(control_high).squeeze().unsqueeze(0).repeat_interleave(self.in_channels, dim=0).unsqueeze(0).repeat_interleave(self.out_channels, dim=0)
-        # Sample control parameters
-        # controls = [
-        #     self.sample_controls(low, high)
-        #     for low, high in zip(control_low, control_high)
-        # ]
         
         # Register as learnable parameters
-        self.all_controls = nn.Parameter(self.sample_controls(len(control_list[0]))) #@TODO: improve the sampling of cvs 
-
+        self.all_controls = nn.Parameter(self.sample_controls(len(control_list[0]))) 
 
         return control_list
 
     def sample_controls(self, control_no):
-        #@TODO: This code is very similar to that of add_transform. Create an additional function to avoid repeating code.
-        data_input_range = [0,1]
-        output_range = self.get_control_ranges()#.flatten(1,-1)
-        min_input = data_input_range[0]
-        max_input = data_input_range[1]
-        input_range = torch.ones_like(output_range)
-        input_range[0] *= min_input
-        input_range[1] *= max_input
+        output_range = self.get_control_ranges()
+        input_range = format_input_ranges(0,1, output_range)
         amplitude, offset = get_map_to_voltage_vars(output_range[0],output_range[1],input_range[0],input_range[1])
         samples = torch.rand((self.out_channels,self.in_channels,self.device_no,control_no), device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())
         return (amplitude * samples) + offset
 
-    def add_transform(self,data_input_range, clip_input=False):
-        output_range = self.get_input_ranges()#.flatten(1,-1)
-        min_input = data_input_range[0]
-        max_input = data_input_range[1]
-        input_range = torch.ones_like(output_range)
-        input_range[0] *= min_input
-        input_range[1] *= max_input
-
+    def add_input_transform(self, data_input_range, clip_input=False):
+        self.input_transform = True
+        output_range = self.get_input_ranges()
+        input_range = format_input_ranges(data_input_range[0],data_input_range[1], output_range)
         self.amplitude, self.offset = get_map_to_voltage_vars(output_range[0],output_range[1],input_range[0],input_range[1])
-        # self.VariableRangeMapper()
-        # self.transform = SimpleMapping(input_range=[-0.4242,2.8215], output_range=self.get_input_ranges().flatten(1,-1), clip_input=clip_input)
 
-    def get_output_size(self):
-        return int(((self.dim + (2*self.padding) - self.kernel_size)/self.stride ) + 1)
+    def remove_input_transform(self):
+        self.input_transform = False
+        del self.amplitude
+        del self.offset
 
-    # Evaluate node
-    def forward(self, x):
+    def get_output_size(self, dim):
+        return int(((dim + (2*self.padding) - self.kernel_size)/self.stride ) + 1)
+
+    def preprocess(self,x):
         assert x.shape[2] == x.shape[3], "Different dimension shapes not supported"
-        self.dim = x.shape[2]
-        x = F.unfold(x, kernel_size=self.kernel_size, stride=self.stride, padding=self.padding) # Unfold as in a regular convolution
         batch_size = x.shape[0]
+        x = F.unfold(x, kernel_size=self.kernel_size, stride=self.stride, padding=self.padding) # Unfold as in a regular convolution
         window_no = x.shape[-1] # Number of windows from the local receptive field after unfolding
-
         x = x.reshape(x.shape[0],self.in_channels,int(x.shape[1]/self.in_channels), x.shape[2]) # The window is divided by the number of input kernels 
         x = x.unsqueeze(1).repeat_interleave(self.out_channels,dim=1) # Repeat info that will be used for each DNPU kernel
-        x = x.transpose(3, 4) #Transpose what will be inputed in the convolution by the number of windows. 
+        x = x.transpose(3, 4) # Transpose what will be inputed in the convolution by the number of windows. 
+        x = x.reshape(x.shape[0],x.shape[1],x.shape[2],x.shape[3], self.device_no,self.inputs_list.shape[-1]) # Divide what will be inputed in the convolution by the number of DNPUs. 
+        return x, batch_size, window_no
 
-        x = x.reshape(x.shape[0],x.shape[1],x.shape[2],x.shape[3], self.device_no,self.inputs_list.shape[-1])# Divide what will be inputed in the convolution by the number of DNPUs. 
+    def apply_input_transform(self, x, batch_size, window_no):      
+        amplitude = self.amplitude.unsqueeze(1).repeat_interleave(window_no,dim=1).unsqueeze(1).repeat_interleave(self.in_channels,dim=1).unsqueeze(0).repeat_interleave(batch_size,dim=0)
+        offset = self.offset.unsqueeze(1).repeat_interleave(window_no,dim=1).unsqueeze(1).repeat_interleave(self.in_channels,dim=1).unsqueeze(0).repeat_interleave(batch_size,dim=0)
+        x = (x * amplitude) + offset
+        return x
 
-        if not (self.amplitude is None): #I
-            amplitude = self.amplitude.unsqueeze(1).repeat_interleave(window_no,dim=1).unsqueeze(1).repeat_interleave(self.in_channels,dim=1).unsqueeze(0).repeat_interleave(batch_size,dim=0)
-            offset = self.offset.unsqueeze(1).repeat_interleave(window_no,dim=1).unsqueeze(1).repeat_interleave(self.in_channels,dim=1).unsqueeze(0).repeat_interleave(batch_size,dim=0)
-            x = (x * amplitude) + offset
-
-        #x = torch.transpose(x, 2,3).flatten(0,2).reshape(-1,self.inputs_list.shape[-1])
-        #x = x.reshape(-1,self.inputs_list.shape[-1]) 
+    def merge_electrode_data(self, x, batch_size, window_no):
         # Reshape input and expand controls
         controls = self.all_controls.unsqueeze(2).repeat_interleave(window_no,dim=2).unsqueeze(0).repeat_interleave(batch_size,dim=0)
         last_dim = len(controls.shape) - 1
@@ -125,18 +110,42 @@ class Kernel(nn.Module):
         indices = torch.cat((input_indices,control_indices),dim=last_dim)
         data = torch.cat((x,controls),dim=last_dim)
         data = torch.gather(data,last_dim,indices)
-        self.data_dim = data.shape
+        data_dim = data.shape
         data = data.reshape(-1,data.shape[-1])
 
-        result = self.processor.processor(data).squeeze()
-        result = result.reshape(controls.shape[0],controls.shape[1],controls.shape[2],controls.shape[3],controls.shape[4]).sum(dim=4).sum(dim=2) # Sum extra dimensions
-        #result = result.reshape(controls.shape[0],controls.shape[1],controls.shape[2],controls.shape[3],controls.shape[4])
-        #result = result.flatten(0,3)
-        #result = self.linear(result)
-        #result = result.sum(dim=1)
-        #result = result.reshape(controls.shape[0],controls.shape[1]*controls.shape[2],controls.shape[3])
-        result = torch.nn.functional.fold(result,kernel_size=1, output_size=self.get_output_size())
-        return  result # * self.node.amplification
+        return data, data_dim
+
+    def postprocess(self, result, data_dim, input_dim):
+        result = result.reshape(data_dim[:-1])
+        if self.postprocess_type == 'linear':
+            result = self.linear(result).squeeze() # Pass the output from the DNPUs through a linear layer to combine them
+            if self.out_channels == 1:
+                result = result.unsqueeze(dim=1)
+            if self.in_channels == 1:
+                result = result.unsqueeze(dim=2)
+
+        elif self.postprocess_type == 'sum':
+            result = result.sum(dim=4) # Sum the output from the devices used for the convolution (Convolution PE)
+            
+        result = result.sum(dim=2) # Sum values from the input kernels
+
+        result = torch.nn.functional.fold(result,kernel_size=1, output_size=self.get_output_size(input_dim))
+        return result
+    # Evaluate node
+    def forward(self, x):
+        input_dim = x.shape[2]
+        x, batch_size, window_no = self.preprocess(x)
+
+        if self.input_transform: 
+            x = self.apply_input_transform(x, batch_size, window_no)
+
+        x, data_dim = self.merge_electrode_data(x, batch_size, window_no)
+
+        x = self.processor.processor(x)
+
+        x = self.postprocess(x, data_dim, input_dim)
+
+        return x
 
     def reset(self):
         raise NotImplementedError("Resetting controls not implemented!!")
