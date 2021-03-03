@@ -22,6 +22,7 @@ class DNPUConv2d(nn.Module):
         self.stride = stride
 
         self.input_transform = False
+        self.batch_norm = False
 
         if isinstance(processor, Processor):
             self.processor = processor
@@ -72,6 +73,10 @@ class DNPUConv2d(nn.Module):
         input_range = format_input_ranges(data_input_range[0],data_input_range[1], output_range)
         self.amplitude, self.offset = get_map_to_voltage_vars(output_range[0],output_range[1],input_range[0],input_range[1])
 
+    def add_batch_norm(self, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True):
+        self.batch_norm = True
+        self.bn = torch.nn.BatchNorm3d(self.in_channels, eps=eps, momentum=momentum, affine=affine, track_running_stats=track_running_stats)
+
     def remove_input_transform(self):
         self.input_transform = False
         del self.amplitude
@@ -86,9 +91,12 @@ class DNPUConv2d(nn.Module):
         x = F.unfold(x, kernel_size=self.kernel_size, stride=self.stride, padding=self.padding) # Unfold as in a regular convolution
         window_no = x.shape[-1] # Number of windows from the local receptive field after unfolding
         x = x.reshape(x.shape[0],self.in_channels,int(x.shape[1]/self.in_channels), x.shape[2]) # The window is divided by the number of input kernels 
+        x = x.transpose(2, 3) # Transpose what will be inputed in the convolution by the number of windows. 
+        x = x.reshape(x.shape[0],x.shape[1],x.shape[2], self.device_no,self.inputs_list.shape[-1]) # Divide what will be inputed in the convolution by the number of DNPUs. 
+        if self.batch_norm:
+            x = self.bn(x)
+            x = x.clamp(-2,2)
         x = x.unsqueeze(1).repeat_interleave(self.out_channels,dim=1) # Repeat info that will be used for each DNPU kernel
-        x = x.transpose(3, 4) # Transpose what will be inputed in the convolution by the number of windows. 
-        x = x.reshape(x.shape[0],x.shape[1],x.shape[2],x.shape[3], self.device_no,self.inputs_list.shape[-1]) # Divide what will be inputed in the convolution by the number of DNPUs. 
         return x, batch_size, window_no
 
     def apply_input_transform(self, x, batch_size, window_no):      
