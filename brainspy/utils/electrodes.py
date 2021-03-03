@@ -32,3 +32,9 @@ def get_offset(v_min, v_max, x_min, x_max):
     v = (v_max * x_min) - (v_min * x_max)
     x = x_min - x_max
     return v / x
+
+def format_input_ranges(input_min, input_max, output_ranges):
+    input_ranges = torch.ones_like(output_ranges)
+    input_ranges[0] *= input_min
+    input_ranges[1] *= input_max
+    return input_ranges
