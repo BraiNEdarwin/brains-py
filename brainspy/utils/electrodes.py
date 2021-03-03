@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from brainspy.utils.pytorch import TorchUtils
 
