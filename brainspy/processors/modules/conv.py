@@ -67,13 +67,13 @@ class DNPUConv2d(nn.Module):
         samples = torch.rand((self.out_channels,self.in_channels,self.device_no,control_no), device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())
         return (amplitude * samples) + offset
 
-    def add_input_transform(self, data_input_range, clip_input=False):
+    def add_input_transform(self, data_input_range):
         self.input_transform = True
         output_range = self.get_input_ranges()
         input_range = format_input_ranges(data_input_range[0],data_input_range[1], output_range)
         self.amplitude, self.offset = get_map_to_voltage_vars(output_range[0],output_range[1],input_range[0],input_range[1])
 
-    def add_batch_norm(self, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True, clamp_at=2):
+    def add_batch_norm(self, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True, clamp_at=None):
         self.batch_norm = True
         self.bn = torch.nn.BatchNorm3d(self.in_channels, eps=eps, momentum=momentum, affine=affine, track_running_stats=track_running_stats)
         self.clamp_at = clamp_at
@@ -82,6 +82,11 @@ class DNPUConv2d(nn.Module):
         self.input_transform = False
         del self.amplitude
         del self.offset
+
+    def remove_batch_norm(self):
+        self.batch_norm = False
+        del self.bn
+        del self.clamp_at
 
     def get_output_size(self, dim):
         return int(((dim + (2*self.padding) - self.kernel_size)/self.stride ) + 1)
@@ -95,10 +100,18 @@ class DNPUConv2d(nn.Module):
         x = x.transpose(2, 3) # Transpose what will be inputed in the convolution by the number of windows. 
         x = x.reshape(x.shape[0],x.shape[1],x.shape[2], self.device_no,self.inputs_list.shape[-1]) # Divide what will be inputed in the convolution by the number of DNPUs. 
         if self.batch_norm:
-            x = self.bn(x)
-            x = x.clamp(-self.clamp_at,self.clamp_at)
+            x = self.apply_batch_norm(x)
         x = x.unsqueeze(1).repeat_interleave(self.out_channels,dim=1) # Repeat info that will be used for each DNPU kernel
+        if self.input_transform: 
+            x = self.apply_input_transform(x, batch_size, window_no)
+        
         return x, batch_size, window_no
+
+    def apply_batch_norm(self,x):
+        x = self.bn(x)
+        if self.clamp_at is not None:
+            x = x.clamp(-self.clamp_at,self.clamp_at)
+        return x
 
     def apply_input_transform(self, x, batch_size, window_no):      
         amplitude = self.amplitude.unsqueeze(1).repeat_interleave(window_no,dim=1).unsqueeze(1).repeat_interleave(self.in_channels,dim=1).unsqueeze(0).repeat_interleave(batch_size,dim=0)
@@ -143,15 +156,10 @@ class DNPUConv2d(nn.Module):
     # Evaluate node
     def forward(self, x):
         input_dim = x.shape[2]
+
         x, batch_size, window_no = self.preprocess(x)
-
-        if self.input_transform: 
-            x = self.apply_input_transform(x, batch_size, window_no)
-
         x, data_dim = self.merge_electrode_data(x, batch_size, window_no)
-
         x = self.processor.processor(x)
-
         x = self.postprocess(x, data_dim, input_dim)
 
         return x
