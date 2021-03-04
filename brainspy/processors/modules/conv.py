@@ -73,9 +73,10 @@ class DNPUConv2d(nn.Module):
         input_range = format_input_ranges(data_input_range[0],data_input_range[1], output_range)
         self.amplitude, self.offset = get_map_to_voltage_vars(output_range[0],output_range[1],input_range[0],input_range[1])
 
-    def add_batch_norm(self, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True):
+    def add_batch_norm(self, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True, clamp_at=2):
         self.batch_norm = True
         self.bn = torch.nn.BatchNorm3d(self.in_channels, eps=eps, momentum=momentum, affine=affine, track_running_stats=track_running_stats)
+        self.clamp_at = clamp_at
 
     def remove_input_transform(self):
         self.input_transform = False
@@ -95,7 +96,7 @@ class DNPUConv2d(nn.Module):
         x = x.reshape(x.shape[0],x.shape[1],x.shape[2], self.device_no,self.inputs_list.shape[-1]) # Divide what will be inputed in the convolution by the number of DNPUs. 
         if self.batch_norm:
             x = self.bn(x)
-            x = x.clamp(-2,2)
+            x = x.clamp(-self.clamp_at,self.clamp_at)
         x = x.unsqueeze(1).repeat_interleave(self.out_channels,dim=1) # Repeat info that will be used for each DNPU kernel
         return x, batch_size, window_no
 
