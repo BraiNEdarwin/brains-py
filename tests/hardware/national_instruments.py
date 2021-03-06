@@ -18,9 +18,9 @@ def sweepgen(v_high, v_low, n_points, direction):
         print("Specify the sweep direction")
 
     sweep = np.zeros(len(input1) + len(input2) + len(input3))
-    sweep[0: len(input1)] = input1
-    sweep[len(input1): len(input1) + len(input2)] = input2
-    sweep[len(input1) + len(input2): len(input1) + len(input2) + len(input3)] = input3
+    sweep[0 : len(input1)] = input1
+    sweep[len(input1) : len(input1) + len(input2)] = input2
+    sweep[len(input1) + len(input2) : len(input1) + len(input2) + len(input3)] = input3
     return sweep
 
 

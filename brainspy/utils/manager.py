@@ -11,10 +11,20 @@ from brainspy.algorithms.gd import train as train_gd
 from brainspy.utils.pytorch import TorchUtils
 
 
-def get_criterion(configs):
-    """Gets the fitness function used in GA from the module FitnessFunctions
+def get_criterion(configs: dict):  # can also return a tensor
+    """
+    Gets the fitness function used in GA from the module FitnessFunctions
     The fitness functions must take two arguments, the outputs of the black-box and the target
     and must return a numpy array of scores of size len(outputs).
+
+    Parameters
+    ----------
+        configs (dict):  configurations for the fitness function
+
+    Returns
+    -------
+        fitness fucntion (method/function): A function that is defined in the signal class.
+                                            These are a set of functions to measure separability and similarity of signals
     """
     if configs["criterion"] == "corr_fit":
         return criterion.corr_fit
@@ -44,7 +54,19 @@ def get_criterion(configs):
         )
 
 
-def get_optimizer(model, configs):
+def get_optimizer(model: object, configs: dict):
+    """
+    The function returns an optimizer object which include added information to train a specific model.
+
+    Parameters
+    ----------
+        model (nn.Module object): An nn.Module object which can be a DNPU,Processor or a Surrogate Model object
+        configs (dict): configurations for the model
+
+    Returns
+    -------
+        class object: Returns and optimizer object which can be a GeneticOptimizer or an Adam optimizer
+    """
     if configs["optimizer"] == "genetic":
         # TODO: get gene ranges from model
         if "gene_range" in configs:
@@ -64,7 +86,18 @@ def get_optimizer(model, configs):
         assert False, "Optimiser name {configs['optimizer']} not recognised. Please try"
 
 
-def get_adam(model, configs):
+def get_adam(model: object, configs: dict):
+    """The function returns an Adam optimizer object which include added information to train a specific model.
+
+    Parameters
+    ----------
+        model (nn.Module object): An nn.Module object which can be a DNPU,Processor or a SurrogateModel object
+        configs (dict): configurations of the model
+
+    Returns
+    -------
+        class object: Returns and optimizer Adam optimizer object
+    """
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     print("Prediction using ADAM optimizer")
     if "betas" in configs.keys():
@@ -78,7 +111,17 @@ def get_adam(model, configs):
         return torch.optim.Adam(parameters, lr=configs["learning_rate"])
 
 
-def get_algorithm(configs):
+def get_algorithm(configs: dict):
+    """The function returns a train function, either GA or GD based on the configurations dictionary
+
+    Parameters
+    ----------
+        configs (dict): configurations of the model
+
+    Returns
+    --------
+        Train function (method/function): A train function of GA or GD that is defined in the ga/gd classes
+    """
     if configs["type"] == "gradient":
         return train_gd
     elif configs["type"] == "genetic":
@@ -89,7 +132,19 @@ def get_algorithm(configs):
         ), "Unrecognised algorithm field in configs. It must have the value gradient or the value genetic."
 
 
-def get_driver(configs):
+def get_driver(configs: dict):
+    """The function returns a driver object based on the configurations dictionary
+
+    Parameters
+    -----------
+        configs (dict): configurations of the model
+
+    Raises:
+        NotImplementedError: if configurations is not recognised
+
+    Returns:
+        class object: Returns and driver object which can be a  CDAQtoCDAQ,CDAQtoNiDAQ or a SurrogateModel object
+    """
     if configs["processor_type"] == "cdaq_to_cdaq":
         return CDAQtoCDAQ(configs)
     elif configs["processor_type"] == "cdaq_to_nidaq":

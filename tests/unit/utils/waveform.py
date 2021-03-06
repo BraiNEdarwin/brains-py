@@ -18,11 +18,15 @@ class WaveformTest(unittest.TestCase):
         self.waveform_mgr = WaveformManager(configs)
 
     def full_check(self, point_no):
-        points = torch.rand(point_no, device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())  # .unsqueeze(dim=1)
+        points = torch.rand(
+            point_no,
+            device=TorchUtils.get_accelerator_type(),
+            dtype=TorchUtils.get_data_type(),
+        )  # .unsqueeze(dim=1)
         waveform = self.waveform_mgr.points_to_waveform(points)
-        assert (
-            (waveform[0, :] == 0.0).all() and (waveform[-1, :] == 0.0).all()
-        ), "Waveforms do not start and end with zero"
+        assert (waveform[0, :] == 0.0).all() and (
+            waveform[-1, :] == 0.0
+        ).all(), "Waveforms do not start and end with zero"
         assert len(waveform) == (
             (self.waveform_mgr.plateau_length * len(points))
             + (self.waveform_mgr.slope_length * (len(points) + 1))
@@ -45,9 +49,7 @@ class WaveformTest(unittest.TestCase):
             waveform[mask] == waveform_to_plateau
         ).all(), "Inconsistent plateau conversion"
 
-        plateaus_to_waveform, _ = self.waveform_mgr.plateaus_to_waveform(
-            waveform[mask]
-        )
+        plateaus_to_waveform, _ = self.waveform_mgr.plateaus_to_waveform(waveform[mask])
         assert (
             waveform == plateaus_to_waveform
         ).all(), "Inconsistent waveform conversion"
@@ -69,7 +71,11 @@ if __name__ == "__main__":
     #     # remain hidden from the help menu.
     #     failfast=False, buffer=False, catchbreak=False)
 
-    unittest.main(testRunner=HtmlTestRunner.HTMLTestRunner(output='/home/unai/Documents/3-programming/brains-py/brains-py/test-reports'))
+    unittest.main(
+        testRunner=HtmlTestRunner.HTMLTestRunner(
+            output="/home/unai/Documents/3-programming/brains-py/brains-py/test-reports"
+        )
+    )
 
     # suite = unittest.TestSuite()
     # suite.addTest(WaveformTest("test1"))

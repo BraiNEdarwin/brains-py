@@ -23,11 +23,10 @@ CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS = 0.03
 SYNCHRONISATION_VALUE = 0.04  # do not reduce to less than 0.02
 
 
-class NationalInstrumentsSetup():
-
+class NationalInstrumentsSetup:
     def __init__(self, configs):
         self.init_configs(configs)
-        self.init_tasks(configs['driver'])
+        self.init_tasks(configs["driver"])
         self.enable_os_signals()
         self.init_semaphore()
 
@@ -43,14 +42,17 @@ class NationalInstrumentsSetup():
                 "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n The security check for the ramping time has been disabled. Steep rampings can can damage the device. Proceed only if you are sure that you will not damage the device. If you want to avoid damagesimply exit the execution. \n ONLY If you are sure about what you are doing press ENTER to continue. Otherwise STOP the execution of this program."
             )
         assert (
-            configs["data"]["waveform"]["slope_length"] / configs["driver"]["sampling_frequency"]
+            configs["data"]["waveform"]["slope_length"]
+            / configs["driver"]["sampling_frequency"]
             >= configs["max_ramping_time_seconds"]
         )
 
     def init_tasks(self, configs):
         self.tasks_driver = get_tasks_driver(configs)
         self.tasks_driver.init_tasks(configs)
-        self.voltage_ranges = self.tasks_driver.voltage_ranges  # To be improved, it should have the same form to be accessed by both SurrogateModel (SoftwareProcessor) and driver.
+        self.voltage_ranges = (
+            self.tasks_driver.voltage_ranges
+        )  # To be improved, it should have the same form to be accessed by both SurrogateModel (SoftwareProcessor) and driver.
 
     def init_semaphore(self):
         global event
@@ -65,7 +67,9 @@ class NationalInstrumentsSetup():
         data = np.array(data)
         if len(data.shape) == 1:
             data = data[np.newaxis, :]
-        return (data.T * self.configs["driver"]["amplification"]).T  # Creates a numpy array from a list with dimensions (n,1) and multiplies it by the amplification of the device. It is transposed to enable the multiplication of multiple outputs by an array of amplification values.
+        return (
+            data.T * self.configs["driver"]["amplification"]
+        ).T  # Creates a numpy array from a list with dimensions (n,1) and multiplies it by the amplification of the device. It is transposed to enable the multiplication of multiple outputs by an array of amplification values.
 
     def read_data(self, y):
         global p
@@ -85,10 +89,16 @@ class NationalInstrumentsSetup():
     def set_shape_vars(self, shape):
         if self.last_shape != shape:
             self.last_shape = shape
-            self.tasks_driver.set_shape(self.configs["driver"]["sampling_frequency"], shape)
+            self.tasks_driver.set_shape(
+                self.configs["driver"]["sampling_frequency"], shape
+            )
             self.offsetted_shape = shape + self.configs["offset"]
             self.ceil = (
-                math.ceil((self.offsetted_shape) / self.configs["driver"]["sampling_frequency"]) + 1
+                math.ceil(
+                    (self.offsetted_shape)
+                    / self.configs["driver"]["sampling_frequency"]
+                )
+                + 1
             )
 
     def is_hardware(self):
@@ -148,6 +158,7 @@ class NationalInstrumentsSetup():
     def enable_os_signals(self):
         if sys.platform == "win32":
             import win32api
+
             win32api.SetConsoleCtrlHandler(self.os_signal_handler, True)
         else:
             signal.signal(signal.SIGTERM, self.os_signal_handler)
@@ -156,6 +167,7 @@ class NationalInstrumentsSetup():
     def disable_os_signals(self):
         if sys.platform == "win32":
             import win32api  # ignoring the signal
+
             win32api.SetConsoleCtrlHandler(None, True)
         else:
             signal.signal(signal.SIGTERM, signal.SIG_IGN)

@@ -25,9 +25,9 @@ class SurrogateModel(nn.Module):
         self._load(configs)
         self._init_voltage_ranges()
         self.amplification = TorchUtils.get_tensor_from_list(
-            self.info["data_info"]["processor"]['driver']["amplification"]
+            self.info["data_info"]["processor"]["driver"]["amplification"]
         )
-        self.output_clipping = configs['driver']['output_clipping']
+        self.output_clipping = configs["driver"]["output_clipping"]
         self.clipping_value = TorchUtils.get_tensor_from_list(
             self.info["data_info"]["clipping_value"]
         )
@@ -54,7 +54,9 @@ class SurrogateModel(nn.Module):
     def forward(self, x):
         x = self.noise(self.model(x) * self.amplification)
         if self.output_clipping:
-            return torch.clamp(x, min=self.clipping_value[0], max=self.clipping_value[1])
+            return torch.clamp(
+                x, min=self.clipping_value[0], max=self.clipping_value[1]
+            )
         return x
 
     def forward_numpy(self, input_matrix):
@@ -62,8 +64,6 @@ class SurrogateModel(nn.Module):
             inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
             output = self.forward(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output)
-
-
 
     def reset(self):
         print("Warning: Reset function in Surrogate Model not implemented.")

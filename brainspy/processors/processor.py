@@ -30,23 +30,31 @@ class Processor(nn.Module):
             self._init_electrode_info(self._get_configs)
         elif isinstance(arg, HardwareProcessor):
             self.processor = arg
-            self.electrode_no = self.processor.configs['data']['activation_electrode_no']
+            self.electrode_no = self.processor.configs["data"][
+                "activation_electrode_no"
+            ]
             self._init_electrode_info(self._get_configs)
         else:
-            assert False, "The processor can either be a valid configuration dictionary, or an instance of either HardwareProcessor or SurrogateModel"
+            assert (
+                False
+            ), "The processor can either be a valid configuration dictionary, or an instance of either HardwareProcessor or SurrogateModel"
 
         self.is_hardware = self.processor.is_hardware()
 
     def _load_processor_from_configs(self, configs):
-        if not hasattr(self, 'processor') or self._get_configs() != configs:
+        if not hasattr(self, "processor") or self._get_configs() != configs:
             if configs["processor_type"] == "simulation":
                 self.processor = SurrogateModel(configs)
                 self.electrode_no = len(
                     self.processor.info["data_info"]["input_data"]["offset"]
                 )
-            elif configs["processor_type"] == "simulation_debug" or configs["processor_type"] == "cdaq_to_cdaq" or configs["processor_type"] == "cdaq_to_nidaq":
+            elif (
+                configs["processor_type"] == "simulation_debug"
+                or configs["processor_type"] == "cdaq_to_cdaq"
+                or configs["processor_type"] == "cdaq_to_nidaq"
+            ):
                 self.processor = HardwareProcessor(configs)
-                self.electrode_no = configs['data']['activation_electrode_no']
+                self.electrode_no = configs["data"]["activation_electrode_no"]
             else:
                 raise NotImplementedError(
                     f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "
@@ -88,7 +96,7 @@ class Processor(nn.Module):
         elif isinstance(self.processor, SurrogateModel):
             return self.processor.configs
         else:
-            print('Warning: Instance of processor not recognised.')
+            print("Warning: Instance of processor not recognised.")
             return None
 
     def close(self):

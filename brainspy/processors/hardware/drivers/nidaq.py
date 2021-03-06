@@ -1,16 +1,23 @@
 import numpy as np
 
-from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup, SYNCHRONISATION_VALUE, CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS
+from brainspy.processors.hardware.drivers.ni.setup import (
+    NationalInstrumentsSetup,
+    SYNCHRONISATION_VALUE,
+    CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS,
+)
 
 
 class CDAQtoNiDAQ(NationalInstrumentsSetup):
     def __init__(self, configs):
         configs["auto_start"] = False
-        configs["offset"] = int(configs["driver"]["sampling_frequency"] * SYNCHRONISATION_VALUE)
+        configs["offset"] = int(
+            configs["driver"]["sampling_frequency"] * SYNCHRONISATION_VALUE
+        )
         configs["max_ramping_time_seconds"] = CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.tasks_driver.add_channels(
-            self.configs["driver"]["readout_instrument"], self.configs["driver"]["activation_instrument"]
+            self.configs["driver"]["readout_instrument"],
+            self.configs["driver"]["activation_instrument"],
         )
 
     def forward_numpy(self, y):
@@ -50,7 +57,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         y_corr = np.zeros(
             (y.shape[0], y.shape[1] + self.configs["offset"])
         )  # Add 200ms of reaction in terms of zeros
-        y_corr[:, self.configs["offset"]:] = y[:]
+        y_corr[:, self.configs["offset"] :] = y[:]
         # TODO: Is this if really necessary?
         if len(y_corr.shape) == 1:
             y_corr = np.concatenate(
@@ -72,4 +79,4 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def synchronise_output_data(self, read_data):
         cut_value = self.get_output_cut_value(read_data)
-        return read_data[:-1, cut_value: self.configs["data"]["shape"] + cut_value]
+        return read_data[:-1, cut_value : self.configs["data"]["shape"] + cut_value]

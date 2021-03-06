@@ -86,8 +86,12 @@ class DataToTensor:
 
     def __call__(self, data):
         inputs, targets = data[0], data[1]
-        inputs = torch.tensor(inputs, device=self.device, dtype=TorchUtils.get_data_type())
-        targets = torch.tensor(targets, device=self.device, dtype=TorchUtils.get_data_type())
+        inputs = torch.tensor(
+            inputs, device=self.device, dtype=TorchUtils.get_data_type()
+        )
+        targets = torch.tensor(
+            targets, device=self.device, dtype=TorchUtils.get_data_type()
+        )
         return (inputs, targets)
 
 

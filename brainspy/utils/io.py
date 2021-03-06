@@ -12,8 +12,25 @@ import yaml
 import numpy as np
 
 
-def save(mode, file_path, **kwargs):
+def save(
+    mode: str, file_path: str, **kwargs: dict
+):  # method can be edited cuz kwargs and kwargs[data] are the same
+    """
+    This function formats data from a dictionary and saves it to the given file
 
+    Parameters
+    ----------
+
+    mode : str
+        file type as a python string  ## CHECK!!
+
+    file_path : str
+        file object or path to file
+
+    kwargs : dict
+        data that needs to be saved
+
+    """
     if mode == "numpy":
         np.savez(file_path, **kwargs)
     elif not kwargs["data"]:
@@ -32,16 +49,40 @@ def save(mode, file_path, **kwargs):
     # return path
 
 
-def save_pickle(pickle_data, file_path):
+def save_pickle(pickle_data: list, file_path: str):
+    """
+    This function serializes data and saves it to the given file path
+    The process to converts any kind of python objects (list, dict, etc.) into byte streams (0s and 1s) is called pickling or serialization.
+
+    Parameters
+    ---------
+
+    pickle_data : list
+        list of data that needs to be saved
+
+    file_path : str
+        file object or path to file
+
+    """
     with open(file_path, "wb") as f:
         pickle.dump(pickle_data, f)
         f.close()
 
 
-def save_torch(torch_model, file_path):
+def save_torch(torch_model: list, file_path: str):
     """
-    Saves the model in given path, all other attributes are saved under
+    This function saves the model in given path, all other attributes are saved under
     the 'info' key as a new dictionary.
+
+    Parameters
+    ---------
+
+    torch_model : list
+        list of data that needs to be saved
+
+    file_path : str
+        file object or path to file
+
     """
     torch_model.eval()
     state_dic = torch_model.state_dict()
@@ -49,20 +90,53 @@ def save_torch(torch_model, file_path):
     torch.save(state_dic, file_path)
 
 
-def load_configs(file_name):
+def load_configs(file_name: str):  # add a method to load pickle
+    """
+    This function loads a yaml file from the given file path
+
+    Parameters
+    ----------
+    file_name : str
+        file object or path to yaml file
+
+    Returns
+    -------
+    dict : Python dictionary with formatted yaml data
+
+    """
     with open(file_name) as f:
         return yaml.load(f, Loader=IncludeLoader)
 
 
-def save_configs(configs, file_name):
+def save_configs(configs: dict, file_name: str):
+    """
+    This function formats data from a dictionary and saves it to the given yaml file
+
+    Parameters
+    ----------
+
+    configs : dict
+        data that needs to be stored in the yaml file
+
+    file_name : str
+        file object or path to yaml file
+
+    """
     with open(file_name, "w") as f:
         yaml.dump(configs, f, default_flow_style=False)
 
 
-def create_directory(path, overwrite=False):
+def create_directory(path: str, overwrite=False):
     """
     This function checks if there exists a directory filepath+datetime_name.
     If not it will create it and return this path.
+
+    Parameters
+    -----------
+
+    path : str
+        file object or path to file
+
     """
     if not os.path.exists(path):
         os.makedirs(path)
@@ -72,7 +146,24 @@ def create_directory(path, overwrite=False):
     return path
 
 
-def create_directory_timestamp(path, name, overwrite=False):
+def create_directory_timestamp(path: str, name: str, overwrite=False):
+    """
+    This function creates a directory with the given name and current timestamp if it does not already exist
+
+    Parameters
+    ----------
+
+    path : str
+        file object or path to file
+
+    name : str
+
+    Returns
+    --------
+
+    str : path to file created - filepath+datetime_name
+
+    """
     datetime = time.strftime("%Y_%m_%d_%H%M%S")
     path = os.path.join(path, name + "_" + datetime)
     return create_directory(path, overwrite=overwrite)
@@ -113,6 +204,7 @@ class IncludeLoader(yaml.Loader):
     """
 
     def __init__(self, *args, **kwargs):
+
         super(IncludeLoader, self).__init__(*args, **kwargs)
         self.add_constructor("!include", self._include)
         if "root" in kwargs:
@@ -123,6 +215,7 @@ class IncludeLoader(yaml.Loader):
             self.root = os.path.curdir
 
     def _include(self, loader, node):
+
         oldRoot = self.root
         filename = os.path.join(self.root, loader.construct_scalar(node))
         self.root = os.path.dirname(filename)

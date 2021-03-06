@@ -73,14 +73,28 @@ class WaveformManager:
         # amplitudes, plateau_lengths, slope_lengths = self.format_amplitudes_and_slopes(amplitudes, self.plateau_lengths, self.slope_lengths)
         tmp = TorchUtils.get_numpy_from_tensor(data)
         # if len(data) == len(plateau_lengths) == len(slope_lengths):
-        output = TorchUtils.get_tensor_from_numpy(np.linspace(0, tmp[0], self.slope_length))
+        output = TorchUtils.get_tensor_from_numpy(
+            np.linspace(0, tmp[0], self.slope_length)
+        )
         for i in range(data_size):
             output = torch.cat((output, data[i].repeat(self.plateau_length, 1)))
             output = torch.cat(
-                (output, TorchUtils.get_tensor_from_numpy(np.linspace(tmp[i], tmp[i + 1], self.slope_length)))
+                (
+                    output,
+                    TorchUtils.get_tensor_from_numpy(
+                        np.linspace(tmp[i], tmp[i + 1], self.slope_length)
+                    ),
+                )
             )
         output = torch.cat((output, data[-1].repeat(self.plateau_length, 1)))
-        output = torch.cat((output, TorchUtils.get_tensor_from_numpy(np.linspace(tmp[-1], 0, self.slope_length))))
+        output = torch.cat(
+            (
+                output,
+                TorchUtils.get_tensor_from_numpy(
+                    np.linspace(tmp[-1], 0, self.slope_length)
+                ),
+            )
+        )
         del tmp
         # else:
         #     assert False, "Assignment of amplitudes and lengths/slopes is not unique!"
@@ -110,7 +124,12 @@ class WaveformManager:
         repeat_idx = [1] * t.dim()
         repeat_idx[dim] = n_tile
         t = t.repeat(*(repeat_idx))
-        order_index = torch.cat([init_dim * torch.arange(n_tile, device=t.device, dtype=torch.long) + i for i in range(init_dim)])
+        order_index = torch.cat(
+            [
+                init_dim * torch.arange(n_tile, device=t.device, dtype=torch.long) + i
+                for i in range(init_dim)
+            ]
+        )
         return torch.index_select(t, dim, order_index)
 
     def plateaus_to_waveform(self, data, return_pytorch=True):
@@ -124,7 +143,9 @@ class WaveformManager:
         The output is in list format
         """
         # The function np.linspace supports multiple dimension while torch.linspace does not. Data is transformed from tensor to numpy and then returned back to tensor.
-        assert (len(data) % self.plateau_length == 0), f'Incorrect data shape with respect to plateau length {self.plateau_length}.'
+        assert (
+            len(data) % self.plateau_length == 0
+        ), f"Incorrect data shape with respect to plateau length {self.plateau_length}."
         data_size = int(len(data) / self.plateau_length) - 1
         tmp = TorchUtils.get_numpy_from_tensor(data)
         output = np.ndarray([])
@@ -141,25 +162,24 @@ class WaveformManager:
         for i in range(data_size):
             end = start + self.plateau_length
             mask += [True] * self.plateau_length
-            output = np.concatenate(
-                (output, tmp[start:end])
-            )
+            output = np.concatenate((output, tmp[start:end]))
             mask += [False] * self.slope_length
             output = np.concatenate(
                 (output, np.linspace(tmp[end - 1], tmp[end], self.slope_length))
             )
             start = end
         mask += [True] * self.plateau_length
-        output = np.concatenate(
-            (output, tmp[start:])
-        )
+        output = np.concatenate((output, tmp[start:]))
         mask += [False] * self.slope_length
         output = np.concatenate((output, np.linspace(tmp[-1], 0, self.slope_length)))
 
         # else:
         #     assert False, "Assignment of amplitudes and lengths/slopes is not unique!"
         if return_pytorch:
-            return TorchUtils.get_tensor_from_numpy(output), TorchUtils.get_tensor_from_list(mask)
+            return (
+                TorchUtils.get_tensor_from_numpy(output),
+                TorchUtils.get_tensor_from_list(mask),
+            )
         else:
             return output, mask
 
@@ -172,7 +192,9 @@ class WaveformManager:
         # for i in range(len(data)):
         #     output = np.append(output, data[j: j + self.plateau_length].mean())
         #     j += self.plateau_length
-        assert (len(data) % self.plateau_length == 0), f'Incorrect data shape {data.shape} with respect to the number of points for plateau length {self.plateau_length}.'
+        assert (
+            len(data) % self.plateau_length == 0
+        ), f"Incorrect data shape {data.shape} with respect to the number of points for plateau length {self.plateau_length}."
         point_no = int(len(data) / self.plateau_length)
         result = data.view(point_no, self.plateau_length, data.shape[1]).mean(dim=1)
         if len(result.shape) == 1:

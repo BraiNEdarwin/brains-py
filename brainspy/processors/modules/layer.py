@@ -3,6 +3,7 @@ import torch.nn as nn
 from brainspy.processors.modules.base import DNPU_Base
 from brainspy.processors.processor import Processor
 
+
 class DNPU_Layer(nn.Module):
     """Layer with DNPUs as activation nodes. It is a child of the DNPU_base class that implements
     the evaluation of this activation layer given by the model provided.
@@ -14,9 +15,13 @@ class DNPU_Layer(nn.Module):
     def __init__(self, processor, inputs_list):
         super(DNPU_Layer, self).__init__()
         if isinstance(processor, Processor) or isinstance(processor, dict):
-            self.processor = DNPU_Base(processor, inputs_list)  # It accepts initialising a processor as a dictionary
+            self.processor = DNPU_Base(
+                processor, inputs_list
+            )  # It accepts initialising a processor as a dictionary
         else:
-            self.processor = processor  # It accepts initialising as an external DNPU_Base
+            self.processor = (
+                processor  # It accepts initialising as an external DNPU_Base
+            )
 
     def forward(self, x):
         assert (
@@ -37,7 +42,7 @@ class DNPU_Layer(nn.Module):
     def partition_input(self, x):
         i = 0
         while i + self.processor.inputs_list.shape[-1] <= x.shape[-1]:
-            yield x[:, i: i + self.processor.inputs_list.shape[-1]]
+            yield x[:, i : i + self.processor.inputs_list.shape[-1]]
             i += self.processor.inputs_list.shape[-1]
 
     def regularizer(self):
