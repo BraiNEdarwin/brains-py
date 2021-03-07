@@ -3,7 +3,7 @@ import numpy as np
 
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager
-from brainspy.utils.electrodes import get_map_to_voltage_vars
+from brainspy.utils.electrodes import transform_current_to_voltage
 
 
 # class CurrentToVoltage():
@@ -27,7 +27,7 @@ class CurrentToVoltage:
         ), "Mapping ranges are different in length"
         self.map_variables = TorchUtils.get_tensor_from_list(
             [
-                get_map_to_voltage_vars(
+                transform_current_to_voltage(
                     voltage_range[i][0],
                     voltage_range[i][1],
                     current_range[i][0],
@@ -86,8 +86,12 @@ class DataToTensor:
 
     def __call__(self, data):
         inputs, targets = data[0], data[1]
-        inputs = torch.tensor(inputs, device=self.device, dtype=TorchUtils.get_data_type())
-        targets = torch.tensor(targets, device=self.device, dtype=TorchUtils.get_data_type())
+        inputs = torch.tensor(
+            inputs, device=self.device, dtype=TorchUtils.get_data_type()
+        )
+        targets = torch.tensor(
+            targets, device=self.device, dtype=TorchUtils.get_data_type()
+        )
         return (inputs, targets)
 
 
@@ -105,7 +109,7 @@ class ToDevice:
 
 class DataToVoltageRange:
     def __init__(self, v_min, v_max, x_min=-1, x_max=1):
-        self.scale, self.offset = get_map_to_voltage_vars(
+        self.scale, self.offset = transform_current_to_voltage(
             np.array(v_min), np.array(v_max), np.array(x_min), np.array(x_max)
         )
 

@@ -1,11 +1,17 @@
+from typing import Sequence, Tuple
 import numpy as np
-
+from torch import Tensor
 from brainspy.utils.pytorch import TorchUtils
+
 
 # Used in processors/processor.py.
 def merge_electrode_data(
-    inputs, control_voltages, input_indices, control_voltage_indices, use_torch=True
-):
+    inputs,
+    control_voltages,
+    input_indices: Sequence[int],
+    control_voltage_indices,
+    use_torch=True,
+) -> np.array or Tensor:
     """
     Merge data from two electrodes with the specified indices for each.
     Need to indicate whether numpy or torch is used. The result will
@@ -13,7 +19,8 @@ def merge_electrode_data(
 
     Example
     -------
-    Let inputs = [i_1, i_2]  and control_voltages = [c_1, ..., c_5] where i_1, c_1, etc are column vectors.
+    Let inputs = [i_1, i_2]  and control_voltages = [c_1, ..., c_5] where i_1, c_1, etc are column
+    vectors.
     Let input_indices = [0, 2] and control_voltages = [3, 1, 4, 5, 6].
     Then this method would return [i_1, c_2, i_2, c_1, c_3, c_4, c_5].
     The result will be a numpy array or a torch tensor depending on the input.
@@ -48,9 +55,24 @@ def merge_electrode_data(
 
 
 # Not used anywhere
-def transform_to_voltage(x_val, y_min, y_max, x_min, x_max):
+def transform_to_voltage(
+    y_min: float, y_max: float, x_min: float, x_max: float, x_val: float
+) -> float:
     """
     Define a line by two points. Evaluate it at a given point.
+    Used to transform current data to the input voltage ranges of a device:
+    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
+
+    Example
+    -------
+    Let x_min = 1
+        y_min = 1
+        x_max = 2
+        y_max = 0
+        x_val = 1
+    This gives the line defined by the points (1, 1) and (2, 0),
+    which is y = 2 - x.
+    The function will return the line evaluated at x = 1, which is 1.
 
     Parameters
     ----------
@@ -67,17 +89,36 @@ def transform_to_voltage(x_val, y_min, y_max, x_min, x_max):
 
     Returns
     -------
-    (x_val * w) + b : float
+    (x_val * scale) + offset : float
         The line is defined by w and b and evaluated at x_val.
+
+    Raises
+    ------
+    ZeroDivisionError
+        If x_min equals x_max division by 0 occurs.
     """
-    w, b = get_map_to_voltage_vars(y_min, y_max, x_min, x_max)
-    return (x_val * w) + b
+    scale, offset = transform_current_to_voltage(y_min, y_max, x_min, x_max)
+    return (x_val * scale) + offset
 
 
 # Used in utils/transforms.py and
-def get_map_to_voltage_vars(y_min, y_max, x_min, x_max):
+def transform_current_to_voltage(
+    y_min: float, y_max: float, x_min: float, x_max: float
+) -> Tuple[float, float]:
     """
-    Get the scale and the offset of a line between two points.
+    Get the scale and offset of a line defined by two points.
+    Used to transform current data to the input voltage ranges of a device:
+    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
+
+    Example
+    -------
+    Let x_min = 1
+        y_min = 1
+        x_max = 2
+        y_max = 0
+    This gives the line defined by the points (1, 1) and (2, 0),
+    which is y = 2 - x.
+    The function will return the scale and offset, which are -1 and 2 respectively.
 
     Parameters
     ----------
@@ -96,14 +137,31 @@ def get_map_to_voltage_vars(y_min, y_max, x_min, x_max):
         Scale of the line.
     offset: double
         Offset of the line.
+
+    Raises
+    ------
+    ZeroDivisionError
+        If x_min equals x_max division by 0 occurs.
     """
     return get_scale(y_min, y_max, x_min, x_max), get_offset(y_min, y_max, x_min, x_max)
 
 
 # Only used in this file.
-def get_scale(y_min, y_max, x_min, x_max):
+def get_scale(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
     """
-    Find the scale/slope of a line defined by points.
+    Get the scale/slope of a line defined by two points.
+    Used to transform current data to the input voltage ranges of a device:
+    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
+
+    Example
+    -------
+    Let x_min = 1
+        y_min = 1
+        x_max = 2
+        y_max = 0
+    This gives the line defined by the points (1, 1) and (2, 0),
+    which is y = 2 - x.
+    The function will return the scale, which is -1.
 
     Parameters
     ----------
@@ -120,19 +178,22 @@ def get_scale(y_min, y_max, x_min, x_max):
     -------
     (y_min - y_max) / (x_min - x_max) : float
 
+    Raises
+    ------
+    ZeroDivisionError
+        If x_min equals x_max division by 0 occurs.
     """
-    y = y_min - y_max
-    x = x_min - x_max
-    return y / x
+    y_diff = y_min - y_max
+    x_diff = x_min - x_max
+    return y_diff / x_diff
 
 
 # Only used in this file.
-def get_offset(y_min, y_max, x_min, x_max):
+def get_offset(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
     """
     Get the offset/y-intercept of a line defined by two points.
     Used to transform current data to the input voltage ranges of a device:
     Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
-    TODO copy this description to the other functions
 
     Example
     -------
@@ -143,7 +204,6 @@ def get_offset(y_min, y_max, x_min, x_max):
     This gives the line defined by the points (1, 1) and (2, 0),
     which is y = 2 - x.
     The function will return the offset, which is 2.
-    TODO copy this example to the other functions
 
     Parameters
     ----------
@@ -161,7 +221,11 @@ def get_offset(y_min, y_max, x_min, x_max):
     ((y_max * x_min) - (y_min * x_max)) / (x_min - x_max) : float
         The offset of the line.
 
+    Raises
+    ------
+    ZeroDivisionError
+        If x_min equals x_max division by 0 occurs.
     """
-    y = (y_max * x_min) - (y_min * x_max)
-    x = x_min - x_max
-    return y / x
+    temp = (y_max * x_min) - (y_min * x_max)
+    x_diff = x_min - x_max
+    return temp / x_diff

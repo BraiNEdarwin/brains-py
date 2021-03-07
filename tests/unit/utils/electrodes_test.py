@@ -1,12 +1,15 @@
 import unittest
-import brainspy.utils.electrodes as electrodes
 import numpy as np
 import torch
+import brainspy.utils.electrodes as electrodes
+from brainspy.utils.pytorch import TorchUtils
 
 
 class ElectrodesTest(unittest.TestCase):
     def test_merge_numpy(self):
-        # Test merging numpy arrays.
+        """
+        Test merging numpy arrays.
+        """
         inputs = np.array(
             [
                 [1.0, 5.0, 9.0, 13.0],
@@ -40,7 +43,9 @@ class ElectrodesTest(unittest.TestCase):
                 self.assertEqual(result[i][j], target[i][j])
 
     def test_merge_torch(self):
-        # Test merging torch tensors.
+        """
+        Test merging torch tensors.
+        """
         inputs = torch.tensor(
             [
                 [1.0, 5.0, 9.0, 13.0],
@@ -48,9 +53,11 @@ class ElectrodesTest(unittest.TestCase):
                 [3.0, 7.0, 11.0, 15.0],
                 [4.0, 8.0, 12.0, 16.0],
             ],
-            dtype=torch.float32,
+            dtype=TorchUtils.get_data_type(),
         )
-        control_voltages = inputs + torch.ones(inputs.shape, dtype=torch.float32)
+        control_voltages = inputs + torch.ones(
+            inputs.shape, dtype=TorchUtils.get_data_type()
+        )
         input_indices = [0, 2, 4, 6]
         control_voltage_indices = [7, 5, 3, 1]
         result = electrodes.merge_electrode_data(
@@ -76,7 +83,9 @@ class ElectrodesTest(unittest.TestCase):
                 self.assertEqual(result[i][j], target[i][j])
 
     def test_line(self):
-        # Test scale and offset, and evaluation at a point, of a line.
+        """
+        Test scale and offset, and evaluation at a point, of a line.
+        """
         x_min = 1
         y_min = 1
         x_max = 2
@@ -87,6 +96,10 @@ class ElectrodesTest(unittest.TestCase):
             y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         scale = electrodes.get_scale(y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max)
+        both = electrodes.transform_current_to_voltage(
+            y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
+        )
+        self.assertEqual(both, (scale, offset))
         self.assertEqual(offset, 2)
         self.assertEqual(scale, -1)
         value = electrodes.transform_to_voltage(
@@ -95,8 +108,10 @@ class ElectrodesTest(unittest.TestCase):
         self.assertEqual(value, -1)
 
     def test_line_extreme(self):
-        # Test scale and offset, and evaluation at a point, of a line.
-        # Extreme case: x_min is larger than x_max.
+        """
+        Test scale and offset, and evaluation at a point, of a line.
+        Extreme case: x_min is larger than x_max.
+        """
         x_min = 2
         y_min = 0
         x_max = 1
@@ -115,8 +130,10 @@ class ElectrodesTest(unittest.TestCase):
         self.assertEqual(value, -1)
 
     def test_line_multi_dim(self):
-        # Test scale and offset, and evaluation at a point, of a line.
-        # Using multi-dimensional data.
+        """
+        Test scale and offset, and evaluation at a point, of a line.
+        Using multi-dimensional data.
+        """
         x_min = np.array([1, 0, 0])
         y_min = np.array([1, 0, 1])
         x_max = np.array([2, 1, 1])
@@ -133,6 +150,23 @@ class ElectrodesTest(unittest.TestCase):
         self.assertTrue(np.array_equal(offset, np.array([2, 0, 1])))
         self.assertTrue(np.array_equal(scale, np.array([-1, 1, 0])))
         self.assertTrue(np.array_equal(value, np.array([-1, 3, 1])))
+
+    def test_line_nan(self):
+        """
+        Test the line transform for x_min = x_max; should raise ZeroDivisionError.
+        """
+        x_min = 1
+        y_min = 1
+        x_max = 1
+        y_max = 2
+        self.assertRaises(
+            ZeroDivisionError,
+            electrodes.get_scale,
+            y_min=y_min,
+            y_max=y_max,
+            x_min=x_min,
+            x_max=x_max,
+        )
 
 
 if __name__ == "__main__":
