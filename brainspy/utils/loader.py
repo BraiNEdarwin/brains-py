@@ -9,6 +9,14 @@ def load_file(data_dir: str) -> Tuple[dict, OrderedDict]:
     Load a model from a file. Run a consistency check on smg_configs.
     Checks whether the amplification of the processor is set in the config; if not, set it to 1.
 
+    Example
+    -------
+    >>> load_file("model.pt")
+    (info, state_dict)
+
+    In this case 'info' contains information about the model and 'state_dict' contains the weights
+    of the network, referring to the model in "model.pt".
+
     Parameters
     ----------
     data_dir : str

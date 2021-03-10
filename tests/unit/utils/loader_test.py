@@ -5,6 +5,10 @@ import brainspy.utils.loader as loader
 
 
 class LoaderTest(unittest.TestCase):
+    """
+    Class for testing 'loader.py'.
+    """
+
     def test_all(self):
         """
         Test if loader makes the necessary adjustments.

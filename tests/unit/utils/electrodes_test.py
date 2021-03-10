@@ -6,6 +6,10 @@ from brainspy.utils.pytorch import TorchUtils
 
 
 class ElectrodesTest(unittest.TestCase):
+    """
+    Class for testing 'electrodes.py'.
+    """
+
     def test_merge_numpy(self):
         """
         Test merging numpy arrays.

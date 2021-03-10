@@ -1,4 +1,4 @@
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Union
 import numpy as np
 from torch import Tensor
 from brainspy.utils.pytorch import TorchUtils
@@ -11,7 +11,7 @@ def merge_electrode_data(
     input_indices: Sequence[int],
     control_voltage_indices,
     use_torch=True,
-) -> np.array or Tensor:
+) -> Union[np.array, Tensor]:
     """
     Merge data from two electrodes with the specified indices for each.
     Need to indicate whether numpy or torch is used. The result will
@@ -19,11 +19,20 @@ def merge_electrode_data(
 
     Example
     -------
-    Let inputs = [i_1, i_2]  and control_voltages = [c_1, ..., c_5] where i_1, c_1, etc are column
-    vectors.
-    Let input_indices = [0, 2] and control_voltages = [3, 1, 4, 5, 6].
-    Then this method would return [i_1, c_2, i_2, c_1, c_3, c_4, c_5].
-    The result will be a numpy array or a torch tensor depending on the input.
+    >>> inputs = np.array([[1.0, 3.0], [2.0, 4.0]])
+    >>> control_voltages = np.array([[5.0, 7.0], [6.0, 8.0]])
+    >>> input_indices = [0, 2]
+    >>> control_voltage_indices = [3, 1]
+    >>> electrodes.merge_electrode_data(
+    ...     inputs=inputs,
+    ...     control_voltages=control_voltages,
+    ...     input_indices=input_indices,
+    ...     control_voltage_indices=control_voltage_indices,
+    ...     use_torch=False,
+    ... )
+    np.array([[1.0, 7.0, 3.0, 5.0], [2.0, 8.0, 4.0, 6.0]])
+
+    Merging two arrays of size 2x2, resulting in an array of size 2x4.
 
     Parameters
     ----------
@@ -65,11 +74,9 @@ def transform_to_voltage(
 
     Example
     -------
-    Let x_min = 1
-        y_min = 1
-        x_max = 2
-        y_max = 0
-        x_val = 1
+    >>> transform_to_voltage(x_min=1, y_min=1, x_max=2, y_max=0, x_val=1)
+    1
+
     This gives the line defined by the points (1, 1) and (2, 0),
     which is y = 2 - x.
     The function will return the line evaluated at x = 1, which is 1.
@@ -112,10 +119,9 @@ def transform_current_to_voltage(
 
     Example
     -------
-    Let x_min = 1
-        y_min = 1
-        x_max = 2
-        y_max = 0
+    >>> transform_current_to_voltage(x_min=1, y_min=1, x_max=2, y_max=0)
+    (-1, 2)
+
     This gives the line defined by the points (1, 1) and (2, 0),
     which is y = 2 - x.
     The function will return the scale and offset, which are -1 and 2 respectively.
@@ -155,10 +161,9 @@ def get_scale(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
 
     Example
     -------
-    Let x_min = 1
-        y_min = 1
-        x_max = 2
-        y_max = 0
+    >>> get_scale(x_min=1, y_min=1, x_max=2, y_max=0)
+    -1
+
     This gives the line defined by the points (1, 1) and (2, 0),
     which is y = 2 - x.
     The function will return the scale, which is -1.
@@ -183,9 +188,7 @@ def get_scale(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
-    y_diff = y_min - y_max
-    x_diff = x_min - x_max
-    return y_diff / x_diff
+    return (y_min - y_max) / (x_min - x_max)
 
 
 # Only used in this file.
@@ -197,10 +200,9 @@ def get_offset(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
 
     Example
     -------
-    Let x_min = 1
-        y_min = 1
-        x_max = 2
-        y_max = 0
+    >>> get_offset(x_min=1, y_min=1, x_max=2, y_max=0)
+    2
+
     This gives the line defined by the points (1, 1) and (2, 0),
     which is y = 2 - x.
     The function will return the offset, which is 2.
@@ -226,6 +228,4 @@ def get_offset(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
-    temp = (y_max * x_min) - (y_min * x_max)
-    x_diff = x_min - x_max
-    return temp / x_diff
+    return ((y_max * x_min) - (y_min * x_max)) / (x_min - x_max)
