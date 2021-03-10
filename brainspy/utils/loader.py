@@ -1,5 +1,5 @@
-from typing import Tuple
-from typing import OrderedDict
+from typing import Tuple, OrderedDict
+import warnings
 import torch
 from brainspy.utils.pytorch import TorchUtils
 
@@ -45,7 +45,7 @@ def load_file(data_dir: str) -> Tuple[dict, OrderedDict]:
     # Set amplification to 1 if not specified in file.
     if "amplification" not in info["data_info"]["processor"]:
         info["data_info"]["processor"]["amplification"] = 1
-
+        warnings.warn("The model loaded does not define the amplification; set to 1.")
     return info, state_dict
 
 
@@ -72,20 +72,18 @@ def info_consistency_check(model_info: OrderedDict) -> OrderedDict:
     default_out_size = 1
     default_hidden_size = 90
     default_hidden_number = 6
-    # if type(model_info['activation']) is str:
-    #    model_info['activation'] = nn.ReLU()
     if "D_in" not in model_info["processor"]["torch_model_dict"]:
         # Check input dimension.
         model_info["processor"]["torch_model_dict"]["D_in"] = default_in_size
-        print(
-            "WARNING: The model loaded does not define the input dimension as expected. "
+        warnings.warn(
+            "The model loaded does not define the input dimension as expected. "
             f"Changed it to default value: {default_in_size}."
         )
     if "D_out" not in model_info["processor"]["torch_model_dict"]:
         # Check output dimension.
         model_info["processor"]["torch_model_dict"]["D_out"] = default_out_size
-        print(
-            "WARNING: The model loaded does not define the output dimension as expected. "
+        warnings.warn(
+            "The model loaded does not define the output dimension as expected. "
             f"Changed it to default value: {default_out_size}."
         )
     if "hidden_sizes" not in model_info["processor"]["torch_model_dict"]:
@@ -93,8 +91,8 @@ def info_consistency_check(model_info: OrderedDict) -> OrderedDict:
         model_info["processor"]["torch_model_dict"]["hidden_sizes"] = (
             default_hidden_size * default_hidden_number
         )
-        print(
-            "WARNING: The model loaded does not define the hidden layer sizes as expected. "
+        warnings.warn(
+            "The model loaded does not define the hidden layer sizes as expected. "
             f"Changed it to default value: {default_hidden_number} layers of {default_hidden_size}."
         )
     return model_info
