@@ -92,7 +92,7 @@ class DNPUConv2d(nn.Module):
         return int(((dim + (2*self.padding) - self.kernel_size)/self.stride ) + 1)
 
     def preprocess(self,x):
-        assert x.shape[2] == x.shape[3], "Different dimension shapes not supported"
+        #assert x.shape[2] == x.shape[3], "Different dimension shapes not supported"
         batch_size = x.shape[0]
         x = F.unfold(x, kernel_size=self.kernel_size, stride=self.stride, padding=self.padding) # Unfold as in a regular convolution
         window_no = x.shape[-1] # Number of windows from the local receptive field after unfolding
@@ -151,7 +151,8 @@ class DNPUConv2d(nn.Module):
             
         result = result.sum(dim=2) # Sum values from the input kernels
 
-        result = torch.nn.functional.fold(result,kernel_size=1, output_size=self.get_output_size(input_dim))
+        #result = torch.nn.functional.fold(result,kernel_size=5, output_size=self.get_output_size(input_dim),stride=self.stride)
+        result = result.reshape(result.shape[0],result.shape[1],self.get_output_size(input_dim),-1)
         return result
     # Evaluate node
     def forward(self, x):
