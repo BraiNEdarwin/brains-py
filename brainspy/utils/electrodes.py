@@ -1,3 +1,7 @@
+"""
+Placeholder module docstring.
+"""
+
 from typing import Sequence, Tuple, Union
 import numpy as np
 from torch import Tensor

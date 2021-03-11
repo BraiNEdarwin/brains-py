@@ -1,7 +1,11 @@
+"""
+Placeholder module docstring.
+"""
+
 import unittest
 from collections import OrderedDict
 import torch
-import brainspy.utils.loader as loader
+from brainspy.processors.simulation.processor import load_file
 
 
 class LoaderTest(unittest.TestCase):
@@ -34,7 +38,7 @@ class LoaderTest(unittest.TestCase):
         torch.save(model, altered_path)
 
         # Load the altered model with "loader".
-        info, state_dict = loader.load_file(altered_path)
+        info, state_dict = load_file(altered_path)
 
         # Check if state_dict is right type.
         self.assertIsInstance(state_dict, OrderedDict)

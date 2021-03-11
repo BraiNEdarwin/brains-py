@@ -1,3 +1,7 @@
+"""
+Placeholder module docstring.
+"""
+
 import unittest
 import numpy as np
 import torch
