@@ -64,17 +64,17 @@ def merge_electrode_data(
 
 
 # Not used anywhere
-def transform_to_voltage(
+def linear_transform(
     y_min: float, y_max: float, x_min: float, x_max: float, x_val: float
 ) -> float:
     """
-    Define a line by two points. Evaluate it at a given point.
+    Applies a linear transformation of a point within a range, to a point within another range.
     Used to transform current data to the input voltage ranges of a device:
     Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
 
     Example
     -------
-    >>> transform_to_voltage(x_min=1, y_min=1, x_max=2, y_max=0, x_val=1)
+    >>> linear_transform(x_min=1, y_min=1, x_max=2, y_max=0, x_val=1)
     1
 
     This gives the line defined by the points (1, 1) and (2, 0),
@@ -104,22 +104,24 @@ def transform_to_voltage(
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
-    scale, offset = transform_current_to_voltage(y_min, y_max, x_min, x_max)
+    scale, offset = get_linear_transform_constants(y_min, y_max, x_min, x_max)
     return (x_val * scale) + offset
 
 
 # Used in utils/transforms.py and
-def transform_current_to_voltage(
+def get_linear_transform_constants(
     y_min: float, y_max: float, x_min: float, x_max: float
 ) -> Tuple[float, float]:
     """
-    Get the scale and offset of a line defined by two points.
+    Get the scale and offset constants of a line defined by two points.
+    The constants can be used to apply a linear transformation of a point 
+    within a range, to a point within another range.
     Used to transform current data to the input voltage ranges of a device:
     Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
 
     Example
     -------
-    >>> transform_current_to_voltage(x_min=1, y_min=1, x_max=2, y_max=0)
+    >>> get_linear_transform_constants(x_min=1, y_min=1, x_max=2, y_max=0)
     (-1, 2)
 
     This gives the line defined by the points (1, 1) and (2, 0),

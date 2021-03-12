@@ -104,13 +104,13 @@ class ElectrodesTest(unittest.TestCase):
             y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         scale = electrodes.get_scale(y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max)
-        both = electrodes.transform_current_to_voltage(
+        both = electrodes.get_linear_transform_constants(
             y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         self.assertEqual(both, (scale, offset))
         self.assertEqual(offset, 2)
         self.assertEqual(scale, -1)
-        value = electrodes.transform_to_voltage(
+        value = electrodes.linear_transform(
             x_val=x_val, y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         self.assertEqual(value, -1)
@@ -132,7 +132,7 @@ class ElectrodesTest(unittest.TestCase):
         scale = electrodes.get_scale(y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max)
         self.assertEqual(offset, 2)
         self.assertEqual(scale, -1)
-        value = electrodes.transform_to_voltage(
+        value = electrodes.linear_transform(
             x_val=x_val, y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         self.assertEqual(value, -1)
@@ -152,7 +152,7 @@ class ElectrodesTest(unittest.TestCase):
             y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         scale = electrodes.get_scale(y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max)
-        value = electrodes.transform_to_voltage(
+        value = electrodes.linear_transform(
             x_val=x_val, y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         self.assertTrue(np.array_equal(offset, np.array([2, 0, 1])))
