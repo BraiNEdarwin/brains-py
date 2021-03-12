@@ -1,8 +1,10 @@
-from typing import Sequence, Tuple, Union
+import torch
 import numpy as np
-from torch import Tensor
-from brainspy.utils.pytorch import TorchUtils
 
+from torch import Tensor
+from typing import Sequence, Tuple, Union
+
+from brainspy.utils.pytorch import TorchUtils
 
 # Used in processors/processor.py.
 def merge_electrode_data(
