@@ -25,10 +25,12 @@ class HardwareProcessor(nn.Module):
     def __init__(self, configs, logger=None):
         super(HardwareProcessor, self).__init__()
         self.driver = get_driver(configs)
-        if configs['processor_type'] == 'simulation_debug':
+        if configs["processor_type"] == "simulation_debug":
             self.voltage_ranges = self.driver.voltage_ranges
         else:
-            self.voltage_ranges = TorchUtils.get_tensor_from_numpy(self.driver.voltage_ranges)
+            self.voltage_ranges = TorchUtils.get_tensor_from_numpy(
+                self.driver.voltage_ranges
+            )
         self.waveform_mgr = WaveformManager(configs["data"]["waveform"])
         self.logger = logger
         # TODO: Manage amplification from this class
@@ -56,7 +58,7 @@ class HardwareProcessor(nn.Module):
         if "close_tasks" in dir(self.driver):
             self.driver.close_tasks()
         else:
-            print('Warning: Driver tasks have not been closed.')
+            print("Warning: Driver tasks have not been closed.")
 
     def is_hardware(self):
         return self.driver.is_hardware()

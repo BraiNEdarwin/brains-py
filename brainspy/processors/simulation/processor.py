@@ -1,14 +1,16 @@
 """ The accelerator class enables to statically access the accelerator
 (CUDA or CPU) that is used in the computer. The aim is to support both platforms seemlessly. """
 
+from typing import Tuple, OrderedDict
+import warnings
+
 import torch
 from torch import nn
 
 from brainspy.processors.simulation.model import NeuralNetworkModel
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.utils.loader import load_file
 from brainspy.processors.simulation.noise.noise import get_noise
-
+from brainspy.utils.loader import info_consistency_check
 
 class SurrogateModel(nn.Module):
     """
@@ -25,9 +27,9 @@ class SurrogateModel(nn.Module):
         self._load(configs)
         self._init_voltage_ranges()
         self.amplification = TorchUtils.get_tensor_from_list(
-            self.info["data_info"]["processor"]['driver']["amplification"]
+            self.info["data_info"]["processor"]["driver"]["amplification"]
         )
-        self.output_clipping = configs['driver']['output_clipping']
+        self.output_clipping = configs["driver"]["output_clipping"]
         self.clipping_value = TorchUtils.get_tensor_from_list(
             self.info["data_info"]["clipping_value"]
         )
@@ -36,7 +38,7 @@ class SurrogateModel(nn.Module):
     def _load(self, configs):
         """Loads a pytorch model from a directory string."""
         self.configs = configs
-        self.info, state_dict = load_file(configs["driver"]["torch_model_dict"], "pt")
+        self.info, state_dict = load_file(configs["driver"]["torch_model_dict"])
         self.model = NeuralNetworkModel(self.info["smg_configs"]["processor"])
         self.model.load_state_dict(state_dict)
 
@@ -54,7 +56,9 @@ class SurrogateModel(nn.Module):
     def forward(self, x):
         x = self.noise(self.model(x) * self.amplification)
         if self.output_clipping:
-            return torch.clamp(x, min=self.clipping_value[0], max=self.clipping_value[1])
+            return torch.clamp(
+                x, min=self.clipping_value[0], max=self.clipping_value[1]
+            )
         return x
 
     def forward_numpy(self, input_matrix):
@@ -62,8 +66,6 @@ class SurrogateModel(nn.Module):
             inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
             output = self.forward(inputs_torch)
         return TorchUtils.get_numpy_from_tensor(output)
-
-
 
     def reset(self):
         print("Warning: Reset function in Surrogate Model not implemented.")
@@ -75,3 +77,49 @@ class SurrogateModel(nn.Module):
 
     def is_hardware(self):
         return False
+
+
+# Moved here from loader.py.
+def load_file(data_dir: str) -> Tuple[dict, OrderedDict]:
+    """
+    Load a model from a file. Run a consistency check on smg_configs.
+    Checks whether the amplification of the processor is set in the config; if not, set it to 1.
+
+    Example
+    -------
+    >>> load_file("model.pt")
+    (info, state_dict)
+
+    In this case 'info' contains information about the model and 'state_dict' contains the weights
+    of the network, referring to the model in "model.pt".
+
+    Parameters
+    ----------
+    data_dir : str
+        Directory of the file.
+
+    Returns
+    -------
+    info : dict
+        Dictionary containing the settings.
+    state_dict : dict
+        State dictionary of the model, containing the weights and biases
+        of the network.
+    """
+    # Load model; contains weights (+biases) and info.
+    state_dict = torch.load(data_dir, map_location=TorchUtils.get_accelerator_type())
+    # state_dict is an ordered dictionary.
+
+    # Load the info and delete it from the model.
+    info = state_dict["info"]
+    del state_dict["info"]
+    # info is a dictionary; keys are data_info and smg_configs.
+
+    # Run consistency check (see docstring of that method).
+    info["smg_configs"] = info_consistency_check(info["smg_configs"])
+
+    # Set amplification to 1 if not specified in file.
+    if "amplification" not in info["data_info"]["processor"]:
+        info["data_info"]["processor"]["amplification"] = 1
+        warnings.warn("The model loaded does not define the amplification; set to 1.")
+    return info, state_dict
