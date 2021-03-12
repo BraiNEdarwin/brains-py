@@ -4,7 +4,7 @@ import torch.nn as nn
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
 
-from brainspy.utils.electrodes import get_map_to_voltage_vars
+from brainspy.utils.electrodes import get_linear_transform_constants
 
 class DNPUBase(nn.Module):
 
@@ -63,7 +63,7 @@ class DNPUBase(nn.Module):
         input_range = torch.ones_like(output_range)
         input_range[0] *= min_input
         input_range[1] *= max_input
-        amplitude, offset = get_map_to_voltage_vars(output_range[0],output_range[1],input_range[0],input_range[1])
+        amplitude, offset = get_linear_transform_constants(output_range[0],output_range[1],input_range[0],input_range[1])
         samples = torch.rand((self.device_no,control_no), device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())
         return (amplitude * samples) + offset
 
@@ -105,7 +105,7 @@ class DNPUBase(nn.Module):
         input_range[0] *= min_input
         input_range[1] *= max_input
 
-        self.amplitude, self.offset = get_map_to_voltage_vars(output_range[0],output_range[1],input_range[0],input_range[1])
+        self.amplitude, self.offset = get_linear_transform_constants(output_range[0],output_range[1],input_range[0],input_range[1])
         # self.VariableRangeMapper()
         # self.transform = SimpleMapping(input_range=[-0.4242,2.8215], output_range=self.get_input_ranges().flatten(1,-1), clip_input=clip_input)
 

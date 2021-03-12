@@ -7,7 +7,7 @@ from brainspy.processors.processor import Processor
 from brainspy.processors.modules.vecbase import DNPUBase
 from brainspy.processors.modules.bn import DNPU_BatchNorm
 #from brainspy.utils.mappers import SimpleMapping
-from brainspy.utils.electrodes import get_map_to_voltage_vars, format_input_ranges
+from brainspy.utils.electrodes import get_linear_transform_constants, format_input_ranges
 import torch.nn.functional as F
 
 class DNPUConv2d(nn.Module):
@@ -63,7 +63,7 @@ class DNPUConv2d(nn.Module):
     def sample_controls(self, control_no):
         output_range = self.get_control_ranges()
         input_range = format_input_ranges(0,1, output_range)
-        amplitude, offset = get_map_to_voltage_vars(output_range[0],output_range[1],input_range[0],input_range[1])
+        amplitude, offset = get_linear_transform_constants(output_range[0],output_range[1],input_range[0],input_range[1])
         samples = torch.rand((self.out_channels,self.in_channels,self.device_no,control_no), device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())
         return (amplitude * samples) + offset
 
@@ -71,7 +71,7 @@ class DNPUConv2d(nn.Module):
         self.input_transform = True
         output_range = self.get_input_ranges()
         input_range = format_input_ranges(data_input_range[0],data_input_range[1], output_range)
-        self.amplitude, self.offset = get_map_to_voltage_vars(output_range[0],output_range[1],input_range[0],input_range[1])
+        self.amplitude, self.offset = get_linear_transform_constants(output_range[0],output_range[1],input_range[0],input_range[1])
 
     def add_batch_norm(self, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True, clamp_at=None):
         self.batch_norm = True
