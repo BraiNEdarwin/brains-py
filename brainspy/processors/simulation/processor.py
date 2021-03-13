@@ -1,16 +1,15 @@
 """ The accelerator class enables to statically access the accelerator
 (CUDA or CPU) that is used in the computer. The aim is to support both platforms seemlessly. """
 
-from typing import Tuple, OrderedDict
+import torch
 import warnings
 
-import torch
 from torch import nn
+from typing import Tuple, OrderedDict
 
-from brainspy.processors.simulation.model import NeuralNetworkModel
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.simulation.noise.noise import get_noise
-from brainspy.utils.loader import info_consistency_check
+from brainspy.processors.simulation.model import NeuralNetworkModel
 
 class SurrogateModel(nn.Module):
     """
@@ -26,20 +25,13 @@ class SurrogateModel(nn.Module):
         super(SurrogateModel, self).__init__()
         self._load(configs)
         self._init_voltage_ranges()
-        self.amplification = TorchUtils.get_tensor_from_list(
-            self.info["data_info"]["processor"]["driver"]["amplification"]
-        )
-        self.output_clipping = configs["driver"]["output_clipping"]
-        self.clipping_value = TorchUtils.get_tensor_from_list(
-            self.info["data_info"]["clipping_value"]
-        )
-        self.noise = get_noise(configs)
+        self._init_effects()
 
     def _load(self, configs):
         """Loads a pytorch model from a directory string."""
         self.configs = configs
-        self.info, state_dict = load_file(configs["driver"]["torch_model_dict"])
-        self.model = NeuralNetworkModel(self.info["smg_configs"]["processor"])
+        self.info, state_dict = self.load_file(configs["driver"]["torch_model_dict"])
+        self.model = NeuralNetworkModel(self.info["smg_configs"]["processor"]["torch_model_dict"])
         self.model.load_state_dict(state_dict)
 
     def _init_voltage_ranges(self):
@@ -52,6 +44,16 @@ class SurrogateModel(nn.Module):
         min_voltage = (offset - amplitude).unsqueeze(dim=1)
         max_voltage = (offset + amplitude).unsqueeze(dim=1)
         self.voltage_ranges = torch.cat((min_voltage, max_voltage), dim=1)
+
+    def _init_effects(self):
+        self.amplification = TorchUtils.get_tensor_from_list(
+            self.info["data_info"]["processor"]["driver"]["amplification"]
+        )
+        self.output_clipping = self.configs["driver"]["output_clipping"]
+        self.clipping_value = TorchUtils.get_tensor_from_list(
+            self.info["data_info"]["clipping_value"]
+        )
+        self.noise = get_noise(self.configs)
 
     def forward(self, x):
         x = self.noise(self.model(x) * self.amplification)
@@ -78,48 +80,43 @@ class SurrogateModel(nn.Module):
     def is_hardware(self):
         return False
 
+    def load_file(self, data_dir: str) -> Tuple[dict, OrderedDict]:
+        """
+        Load a model from a file. Run a consistency check on smg_configs.
+        Checks whether the amplification of the processor is set in the config; if not, set it to 1.
 
-# Moved here from loader.py.
-def load_file(data_dir: str) -> Tuple[dict, OrderedDict]:
-    """
-    Load a model from a file. Run a consistency check on smg_configs.
-    Checks whether the amplification of the processor is set in the config; if not, set it to 1.
+        Example
+        -------
+        >>> load_file("model.pt")
+        (info, state_dict)
 
-    Example
-    -------
-    >>> load_file("model.pt")
-    (info, state_dict)
+        In this case 'info' contains information about the model and 'state_dict' contains the weights
+        of the network, referring to the model in "model.pt".
 
-    In this case 'info' contains information about the model and 'state_dict' contains the weights
-    of the network, referring to the model in "model.pt".
+        Parameters
+        ----------
+        data_dir : str
+            Directory of the file.
 
-    Parameters
-    ----------
-    data_dir : str
-        Directory of the file.
+        Returns
+        -------
+        info : dict
+            Dictionary containing the settings.
+        state_dict : dict
+            State dictionary of the model, containing the weights and biases
+            of the network.
+        """
+        # Load model; contains weights (+biases) and info.
+        state_dict = torch.load(data_dir, map_location=TorchUtils.get_accelerator_type())
+        # state_dict is an ordered dictionary.
 
-    Returns
-    -------
-    info : dict
-        Dictionary containing the settings.
-    state_dict : dict
-        State dictionary of the model, containing the weights and biases
-        of the network.
-    """
-    # Load model; contains weights (+biases) and info.
-    state_dict = torch.load(data_dir, map_location=TorchUtils.get_accelerator_type())
-    # state_dict is an ordered dictionary.
+        # Load the info and delete it from the model.
+        info = state_dict["info"]
+        del state_dict["info"]
+        # info is a dictionary; keys are data_info and smg_configs.
 
-    # Load the info and delete it from the model.
-    info = state_dict["info"]
-    del state_dict["info"]
-    # info is a dictionary; keys are data_info and smg_configs.
-
-    # Run consistency check (see docstring of that method).
-    info["smg_configs"] = info_consistency_check(info["smg_configs"])
-
-    # Set amplification to 1 if not specified in file.
-    if "amplification" not in info["data_info"]["processor"]:
-        info["data_info"]["processor"]["amplification"] = 1
-        warnings.warn("The model loaded does not define the amplification; set to 1.")
-    return info, state_dict
+        # Set amplification to 1 if not specified in file.
+        if "amplification" not in info["data_info"]["processor"]:
+            info["data_info"]["processor"]["amplification"] = 1
+            warnings.warn("The model loaded does not define the amplification; set to 1.")
+        return info, state_dict

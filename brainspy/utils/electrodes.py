@@ -1,119 +1,82 @@
-from typing import Tuple, Sequence
 import torch
+import numpy as np
+
+from torch import Tensor
+from typing import Sequence, Tuple, Union
+
 from brainspy.utils.pytorch import TorchUtils
-# Moved most transforms to bspytasks.
 
-# Used in bn.py
-class CurrentToVoltage:
+# Used in processors/processor.py.
+def merge_electrode_data(
+    inputs,
+    control_voltages,
+    input_indices: Sequence[int],
+    control_voltage_indices,
+    use_torch=True,
+) -> Union[np.array, Tensor]:
     """
-    Class that uses a linear function to transform current to voltage.
+    Merge data from two electrodes with the specified indices for each.
+    Need to indicate whether numpy or torch is used. The result will
+    have the same type as the input.
+
+    Example
+    -------
+    >>> inputs = np.array([[1.0, 3.0], [2.0, 4.0]])
+    >>> control_voltages = np.array([[5.0, 7.0], [6.0, 8.0]])
+    >>> input_indices = [0, 2]
+    >>> control_voltage_indices = [3, 1]
+    >>> electrodes.merge_electrode_data(
+    ...     inputs=inputs,
+    ...     control_voltages=control_voltages,
+    ...     input_indices=input_indices,
+    ...     control_voltage_indices=control_voltage_indices,
+    ...     use_torch=False,
+    ... )
+    np.array([[1.0, 7.0, 3.0, 5.0], [2.0, 8.0, 4.0, 6.0]])
+
+    Merging two arrays of size 2x2, resulting in an array of size 2x4.
+
+    Parameters
+    ----------
+    inputs: np.array or torch.tensor
+        Data for the input electrodes.
+    control_voltages: np.array or torch.tensor
+        Data for the control electrodes.
+    input_indices: iterable of int
+        Indices of the input electrodes.
+    control_voltage_indices: iterable of int
+        Indices of the control electrodes.
+    use_torch : boolean
+        Indicate whether the data is pytorch tensor (instead of a numpy array)
+
+    Returns
+    -------
+    result: np.array or torch.tensor
+        Array or tensor with merged data.
+
     """
-    def __init__(self, current_range: Sequence[float], voltage_range: Sequence[float], cut=True):
-        """
-        Initialize object, find linear transform parameters for each current-voltage pair.
-
-        Example
-        -------
-        >>> CurrentToVoltage([[0, 1], [1, 2]], [[1, 2], [1, 0]])
-
-        This example defines two transformations, the first with current range 0 to 1 and voltage
-        range 1 to 2, the second with current range 1 to 2 and voltage range 1 to 0.
-
-        Parameters
-        ----------
-        current_range : Sequence[float]
-            The data for the current range.
-            [[current1_min, current1_max], [current2_min, current2_max], ...]
-        voltage_range : Sequence[float]
-            The data for the voltage range.
-            [[current1_min, current1_max], [current2_min, current2_max], ...]
-        cut : bool, optional
-            Indicate whether to use cut (torch.clamp) when calling the object, by default True.
-            If set to true, input values outside of the current range will be set to either the
-            minimum or maximum, depending on whether the value is below or above the range.
-
-        Raises
-        ------
-        Exception
-            If the current and voltage ranges are different in length.
-        """
-        if len(current_range) != len(voltage_range):
-            raise Exception("Mapping ranges are different in length")
-
-        # Determine the transform parameters for each pair.
-        self.map_variables = TorchUtils.get_tensor_from_list(
-            [
-                get_linear_transform_constants(
-                    voltage_range[i][0],
-                    voltage_range[i][1],
-                    current_range[i][0],
-                    current_range[i][1],
-                )
-                for i in range(len(current_range))
-            ]
-        )
-        self.current_range = current_range
-        self.cut = cut
-
-    def __call__(self, x_value: torch.Tensor) -> torch.Tensor:
-        """
-        For given input currents determine the output voltages using the linear transforms.
-
-        Example
-        -------
-        >>> ctv = CurrentToVoltage([[0, 1], [1, 2]], [[1, 2], [1, 0]])
-        >>> ctv([1, 1])
-        [2, 1]
-
-        This example defines two transformations, the first with current range 0 to 1 and voltage
-        range 1 to 2, the second with current range 1 to 2 and voltage range 1 to 0.
-        With the input values 1 for the first transform and 1 for the second we get the outputs
-        2 and 1 respectively.
-
-        Parameters
-        ----------
-        x_value : torch.Tensor
-            Input current values.
-
-        Returns
-        -------
-        result : torch.Tensor
-            Output voltage values.
-
-        Raises
-        ------
-        Exception
-            If the shape the dimension of the input is wrong.
-        """
-        # If cut will be applied, we need a copy of the x values to apply it to.
-        x_copy = x_value.clone()
-        result = torch.zeros_like(x_value)
-
-        if not (len(x_value.shape) == 2 and x_value.shape[1] == len(self.map_variables)):
-            raise Exception("Input shape not supported.")
-
-        for i in range(len(self.map_variables)):
-            if self.cut:
-                x_copy[:, i] = torch.clamp(
-                    x_value[:, i], min=self.current_range[i][0], max=self.current_range[i][1]
-                )
-            result[:, i] = (x_copy[:, i] * self.map_variables[i][0]) + self.map_variables[i][1]
-
-        return result
+    result = np.empty(
+        (inputs.shape[0], len(input_indices) + len(control_voltage_indices))
+    )
+    if use_torch:
+        result = TorchUtils.get_tensor_from_numpy(result)
+    result[:, input_indices] = inputs
+    result[:, control_voltage_indices] = control_voltages
+    return result
 
 
 # Not used anywhere
-def transform_to_voltage(
+def linear_transform(
     y_min: float, y_max: float, x_min: float, x_max: float, x_val: float
 ) -> float:
     """
-    Define a line by two points. Evaluate it at a given point.
+    Applies a linear transformation of a point within a range, to a point within another range.
     Used to transform current data to the input voltage ranges of a device:
     Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
 
     Example
     -------
-    >>> transform_to_voltage(x_min=1, y_min=1, x_max=2, y_max=0, x_val=1)
+    >>> linear_transform(x_min=1, y_min=1, x_max=2, y_max=0, x_val=1)
     1
 
     This gives the line defined by the points (1, 1) and (2, 0),
@@ -143,22 +106,24 @@ def transform_to_voltage(
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
-    scale, offset = transform_current_to_voltage(y_min, y_max, x_min, x_max)
+    scale, offset = get_linear_transform_constants(y_min, y_max, x_min, x_max)
     return (x_val * scale) + offset
 
 
-# Only used here.
-def transform_current_to_voltage(
+# Used in utils/transforms.py and
+def get_linear_transform_constants(
     y_min: float, y_max: float, x_min: float, x_max: float
 ) -> Tuple[float, float]:
     """
-    Get the scale and offset of a line defined by two points.
+    Get the scale and offset constants of a line defined by two points.
+    The constants can be used to apply a linear transformation of a point 
+    within a range, to a point within another range.
     Used to transform current data to the input voltage ranges of a device:
     Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
 
     Example
     -------
-    >>> transform_current_to_voltage(x_min=1, y_min=1, x_max=2, y_max=0)
+    >>> get_linear_transform_constants(x_min=1, y_min=1, x_max=2, y_max=0)
     (-1, 2)
 
     This gives the line defined by the points (1, 1) and (2, 0),
@@ -268,3 +233,9 @@ def get_offset(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
         If x_min equals x_max division by 0 occurs.
     """
     return ((y_max * x_min) - (y_min * x_max)) / (x_min - x_max)
+
+def format_input_ranges(input_min, input_max, output_ranges):
+    input_ranges = torch.ones_like(output_ranges)
+    input_ranges[0] *= input_min
+    input_ranges[1] *= input_max
+    return input_ranges

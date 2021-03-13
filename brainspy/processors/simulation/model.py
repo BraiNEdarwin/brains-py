@@ -1,10 +1,56 @@
 """ The accelerator class enables to statically access the accelerator
 (CUDA or CPU) that is used in the computer. The aim is to support both platforms seemlessly. """
+import warnings
 
-import torch
 from torch import nn
-from brainspy.utils.pytorch import TorchUtils
+from typing import OrderedDict
 
+def info_consistency_check(model_info: OrderedDict) -> OrderedDict:
+    """
+    Check if the model info follows the expected standards:
+    Are input dimension, output dimension, and hidden layer number and sizes
+    are defined in the config? If they aren't, set them to default values and
+    print a warning.
+    Used on the smg_configs specifically.
+
+    Parameters
+    ----------
+    model_info : dict
+        Dictionary of the configs.
+
+    Returns
+    -------
+    model_info : dict
+        A possibly altered version of the input dictionary.
+    """
+    default_in_size = 7
+    default_out_size = 1
+    default_hidden_size = 90
+    default_hidden_number = 6
+    if "D_in" not in model_info:
+        # Check input dimension.
+        model_info["D_in"] = default_in_size
+        warnings.warn(
+            "The model loaded does not define the input dimension as expected. "
+            f"Changed it to default value: {default_in_size}."
+        )
+    if "D_out" not in model_info:
+        # Check output dimension.
+        model_info["D_out"] = default_out_size
+        warnings.warn(
+            "The model loaded does not define the output dimension as expected. "
+            f"Changed it to default value: {default_out_size}."
+        )
+    if "hidden_sizes" not in model_info:
+        # Check sizes of hidden layers.
+        model_info["hidden_sizes"] = (
+            default_hidden_size * default_hidden_number
+        )
+        warnings.warn(
+            "The model loaded does not define the hidden layer sizes as expected. "
+            f"Changed it to default value: {default_hidden_number} layers of {default_hidden_size}."
+        )
+    return model_info
 
 class NeuralNetworkModel(nn.Module):
     """
@@ -17,15 +63,13 @@ class NeuralNetworkModel(nn.Module):
 
     # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
 
-    def __init__(self, configs, verbose=False):
+    def __init__(self, model_info, verbose=False):
         super(NeuralNetworkModel, self).__init__()
-        self.configs = configs
         self.verbose = verbose
-        self.load(configs["torch_model_dict"])
-        if TorchUtils.get_accelerator_type() == torch.device("cuda"):
-            self.raw_model.cuda()
+        self.build_model_structure(model_info)
 
-    def load(self, model_info):
+    def build_model_structure(self, model_info):
+        model_info = info_consistency_check(model_info)
         hidden_sizes = model_info["hidden_sizes"]
         input_layer = nn.Linear(model_info["D_in"], hidden_sizes[0])
         activ_function = self._get_activation(model_info["activation"])
@@ -53,3 +97,4 @@ class NeuralNetworkModel(nn.Module):
                 print("Activation function is set as ReLU")
             return nn.ReLU()
         return activation
+
