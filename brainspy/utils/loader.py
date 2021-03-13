@@ -1,7 +1,3 @@
-"""
-Placeholder module docstring.
-"""
-
 import warnings
 from typing import OrderedDict
 
@@ -28,6 +24,13 @@ def info_consistency_check(model_info: OrderedDict) -> OrderedDict:
     default_out_size = 1
     default_hidden_size = 90
     default_hidden_number = 6
+    default_activation = "relu"
+    if not model_info["activation"] in ("relu", "elu"):
+        model_info["activation"] = "relu"
+        warnings.warn(
+            "The model loaded does not define the activation as expected. "
+            f"Changed it to default value: {default_activation}."
+        )
     if "D_in" not in model_info["processor"]["torch_model_dict"]:
         # Check input dimension.
         model_info["processor"]["torch_model_dict"]["D_in"] = default_in_size

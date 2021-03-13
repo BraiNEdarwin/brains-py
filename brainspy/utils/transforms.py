@@ -1,30 +1,46 @@
+from typing import Tuple, Sequence
 import torch
-import numpy as np
-
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.utils.waveform import WaveformManager
-from brainspy.utils.electrodes import transform_current_to_voltage
+# Moved most transforms to bspytasks.
 
-
-# class CurrentToVoltage():
-#     def __init__(self, v_min, v_max, x_min=-1, x_max=1, cut=True):
-#         self.scale, self.offset = get_map_to_voltage_vars(v_min, v_max, x_min, x_max)
-#         self.x_min = x_min
-#         self.x_max = x_max
-#         self.cut = cut
-
-#     def __call__(self, x):
-#         if self.cut:
-#             x = torch.clamp(x, min=self.x_min, max=self.x_max)
-#         x = (x * self.scale) + self.offset
-#         return x
-
-
+# Used in bn.py
 class CurrentToVoltage:
-    def __init__(self, current_range, voltage_range, cut=True):
-        assert len(current_range) == len(
-            voltage_range
-        ), "Mapping ranges are different in length"
+    """
+    Class that uses a linear function to transform current to voltage.
+    """
+    def __init__(self, current_range: Sequence[float], voltage_range: Sequence[float], cut=True):
+        """
+        Initialize object, find linear transform parameters for each current-voltage pair.
+
+        Example
+        -------
+        >>> CurrentToVoltage([[0, 1], [1, 2]], [[1, 2], [1, 0]])
+
+        This example defines two transformations, the first with current range 0 to 1 and voltage
+        range 1 to 2, the second with current range 1 to 2 and voltage range 1 to 0.
+
+        Parameters
+        ----------
+        current_range : Sequence[float]
+            The data for the current range.
+            [[current1_min, current1_max], [current2_min, current2_max], ...]
+        voltage_range : Sequence[float]
+            The data for the voltage range.
+            [[current1_min, current1_max], [current2_min, current2_max], ...]
+        cut : bool, optional
+            Indicate whether to use cut (torch.clamp) when calling the object, by default True.
+            If set to true, input values outside of the current range will be set to either the
+            minimum or maximum, depending on whether the value is below or above the range.
+
+        Raises
+        ------
+        Exception
+            If the current and voltage ranges are different in length.
+        """
+        if len(current_range) != len(voltage_range):
+            raise Exception("Mapping ranges are different in length")
+
+        # Determine the transform parameters for each pair.
         self.map_variables = TorchUtils.get_tensor_from_list(
             [
                 transform_current_to_voltage(
@@ -39,110 +55,216 @@ class CurrentToVoltage:
         self.current_range = current_range
         self.cut = cut
 
-    def __call__(self, x):
-        aux1 = x.clone()
-        aux2 = torch.zeros_like(x)
-        assert len(x.shape) == 2 and x.shape[1] == len(
-            self.map_variables
-        ), "Input shape not supported."
+    def __call__(self, x_value: torch.Tensor) -> torch.Tensor:
+        """
+        For given input currents determine the output voltages using the linear transforms.
+
+        Example
+        -------
+        >>> ctv = CurrentToVoltage([[0, 1], [1, 2]], [[1, 2], [1, 0]])
+        >>> ctv([1, 1])
+        [2, 1]
+
+        This example defines two transformations, the first with current range 0 to 1 and voltage
+        range 1 to 2, the second with current range 1 to 2 and voltage range 1 to 0.
+        With the input values 1 for the first transform and 1 for the second we get the outputs
+        2 and 1 respectively.
+
+        Parameters
+        ----------
+        x_value : torch.Tensor
+            Input current values.
+
+        Returns
+        -------
+        result : torch.Tensor
+            Output voltage values.
+
+        Raises
+        ------
+        Exception
+            If the shape the dimension of the input is wrong.
+        """
+        # If cut will be applied, we need a copy of the x values to apply it to.
+        x_copy = x_value.clone()
+        result = torch.zeros_like(x_value)
+
+        if not (len(x_value.shape) == 2 and x_value.shape[1] == len(self.map_variables)):
+            raise Exception("Input shape not supported.")
+
         for i in range(len(self.map_variables)):
-            # Linear transformation variables are as follows
-            # SCALE: self.map_variables[i][0]
-            # OFFSET: self.map_variables[i][1]
             if self.cut:
-                aux1[:, i] = torch.clamp(
-                    x[:, i], min=self.current_range[i][0], max=self.current_range[i][1]
+                x_copy[:, i] = torch.clamp(
+                    x_value[:, i], min=self.current_range[i][0], max=self.current_range[i][1]
                 )
-            aux2[:, i] = (aux1[:, i] * self.map_variables[i][0]) + self.map_variables[
-                i
-            ][1]
-        x = aux2.clone()
-        del aux1
-        del aux2
-        return x
+            result[:, i] = (x_copy[:, i] * self.map_variables[i][0]) + self.map_variables[i][1]
+
+        return result
 
 
-class MinMaxScaler:
-    def __init__(self):
-        pass
+# Not used anywhere
+def transform_to_voltage(
+    y_min: float, y_max: float, x_min: float, x_max: float, x_val: float
+) -> float:
+    """
+    Define a line by two points. Evaluate it at a given point.
+    Used to transform current data to the input voltage ranges of a device:
+    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
 
-    def __call__(self, x):
-        assert len(x.shape) == 2, "Only two dimensional tensors supported"
-        aux = x.clone()
-        for i in range(x.shape[1]):
-            aux[:, i] = (x[:, i] - x[:, i].min()) / (x[:, i].max() - x[:, i].min())
-        x = aux.clone()
-        return x
+    Example
+    -------
+    >>> transform_to_voltage(x_min=1, y_min=1, x_max=2, y_max=0, x_val=1)
+    1
 
+    This gives the line defined by the points (1, 1) and (2, 0),
+    which is y = 2 - x.
+    The function will return the line evaluated at x = 1, which is 1.
 
-class DataToTensor:
-    """Convert labelled data to pytorch tensor."""
+    Parameters
+    ----------
+    x_val: float
+        Point at which the line is evaluated.
+    y_min : float
+        Y-coordinate of first point.
+    y_max : float
+        Y-coordinate of second point.
+    x_min : float
+        X-coordinate of first point.
+    x_max : float
+        X-coordinate of second point.
 
-    def __init__(self, device=None):
-        if device is not None:
-            self.device = device
-        else:
-            self.device = TorchUtils.get_accelerator_type()
+    Returns
+    -------
+    (x_val * scale) + offset : float
+        The line is defined by w and b and evaluated at x_val.
 
-    def __call__(self, data):
-        inputs, targets = data[0], data[1]
-        inputs = torch.tensor(
-            inputs, device=self.device, dtype=TorchUtils.get_data_type()
-        )
-        targets = torch.tensor(
-            targets, device=self.device, dtype=TorchUtils.get_data_type()
-        )
-        return (inputs, targets)
-
-
-class ToDevice:
-    """Inputs and targets are transferred to GPU if necessary"""
-
-    def __call__(self, data):
-        inputs, targets = data[0], data[1]
-        if inputs.device != TorchUtils.get_accelerator_type():
-            inputs = inputs.to(device=TorchUtils.get_accelerator_type())
-        if targets.device != TorchUtils.get_accelerator_type():
-            targets = targets.to(device=TorchUtils.get_accelerator_type())
-        return (inputs, targets)
-
-
-class DataToVoltageRange:
-    def __init__(self, v_min, v_max, x_min=-1, x_max=1):
-        self.scale, self.offset = transform_current_to_voltage(
-            np.array(v_min), np.array(v_max), np.array(x_min), np.array(x_max)
-        )
-
-    def __call__(self, data):
-        inputs = data[0]
-        inputs = (inputs * self.scale) + self.offset
-        return (inputs, data[1])
+    Raises
+    ------
+    ZeroDivisionError
+        If x_min equals x_max division by 0 occurs.
+    """
+    scale, offset = transform_current_to_voltage(y_min, y_max, x_min, x_max)
+    return (x_val * scale) + offset
 
 
-class DataPointsToPlateau:
-    def __init__(self, configs):
-        self.mgr = WaveformManager(configs)
+# Only used here.
+def transform_current_to_voltage(
+    y_min: float, y_max: float, x_min: float, x_max: float
+) -> Tuple[float, float]:
+    """
+    Get the scale and offset of a line defined by two points.
+    Used to transform current data to the input voltage ranges of a device:
+    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
 
-    def __call__(self, data):
-        inputs, targets = data[0], data[1]
+    Example
+    -------
+    >>> transform_current_to_voltage(x_min=1, y_min=1, x_max=2, y_max=0)
+    (-1, 2)
 
-        inputs = self.mgr.points_to_plateaus(inputs)
-        targets = self.mgr.points_to_plateaus(targets)
+    This gives the line defined by the points (1, 1) and (2, 0),
+    which is y = 2 - x.
+    The function will return the scale and offset, which are -1 and 2 respectively.
 
-        return (inputs, targets)
+    Parameters
+    ----------
+    y_min : float
+        Y-coordinate of first point.
+    y_max : float
+        Y-coordinate of second point.
+    x_min : float
+        X-coordinate of first point.
+    x_max : float
+        X-coordinate of second point.
+
+    Returns
+    -------
+    scale : double
+        Scale of the line.
+    offset: double
+        Offset of the line.
+
+    Raises
+    ------
+    ZeroDivisionError
+        If x_min equals x_max division by 0 occurs.
+    """
+    return get_scale(y_min, y_max, x_min, x_max), get_offset(y_min, y_max, x_min, x_max)
 
 
-class PlateausToPoints:
-    def __init__(self, configs):
-        self.mgr = WaveformManager(configs)
+# Only used in this file.
+def get_scale(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
+    """
+    Get the scale/slope of a line defined by two points.
+    Used to transform current data to the input voltage ranges of a device:
+    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
 
-    def __call__(self, x):
-        return self.mgr.plateaus_to_points(x)
+    Example
+    -------
+    >>> get_scale(x_min=1, y_min=1, x_max=2, y_max=0)
+    -1
+
+    This gives the line defined by the points (1, 1) and (2, 0),
+    which is y = 2 - x.
+    The function will return the scale, which is -1.
+
+    Parameters
+    ----------
+    y_min : float
+        Y-coordinate of first point.
+    y_max : float
+        Y-coordinate of second point.
+    x_min : float
+        X-coordinate of first point.
+    x_max : float
+        X-coordinate of second point.
+
+    Returns
+    -------
+    (y_min - y_max) / (x_min - x_max) : float
+
+    Raises
+    ------
+    ZeroDivisionError
+        If x_min equals x_max division by 0 occurs.
+    """
+    return (y_min - y_max) / (x_min - x_max)
 
 
-class PointsToPlateaus:
-    def __init__(self, configs):
-        self.mgr = WaveformManager(configs)
+# Only used in this file.
+def get_offset(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
+    """
+    Get the offset/y-intercept of a line defined by two points.
+    Used to transform current data to the input voltage ranges of a device:
+    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
 
-    def __call__(self, x):
-        return self.mgr.points_to_plateaus(x)
+    Example
+    -------
+    >>> get_offset(x_min=1, y_min=1, x_max=2, y_max=0)
+    2
+
+    This gives the line defined by the points (1, 1) and (2, 0),
+    which is y = 2 - x.
+    The function will return the offset, which is 2.
+
+    Parameters
+    ----------
+    y_min : float
+        Y-coordinate of first point.
+    y_max : float
+        Y-coordinate of second point.
+    x_min : float
+        X-coordinate of first point.
+    x_max : float
+        X-coordinate of second point.
+
+    Returns
+    -------
+    ((y_max * x_min) - (y_min * x_max)) / (x_min - x_max) : float
+        The offset of the line.
+
+    Raises
+    ------
+    ZeroDivisionError
+        If x_min equals x_max division by 0 occurs.
+    """
+    return ((y_max * x_min) - (y_min * x_max)) / (x_min - x_max)
