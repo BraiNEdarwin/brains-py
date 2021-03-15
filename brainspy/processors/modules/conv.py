@@ -46,7 +46,7 @@ class DNPUConv2d(nn.Module):
         # IndexError: tensors used as indices must be long, byte or bool tensors
         self.postprocess_type = postprocess_type
         if postprocess_type == 'linear':
-            self.linear = torch.nn.Linear(5,1)
+            self.linear = torch.nn.Linear(self.device_no,1)
 
     def set_controls(self, inputs_list):
         control_list = [np.delete(self.indices_node, indx) for indx in inputs_list]
