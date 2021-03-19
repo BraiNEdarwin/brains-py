@@ -5,6 +5,7 @@ import warnings
 from torch import nn
 from typing import OrderedDict
 
+
 def info_consistency_check(model_info: OrderedDict) -> OrderedDict:
     """
     Check if the model info follows the expected standards:
@@ -43,14 +44,13 @@ def info_consistency_check(model_info: OrderedDict) -> OrderedDict:
         )
     if "hidden_sizes" not in model_info:
         # Check sizes of hidden layers.
-        model_info["hidden_sizes"] = (
-            default_hidden_size * default_hidden_number
-        )
+        model_info["hidden_sizes"] = default_hidden_size * default_hidden_number
         warnings.warn(
             "The model loaded does not define the hidden layer sizes as expected. "
             f"Changed it to default value: {default_hidden_number} layers of {default_hidden_size}."
         )
     return model_info
+
 
 class NeuralNetworkModel(nn.Module):
     """
@@ -63,10 +63,10 @@ class NeuralNetworkModel(nn.Module):
 
     # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
 
-    def __init__(self, model_info, verbose=False):
+    def __init__(self, verbose=False):
         super(NeuralNetworkModel, self).__init__()
         self.verbose = verbose
-        self.build_model_structure(model_info)
+        # self.build_model_structure(model_info)
 
     def build_model_structure(self, model_info):
         model_info = info_consistency_check(model_info)
@@ -87,6 +87,19 @@ class NeuralNetworkModel(nn.Module):
         if self.verbose:
             print("Model built with the following modules: \n", modules)
 
+    def load_state_dict(self, state_dict, strict=True):
+        print("reached NNModdel processor")
+        self.info = state_dict["info"]
+        del state_dict["info"]
+        self.build_model_structure(
+            self.info["smg_configs"]["processor"]["torch_model_dict"]
+        )
+        super().load_state_dict(state_dict, strict)
+
+    def state_dict(self, destination=None, prefix="", keep_vars=False):
+        state_dict = super().state_dict(destination, prefix, keep_vars)
+        state_dict["info"] = self.info
+
     def forward(self, x):
         return self.raw_model(x)
 
@@ -97,4 +110,3 @@ class NeuralNetworkModel(nn.Module):
                 print("Activation function is set as ReLU")
             return nn.ReLU()
         return activation
-

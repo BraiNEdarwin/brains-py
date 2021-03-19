@@ -18,47 +18,51 @@ class Processor(nn.Module):
         self.load_processor(arg)
 
     def load_processor(self, arg):
+        # @TODO: Thoroughly document the different configurations available for each processor
         if isinstance(arg, dict):
             self._load_processor_from_configs(arg)
-            self._init_electrode_info(arg)
-
         elif isinstance(arg, SurrogateModel):
             self.processor = arg
-            self.electrode_no = len(
-                self.processor.info["data_info"]["input_data"]["offset"]
-            )
-            self._init_electrode_info(self._get_configs)
         elif isinstance(arg, HardwareProcessor):
             self.processor = arg
-            self.electrode_no = self.processor.configs['data']['activation_electrode_no']
-            self._init_electrode_info(self._get_configs)
         else:
-            assert False, "The processor can either be a valid configuration dictionary, or an instance of either HardwareProcessor or SurrogateModel"
-
+            assert (
+                False
+            ), "The processor can either be a valid configuration dictionary, or an instance of either HardwareProcessor or SurrogateModel"
+        self._init_electrode_info(arg["data"])
         self.is_hardware = self.processor.is_hardware()
 
     def _load_processor_from_configs(self, configs):
-        if not hasattr(self, 'processor') or self._get_configs() != configs:
+        if not hasattr(self, "processor") or self._get_configs() != configs:
             if configs["processor_type"] == "simulation":
-                self.processor = SurrogateModel(configs)
-                self.electrode_no = len(
-                    self.processor.info["data_info"]["input_data"]["offset"]
-                )
-            elif configs["processor_type"] == "simulation_debug" or configs["processor_type"] == "cdaq_to_cdaq" or configs["processor_type"] == "cdaq_to_nidaq":
+                self.processor = SurrogateModel(configs["driver"])
+            elif (
+                configs["processor_type"] == "simulation_debug"
+                or configs["processor_type"] == "cdaq_to_cdaq"
+                or configs["processor_type"] == "cdaq_to_nidaq"
+            ):
                 self.processor = HardwareProcessor(configs)
-                self.electrode_no = configs['data']['activation_electrode_no']
             else:
                 raise NotImplementedError(
                     f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "
                 )
 
     def _init_electrode_info(self, configs):
+        self.electrode_no = self.processor.get_electrode_no()
+        if self.electrode_no is not None:
+            assert (
+                self.electrode_no == configs["input_electrode_no"]
+            ), "The input electrode number does not coincide with the one specified in the configs."
+        else:
+            self.electrode_no = configs["input_electrode_no"]
+
         # self.input_no = len(configs['data_input_indices'])
         self.data_input_indices = TorchUtils.get_tensor_from_list(
-            configs["data"]["input_indices"], data_type=torch.int64
+            configs["input_indices"], data_type=torch.int64
         )
+
         self.control_indices = np.delete(
-            np.arange(self.electrode_no), configs["data"]["input_indices"]
+            np.arange(configs["input_electrode_no"]), configs["input_indices"]
         )
         self.control_indices = TorchUtils.get_tensor_from_list(
             self.control_indices, data_type=torch.int64
@@ -88,7 +92,7 @@ class Processor(nn.Module):
         elif isinstance(self.processor, SurrogateModel):
             return self.processor.configs
         else:
-            print('Warning: Instance of processor not recognised.')
+            print("Warning: Instance of processor not recognised.")
             return None
 
     def close(self):
