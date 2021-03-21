@@ -82,7 +82,7 @@ class SurrogateModel(nn.Module):
 
     def load_file(self, data_dir: str) -> Tuple[dict, OrderedDict]:
         """
-        Load a model from a file. Run a consistency check on smg_configs.
+        Load a model from a file.
         Checks whether the amplification of the processor is set in the config; if not, set it to 1.
 
         Example

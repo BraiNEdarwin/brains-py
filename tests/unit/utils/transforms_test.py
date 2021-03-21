@@ -23,13 +23,13 @@ class TransformsTest(unittest.TestCase):
             y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         scale = transforms.get_scale(y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max)
-        both = transforms.transform_current_to_voltage(
+        both = transforms.get_linear_transform_constants(
             y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         self.assertEqual(both, (scale, offset))
         self.assertEqual(offset, 2)
         self.assertEqual(scale, -1)
-        value = transforms.transform_to_voltage(
+        value = transforms.linear_transform(
             x_val=x_val, y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         self.assertEqual(value, -1)
@@ -51,7 +51,7 @@ class TransformsTest(unittest.TestCase):
         scale = transforms.get_scale(y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max)
         self.assertEqual(offset, 2)
         self.assertEqual(scale, -1)
-        value = transforms.transform_to_voltage(
+        value = transforms.linear_transform(
             x_val=x_val, y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         self.assertEqual(value, -1)
@@ -71,7 +71,7 @@ class TransformsTest(unittest.TestCase):
             y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         scale = transforms.get_scale(y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max)
-        value = transforms.transform_to_voltage(
+        value = transforms.linear_transform(
             x_val=x_val, y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
         )
         self.assertTrue(np.array_equal(offset, np.array([2, 0, 1])))

@@ -1,7 +1,6 @@
 from typing import Tuple, Sequence
 import torch
 from brainspy.utils.pytorch import TorchUtils
-# Moved most transforms to bspytasks.
 
 # Used in bn.py
 class CurrentToVoltage:
@@ -103,7 +102,7 @@ class CurrentToVoltage:
 
 
 # Not used anywhere
-def transform_to_voltage(
+def linear_transform(
     y_min: float, y_max: float, x_min: float, x_max: float, x_val: float
 ) -> float:
     """
@@ -113,7 +112,7 @@ def transform_to_voltage(
 
     Example
     -------
-    >>> transform_to_voltage(x_min=1, y_min=1, x_max=2, y_max=0, x_val=1)
+    >>> linear_transform(x_min=1, y_min=1, x_max=2, y_max=0, x_val=1)
     1
 
     This gives the line defined by the points (1, 1) and (2, 0),
@@ -143,12 +142,12 @@ def transform_to_voltage(
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
-    scale, offset = transform_current_to_voltage(y_min, y_max, x_min, x_max)
+    scale, offset = get_linear_transform_constants(y_min, y_max, x_min, x_max)
     return (x_val * scale) + offset
 
 
 # Only used here.
-def transform_current_to_voltage(
+def get_linear_transform_constants(
     y_min: float, y_max: float, x_min: float, x_max: float
 ) -> Tuple[float, float]:
     """
@@ -158,7 +157,7 @@ def transform_current_to_voltage(
 
     Example
     -------
-    >>> transform_current_to_voltage(x_min=1, y_min=1, x_max=2, y_max=0)
+    >>> get_linear_transform_constants(x_min=1, y_min=1, x_max=2, y_max=0)
     (-1, 2)
 
     This gives the line defined by the points (1, 1) and (2, 0),
