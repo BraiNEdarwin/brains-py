@@ -1,0 +1,9 @@
+epochs: 130
+learning_rate: 0.01
+betas: 
+  !!python/tuple [0.999, 0.999]
+data:
+  split: [1,0] # Training and validation data split in a range from 0 to 1
+  batch_size: 128
+  worker_no: 0
+  pin_memory: False
