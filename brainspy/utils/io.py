@@ -22,7 +22,7 @@ def load_configs(file_name: str):
     -------
     dict : Python dictionary with formatted yaml data
 
-    Example 
+    Example
     --------
     path = "C:/users/humai/brains-py/tests/unit/utils/testfiles/test.yaml"
     data = load_configs(path)
@@ -45,7 +45,7 @@ def save_configs(configs: dict, file_name: str):
     file_name : str
         file object or path to yaml file
 
-    Example 
+    Example
     --------
     configs = {"data" : "example"}
     path = "C:/users/humai/brains-py/tests/unit/utils/testfiles/test.yaml"
@@ -92,7 +92,7 @@ def create_directory_timestamp(path: str, name: str, overwrite=False):
     --------
     str : path to file created - filepath+datetime_name
 
-    Example 
+    Example
     --------
     path = "C:/users/humai/brains-py/tests/unit/utils/testfiles/"
     name = "TestDirectory"
@@ -161,7 +161,7 @@ class IncludeLoader(yaml.Loader):
         loader : IncludeLoader
             loader object to construct a scalar node to the !include file
         node : str
-            file path 
+            file path
 
         Returns
         -------
