@@ -1,6 +1,8 @@
 import warnings
 
 # Only used in processors/simulation/model.py
+
+
 def info_consistency_check(model_info: dict):
     """
     Check if the model info follows the expected standards:

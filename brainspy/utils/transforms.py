@@ -2,21 +2,26 @@ from typing import Tuple, Sequence
 import torch
 from brainspy.utils.pytorch import TorchUtils
 
-# Used in bn.py
+
 class CurrentToVoltage:
     """
     Class that uses a linear function to transform current to voltage.
     """
-    def __init__(self, current_range: Sequence[float], voltage_range: Sequence[float], cut=True):
+    def __init__(self,
+                 current_range: Sequence[Sequence[float]],
+                 voltage_range: Sequence[Sequence[float]],
+                 cut=True):
         """
-        Initialize object, find linear transform parameters for each current-voltage pair.
+        Initialize object, find linear transform parameters for each
+        current-voltage pair.
 
         Example
         -------
         >>> CurrentToVoltage([[0, 1], [1, 2]], [[1, 2], [1, 0]])
 
-        This example defines two transformations, the first with current range 0 to 1 and voltage
-        range 1 to 2, the second with current range 1 to 2 and voltage range 1 to 0.
+        This example defines two transformations, the first with current range
+        0 to 1 and voltage range 1 to 2, the second with current range 1 to 2
+        and voltage range 1 to 0.
 
         Parameters
         ----------
@@ -27,9 +32,10 @@ class CurrentToVoltage:
             The data for the voltage range.
             [[current1_min, current1_max], [current2_min, current2_max], ...]
         cut : bool, optional
-            Indicate whether to use cut (torch.clamp) when calling the object, by default True.
-            If set to true, input values outside of the current range will be set to either the
-            minimum or maximum, depending on whether the value is below or above the range.
+            Indicate whether to use cut (torch.clamp) when calling the object,
+            by default True. If set to true, input values outside of the
+            current range will be set to either the minimum or maximum,
+            depending on whether the value is below or above the range.
 
         Raises
         ------
@@ -40,17 +46,14 @@ class CurrentToVoltage:
             raise Exception("Mapping ranges are different in length")
 
         # Determine the transform parameters for each pair.
-        self.map_variables = TorchUtils.get_tensor_from_list(
-            [
-                get_linear_transform_constants(
-                    voltage_range[i][0],
-                    voltage_range[i][1],
-                    current_range[i][0],
-                    current_range[i][1],
-                )
-                for i in range(len(current_range))
-            ]
-        )
+        self.map_variables = TorchUtils.get_tensor_from_list([
+            get_linear_transform_constants(
+                voltage_range[i][0],
+                voltage_range[i][1],
+                current_range[i][0],
+                current_range[i][1],
+            ) for i in range(len(current_range))
+        ])
         self.current_range = current_range
         self.cut = cut
 
@@ -88,23 +91,27 @@ class CurrentToVoltage:
         x_copy = x_value.clone()
         result = torch.zeros_like(x_value)
 
-        if not (len(x_value.shape) == 2 and x_value.shape[1] == len(self.map_variables)):
+        if not (len(x_value.shape) == 2
+                and x_value.shape[1] == len(self.map_variables)):
             raise Exception("Input shape not supported.")
 
         for i in range(len(self.map_variables)):
             if self.cut:
                 x_copy[:, i] = torch.clamp(
-                    x_value[:, i], min=self.current_range[i][0], max=self.current_range[i][1]
+                    x_value[:, i],
+                    min=self.current_range[i][0],
+                    max=self.current_range[i][1],
                 )
-            result[:, i] = (x_copy[:, i] * self.map_variables[i][0]) + self.map_variables[i][1]
+            result[:,
+                   i] = (x_copy[:, i] *
+                         self.map_variables[i][0]) + self.map_variables[i][1]
 
         return result
 
 
 # Not used anywhere
-def linear_transform(
-    y_min: float, y_max: float, x_min: float, x_max: float, x_val: float
-) -> float:
+def linear_transform(y_min: float, y_max: float, x_min: float, x_max: float,
+                     x_val: float) -> float:
     """
     Define a line by two points. Evaluate it at a given point.
     Used to transform current data to the input voltage ranges of a device:
@@ -147,9 +154,8 @@ def linear_transform(
 
 
 # Only used here.
-def get_linear_transform_constants(
-    y_min: float, y_max: float, x_min: float, x_max: float
-) -> Tuple[float, float]:
+def get_linear_transform_constants(y_min: float, y_max: float, x_min: float,
+                                   x_max: float) -> Tuple[float, float]:
     """
     Get the scale and offset of a line defined by two points.
     Used to transform current data to the input voltage ranges of a device:
@@ -187,7 +193,8 @@ def get_linear_transform_constants(
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
-    return get_scale(y_min, y_max, x_min, x_max), get_offset(y_min, y_max, x_min, x_max)
+    return get_scale(y_min, y_max, x_min,
+                     x_max), get_offset(y_min, y_max, x_min, x_max)
 
 
 # Only used in this file.
@@ -230,7 +237,8 @@ def get_scale(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
 
 
 # Only used in this file.
-def get_offset(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
+def get_offset(y_min: float, y_max: float, x_min: float,
+               x_max: float) -> float:
     """
     Get the offset/y-intercept of a line defined by two points.
     Used to transform current data to the input voltage ranges of a device:

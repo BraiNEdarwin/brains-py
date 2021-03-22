@@ -59,9 +59,11 @@ class ProcessorTest(unittest.TestCase):
             ],
             dtype=TorchUtils.get_data_type(),
         )
+        inputs.to(TorchUtils.get_accelerator_type())
         control_voltages = inputs + torch.ones(
             inputs.shape, dtype=TorchUtils.get_data_type()
         )
+        control_voltages.to(TorchUtils.get_accelerator_type())
         input_indices = [0, 2, 4, 6]
         control_voltage_indices = [7, 5, 3, 1]
         result = processor.merge_electrode_data(

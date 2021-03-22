@@ -29,7 +29,7 @@ class LoaderTest(unittest.TestCase):
             del model["hidden_sizes"]
         if "activation" in model:
             del model["activation"]
-        
+
         # Check if consistency check sets "D_in", "D_out" and "hidden_sizes".
         # Make sure warnings are thrown if a key is missing.
         with warnings.catch_warnings(record=True) as caught_warnings:
