@@ -65,6 +65,7 @@ class NeuralNetworkModel(nn.Module):
 
     def __init__(self, verbose=False):
         super(NeuralNetworkModel, self).__init__()
+        self.info = None
         self.verbose = verbose
         # self.build_model_structure(model_info)
 
@@ -87,18 +88,13 @@ class NeuralNetworkModel(nn.Module):
         if self.verbose:
             print("Model built with the following modules: \n", modules)
 
-    def load_state_dict(self, state_dict, strict=True):
-        print("reached NNModdel processor")
-        self.info = state_dict["info"]
-        del state_dict["info"]
-        self.build_model_structure(
-            self.info["smg_configs"]["processor"]["torch_model_dict"]
-        )
-        super().load_state_dict(state_dict, strict)
+    def set_info_dict(self, info_dict):
+        self.info = info_dict
 
-    def state_dict(self, destination=None, prefix="", keep_vars=False):
-        state_dict = super().state_dict(destination, prefix, keep_vars)
-        state_dict["info"] = self.info
+    def get_info_dict(self):
+        if self.info is None:
+            warnings.warn("The info dictionary is empty.")
+        return self.info
 
     def forward(self, x):
         return self.raw_model(x)
