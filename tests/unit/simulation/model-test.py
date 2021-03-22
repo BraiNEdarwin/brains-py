@@ -1,24 +1,26 @@
 import unittest
 import warnings
+
 import torch
-from brainspy.utils.loader import info_consistency_check
+
+from brainspy.processors.simulation.model import NeuralNetworkModel
 
 
-class LoaderTest(unittest.TestCase):
+class ModelTest(unittest.TestCase):
     """
-    Class for testing 'loader.py'.
+    Class for testing 'model.py'.
     """
-
     def test_consistency_check(self):
         """
         Test if info_consistency_check makes the necessary adjustments.
         """
-        path = "model.pt"
+        path = "brains-py/model.pt"
 
         # Load a model.
-        model = torch.load(path)["info"]["smg_configs"]["processor"]["torch_model_dict"]
+        model = torch.load(
+            path)["info"]["smg_configs"]["processor"]["torch_model_dict"]
 
-        print(type(model))
+        nn = NeuralNetworkModel(model)
 
         # Delete needed keys.
         if "D_in" in model:
@@ -34,7 +36,7 @@ class LoaderTest(unittest.TestCase):
         # Make sure warnings are thrown if a key is missing.
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter("always")
-            info_consistency_check(model)
+            nn.info_consistency_check(model)
             self.assertTrue("D_out" in model)
             self.assertTrue("hidden_sizes" in model)
             self.assertTrue("activation" in model)

@@ -1,5 +1,11 @@
+"""
+Class for transforming from current to voltage using linear transformations.
+"""
+
 from typing import Tuple, Sequence
+
 import torch
+
 from brainspy.utils.pytorch import TorchUtils
 
 
@@ -7,10 +13,12 @@ class CurrentToVoltage:
     """
     Class that uses a linear function to transform current to voltage.
     """
-    def __init__(self,
-                 current_range: Sequence[Sequence[float]],
-                 voltage_range: Sequence[Sequence[float]],
-                 cut=True):
+    def __init__(
+        self,
+        current_range: Sequence[Sequence[float]],
+        voltage_range: Sequence[Sequence[float]],
+        cut=True,
+    ):
         """
         Initialize object, find linear transform parameters for each
         current-voltage pair.
@@ -59,7 +67,8 @@ class CurrentToVoltage:
 
     def __call__(self, x_value: torch.Tensor) -> torch.Tensor:
         """
-        For given input currents determine the output voltages using the linear transforms.
+        For given input currents determine the output voltages using the
+        linear transforms.
 
         Example
         -------
@@ -67,10 +76,10 @@ class CurrentToVoltage:
         >>> ctv([1, 1])
         [2, 1]
 
-        This example defines two transformations, the first with current range 0 to 1 and voltage
-        range 1 to 2, the second with current range 1 to 2 and voltage range 1 to 0.
-        With the input values 1 for the first transform and 1 for the second we get the outputs
-        2 and 1 respectively.
+        This example defines two transformations, the first with current range
+        0 to 1 and voltage range 1 to 2, the second with current range 1 to 2
+        and voltage range 1 to 0. With the input values 1 for the first
+        transform and 1 for the second we get the outputs 2 and 1 respectively.
 
         Parameters
         ----------
@@ -87,7 +96,7 @@ class CurrentToVoltage:
         Exception
             If the shape the dimension of the input is wrong.
         """
-        # If cut will be applied, we need a copy of the x values to apply it to.
+        # If cut will be applied, we need a copy of the x values.
         x_copy = x_value.clone()
         result = torch.zeros_like(x_value)
 
@@ -115,7 +124,8 @@ def linear_transform(y_min: float, y_max: float, x_min: float, x_max: float,
     """
     Define a line by two points. Evaluate it at a given point.
     Used to transform current data to the input voltage ranges of a device:
-    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
+    Current range would be (x_min, x_max), voltage range would be
+    (y_min, y_max).
 
     Example
     -------
@@ -159,7 +169,8 @@ def get_linear_transform_constants(y_min: float, y_max: float, x_min: float,
     """
     Get the scale and offset of a line defined by two points.
     Used to transform current data to the input voltage ranges of a device:
-    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
+    Current range would be (x_min, x_max), voltage range would be
+    (y_min, y_max).
 
     Example
     -------
@@ -168,7 +179,8 @@ def get_linear_transform_constants(y_min: float, y_max: float, x_min: float,
 
     This gives the line defined by the points (1, 1) and (2, 0),
     which is y = 2 - x.
-    The function will return the scale and offset, which are -1 and 2 respectively.
+    The function will return the scale and offset, which are -1 and 2
+    respectively.
 
     Parameters
     ----------
@@ -202,7 +214,8 @@ def get_scale(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
     """
     Get the scale/slope of a line defined by two points.
     Used to transform current data to the input voltage ranges of a device:
-    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
+    Current range would be (x_min, x_max), voltage range would be
+    (y_min, y_max).
 
     Example
     -------
@@ -242,7 +255,8 @@ def get_offset(y_min: float, y_max: float, x_min: float,
     """
     Get the offset/y-intercept of a line defined by two points.
     Used to transform current data to the input voltage ranges of a device:
-    Current range would be (x_min, x_max), voltage range would be (y_min, y_max).
+    Current range would be (x_min, x_max), voltage range would be
+    (y_min, y_max).
 
     Example
     -------
