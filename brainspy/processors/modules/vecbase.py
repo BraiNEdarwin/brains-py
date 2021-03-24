@@ -4,7 +4,7 @@ import torch.nn as nn
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
 
-from brainspy.utils.electrodes import get_linear_transform_constants
+from brainspy.utils.transforms import get_linear_transform_constants
 
 class DNPUBase(nn.Module):
 

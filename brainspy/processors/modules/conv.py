@@ -12,7 +12,6 @@ from brainspy.utils.electrodes import (
 )
 import torch.nn.functional as F
 
-
 class DNPUConv2d(nn.Module):
     def __init__(
         self,
@@ -27,13 +26,13 @@ class DNPUConv2d(nn.Module):
     ):
         super(DNPUConv2d, self).__init__()
 
-        self.raw_inputs_list = inputs_list
         self.device_no = len(inputs_list)
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.padding = padding
         self.stride = stride
+
         self.input_transform = False
         self.batch_norm = False
 

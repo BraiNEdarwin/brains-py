@@ -83,7 +83,7 @@ class SurrogateModel(nn.Module):
             x = self.noise(x)
         if self.output_clipping is not None:
             return torch.clamp(
-                x, min=self.output_clipping[0], max=self.output_clipping[1]
+                x, min=self.clipping_value[0], max=self.clipping_value[1]
             )
         return x
 
@@ -127,10 +127,19 @@ class SurrogateModel(nn.Module):
     #     In this case 'info' contains information about the model and 'state_dict' contains the weights
     #     of the network, referring to the model in "model.pt".
 
-    #     Parameters
-    #     ----------
-    #     data_dir : str
-    #         Directory of the file.
+    #    Returns
+    #    -------
+    #    info : dict
+    #        Dictionary containing the settings.
+    #    state_dict : dict
+    #        State dictionary of the model, containing the weights and biases
+    #        of the network.
+    #    """
+    #    # Load model; contains weights (+biases) and info.
+    #    state_dict = torch.load(
+    #        data_dir, map_location=TorchUtils.get_accelerator_type()
+    #    )
+    #    # state_dict is an ordered dictionary.
 
     #     Returns
     #     -------
@@ -146,23 +155,10 @@ class SurrogateModel(nn.Module):
     #     )
     #     # state_dict is an ordered dictionary.
 
-    #     # Load the info and delete it from the model.
-    #     info = state_dict["info"]
-    #     del state_dict["info"]
-    #     # info is a dictionary; keys are data_info and smg_configs.
-
-    #     # Set amplification to 1 if not specified in file.
-    #     if "amplification" not in info["data_info"]["processor"]["driver"]:
-    #         info["data_info"]["processor"]["driver"]["amplification"] = 1
-    #         warnings.warn(
-    #             "The model loaded does not define the amplification; set to 1."
-    #         )
-    #     if (
-    #         "model_structure_dict"
-    #         not in info["smg_configs"]["processor"]["torch_model_dict"]
-    #     ):
-    #         state_dict["model_structure_dict"] = info["smg_configs"]["processor"][
-    #             "torch_model_dict"
-    #         ]
-    #         del info["smg_configs"]["processor"]["torch_model_dict"]
-    #     return info, state_dict
+    #    # Set amplification to 1 if not specified in file.
+    #    if "amplification" not in info["data_info"]["processor"]:
+    #        info["data_info"]["processor"]["amplification"] = 1
+    #        warnings.warn(
+    #            "The model loaded does not define the amplification; set to 1."
+    #        )
+    #    return info, state_dict
