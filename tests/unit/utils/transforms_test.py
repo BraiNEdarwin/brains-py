@@ -1,3 +1,7 @@
+"""
+Module for testing transforms.py.
+"""
+
 import unittest
 import numpy as np
 import torch
@@ -6,7 +10,7 @@ import brainspy.utils.transforms as transforms
 
 class TransformsTest(unittest.TestCase):
     """
-    Class for testing 'electrodes.py'.
+    Class for testing 'transforms.py'.
     """
     def test_line(self):
         """
