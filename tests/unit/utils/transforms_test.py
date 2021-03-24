@@ -8,7 +8,6 @@ class TransformsTest(unittest.TestCase):
     """
     Class for testing 'electrodes.py'.
     """
-
     def test_line(self):
         """
         Test scale and offset, and evaluation at a point, of a line.
@@ -19,19 +18,26 @@ class TransformsTest(unittest.TestCase):
         y_max = 0
         # This is the line y = 2 - x.
         x_val = 3
-        offset = transforms.get_offset(
-            y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
-        )
-        scale = transforms.get_scale(y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max)
-        both = transforms.get_linear_transform_constants(
-            y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
-        )
+        offset = transforms.get_offset(y_min=y_min,
+                                       y_max=y_max,
+                                       x_min=x_min,
+                                       x_max=x_max)
+        scale = transforms.get_scale(y_min=y_min,
+                                     y_max=y_max,
+                                     x_min=x_min,
+                                     x_max=x_max)
+        both = transforms.get_linear_transform_constants(y_min=y_min,
+                                                         y_max=y_max,
+                                                         x_min=x_min,
+                                                         x_max=x_max)
         self.assertEqual(both, (scale, offset))
         self.assertEqual(offset, 2)
         self.assertEqual(scale, -1)
-        value = transforms.linear_transform(
-            x_val=x_val, y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
-        )
+        value = transforms.linear_transform(x_val=x_val,
+                                            y_min=y_min,
+                                            y_max=y_max,
+                                            x_min=x_min,
+                                            x_max=x_max)
         self.assertEqual(value, -1)
 
     def test_line_extreme(self):
@@ -45,15 +51,21 @@ class TransformsTest(unittest.TestCase):
         y_max = 1
         # This is the line y = 2 - x.
         x_val = 3
-        offset = transforms.get_offset(
-            y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
-        )
-        scale = transforms.get_scale(y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max)
+        offset = transforms.get_offset(y_min=y_min,
+                                       y_max=y_max,
+                                       x_min=x_min,
+                                       x_max=x_max)
+        scale = transforms.get_scale(y_min=y_min,
+                                     y_max=y_max,
+                                     x_min=x_min,
+                                     x_max=x_max)
         self.assertEqual(offset, 2)
         self.assertEqual(scale, -1)
-        value = transforms.linear_transform(
-            x_val=x_val, y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
-        )
+        value = transforms.linear_transform(x_val=x_val,
+                                            y_min=y_min,
+                                            y_max=y_max,
+                                            x_min=x_min,
+                                            x_max=x_max)
         self.assertEqual(value, -1)
 
     def test_line_multi_dim(self):
@@ -67,20 +79,27 @@ class TransformsTest(unittest.TestCase):
         y_max = np.array([0, 1, 1])
         # Lines are y = 2 - x; y = x; y = 1.
         x_val = np.array([3, 3, 3])
-        offset = transforms.get_offset(
-            y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
-        )
-        scale = transforms.get_scale(y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max)
-        value = transforms.linear_transform(
-            x_val=x_val, y_min=y_min, y_max=y_max, x_min=x_min, x_max=x_max
-        )
+        offset = transforms.get_offset(y_min=y_min,
+                                       y_max=y_max,
+                                       x_min=x_min,
+                                       x_max=x_max)
+        scale = transforms.get_scale(y_min=y_min,
+                                     y_max=y_max,
+                                     x_min=x_min,
+                                     x_max=x_max)
+        value = transforms.linear_transform(x_val=x_val,
+                                            y_min=y_min,
+                                            y_max=y_max,
+                                            x_min=x_min,
+                                            x_max=x_max)
         self.assertTrue(np.array_equal(offset, np.array([2, 0, 1])))
         self.assertTrue(np.array_equal(scale, np.array([-1, 1, 0])))
         self.assertTrue(np.array_equal(value, np.array([-1, 3, 1])))
 
     def test_line_nan(self):
         """
-        Test the line transform for x_min = x_max; should raise ZeroDivisionError.
+        Test the line transform for x_min = x_max; should raise
+        ZeroDivisionError.
         """
         x_min = 1
         y_min = 1
@@ -98,8 +117,8 @@ class TransformsTest(unittest.TestCase):
     def test_ctv(self):
         """
         Test the CurrentToVoltage class.
-        Largely uses the other methods so it does not need to be tested extensively (extreme
-        cases etc).
+        Largely uses the other methods so it does not need to be tested
+        extensively (extreme cases etc).
         """
         ctv = transforms.CurrentToVoltage([[0, 1], [1, 2]], [[1, 2], [1, 0]])
 

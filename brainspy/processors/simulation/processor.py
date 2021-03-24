@@ -31,35 +31,39 @@ class SurrogateModel(nn.Module):
     def _load(self, configs):
         """Loads a pytorch model from a directory string."""
         self.configs = configs
-        self.info, state_dict = self.load_file(
-            configs["driver"]["torch_model_dict"])
+        self.info, state_dict = self.load_file(configs["driver"]["torch_model_dict"])
         self.model = NeuralNetworkModel(
-            self.info["smg_configs"]["processor"]["torch_model_dict"])
+            self.info["smg_configs"]["processor"]["torch_model_dict"]
+        )
         self.model.load_state_dict(state_dict)
 
     def _init_voltage_ranges(self):
         offset = TorchUtils.get_tensor_from_list(
-            self.info["data_info"]["input_data"]["offset"])
+            self.info["data_info"]["input_data"]["offset"]
+        )
         amplitude = TorchUtils.get_tensor_from_list(
-            self.info["data_info"]["input_data"]["amplitude"])
+            self.info["data_info"]["input_data"]["amplitude"]
+        )
         min_voltage = (offset - amplitude).unsqueeze(dim=1)
         max_voltage = (offset + amplitude).unsqueeze(dim=1)
         self.voltage_ranges = torch.cat((min_voltage, max_voltage), dim=1)
 
     def _init_effects(self):
         self.amplification = TorchUtils.get_tensor_from_list(
-            self.info["data_info"]["processor"]["driver"]["amplification"])
+            self.info["data_info"]["processor"]["driver"]["amplification"]
+        )
         self.output_clipping = self.configs["driver"]["output_clipping"]
         self.clipping_value = TorchUtils.get_tensor_from_list(
-            self.info["data_info"]["clipping_value"])
+            self.info["data_info"]["clipping_value"]
+        )
         self.noise = get_noise(self.configs)
 
     def forward(self, x):
         x = self.noise(self.model(x) * self.amplification)
         if self.output_clipping:
-            return torch.clamp(x,
-                               min=self.clipping_value[0],
-                               max=self.clipping_value[1])
+            return torch.clamp(
+                x, min=self.clipping_value[0], max=self.clipping_value[1]
+            )
         return x
 
     def forward_numpy(self, input_matrix):
@@ -106,8 +110,9 @@ class SurrogateModel(nn.Module):
             of the network.
         """
         # Load model; contains weights (+biases) and info.
-        state_dict = torch.load(data_dir,
-                                map_location=TorchUtils.get_accelerator_type())
+        state_dict = torch.load(
+            data_dir, map_location=TorchUtils.get_accelerator_type()
+        )
         # state_dict is an ordered dictionary.
 
         # Load the info and delete it from the model.
