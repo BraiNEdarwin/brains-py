@@ -7,7 +7,7 @@ from brainspy.processors.processor import Processor
 from brainspy.processors.modules.vecbase import DNPUBase
 from brainspy.processors.modules.bn import DNPU_BatchNorm
 #from brainspy.utils.mappers import SimpleMapping
-from brainspy.utils.electrodes import get_linear_transform_constants, format_input_ranges
+from brainspy.utils.transforms import get_linear_transform_constants
 import torch.nn.functional as F
 
 class DNPUConv2d(nn.Module):
@@ -214,3 +214,9 @@ class DNPUConv2d(nn.Module):
                 self.all_controls.shape == control_voltages.shape
             ), "Control voltages could not be set due to a shape missmatch with regard to the ones already in the model."
             self.bias = torch.nn.Parameter(TorchUtils.format_tensor(control_voltages))
+
+def format_input_ranges(input_min, input_max, output_ranges):
+    input_ranges = torch.ones_like(output_ranges)
+    input_ranges[0] *= input_min
+    input_ranges[1] *= input_max
+    return input_ranges

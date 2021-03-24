@@ -11,6 +11,7 @@ from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.simulation.noise.noise import get_noise
 from brainspy.processors.simulation.model import NeuralNetworkModel
 
+
 class SurrogateModel(nn.Module):
     """
     The TorchModel class is used to manage together a torch model and its state dictionary. The usage is expected to be as follows
@@ -31,7 +32,9 @@ class SurrogateModel(nn.Module):
         """Loads a pytorch model from a directory string."""
         self.configs = configs
         self.info, state_dict = self.load_file(configs["driver"]["torch_model_dict"])
-        self.model = NeuralNetworkModel(self.info["smg_configs"]["processor"]["torch_model_dict"])
+        self.model = NeuralNetworkModel(
+            self.info["smg_configs"]["processor"]["torch_model_dict"]
+        )
         self.model.load_state_dict(state_dict)
 
     def _init_voltage_ranges(self):
@@ -82,7 +85,7 @@ class SurrogateModel(nn.Module):
 
     def load_file(self, data_dir: str) -> Tuple[dict, OrderedDict]:
         """
-        Load a model from a file. Run a consistency check on smg_configs.
+        Load a model from a file.
         Checks whether the amplification of the processor is set in the config; if not, set it to 1.
 
         Example
@@ -107,7 +110,9 @@ class SurrogateModel(nn.Module):
             of the network.
         """
         # Load model; contains weights (+biases) and info.
-        state_dict = torch.load(data_dir, map_location=TorchUtils.get_accelerator_type())
+        state_dict = torch.load(
+            data_dir, map_location=TorchUtils.get_accelerator_type()
+        )
         # state_dict is an ordered dictionary.
 
         # Load the info and delete it from the model.
@@ -118,5 +123,7 @@ class SurrogateModel(nn.Module):
         # Set amplification to 1 if not specified in file.
         if "amplification" not in info["data_info"]["processor"]:
             info["data_info"]["processor"]["amplification"] = 1
-            warnings.warn("The model loaded does not define the amplification; set to 1.")
+            warnings.warn(
+                "The model loaded does not define the amplification; set to 1."
+            )
         return info, state_dict
