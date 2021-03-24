@@ -3,6 +3,8 @@
 import warnings
 
 from torch import nn
+from typing import OrderedDict
+
 
 
 class NeuralNetworkModel(nn.Module):
@@ -18,6 +20,7 @@ class NeuralNetworkModel(nn.Module):
 
     def __init__(self, model_info, verbose=False):
         super(NeuralNetworkModel, self).__init__()
+        self.info = None
         self.verbose = verbose
         self.build_model_structure(model_info)
 
@@ -39,6 +42,14 @@ class NeuralNetworkModel(nn.Module):
         self.raw_model = nn.Sequential(*modules)
         if self.verbose:
             print("Model built with the following modules: \n", modules)
+
+    def set_info_dict(self, info_dict):
+        self.info = info_dict
+
+    def get_info_dict(self):
+        if self.info is None:
+            warnings.warn("The info dictionary is empty.")
+        return self.info
 
     def forward(self, x):
         return self.raw_model(x)
