@@ -24,8 +24,8 @@ def load_configs(file_name: str):
 
     Example
     --------
-    path = "C:/users/humai/brains-py/tests/unit/utils/testfiles/test.yaml"
-    data = load_configs(path)
+    file = "boolean.yaml"
+    data = load_configs(file)
 
     """
     with open(file_name) as f:
@@ -48,8 +48,8 @@ def save_configs(configs: dict, file_name: str):
     Example
     --------
     configs = {"data" : "example"}
-    path = "C:/users/humai/brains-py/tests/unit/utils/testfiles/test.yaml"
-    save_configs(configs,path)
+    file = "boolean.yaml"
+    save_configs(configs,file)
 
     """
     with open(file_name, "w") as f:
@@ -66,6 +66,11 @@ def create_directory(path: str, overwrite=False):
 
     path : str
         file object or path to file
+
+    Example
+    -------
+    path = "tests/unit/utils/testfiles"
+    newpath = create_directory(path + "/TestDirectory")
 
     """
     if not os.path.exists(path):
@@ -94,7 +99,7 @@ def create_directory_timestamp(path: str, name: str, overwrite=False):
 
     Example
     --------
-    path = "C:/users/humai/brains-py/tests/unit/utils/testfiles/"
+    path = "tests/unit/utils/testfiles"
     name = "TestDirectory"
     new_directory = create_directory_timestamp(self.path, name)
 
