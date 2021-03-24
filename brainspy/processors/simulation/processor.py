@@ -85,7 +85,7 @@ class SurrogateModel(nn.Module):
 
     def load_file(self, data_dir: str) -> Tuple[dict, OrderedDict]:
         """
-        Load a model from a file. Run a consistency check on smg_configs.
+        Load a model from a file.
         Checks whether the amplification of the processor is set in the config; if not, set it to 1.
 
         Example
@@ -121,8 +121,8 @@ class SurrogateModel(nn.Module):
         # info is a dictionary; keys are data_info and smg_configs.
 
         # Set amplification to 1 if not specified in file.
-        if "amplification" not in info["data_info"]["processor"]["driver"]:
-            info["data_info"]["processor"]["driver"]["amplification"] = 1
+        if "amplification" not in info["data_info"]["processor"]:
+            info["data_info"]["processor"]["amplification"] = 1
             warnings.warn(
                 "The model loaded does not define the amplification; set to 1."
             )
