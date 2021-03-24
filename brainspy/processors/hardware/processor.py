@@ -24,6 +24,8 @@ class HardwareProcessor(nn.Module):
 
     def __init__(self, configs, logger=None):
         super(HardwareProcessor, self).__init__()
+        # @TODO: check if all the configs inputed to the hardware processor ar really needed somewhere
+        # Should only configs['driver'] be passed to the driver?
         self.driver = get_driver(configs)
         if configs["processor_type"] == "simulation_debug":
             self.voltage_ranges = self.driver.voltage_ranges
@@ -39,6 +41,7 @@ class HardwareProcessor(nn.Module):
             configs["driver"]["output_clipping_range"][0] * self.amplification,
             configs["driver"]["output_clipping_range"][1] * self.amplification,
         ]
+        self.electrode_no = configs["data"]["activation_electrode_no"]
 
     def forward(self, x):
         with torch.no_grad():
@@ -62,3 +65,6 @@ class HardwareProcessor(nn.Module):
 
     def is_hardware(self):
         return self.driver.is_hardware()
+
+    def get_electrode_no(self):
+        return self.electrode_no
