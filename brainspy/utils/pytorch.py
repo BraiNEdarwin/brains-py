@@ -101,7 +101,8 @@ class TorchUtils:
         1.   data = [[1, 2]]
              tensor = TorchUtils.format(data, data_type=torch.float32)
 
-        2.   tensor = TorchUtils.format(data, data_type=torch.float64)
+        2.   tensor = torch.randn(2, 2)
+             tensor = TorchUtils.format(tensor, data_type=torch.float64)
 
         3.   data = [[1, 2], [3, 4]]
              numpy_data = np.array(data)
