@@ -1,4 +1,3 @@
-
 import unittest
 
 import numpy as np
@@ -29,44 +28,44 @@ class PyTorchTest(unittest.TestCase):
         TorchUtils.set_data_type(torch.float64)
         self.assertEqual(TorchUtils.get_data_type(), torch.float64)
 
-    def test_get_accelerator_type(self):
+    def test_get_device(self):
         """
-        Test for the get_accelerator_type() method to get the accelerator type of the torch
+        Test for the get_device() method to get the accelerator type of the torch
         """
         TorchUtils.set_force_cpu(False)
-        self.assertEqual(TorchUtils.get_accelerator_type(), torch.device("cpu"))
+        self.assertEqual(TorchUtils.get_device(), torch.device("cpu"))
 
-    def test_get_tensor_from_list(self):
+    def test_format_from_list(self):
         """
         Test to get a tensor from a list of data
         """
         data = [[1, 2]]
-        tensor = TorchUtils.get_tensor_from_list(data, data_type=torch.float32)
+        tensor = TorchUtils.format(data, data_type=torch.float32)
         assert isinstance(tensor, torch.Tensor)
 
-    def test_format_tensor(self):
+    def test_format(self):
         """
         Test to format a tensor with a new data type
         """
         tensor = torch.randn(2, 2)
-        tensor = TorchUtils.format_tensor(tensor, data_type=torch.float64)
+        tensor = TorchUtils.format(tensor, data_type=torch.float64)
         self.assertEqual(tensor.dtype, torch.float64)
 
-    def test_get_tensor_from_numpy(self):
+    def test_format_from_numpy(self):
         """
         Test to get a torch tensor from a numpy array
         """
         data = [[1, 2], [3, 4]]
         numpy_data = np.array(data)
-        tensor = TorchUtils.get_tensor_from_numpy(numpy_data)
+        tensor = TorchUtils.format(numpy_data)
         assert isinstance(tensor, torch.Tensor)
 
-    def test_get_numpy_from_tensor(self):
+    def test_to_numpy(self):
         """
         Test to get a numpy array from a given torch tensor
         """
-        tensor = torch.tensor([[1., -1.], [1., -1.]])
-        numpy_data = TorchUtils.get_numpy_from_tensor(tensor)
+        tensor = torch.tensor([[1.0, -1.0], [1.0, -1.0]])
+        numpy_data = TorchUtils.to_numpy(tensor)
         assert isinstance(numpy_data, np.ndarray)
 
     def test_init_seed(self):
@@ -83,11 +82,11 @@ class PyTorchTest(unittest.TestCase):
 
         self.test_set_force_cpu()
         self.test_set_data_type()
-        self.test_get_accelerator_type()
-        self.test_get_tensor_from_list()
-        self.test_format_tensor()
-        self.test_get_tensor_from_numpy()
-        self.test_get_numpy_from_tensor()
+        self.test_get_device()
+        self.test_format_from_list()
+        self.test_format()
+        self.test_format_from_numpy()
+        self.test_to_numpy()
         self.test_init_seed()
 
 

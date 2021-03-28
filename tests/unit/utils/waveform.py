@@ -4,6 +4,7 @@ Unit tests for the waveform manager
 """
 import unittest2 as unittest
 import torch
+import random
 from brainspy.utils.waveform import WaveformManager
 from brainspy.utils.pytorch import TorchUtils
 
@@ -18,11 +19,13 @@ class WaveformTest(unittest.TestCase):
         self.waveform_mgr = WaveformManager(configs)
 
     def full_check(self, point_no):
-        points = torch.rand(point_no, device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())  # .unsqueeze(dim=1)
+        points = torch.rand(
+            point_no, device=TorchUtils.get_device(), dtype=TorchUtils.get_data_type()
+        )  # .unsqueeze(dim=1)
         waveform = self.waveform_mgr.points_to_waveform(points)
-        assert (
-            (waveform[0, :] == 0.0).all() and (waveform[-1, :] == 0.0).all()
-        ), "Waveforms do not start and end with zero"
+        assert (waveform[0, :] == 0.0).all() and (
+            waveform[-1, :] == 0.0
+        ).all(), "Waveforms do not start and end with zero"
         assert len(waveform) == (
             (self.waveform_mgr.plateau_length * len(points))
             + (self.waveform_mgr.slope_length * (len(points) + 1))
@@ -45,12 +48,67 @@ class WaveformTest(unittest.TestCase):
             waveform[mask] == waveform_to_plateau
         ).all(), "Inconsistent plateau conversion"
 
-        plateaus_to_waveform, _ = self.waveform_mgr.plateaus_to_waveform(
-            waveform[mask]
-        )
+        plateaus_to_waveform, _ = self.waveform_mgr.plateaus_to_waveform(waveform[mask])
         assert (
             waveform == plateaus_to_waveform
         ).all(), "Inconsistent waveform conversion"
+
+    def test_init(self):
+        """
+        Test to check initialization of variables from configs
+        """
+        waveform = WaveformManager(self.configs)
+        self.assertEqual(waveform.slope_length, 20)
+        self.assertEqual(waveform.plateau_length, 80)
+
+    def test_generate_mask_base(self):
+        """
+        Test to generate an initial and final mask for the torch tensor based on the configs of the waveform
+        """
+        waveform = WaveformManager(self.configs)
+        waveform.generate_mask_base()
+        final_mask_list = waveform.final_mask.tolist()
+        initial_mask_list = waveform.initial_mask.tolist()
+        self.assertEqual(initial_mask_list, ([False] * 20) + ([True] * 80))
+        self.assertEqual(final_mask_list, [False] * 20)
+
+    def test_expand(self):
+        """
+        Test to format the amplitudes and slopes to have the same length
+        """
+        waveform = WaveformManager(self.configs)
+        plateau_lengths = waveform._expand(waveform.plateau_length, 100)
+        self.assertEqual(len(plateau_lengths), 100)
+
+    def test_points_to_waveform(self):
+        """
+        Test to generates a waveform with constant intervals of value and checking first,final and middle values
+        """
+        waveform_mgr = WaveformManager(self.configs)
+        data = (1, 1)
+        points = torch.rand(data)
+        waveform = waveform_mgr.points_to_waveform(points)
+        point_value = points.tolist()[0]
+        waveform_values = waveform.tolist()
+        max_wave = max(waveform_values)
+        self.assertEqual(max_wave, point_value)
+        self.assertEqual(waveform_values[0], [0.0])
+        self.assertEqual(waveform_values[len(waveform_values) - 1], [0.0])
+
+    def test_points_to_plateaus(self):
+        """
+        Test to generate plateaus for the points inputted and checking with all values forming a plateau
+        """
+        waveform_mgr = WaveformManager(self.configs)
+        data = (1, 1)
+        points = torch.rand(data)
+        plateau = waveform_mgr.points_to_plateaus(points)
+        point_value = points.tolist()[0]
+        plateau_values = plateau.tolist()
+        self.assertEqual(
+            point_value, plateau_values[random.randint(0, len(plateau_values) - 1)]
+        )
+        self.assertEqual(point_value, plateau_values[0])
 
     def runTest(self):
         self.full_check((1, 1))
@@ -58,26 +116,13 @@ class WaveformTest(unittest.TestCase):
         self.full_check((100, 1))
         self.full_check((10, 2))
         self.full_check((100, 7))
+        self.test_init()
+        self.test_generate_mask_base()
+        self.test_expand()
+        self.test_points_to_waveform()
+        self.test_points_to_plateaus()
 
 
 if __name__ == "__main__":
-    import HtmlTestRunner
 
-    # unittest.main(
-    #     testRunner=xmlrunner.XMLTestRunner(output='/home/unai/Documents/3-programming/brains-py/brains-py/test-reports'),
-    #     # these make sure that some options that are not applicable
-    #     # remain hidden from the help menu.
-    #     failfast=False, buffer=False, catchbreak=False)
-
-    unittest.main(testRunner=HtmlTestRunner.HTMLTestRunner(output='/home/unai/Documents/3-programming/brains-py/brains-py/test-reports'))
-
-    # suite = unittest.TestSuite()
-    # suite.addTest(WaveformTest("test1"))
-    # unittest.TextTestRunner(verbosity=2).run(suite)
-
-    # outfile = open("report.html", "w")
-    # runner = HTMLTestRunner.HTMLTestRunner(
-    #     stream=outfile,
-    #     title='Test Report',
-    #     description='This demonstrates the report output by Prasanna.Yelsangikar.'
-    # )
+    unittest.main()

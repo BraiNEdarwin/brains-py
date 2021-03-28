@@ -96,7 +96,7 @@ def train(
         return model, {
             "best_result_index": best_result_index,
             "genome_history": genome_history,
-            "performance_history": [TorchUtils.get_tensor_from_list(performance_history), TorchUtils.get_tensor_from_list([])],
+            "performance_history": [TorchUtils.format(performance_history), TorchUtils.format([])],
             "correlation_history": correlation_history,
             "best_output": best_output,
         }
@@ -108,11 +108,11 @@ def evaluate_population(
     """Optimisation function of the platform """
     outputs_pool = torch.zeros((len(pool),) + (len(inputs), 1),
                                dtype=TorchUtils.get_data_type(),
-                               device=TorchUtils.get_accelerator_type()
+                               device=TorchUtils.get_device()
                                )
     criterion_pool = torch.zeros(len(pool),
                                  dtype=TorchUtils.get_data_type(),
-                                 device=TorchUtils.get_accelerator_type())
+                                 device=TorchUtils.get_device())
     for j in range(len(pool)):
 
         # control_voltage_genes = self.get_control_voltages(gene_pool[j], len(inputs_wfm))  # , gene_pool[j, self.gene_trafo_index]

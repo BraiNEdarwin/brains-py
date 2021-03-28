@@ -11,6 +11,7 @@ class ProcessorTest(unittest.TestCase):
     """
     Class for testing 'processor.py'.
     """
+
     def test_merge_numpy(self):
         """
         Test merging numpy arrays.
@@ -53,11 +54,11 @@ class ProcessorTest(unittest.TestCase):
             [3.0, 7.0, 11.0, 15.0],
             [4.0, 8.0, 12.0, 16.0],
         ],
-                              device=TorchUtils.get_accelerator_type(),
-                              dtype=TorchUtils.get_data_type())
+            device=TorchUtils.get_device(),
+            dtype=TorchUtils.get_data_type())
         control_voltages = inputs + torch.ones(
             inputs.shape, dtype=TorchUtils.get_data_type())
-        control_voltages.to(TorchUtils.get_accelerator_type())
+        control_voltages.to(TorchUtils.get_device())
         input_indices = [0, 2, 4, 6]
         control_voltage_indices = [7, 5, 3, 1]
         result = processor.merge_electrode_data(

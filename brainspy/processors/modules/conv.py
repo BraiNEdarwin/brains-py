@@ -12,6 +12,7 @@ from brainspy.utils.electrodes import (
 )
 import torch.nn.functional as F
 
+
 class DNPUConv2d(nn.Module):
     def __init__(
         self,
@@ -62,7 +63,7 @@ class DNPUConv2d(nn.Module):
 
         # -- Set learnable parameters --
         self.control_list = (
-            TorchUtils.get_tensor_from_list(
+            TorchUtils.format(
                 self.set_controls(self.raw_inputs_list), data_type=torch.int64
             )
             .unsqueeze(0)
@@ -95,7 +96,7 @@ class DNPUConv2d(nn.Module):
 
         # -- Set everything as torch Tensors and send to DEVICE --
         self.inputs_list = (
-            TorchUtils.get_tensor_from_list(self.raw_inputs_list, data_type=torch.int64)
+            TorchUtils.format(self.raw_inputs_list, data_type=torch.int64)
             .unsqueeze(0)
             .repeat_interleave(self.in_channels, dim=0)
             .unsqueeze(0)
@@ -142,7 +143,7 @@ class DNPUConv2d(nn.Module):
         )
         samples = torch.rand(
             (self.out_channels, self.in_channels, self.device_no, control_no),
-            device=TorchUtils.get_accelerator_type(),
+            device=TorchUtils.get_device(),
             dtype=TorchUtils.get_data_type(),
         )
         return (amplitude * samples) + offset
@@ -376,4 +377,4 @@ class DNPUConv2d(nn.Module):
             assert (
                 self.all_controls.shape == control_voltages.shape
             ), "Control voltages could not be set due to a shape missmatch with regard to the ones already in the model."
-            self.bias = torch.nn.Parameter(TorchUtils.format_tensor(control_voltages))
+            self.bias = torch.nn.Parameter(TorchUtils.format(control_voltages))

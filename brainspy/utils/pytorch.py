@@ -59,8 +59,8 @@ class TorchUtils:
         return TorchUtils.data_type
 
     @staticmethod
-    def get_accelerator_type():
-        """ Consistently returns the accelerator type for torch.
+    def get_device():
+        """Consistently returns the accelerator type for torch.
 
         Returns
         -------
@@ -69,21 +69,23 @@ class TorchUtils:
 
         Example
         --------
-        TorchUtils.get_accelerator_type()
+        TorchUtils.get_device()
         """
         if torch.cuda.is_available() and not TorchUtils.force_cpu:
             return torch.device("cuda")
         return torch.device("cpu")
 
     @staticmethod
-    def get_tensor_from_list(data: list, device=None, data_type=None):
+    def format(data, device=None, data_type=None):
         """
-        Enables to create a torch variable with a consistent accelerator type and data type.
+        Enables to create a torch variable with a consistent accelerator type and data type if a list or a numpy array is provided.
+        If an exisiting torch tensor is provided, the function enables setting the data type and device consistently for all torch.tensors
 
         Parameters
         ----------
-        data : list/array
-            list of data indices
+        data :
+            list/np.ndarray : list of data indices
+            torch.Tensor :  inital torch tensor which has to be formatted
         device : torch.device, optional
             device type of torch tensor which can be "cpu or "cuda" depending on computer version, by default None
         data_type : torch.dtype, optional
@@ -92,73 +94,35 @@ class TorchUtils:
         Returns
         -------
         torch.tensor
-            torch tensor of given data, device and data type
+            torch tensor either generated from python list or numpy array, or exisiting torch tensors formatted to given device and data type
 
         Example
         -------
-        data = [[1, 2]]
-        tensor = TorchUtils.get_tensor_from_list(data, data_type=torch.float32)
+        1.   data = [[1, 2]]
+             tensor = TorchUtils.format(data, data_type=torch.float32)
+
+        2.   tensor = TorchUtils.format(data, data_type=torch.float64)
+
+        3.   data = [[1, 2], [3, 4]]
+             numpy_data = np.array(data)
+             tensor = TorchUtils.format(numpy_data)
+
         """
-        if device is None:
-            device = TorchUtils.get_accelerator_type()
-        if data_type is None:
-            data_type = TorchUtils.get_data_type()
-        return torch.tensor(data, device=device, dtype=data_type)
+        if isinstance(data, (list, np.ndarray, np.generic)):
+            if device is None:
+                device = TorchUtils.get_device()
+            if data_type is None:
+                data_type = TorchUtils.get_data_type()
+            return torch.tensor(data, device=device, dtype=data_type)
+        else:
+            if device is None:
+                device = TorchUtils.get_device()
+            if data_type is None:
+                data_type = TorchUtils.get_data_type()
+            return data.to(device=device, dtype=data_type)
 
     @staticmethod
-    def format_tensor(tensor: torch.tensor, device=None, data_type=None):
-        """Enables setting the data type and device consistently for all torch.tensors
-
-        Parameters
-        ----------
-        tensor : torch.tensor
-            inital torch tensor which has to be formatted
-        device : torch.device, optional
-            device type of torch tensor which can be "cpu or "cuda" depending on computer version, by default None
-        data_type : torch.dtype, optional
-            desired data type of torch tensor, by default None
-
-        Returns
-        -------
-        torch.tensor
-            torch tensor formatted with given device type and data type
-
-        Example
-        -------
-        tensor = TorchUtils.format_tensor(tensor, data_type=torch.float64)
-        """
-        if device is None:
-            device = TorchUtils.get_accelerator_type()
-        if data_type is None:
-            data_type = TorchUtils.get_data_type()
-        return tensor.to(device=device, dtype=data_type)
-
-    @staticmethod
-    def get_tensor_from_numpy(data: np.array):
-        """
-        Enables to create a torch variable from numpy with a consistent accelerator type and
-        data type.`
-
-        Parameters
-        ----------
-        data : numpy array
-            numpy array that needs to be formatted to a torch tensor
-
-        Returns
-        -------
-        torch.tensor
-            torch tensor from given numpy array
-
-        Example
-        -------
-        data = [[1, 2], [3, 4]]
-        numpy_data = np.array(data)
-        tensor = TorchUtils.get_tensor_from_numpy(numpy_data)
-        """
-        return TorchUtils.get_tensor_from_list(data)
-
-    @staticmethod
-    def get_numpy_from_tensor(data: torch.tensor):
+    def to_numpy(data: torch.tensor):
         """
         Creates a numpy array from a torch tensor
 
@@ -175,7 +139,7 @@ class TorchUtils:
         Example
         -------
         tensor = torch.tensor([[1., -1.], [1., -1.]])
-        numpy_data = TorchUtils.get_numpy_from_tensor(tensor)
+        numpy_data = TorchUtils.to_numpy(tensor)
         """
         if data.requires_grad:
             return data.detach().cpu().numpy()
@@ -219,7 +183,27 @@ class TorchUtils:
 
     @staticmethod
     def format_model(model):
+        """
+        For devices with more than one GPU, this function helps to distribute the model and be more efficient
+
+        Parameters
+        ----------
+        model : nn.Module
+            model of an nn.Module object
+
+        Returns
+        -------
+        nn.Module
+            model of an nn.Module object distributed by DataParallel amongst the multiple GPUs
+
+        Example
+        --------
+        configs = {"optimizer" : "adam"}
+        model = CustomModel()
+        newmodel = format_model(model)
+
+        """
         if torch.cuda.device_count() > 1 and not TorchUtils.force_cpu:
             model = torch.nn.DataParallel(model)
-        model.to(TorchUtils.get_accelerator_type())
+        model.to(TorchUtils.get_device())
         return model

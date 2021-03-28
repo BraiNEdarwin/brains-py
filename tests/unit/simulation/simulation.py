@@ -25,8 +25,8 @@ configs["waveform"]["slope_lengths"] = 20
 
 
 x = 0.5 * np.random.randn(10, 2)
-x = TorchUtils.get_tensor_from_numpy(x)
-target = TorchUtils.get_tensor_from_list([[5]] * 10)
+x = TorchUtils.format(x)
+target = TorchUtils.format([[5]] * 10)
 node = DNPU(configs)
 loss = nn.MSELoss()
 optimizer = torch.optim.Adam([{"params": node.parameters()}], lr=0.01)

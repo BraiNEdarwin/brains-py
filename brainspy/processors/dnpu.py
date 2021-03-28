@@ -29,7 +29,7 @@ class DNPU(nn.Module):
         self._init_dnpu(alpha)
 
     def _init_dnpu(self, alpha):
-        self.alpha = torch.tensor(alpha, device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())
+        self.alpha = torch.tensor(alpha, device=TorchUtils.get_device(), dtype=TorchUtils.get_data_type())
 
         for (
             params
@@ -50,7 +50,7 @@ class DNPU(nn.Module):
         ), "Max. Voltage is assumed to be positive, but value is negative!"
         bias = self.control_low + (
             self.control_high - self.control_low
-        ) * torch.rand(1, len(self.processor.control_indices), dtype=TorchUtils.get_data_type(), device=TorchUtils.get_accelerator_type())
+        ) * torch.rand(1, len(self.processor.control_indices), dtype=TorchUtils.get_data_type(), device=TorchUtils.get_device())
 
         self.bias = nn.Parameter(bias)
 
@@ -81,7 +81,7 @@ class DNPU(nn.Module):
             assert (
                 self.bias.shape == bias.shape
             ), "Control voltages could not be set due to a shape missmatch with regard to the ones already in the model."
-            self.bias = torch.nn.Parameter(TorchUtils.format_tensor(bias))
+            self.bias = torch.nn.Parameter(TorchUtils.format(bias))
 
     def get_control_voltages(self):
         return next(self.parameters()).detach()
