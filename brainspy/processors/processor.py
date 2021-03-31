@@ -36,7 +36,8 @@ class Processor(nn.Module):
     def _load_processor_from_configs(self, configs):
         if not hasattr(self, "processor") or self._get_configs() != configs:
             if configs["processor_type"] == "simulation":
-                self.processor = SurrogateModel(configs["driver"])
+                self.processor = SurrogateModel(configs["driver"]["torch_model_dict"])
+                self.processor.set_effects_from_dict(configs["driver"])
             elif (
                 configs["processor_type"] == "simulation_debug"
                 or configs["processor_type"] == "cdaq_to_cdaq"
@@ -98,6 +99,7 @@ class Processor(nn.Module):
 
     def close(self):
         self.processor.close()
+
 
 def merge_electrode_data(
     inputs,
