@@ -48,8 +48,26 @@ class SurrogateModel(nn.Module):
         max_voltage = (offset + amplitude).unsqueeze(dim=1)
         self.voltage_ranges = torch.cat((min_voltage, max_voltage), dim=1)
 
+    def set_effects_from_dict(self, configs):
+        amplification = None
+        output_clipping = None
+        noise = None
+        if "amplification" in configs:
+            amplification = configs["amplification"]
+        if "output_clipping" in configs:
+            output_clipping = configs["output_clipping"]
+        if "noise" in configs:
+            noise = configs["noise"]["type"]
+            del configs["noise"]["type"]
+            self.set_effects(
+                amplification, output_clipping, noise, kwargs=configs["noise"]
+            )  # TODO: Further check if **configs['noise'] is doing what is intended to do
+            configs["noise"]["type"] = noise
+        else:
+            self.set_effects(amplification, output_clipping)
+
     def set_effects(
-        self, amplification=None, output_clipping=None, noise=None, **kwargs
+        self, amplification=None, output_clipping=None, noise=None, kwargs=None
     ):
         # Warning, this function used to be called form the init using a configs file. Now it is called externally. To be changed where it corresponds in bspy tasks.
         # Amplification can be None, a value, or 'default'. None will not use amplification, a value will set the amplification to that value, and the string 'default' will take the data from the info dictionary.
@@ -57,7 +75,10 @@ class SurrogateModel(nn.Module):
         # noise can be None, a string determining the type of noise and some args.
         self.set_amplification(amplification)
         self.set_output_clipping(output_clipping)
-        self.noise = get_noise(noise, kwargs)
+        if kwargs is not None:
+            self.noise = get_noise(noise, kwargs)
+        else:
+            self.noise = get_noise(noise)
 
     def set_amplification(self, value):
         if value is not None and value == "default":
@@ -83,7 +104,7 @@ class SurrogateModel(nn.Module):
             x = self.noise(x)
         if self.output_clipping is not None:
             return torch.clamp(
-                x, min=self.clipping_value[0], max=self.clipping_value[1]
+                x, min=self.output_clipping[0], max=self.output_clipping[1]
             )
         return x
 
