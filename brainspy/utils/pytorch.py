@@ -7,7 +7,6 @@ class TorchUtils:
     """ A class to consistently manage declarations of torch variables for CUDA and CPU. """
 
     force_cpu = False
-    data_type = torch.get_default_dtype()
 
     @staticmethod
     def set_force_cpu(force: bool):
@@ -28,44 +27,14 @@ class TorchUtils:
         TorchUtils.force_cpu = force
 
     @staticmethod
-    def set_data_type(data_type: torch.dtype):
-        """
-        The function sets the data_type value to to a new datatype
-
-        Parameters
-        ----------
-        data_type : torch.dtype
-            desired data type of torch tensor
-
-        Example
-        -------
-        TorchUtils.set_data_type(torch.float64)
-        """
-        TorchUtils.data_type = data_type
-
-    @staticmethod
-    def get_data_type():
-        """The function gets the current value of the data_type variable
-
-        Returns
-        -------
-        data_type
-            current data type of torch tensor
-
-        Example
-        --------
-        TorchUtils.get_data_type()
-        """
-        return TorchUtils.data_type
-
-    @staticmethod
     def get_device():
-        """Consistently returns the accelerator type for torch.
+        """
+        Consistently returns the accelerator type for the torch. The accelerator type of the device can be "cpu" or "cuda" depending on the version of the computer.
 
         Returns
         -------
         torch.device
-            device type of torch tensor which can be "cpu or "cuda" depending on computer version
+            device type of torch tensor which can be "cpu" or "cuda" depending on computer version
 
         Example
         --------
@@ -79,13 +48,15 @@ class TorchUtils:
     def format(data, device=None, data_type=None):
         """
         Enables to create a torch variable with a consistent accelerator type and data type if a list or a numpy array is provided.
-        If an exisiting torch tensor is provided, the function enables setting the data type and device consistently for all torch.tensors
+        If an exisiting torch tensor is provided, the function enables setting the data type and device consistently for all torch tensors
+        For devices with more than one GPU, if an instance of an nn.Module is provided (for example - CustomModel,DNPU,Processor) this function helps to distribute the model and be more efficient
 
         Parameters
         ----------
         data :
             list/np.ndarray : list of data indices
             torch.Tensor :  inital torch tensor which has to be formatted
+            nn.Module : model of an nn.Module object
         device : torch.device, optional
             device type of torch tensor which can be "cpu or "cuda" depending on computer version, by default None
         data_type : torch.dtype, optional
@@ -93,34 +64,41 @@ class TorchUtils:
 
         Returns
         -------
-        torch.tensor
+        1. torch.tensor
             torch tensor either generated from python list or numpy array, or exisiting torch tensors formatted to given device and data type
+        2. nn.Module
+            if an nn.Module is given as an argument, a model of the nn.Module object distributed by DataParallel amongst the multiple GPUs is generated
 
         Example
         -------
-        1.   data = [[1, 2]]
-             tensor = TorchUtils.format(data, data_type=torch.float32)
+        1.  data = [[1, 2]]
+            tensor = TorchUtils.format(data, data_type=torch.float32)
 
-        2.   tensor = torch.randn(2, 2)
-             tensor = TorchUtils.format(tensor, data_type=torch.float64)
+        2.  tensor = torch.randn(2, 2)
+            tensor = TorchUtils.format(tensor, data_type=torch.float64)
 
-        3.   data = [[1, 2], [3, 4]]
-             numpy_data = np.array(data)
-             tensor = TorchUtils.format(numpy_data)
+        3.  data = [[1, 2], [3, 4]]
+            numpy_data = np.array(data)
+            tensor = TorchUtils.format(numpy_data)
+
+        4.  configs = {"optimizer" : "adam"}
+            model = CustomModel()
+            newmodel = format_model(model)
 
         """
+        if device is None:
+            device = TorchUtils.get_device()
+        if data_type is None:
+            data_type = torch.get_default_dtype()
         if isinstance(data, (list, np.ndarray, np.generic)):
-            if device is None:
-                device = TorchUtils.get_device()
-            if data_type is None:
-                data_type = TorchUtils.get_data_type()
             return torch.tensor(data, device=device, dtype=data_type)
-        else:
-            if device is None:
-                device = TorchUtils.get_device()
-            if data_type is None:
-                data_type = TorchUtils.get_data_type()
+        elif isinstance(data, torch.Tensor):
             return data.to(device=device, dtype=data_type)
+        else:
+            if torch.cuda.device_count() > 1 and not TorchUtils.force_cpu:
+                data = torch.nn.DataParallel(data)
+            data.to(TorchUtils.get_device())
+            return data
 
     @staticmethod
     def to_numpy(data: torch.tensor):
@@ -181,30 +159,3 @@ class TorchUtils:
             torch.backends.cudnn.benchmark = False
 
         return seed
-
-    @staticmethod
-    def format_model(model):
-        """
-        For devices with more than one GPU, this function helps to distribute the model and be more efficient
-
-        Parameters
-        ----------
-        model : nn.Module
-            model of an nn.Module object
-
-        Returns
-        -------
-        nn.Module
-            model of an nn.Module object distributed by DataParallel amongst the multiple GPUs
-
-        Example
-        --------
-        configs = {"optimizer" : "adam"}
-        model = CustomModel()
-        newmodel = format_model(model)
-
-        """
-        if torch.cuda.device_count() > 1 and not TorchUtils.force_cpu:
-            model = torch.nn.DataParallel(model)
-        model.to(TorchUtils.get_device())
-        return model

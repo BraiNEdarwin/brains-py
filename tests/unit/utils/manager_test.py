@@ -1,4 +1,3 @@
-
 import unittest
 
 import numpy as np
@@ -13,11 +12,6 @@ from brainspy.utils.manager import (
 )
 from brainspy.processors.processor import Processor
 from brainspy.algorithms.modules.optim import GeneticOptimizer
-from brainspy.utils.transforms import (
-    DataToTensor,
-    DataToVoltageRange,
-    DataPointsToPlateau,
-)
 from torchvision import transforms
 from brainspy.processors.dnpu import DNPU
 from brainspy.processors.simulation.processor import SurrogateModel
@@ -109,8 +103,7 @@ class ManagerTest(unittest.TestCase):
         """
         configs = load_configs(self.path + "/test_torch.yaml")
         algorithm = get_algorithm(configs["algorithm"])
-        model = train(algorithm, configs)
-        self.assertTrue(model is not None)
+        self.assertTrue(callable(algorithm))
 
     def test_get_driver(self):
         """
@@ -136,46 +129,6 @@ class ManagerTest(unittest.TestCase):
         self.test_get_adam()
         self.test_get_algorithm()
         self.test_get_driver()
-
-
-def train(algorithm, configs):
-    """
-    Function to test the train function which is obtained from the get_algorithm() method
-    """
-    path = "C:/users/humai/Downloads/brains-py/tests/unit/utils/testfiles"  # Enter path to save train results
-    waveform_transforms = transforms.Compose(
-        [DataPointsToPlateau(configs["processor"]["data"]["waveform"])]
-    )
-    V_MIN = [-1.2, -1.2]
-    V_MAX = [0.6, 0.6]
-    data_transforms = transforms.Compose(
-        [
-            DataToVoltageRange(V_MIN, V_MAX, -1, 1),
-            DataToTensor(device=torch.device("cpu")),
-        ]
-    )
-    criterion = get_criterion(configs["algorithm"])
-    model = DNPU(configs)
-    optimizer = get_optimizer(model, configs["algorithm"])
-    dataset = BooleanGateDataset(
-        target=np.array([0, 0, 0, 1]), transforms=data_transforms
-    )
-    loader = torch.utils.data.DataLoader(
-        dataset,
-        batch_size=len(dataset),
-        shuffle=True,
-        pin_memory=configs["data"]["pin_memory"],
-    )
-    return algorithm(
-        model,
-        (loader, None),
-        criterion,
-        optimizer,
-        configs["algorithm"],
-        waveform_transforms=waveform_transforms,
-        logger=None,
-        save_dir=path,
-    )
 
 
 if __name__ == "__main__":

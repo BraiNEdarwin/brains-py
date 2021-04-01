@@ -60,7 +60,7 @@ def get_criterion(configs: dict):
 
 def get_optimizer(model: object, configs: dict):
     """
-    The function returns an optimizer object which include added information to train a specific model.
+    Gets an optimizer object which include added information to train a specific model.
 
     Parameters
     ----------
@@ -99,7 +99,8 @@ def get_optimizer(model: object, configs: dict):
 
 def get_adam(model: object, configs: dict):
     """
-    The function returns an Adam optimizer object which include added information to train a specific model.
+    To get an Adam optimizer object which include added information to train a specific model.
+    It is for first-order gradient-based optimization of stochastic objective functions, based on adaptive estimates of lower-order moments.
 
     Parameters
     ----------
@@ -132,8 +133,14 @@ def get_adam(model: object, configs: dict):
 
 def get_algorithm(configs: dict):
     """
-    The function returns a train function, either GA or GD based on the configurations dictionary
+    To get a train function, either GA - genetic algorithm or GD - Gradient Descent, based on the configurations dictionary.
+    Genetic Algorithm : In computer science and operations research, a genetic algorithm (GA) is a meta-heuristic inspired by the process of natural selection that belongs to the larger class of evolutionary algorithms (EA).
+                        Genetic algorithms are commonly used to generate high-quality solutions to optimization and search problems by relying on bio-inspired operators such as mutation, crossover and selection.
+                        This algorithm is suitable for experiments with reservoir computing.
 
+    Gradient Descent : Gradient descent is a first-order iterative optimization algorithm for finding the minimum of a function.
+                       To find a local minimum of a function using gradient descent, one takes steps proportional to the negative of the gradient (or approximate gradient) of the function at the current point.
+                       If, instead, one takes steps proportional to the positive of the gradient, one approaches a local maximum of that function; the procedure is then known as gradient ascent.
     Parameters
     ----------
     configs (dict): configurations of the model
@@ -160,7 +167,15 @@ def get_algorithm(configs: dict):
 
 def get_driver(configs: dict):
     """
-    The function returns a driver object based on the configurations dictionary
+    To get a driver object based on the configurations dictionary.
+    The driver here are defined under the processor type tag in the configs dictionary and can be a
+        SurrogateModel (Software processor) -  It is a deep neural network with information about the  control voltage ranges,
+                        the amplification of the device and relevant noise simulations that it may have
+        Hardware Processor - It establishes a connection (for a single, or multiple hardware DNPUs) with one of the following National Instruments measurement devices:
+                * CDAQ-to-NiDAQ
+                * CDAQ-to-CDAQ
+                        * With a regular rack
+                        * With a real time rack
 
     Parameters
     -----------

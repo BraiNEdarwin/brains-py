@@ -11,7 +11,7 @@ import yaml
 
 def load_configs(file_name: str):
     """
-    This function loads a yaml file from the given file path
+    loads a yaml file from the given file path
 
     Parameters
     ----------
@@ -34,7 +34,7 @@ def load_configs(file_name: str):
 
 def save_configs(configs: dict, file_name: str):
     """
-    This function formats data from a dictionary and saves it to the given yaml file
+    formats data from a dictionary and saves it to the given yaml file
 
     Parameters
     ----------
@@ -58,8 +58,7 @@ def save_configs(configs: dict, file_name: str):
 
 def create_directory(path: str, overwrite=False):
     """
-    This function checks if there exists a directory filepath+datetime_name.
-    If not it will create it and return this path.
+    Checks if there exists a directory with - filepath+datetime_name , and if not it will create it and return this path.
 
     Parameters
     -----------
@@ -83,7 +82,7 @@ def create_directory(path: str, overwrite=False):
 
 def create_directory_timestamp(path: str, name: str, overwrite=False):
     """
-    This function creates a directory with the given name and current timestamp if it does not already exist
+    To create a directory with the given name and current timestamp if it does not already exist
 
     Parameters
     ----------

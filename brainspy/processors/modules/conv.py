@@ -144,7 +144,7 @@ class DNPUConv2d(nn.Module):
         samples = torch.rand(
             (self.out_channels, self.in_channels, self.device_no, control_no),
             device=TorchUtils.get_device(),
-            dtype=TorchUtils.get_data_type(),
+            dtype=torch.get_default_dtype(),
         )
         return (amplitude * samples) + offset
 

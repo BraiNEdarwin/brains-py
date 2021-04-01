@@ -49,9 +49,15 @@ class GeneticOptimizer:
         return self.pool
 
     def _init_pool(self):
-        pool = torch.zeros((self.genome_no, len(self.gene_range)), device=TorchUtils.get_device(), dtype=TorchUtils.get_data_type())  # Dimensions (Genome number, gene number)
+        pool = torch.zeros(
+            (self.genome_no, len(self.gene_range)),
+            device=TorchUtils.get_device(),
+            dtype=torch.get_default_dtype(),
+        )  # Dimensions (Genome number, gene number)
         for i in range(0, len(self.gene_range)):
-            pool[:, i] = uniform(self.gene_range[i][0], self.gene_range[i][1]).sample((self.genome_no,))
+            pool[:, i] = uniform(self.gene_range[i][0], self.gene_range[i][1]).sample(
+                (self.genome_no,)
+            )
         return pool
 
     def crossover(self, new_pool):
@@ -127,7 +133,11 @@ class GeneticOptimizer:
         maximum = torch.max(parent1, parent2)
         minimum = torch.min(parent1, parent2)
         diff_maxmin = maximum - minimum
-        offspring = torch.zeros((parent1.shape), dtype=TorchUtils.get_data_type(), device=TorchUtils.get_device())
+        offspring = torch.zeros(
+            (parent1.shape),
+            dtype=torch.get_default_dtype(),
+            device=TorchUtils.get_device(),
+        )
         for i in range(len(parent1)):
             if parent1[i] > parent2[i]:
                 offspring[i] = uniform(
@@ -168,7 +178,7 @@ class GeneticOptimizer:
         mask = TorchUtils.format(
             np.random.choice(
                 [0, 1],
-                size=pool[self.partition[0]:].shape,
+                size=pool[self.partition[0] :].shape,
                 p=[1 - mutation_rate, mutation_rate],
             )
         )
@@ -184,14 +194,19 @@ class GeneticOptimizer:
             else:
                 mutated_pool[:, i] = np.random.triangular(
                     gene_range[i][0],
-                    TorchUtils.to_numpy(pool[self.partition[0]:, i]),
+                    TorchUtils.to_numpy(pool[self.partition[0] :, i]),
                     gene_range[i][1],
                 )
 
         mutated_pool = TorchUtils.format(mutated_pool)
-        pool[self.partition[0]:] = (
-            torch.ones(pool[self.partition[0]:].shape, dtype=TorchUtils.get_data_type(), device=TorchUtils.get_device()) - mask
-        ) * pool[self.partition[0]:] + mask * mutated_pool
+        pool[self.partition[0] :] = (
+            torch.ones(
+                pool[self.partition[0] :].shape,
+                dtype=torch.get_default_dtype(),
+                device=TorchUtils.get_device(),
+            )
+            - mask
+        ) * pool[self.partition[0] :] + mask * mutated_pool
 
         # Remove duplicates (Only if they are)
         if len(pool.unique(dim=1)) < len(pool):

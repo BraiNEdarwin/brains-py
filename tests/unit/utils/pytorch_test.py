@@ -21,13 +21,6 @@ class PyTorchTest(unittest.TestCase):
         TorchUtils.set_force_cpu(True)
         self.assertEqual(TorchUtils.force_cpu, True)
 
-    def test_set_data_type(self):
-        """
-        Test for the set_data_type() method to set it to a new data type
-        """
-        TorchUtils.set_data_type(torch.float64)
-        self.assertEqual(TorchUtils.get_data_type(), torch.float64)
-
     def test_get_device(self):
         """
         Test for the get_device() method to get the accelerator type of the torch
@@ -81,7 +74,6 @@ class PyTorchTest(unittest.TestCase):
     def runTest(self):
 
         self.test_set_force_cpu()
-        self.test_set_data_type()
         self.test_get_device()
         self.test_format_from_list()
         self.test_format()

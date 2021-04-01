@@ -8,7 +8,7 @@ class GaussianNoise:
             torch.tensor(
                 [mse],
                 device=TorchUtils.get_device(),
-                dtype=TorchUtils.get_data_type(),
+                dtype=torch.get_default_dtype(),
             )
         )
 
@@ -18,7 +18,7 @@ class GaussianNoise:
             * torch.randn(
                 x.shape,
                 device=TorchUtils.get_device(),
-                dtype=TorchUtils.get_data_type(),
+                dtype=torch.get_default_dtype(),
             )
         )
 

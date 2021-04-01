@@ -83,6 +83,9 @@ class IOTest(unittest.TestCase):
         self.assertEqual(
             data["algorithm"]["optimizer"], "genetic"
         )  # data in the boolean.yaml file
+        # self.assertEqual(
+        #     data["algorithm"]["nested"]["test_data"], "test"
+        # )   #test for nested !include : data in nested_include.yaml file
         file.close()
 
     def runTest(self):

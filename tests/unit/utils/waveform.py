@@ -20,7 +20,7 @@ class WaveformTest(unittest.TestCase):
 
     def full_check(self, point_no):
         points = torch.rand(
-            point_no, device=TorchUtils.get_device(), dtype=TorchUtils.get_data_type()
+            point_no, device=TorchUtils.get_device(), dtype=torch.get_default_dtype()
         )  # .unsqueeze(dim=1)
         waveform = self.waveform_mgr.points_to_waveform(points)
         assert (waveform[0, :] == 0.0).all() and (
