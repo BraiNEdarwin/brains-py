@@ -1,30 +1,47 @@
-""" The accelerator class enables to statically access the accelerator
-(CUDA or CPU) that is used in the computer. The aim is to support both platforms seemlessly. """
+"""
+TODO add module docstring
+"""
 import warnings
-
+import torch
 from torch import nn
-from typing import OrderedDict
-
+from typing import Optional, Dict
 
 
 class NeuralNetworkModel(nn.Module):
     """
-    The TorchModel class is used to manage together a torch model and its state dictionary. The usage is expected to be as follows
-    Loads a neural network from a custom dictionary
-    mymodel = TorchModel()
-    mymodel.load_model('my_path/my_model.pt')
-    mymodel.model
+    TODO add class docstring
     """
 
-    # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
+    # TODO: Automatically register the data type according to the
+    # configurations of the amplification variable of the  info dictionary
 
-    def __init__(self, model_info, verbose=False):
+    def __init__(self, model_info: dict, verbose=False):
+        """
+        Create a model object.
+
+        Parameters
+        ----------
+        model_info : dict
+            Dictionary containing the model info.
+        verbose : bool, optional
+            Whether to print certain steps, by default False.
+        """
         super(NeuralNetworkModel, self).__init__()
-        self.info = None
+        self.info: Optional[Dict] = None
         self.verbose = verbose
         self.build_model_structure(model_info)
 
-    def build_model_structure(self, model_info):
+    def build_model_structure(self, model_info: dict):
+        """
+        Build the model from the info dictionary.
+        First perform the consistency check, then set the layers and
+        activations.
+
+        Parameters
+        ----------
+        model_info : dict
+            Dictionary containing the weights and activations of the model.
+        """
         self.info_consistency_check(model_info)
         hidden_sizes = model_info["hidden_sizes"]
         input_layer = nn.Linear(model_info["D_in"], hidden_sizes[0])
@@ -43,19 +60,70 @@ class NeuralNetworkModel(nn.Module):
         if self.verbose:
             print("Model built with the following modules: \n", modules)
 
-    def set_info_dict(self, info_dict):
+    def set_info_dict(self, info_dict: dict):
+        """
+        Set the info dictionary of the model.
+
+        Parameters
+        ----------
+        info_dict : dict
+            Info dictionary.
+        """
         self.info = info_dict
 
-    def get_info_dict(self):
+    def get_info_dict(self) -> Optional[Dict]:
+        """
+        Get the info dictionary of the model.
+
+        Returns
+        -------
+        dict
+            Info dictionary of the model.
+
+        Raises
+        ------
+        UserWarning
+            If the state dictionary is not set.
+        """
         if self.info is None:
             warnings.warn("The info dictionary is empty.")
         return self.info
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Do a forward pass.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input data.
+
+        Returns
+        -------
+        torch.Tensor
+            Output data.
+        """
         return self.raw_model(x)
 
     def _get_activation(self, activation):
-        # TODO: generalize get_activation function to allow for several options, e.g. relu, tanh, hard-tanh, sigmoid
+        """
+        Get the activation of the model. If it's a string then return an
+        actual activation object.
+
+        Currenly can only read ReLU.
+
+        Parameters
+        ----------
+        activation : [type]
+            [description]
+
+        Returns
+        -------
+        [type]
+            [description]
+        """
+        # TODO: generalize get_activation function to allow for several
+        # options, e.g. relu, tanh, hard-tanh, sigmoid
         if type(activation) is str:
             if self.verbose:
                 print("Activation function is set as ReLU")
@@ -65,8 +133,9 @@ class NeuralNetworkModel(nn.Module):
     def info_consistency_check(self, model_info: dict):
         """
         Check if the model info follows the expected standards:
-        Are activation, input dimension, output dimension, and hidden layer number and sizes
-        are defined in the config? If they aren't, set them to default values and print a warning.
+        Are activation, input dimension, output dimension, and hidden layer
+        number and sizes are defined in the config? If they aren't, set them
+        to default values and print a warning.
 
         Parameters
         ----------
@@ -82,25 +151,26 @@ class NeuralNetworkModel(nn.Module):
                 and ["activation"] in ("relu", "elu")):
             model_info["activation"] = "relu"
             warnings.warn(
-                "The model loaded does not define the activation as expected. "
-                f"Changed it to default value: {default_activation}.")
+                "The model loaded does not define the activation as "
+                f"expected. Changed it to default value: {default_activation}."
+            )
         if "D_in" not in model_info:
             # Check input dimension.
             model_info["D_in"] = default_in_size
             warnings.warn(
-                "The model loaded does not define the input dimension as expected. "
-                f"Changed it to default value: {default_in_size}.")
+                "The model loaded does not define the input dimension as "
+                f"expected. Changed it to default value: {default_in_size}.")
         if "D_out" not in model_info:
             # Check output dimension.
             model_info["D_out"] = default_out_size
             warnings.warn(
-                "The model loaded does not define the output dimension as expected. "
-                f"Changed it to default value: {default_out_size}.")
+                "The model loaded does not define the output dimension as "
+                f"expected. Changed it to default value: {default_out_size}.")
         if "hidden_sizes" not in model_info:
             # Check sizes of hidden layers.
             model_info[
                 "hidden_sizes"] = default_hidden_size * default_hidden_number
             warnings.warn(
-                "The model loaded does not define the hidden layer sizes as expected. "
-                f"Changed it to default value: {default_hidden_number} layers of {default_hidden_size}."
-            )
+                "The model loaded does not define the hidden layer sizes as "
+                f"expected. Changed it to default value: "
+                f"{default_hidden_number} layers of {default_hidden_size}.")
