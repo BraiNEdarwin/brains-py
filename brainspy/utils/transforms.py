@@ -1,5 +1,8 @@
 """
 Class for transforming from current to voltage using linear transformations.
+The main class CurrentToVoltage takes arrays of currents and voltages.
+It then calculates the linear transform for each current-voltage pair by
+finding the line between two points.
 """
 
 from typing import Tuple, Sequence
