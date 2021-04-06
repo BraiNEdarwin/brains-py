@@ -8,7 +8,6 @@ Created on Mon Sep  2 11:33:38 2019
 
 import torch
 from torch import nn
-import numpy as np
 
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor

@@ -1,7 +1,9 @@
-
 import numpy as np
 
-from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup, CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
+from brainspy.processors.hardware.drivers.ni.setup import (
+    NationalInstrumentsSetup,
+    CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS,
+)
 
 
 class CDAQtoCDAQ(NationalInstrumentsSetup):
@@ -10,7 +12,9 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         configs["offset"] = 1
         configs["max_ramping_time_seconds"] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
-        self.tasks_driver.start_trigger(self.configs["driver"]['instruments_setup']["trigger_source"])
+        self.tasks_driver.start_trigger(
+            self.configs["driver"]["instruments_setup"]["trigger_source"]
+        )
 
     def forward_numpy(self, y):
         # The first point of the read_data does not perform a reading.

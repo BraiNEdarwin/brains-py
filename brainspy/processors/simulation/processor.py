@@ -38,9 +38,7 @@ class SurrogateModel(nn.Module):
         self._init_voltage_ranges()
 
     def _init_voltage_ranges(self):
-        offset = TorchUtils.format(
-            self.model.info["data_info"]["input_data"]["offset"]
-        )
+        offset = TorchUtils.format(self.model.info["data_info"]["input_data"]["offset"])
         amplitude = TorchUtils.format(
             self.model.info["data_info"]["input_data"]["amplitude"]
         )

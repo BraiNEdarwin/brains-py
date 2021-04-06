@@ -38,7 +38,7 @@ class DNPU_BatchNorm(nn.Module):
         batch_norm=True,  # Whether if batch norm is applied
         affine=False,
         track_running_stats=True,  # Whether the batchnorm will track the running stats.
-        momentum=0.1
+        momentum=0.1,
     ):
         # default current_range = 2  * std, where std is assumed to be 1
         super(DNPU_BatchNorm, self).__init__()
@@ -54,7 +54,9 @@ class DNPU_BatchNorm(nn.Module):
         self.init_batch_norm(batch_norm, affine, track_running_stats, momentum)
 
     def init_processor(self, processor, inputs_list):
-        if isinstance(processor, Processor) or isinstance(processor, dict):  # It accepts initialising a processor as a dictionary
+        if isinstance(processor, Processor) or isinstance(
+            processor, dict
+        ):  # It accepts initialising a processor as a dictionary
             if inputs_list is None:
                 self.processor = DNPU(processor)
             else:
@@ -62,7 +64,9 @@ class DNPU_BatchNorm(nn.Module):
         elif isinstance(processor, DNPU) or isinstance(processor, DNPU_Layer):
             self.processor = processor
         else:
-            assert False, 'The node is not recognised. It needs to be either a model dictionary or an instance of a Processor, a DNPU, or a DNPU_Layer.'
+            assert (
+                False
+            ), "The node is not recognised. It needs to be either a model dictionary or an instance of a Processor, a DNPU, or a DNPU_Layer."
 
     def init_input_range(self, input_range):
         self.min_input = input_range[0]
@@ -74,7 +78,12 @@ class DNPU_BatchNorm(nn.Module):
     def init_batch_norm(self, batch_norm, affine, track_running_stats, momentum):
         if batch_norm:
             self.init_output_node_no()
-            self.bn = nn.BatchNorm1d(self.bn_outputs, affine=affine, track_running_stats=track_running_stats, momentum=momentum).to(device=TorchUtils.get_device())
+            self.bn = nn.BatchNorm1d(
+                self.bn_outputs,
+                affine=affine,
+                track_running_stats=track_running_stats,
+                momentum=momentum,
+            ).to(device=TorchUtils.get_device())
         else:
             self.bn = batch_norm
 
@@ -84,7 +93,9 @@ class DNPU_BatchNorm(nn.Module):
         elif isinstance(self.processor, DNPU_Layer):
             self.bn_outputs = len(self.processor.processor.inputs_list)
         else:
-            print('Warning: self.processor in DNPU_BatchNorm is from a type that is not identified. The outputs of batch norm are not automatically detected.')
+            print(
+                "Warning: self.processor in DNPU_BatchNorm is from a type that is not identified. The outputs of batch norm are not automatically detected."
+            )
 
     def init_transform_to_voltage(self, transform_to_voltage, input_range):
         self.transform_to_voltage = CurrentToVoltage(
@@ -103,7 +114,11 @@ class DNPU_BatchNorm(nn.Module):
 
     def clamp_output(self, x):
         if self.device_output_clip:
-            x = torch.clamp(x, min=self.processor.get_clipping_value()[0], max=self.processor.get_clipping_value()[1])
+            x = torch.clamp(
+                x,
+                min=self.processor.get_clipping_value()[0],
+                max=self.processor.get_clipping_value()[1],
+            )
         return x
 
     def apply_batch_norm(self, x):
@@ -142,7 +157,13 @@ class DNPU_BatchNorm(nn.Module):
         return self.processor.set_control_voltages(control_voltages)
 
     def get_logged_variables(self):
-        return({'a_clamped_input': self.clamped_input.clone().detach(), 'b_transformed_input': self.transformed_input.clone().detach(), 'c_dnpu_output': self.dnpu_output.clone().detach(), 'd_clamped_dnpu_output': self.clamped_dnpu_output.clone().detach(), 'e_batch_norm_output': self.batch_norm_output.clone().detach()})
+        return {
+            "a_clamped_input": self.clamped_input.clone().detach(),
+            "b_transformed_input": self.transformed_input.clone().detach(),
+            "c_dnpu_output": self.dnpu_output.clone().detach(),
+            "d_clamped_dnpu_output": self.clamped_dnpu_output.clone().detach(),
+            "e_batch_norm_output": self.batch_norm_output.clone().detach(),
+        }
 
 
 if __name__ == "__main__":
