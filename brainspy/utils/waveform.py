@@ -43,6 +43,7 @@ class WaveformManager:
         waveform_mgr = WaveformManager(configs)
 
         """
+
     def __init__(self, configs):
         self.plateau_length = configs["plateau_length"]
         self.slope_length = configs["slope_length"]
@@ -170,16 +171,16 @@ class WaveformManager:
         repeat_idx = [1] * t.dim()
         repeat_idx[dim] = n_tile
         t = t.repeat(*(repeat_idx))
-        order_index = torch.cat([
-            init_dim * torch.arange(n_tile, device=t.device, dtype=torch.long)
-            + i for i in range(init_dim)
-        ])
+        order_index = torch.cat(
+            [
+                init_dim * torch.arange(n_tile, device=t.device, dtype=torch.long) + i
+                for i in range(init_dim)
+            ]
+        )
         return torch.index_select(t, dim, order_index)
 
     def plateaus_to_waveform(
-        self,
-        data: torch.Tensor,
-        return_pytorch=True
+        self, data: torch.Tensor, return_pytorch=True
     ) -> Tuple[Union[np.array, torch.Tensor], Union[list[bool], torch.Tensor]]:
         """
         Transform plateau data into full waveform data by adding
@@ -230,13 +231,15 @@ class WaveformManager:
             length of the object.
         """
         # Check input format.
-        assert (len(data) % self.plateau_length == 0
-                ), f"Length of input data {data.shape} is not multiple of "
+        assert (
+            len(data) % self.plateau_length == 0
+        ), f"Length of input data {data.shape} is not multiple of "
         f"plateau length {self.plateau_length}."
 
         data_size = int(len(data) / self.plateau_length)  # number of plateaus
-        input_copy = TorchUtils.get_numpy_from_tensor(
-            data)  # numpy copy of input data (numpy linspace works for
+        input_copy = TorchUtils.format(
+            data
+        )  # numpy copy of input data (numpy linspace works for
         # multidimensional data while torch does not)
         start = 0  # starting position of current plateau in input data
 
@@ -251,9 +254,13 @@ class WaveformManager:
             output_data = np.concatenate((output_data, input_copy[start:end]))
             output_mask += [False] * self.slope_length
             output_data = np.concatenate(
-                (output_data,
-                 np.linspace(input_copy[end - 1], input_copy[end],
-                             self.slope_length)))
+                (
+                    output_data,
+                    np.linspace(
+                        input_copy[end - 1], input_copy[end], self.slope_length
+                    ),
+                )
+            )
             start = end
 
         # Go through last plateau and final slope.
@@ -261,12 +268,14 @@ class WaveformManager:
         output_data = np.concatenate((output_data, input_copy[start:]))
         output_mask += [False] * self.slope_length
         output_data = np.concatenate(
-            (output_data, np.linspace(input_copy[-1], 0, self.slope_length)))
+            (output_data, np.linspace(input_copy[-1], 0, self.slope_length))
+        )
 
         if return_pytorch:
-            return TorchUtils.get_tensor_from_numpy(
-                output_data), TorchUtils.get_tensor_from_list(output_mask,
-                                                              data_type=bool)
+            return (
+                TorchUtils.format(output_data),
+                TorchUtils.format(output_mask, data_type=bool),
+            )
         else:
             return output_data, output_mask
 
@@ -306,8 +315,9 @@ class WaveformManager:
             length of the object.
         """
         # Check input format.
-        assert (len(data) % self.plateau_length == 0
-                ), f"Length of input data {data.shape} is not multiple of "
+        assert (
+            len(data) % self.plateau_length == 0
+        ), f"Length of input data {data.shape} is not multiple of "
         f"plateau length {self.plateau_length}."
 
         data_size = int(len(data) / self.plateau_length)  # number of plateaus
@@ -315,8 +325,7 @@ class WaveformManager:
         # Reshape input so that each data point is represented along
         # dimension 0, then take average over dimension 1 to get rid
         # of plateaus.
-        output = data.view(data_size, self.plateau_length,
-                           data.shape[1]).mean(dim=1)
+        output = data.view(data_size, self.plateau_length, data.shape[1]).mean(dim=1)
 
         # Make the output two-dimensional.
         if len(output.shape) == 1:
@@ -358,9 +367,7 @@ class WaveformManager:
             mask = self.generate_mask(len(data))
         return self.plateaus_to_points(self.waveform_to_plateaus(data, mask))
 
-    def waveform_to_plateaus(self,
-                             data: torch.Tensor,
-                             mask=None) -> torch.Tensor:
+    def waveform_to_plateaus(self, data: torch.Tensor, mask=None) -> torch.Tensor:
         """
         Go from waveform to only plateaus by removing the slopes.
         Either generate a mask or use a given one.
@@ -422,8 +429,12 @@ class WaveformManager:
             A mask of the required length.
 
         """
-        repetitions = int(((data_size - self.slope_length) /
-                           (self.slope_length + self.plateau_length)))
+        repetitions = int(
+            (
+                (data_size - self.slope_length)
+                / (self.slope_length + self.plateau_length)
+            )
+        )
         mask = self.initial_mask.clone().repeat(repetitions)
         return torch.cat((mask, self.final_mask))
 
@@ -432,11 +443,9 @@ def process_data(waveform_transforms, inputs, targets):
     # Data processing required to apply waveforms to the inputs and pass them onto the GPU if necessary.
     if waveform_transforms is not None:
         inputs, targets = waveform_transforms((inputs, targets))
-    if inputs is not None and inputs.device != TorchUtils.get_accelerator_type(
-    ):
-        inputs = inputs.to(device=TorchUtils.get_accelerator_type())
-    if targets is not None and targets.device != TorchUtils.get_accelerator_type(
-    ):
-        targets = targets.to(device=TorchUtils.get_accelerator_type())
+    if inputs is not None and inputs.device != TorchUtils.get_device():
+        inputs = inputs.to(device=TorchUtils.get_device())
+    if targets is not None and targets.device != TorchUtils.get_device():
+        targets = targets.to(device=TorchUtils.get_device())
 
     return inputs, targets
