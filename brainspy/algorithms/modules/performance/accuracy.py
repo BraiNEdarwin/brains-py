@@ -85,15 +85,15 @@ def train_perceptron(results, configs, node=None):
     best_accuracy = -1
     best_labels = None
     looper = trange(configs["epochs"], desc="Calculating accuracy")
-    node = node.to(device=TorchUtils.get_accelerator_type(), dtype=DTYPE)
+    node = node.to(device=TorchUtils.get_device(), dtype=DTYPE)
     # validation_index = get_index(dataloaders)
 
     for epoch in looper:
         for inputs, targets in dataloaders[0]:
-            if inputs.device != TorchUtils.get_accelerator_type():
-                inputs = inputs.to(TorchUtils.get_accelerator_type())
-            if targets.device != TorchUtils.get_accelerator_type():
-                targets = targets.to(TorchUtils.get_accelerator_type())
+            if inputs.device != TorchUtils.get_device():
+                inputs = inputs.to(TorchUtils.get_device())
+            if targets.device != TorchUtils.get_device():
+                targets = targets.to(TorchUtils.get_device())
             optimizer.zero_grad()
             predictions = node(inputs)
             cost = loss(predictions, targets)
@@ -148,17 +148,17 @@ def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
     fig = plt.figure()
     plt.title(f"Accuracy: {results['accuracy_value']:.2f} %")
     plt.plot(
-        TorchUtils.get_numpy_from_tensor(results["norm_inputs"]), label="Norm. Waveform"
+        TorchUtils.to_numpy(results["norm_inputs"]), label="Norm. Waveform"
     )
     plt.plot(
-        TorchUtils.get_numpy_from_tensor(results["predicted_labels"]),
+        TorchUtils.to_numpy(results["predicted_labels"]),
         ".",
         label="Predicted labels",
     )
-    plt.plot(TorchUtils.get_numpy_from_tensor(results["targets"]), "g", label="Targets")
+    plt.plot(TorchUtils.to_numpy(results["targets"]), "g", label="Targets")
     plt.plot(
         np.arange(len(results["predicted_labels"])),
-        TorchUtils.get_numpy_from_tensor(
+        TorchUtils.to_numpy(
             torch.ones_like(results["predicted_labels"]) * results["norm_threshold"]
         ),
         "k:",

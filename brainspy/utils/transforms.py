@@ -16,6 +16,7 @@ class CurrentToVoltage:
     """
     Class that uses a linear function to transform current to voltage.
     """
+
     def __init__(
         self,
         current_range: Sequence[Sequence[float]],
@@ -57,7 +58,7 @@ class CurrentToVoltage:
             raise Exception("Mapping ranges are different in length")
 
         # Determine the transform parameters for each pair.
-        self.map_variables = TorchUtils.get_tensor_from_list([
+        self.map_variables = TorchUtils.format([
             get_linear_transform_constants(
                 voltage_range[i][0],
                 voltage_range[i][1],

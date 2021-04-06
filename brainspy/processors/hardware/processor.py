@@ -30,7 +30,7 @@ class HardwareProcessor(nn.Module):
         if configs["processor_type"] == "simulation_debug":
             self.voltage_ranges = self.driver.voltage_ranges
         else:
-            self.voltage_ranges = TorchUtils.get_tensor_from_numpy(
+            self.voltage_ranges = TorchUtils.format(
                 self.driver.voltage_ranges
             )
         self.waveform_mgr = WaveformManager(configs["data"]["waveform"])
@@ -49,7 +49,7 @@ class HardwareProcessor(nn.Module):
             output = self.forward_numpy(x)
             if self.logger is not None:
                 self.logger.log_output(x)
-        return TorchUtils.get_tensor_from_numpy(output[mask])
+        return TorchUtils.format(output[mask])
 
     def forward_numpy(self, x):
         return self.driver.forward_numpy(x)

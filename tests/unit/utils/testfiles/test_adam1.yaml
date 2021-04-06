@@ -1,0 +1,28 @@
+processor_type: 'simulation'
+from_dimension: 4
+to_dimension: 7
+threshold_parameter: 0.5
+max_attempts : 5
+# results_base_dir : "tmp/TEST/output/boolean"
+data:
+    batch_size: 512
+    worker_no: 0
+    pin_memory: True
+algorithm: !include test_adam.yaml
+accuracy: !include accuracy.yaml #Configurations for the perceptron
+processor: 
+    processor_type: 'simulation' # Possible values are: simulation, simulation_debug, cdaq_to_cdaq, and cdaq_to_nidaq 
+data:
+    activation_electrode_no: 7 # It specifies the number of activation electrodes. Only required for simulation mode
+    input_indices: # It specifies the indices of the activation data array that will be considered as inputs
+      - 1
+      - 2
+    waveform:
+        plateau_length: 3 # A plateau of at least 3 is needed to train the perceptron (That requires at least 10 values (3x4 = 12)).
+        slope_length: 0
+driver:
+    torch_model_dict: "C:/users/humai/Downloads/brains-py/tests/unit/utils/testfiles/testmodel.pt"
+    output_clipping: False
+    noise: 
+        type: 'gaussian'
+        mse: 0.6533523201942444

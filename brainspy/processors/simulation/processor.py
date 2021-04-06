@@ -33,15 +33,15 @@ class SurrogateModel(nn.Module):
         """Loads a pytorch model from a directory string."""
         self.model = torch.load(
             filename,
-            map_location=TorchUtils.get_accelerator_type(),
+            map_location=TorchUtils.get_device(),
         )
         self._init_voltage_ranges()
 
     def _init_voltage_ranges(self):
-        offset = TorchUtils.get_tensor_from_list(
+        offset = TorchUtils.format(
             self.model.info["data_info"]["input_data"]["offset"]
         )
-        amplitude = TorchUtils.get_tensor_from_list(
+        amplitude = TorchUtils.format(
             self.model.info["data_info"]["input_data"]["amplitude"]
         )
         min_voltage = (offset - amplitude).unsqueeze(dim=1)
@@ -61,7 +61,7 @@ class SurrogateModel(nn.Module):
 
     def set_amplification(self, value):
         if value is not None and value == "default":
-            self.amplification = TorchUtils.get_tensor_from_list(
+            self.amplification = TorchUtils.format(
                 self.model.info["data_info"]["processor"]["driver"]["amplification"]
             )
         else:
@@ -69,7 +69,7 @@ class SurrogateModel(nn.Module):
 
     def set_output_clipping(self, value):
         if value is not None and value == "default":
-            self.output_clipping = TorchUtils.get_tensor_from_list(
+            self.output_clipping = TorchUtils.format(
                 self.model.info["data_info"]["clipping_value"]
             )
         else:
@@ -90,9 +90,9 @@ class SurrogateModel(nn.Module):
     # For debugging purposes
     def forward_numpy(self, input_matrix):
         with torch.no_grad():
-            inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
+            inputs_torch = TorchUtils.format(input_matrix)
             output = self.forward(inputs_torch)
-        return TorchUtils.get_numpy_from_tensor(output)
+        return TorchUtils.to_numpy(output)
 
     def reset(self):
         warnings.warn("Warning: Reset function in Surrogate Model not implemented.")
@@ -137,7 +137,7 @@ class SurrogateModel(nn.Module):
     #    """
     #    # Load model; contains weights (+biases) and info.
     #    state_dict = torch.load(
-    #        data_dir, map_location=TorchUtils.get_accelerator_type()
+    #        data_dir, map_location=TorchUtils.get_device()
     #    )
     #    # state_dict is an ordered dictionary.
 
@@ -151,7 +151,7 @@ class SurrogateModel(nn.Module):
     #     """
     #     # Load model; contains weights (+biases) and info.
     #     state_dict = torch.load(
-    #         data_dir, map_location=TorchUtils.get_accelerator_type()
+    #         data_dir, map_location=TorchUtils.get_device()
     #     )
     #     # state_dict is an ordered dictionary.
 

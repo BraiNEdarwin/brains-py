@@ -29,7 +29,9 @@ class DNPU(nn.Module):
         self._init_dnpu(alpha)
 
     def _init_dnpu(self, alpha):
-        self.alpha = torch.tensor(alpha, device=TorchUtils.get_accelerator_type(), dtype=TorchUtils.get_data_type())
+        self.alpha = torch.tensor(
+            alpha, device=TorchUtils.get_device(), dtype=torch.get_default_dtype()
+        )
 
         for (
             params
@@ -48,9 +50,12 @@ class DNPU(nn.Module):
         assert any(
             self.control_high > 0
         ), "Max. Voltage is assumed to be positive, but value is negative!"
-        bias = self.control_low + (
-            self.control_high - self.control_low
-        ) * torch.rand(1, len(self.processor.control_indices), dtype=TorchUtils.get_data_type(), device=TorchUtils.get_accelerator_type())
+        bias = self.control_low + (self.control_high - self.control_low) * torch.rand(
+            1,
+            len(self.processor.control_indices),
+            dtype=torch.get_default_dtype(),
+            device=TorchUtils.get_device(),
+        )
 
         self.bias = nn.Parameter(bias)
 
@@ -71,8 +76,14 @@ class DNPU(nn.Module):
             self.processor = arg
         else:
             self.processor.load_processor(arg)
-        assert torch.equal(self.control_low.cpu().half(), self.processor.get_control_ranges()[:, 0].cpu().half()), 'Low control voltage ranges for the new processor are different than the control voltage ranges for which the DNPU was trained.'
-        assert torch.equal(self.control_high.cpu().half(), self.processor.get_control_ranges()[:, 1].cpu().half()), 'High control voltage ranges for the new processor are different than the control voltage ranges for which the DNPU was trained.'
+        assert torch.equal(
+            self.control_low.cpu().half(),
+            self.processor.get_control_ranges()[:, 0].cpu().half(),
+        ), "Low control voltage ranges for the new processor are different than the control voltage ranges for which the DNPU was trained."
+        assert torch.equal(
+            self.control_high.cpu().half(),
+            self.processor.get_control_ranges()[:, 1].cpu().half(),
+        ), "High control voltage ranges for the new processor are different than the control voltage ranges for which the DNPU was trained."
         # self._init_electrode_info(hw_processor_configs)
 
     def set_control_voltages(self, bias):
@@ -81,7 +92,7 @@ class DNPU(nn.Module):
             assert (
                 self.bias.shape == bias.shape
             ), "Control voltages could not be set due to a shape missmatch with regard to the ones already in the model."
-            self.bias = torch.nn.Parameter(TorchUtils.format_tensor(bias))
+            self.bias = torch.nn.Parameter(TorchUtils.format(bias))
 
     def get_control_voltages(self):
         return next(self.parameters()).detach()
