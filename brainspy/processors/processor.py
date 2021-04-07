@@ -58,14 +58,14 @@ class Processor(nn.Module):
             self.electrode_no = configs["input_electrode_no"]
 
         # self.input_no = len(configs['data_input_indices'])
-        self.data_input_indices = TorchUtils.get_tensor_from_list(
+        self.data_input_indices = TorchUtils.format(
             configs["input_indices"], data_type=torch.int64
         )
 
         self.control_indices = np.delete(
             np.arange(configs["input_electrode_no"]), configs["input_indices"]
         )
-        self.control_indices = TorchUtils.get_tensor_from_list(
+        self.control_indices = TorchUtils.format(
             self.control_indices, data_type=torch.int64
         )  # IndexError: tensors used as indices must be long, byte or bool tensors
 
@@ -98,6 +98,7 @@ class Processor(nn.Module):
 
     def close(self):
         self.processor.close()
+
 
 def merge_electrode_data(
     inputs,
@@ -151,7 +152,7 @@ def merge_electrode_data(
         (inputs.shape[0], len(input_indices) + len(control_voltage_indices))
     )
     if use_torch:
-        result = TorchUtils.get_tensor_from_numpy(result)
+        result = TorchUtils.format(result)
     result[:, input_indices] = inputs
     result[:, control_voltage_indices] = control_voltages
     return result

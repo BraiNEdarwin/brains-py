@@ -5,64 +5,72 @@ Library that handles saving data
 import io
 import os
 import time
-import pickle
 import shutil
-import torch
 import yaml
-import numpy as np
 
 
-def save(mode, file_path, **kwargs):
-
-    if mode == "numpy":
-        np.savez(file_path, **kwargs)
-    elif not kwargs["data"]:
-        raise ValueError(f"Value dictionary is missing in kwargs.")
-    else:
-        if mode == "configs":
-            save_configs(kwargs["data"], file_path)
-        elif mode == "pickle":
-            save_pickle(kwargs["data"], file_path)
-        elif mode == "torch":
-            save_torch(kwargs["data"], file_path)
-        else:
-            raise NotImplementedError(
-                f"Mode {mode} is not recognised. Please choose a value between 'numpy', 'torch', 'pickle' and 'configs'."
-            )
-    # return path
-
-
-def save_pickle(pickle_data, file_path):
-    with open(file_path, "wb") as f:
-        pickle.dump(pickle_data, f)
-        f.close()
-
-
-def save_torch(torch_model, file_path):
+def load_configs(file_name: str):
     """
-    Saves the model in given path, all other attributes are saved under
-    the 'info' key as a new dictionary.
+    loads a yaml file from the given file path
+
+    Parameters
+    ----------
+    file_name : str
+        file object or path to yaml file
+
+    Returns
+    -------
+    dict : Python dictionary with formatted yaml data
+
+    Example
+    --------
+    file = "boolean.yaml"
+    data = load_configs(file)
+
     """
-    torch_model.eval()
-    state_dic = torch_model.state_dict()
-    state_dic["info"] = torch_model.info
-    torch.save(state_dic, file_path)
-
-
-def load_configs(file_name):
     with open(file_name) as f:
         return yaml.load(f, Loader=IncludeLoader)
 
 
-def save_configs(configs, file_name):
+def save_configs(configs: dict, file_name: str):
+    """
+    formats data from a dictionary and saves it to the given yaml file
+
+    Parameters
+    ----------
+
+    configs : dict
+        data that needs to be stored in the yaml file
+
+    file_name : str
+        file object or path to yaml file
+
+    Example
+    --------
+    configs = {"data" : "example"}
+    file = "boolean.yaml"
+    save_configs(configs,file)
+
+    """
     with open(file_name, "w") as f:
         yaml.dump(configs, f, default_flow_style=False)
 
 
-def create_directory(path, overwrite=False):
+def create_directory(path: str, overwrite=False):
     """
-    This function checks if there exists a directory filepath+datetime_name.
-    If not it will create it and return this path.
+    Checks if there exists a directory with - filepath+datetime_name , and if not it will create it and return this path.
+
+    Parameters
+    -----------
+
+    path : str
+        file object or path to file
+
+    Example
+    -------
+    path = "tests/unit/utils/testfiles"
+    newpath = create_directory(path + "/TestDirectory")
+
     """
     if not os.path.exists(path):
         os.makedirs(path)
@@ -72,7 +80,29 @@ def create_directory(path, overwrite=False):
     return path
 
 
-def create_directory_timestamp(path, name, overwrite=False):
+def create_directory_timestamp(path: str, name: str, overwrite=False):
+    """
+    To create a directory with the given name and current timestamp if it does not already exist
+
+    Parameters
+    ----------
+
+    path : str
+        file object or path to file
+
+    name : str
+
+    Returns
+    --------
+    str : path to file created - filepath+datetime_name
+
+    Example
+    --------
+    path = "tests/unit/utils/testfiles"
+    name = "TestDirectory"
+    new_directory = create_directory_timestamp(self.path, name)
+
+    """
     datetime = time.strftime("%Y_%m_%d_%H%M%S")
     path = os.path.join(path, name + "_" + datetime)
     return create_directory(path, overwrite=overwrite)
@@ -89,7 +119,8 @@ class IncludeLoader(yaml.Loader):
     When an included file F contain its own !include directive, the path is
     relative to F's location.
 
-    Example:
+    Example
+    ---------
         YAML file /home/frodo/one-ring.yml:
             ---
             Name: The One Ring
@@ -113,6 +144,9 @@ class IncludeLoader(yaml.Loader):
     """
 
     def __init__(self, *args, **kwargs):
+        """
+        Constructer to initialize the file root and load the file
+        """
         super(IncludeLoader, self).__init__(*args, **kwargs)
         self.add_constructor("!include", self._include)
         if "root" in kwargs:
@@ -123,6 +157,21 @@ class IncludeLoader(yaml.Loader):
             self.root = os.path.curdir
 
     def _include(self, loader, node):
+        """
+        Method to add the load the file along with !include directive
+
+        Parameters
+        ----------
+        loader : IncludeLoader
+            loader object to construct a scalar node to the !include file
+        node : str
+            file path
+
+        Returns
+        -------
+        dict
+            loaded file as a python dictionary
+        """
         oldRoot = self.root
         filename = os.path.join(self.root, loader.construct_scalar(node))
         self.root = os.path.dirname(filename)

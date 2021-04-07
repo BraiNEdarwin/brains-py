@@ -41,7 +41,7 @@ class SurrogateModel(nn.Module):
         """
         self.model = torch.load(
             filename,
-            map_location=TorchUtils.get_accelerator_type(),
+            map_location=TorchUtils.get_device(),
         )
         self._init_voltage_ranges()
 
@@ -167,9 +167,9 @@ class SurrogateModel(nn.Module):
             Data after forward pass.
         """
         with torch.no_grad():
-            inputs_torch = TorchUtils.get_tensor_from_numpy(input_matrix)
+            inputs_torch = TorchUtils.format(input_matrix)
             output = self.forward(inputs_torch)
-        return TorchUtils.get_numpy_from_tensor(output)
+        return TorchUtils.to_numpy(output)
 
     def reset(self):
         """
@@ -218,3 +218,52 @@ class SurrogateModel(nn.Module):
                 "NeuralNetworkModel that you are intending to use was trained."
             )
             return None
+
+    # def load_file(self, data_dir: str) -> Tuple[dict, OrderedDict]:
+    #     """
+    #     Load a model from a file. Run a consistency check on smg_configs.
+    #     Checks whether the amplification of the processor is set in the config; if not, set it to 1.
+
+    #     Example
+    #     -------
+    #     >>> load_file("model.pt")
+    #     (info, state_dict)
+
+    #     In this case 'info' contains information about the model and 'state_dict' contains the weights
+    #     of the network, referring to the model in "model.pt".
+
+    #    Returns
+    #    -------
+    #    info : dict
+    #        Dictionary containing the settings.
+    #    state_dict : dict
+    #        State dictionary of the model, containing the weights and biases
+    #        of the network.
+    #    """
+    #    # Load model; contains weights (+biases) and info.
+    #    state_dict = torch.load(
+    #        data_dir, map_location=TorchUtils.get_device()
+    #    )
+    #    # state_dict is an ordered dictionary.
+
+    #     Returns
+    #     -------
+    #     info : dict
+    #         Dictionary containing the settings.
+    #     state_dict : dict
+    #         State dictionary of the model, containing the weights and biases
+    #         of the network.
+    #     """
+    #     # Load model; contains weights (+biases) and info.
+    #     state_dict = torch.load(
+    #         data_dir, map_location=TorchUtils.get_device()
+    #     )
+    #     # state_dict is an ordered dictionary.
+
+    #    # Set amplification to 1 if not specified in file.
+    #    if "amplification" not in info["data_info"]["processor"]:
+    #        info["data_info"]["processor"]["amplification"] = 1
+    #        warnings.warn(
+    #            "The model loaded does not define the amplification; set to 1."
+    #        )
+    #    return info, state_dict
