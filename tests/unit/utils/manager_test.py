@@ -1,5 +1,4 @@
 import unittest
-
 import numpy as np
 import torch
 from brainspy.utils.io import load_configs
@@ -12,10 +11,7 @@ from brainspy.utils.manager import (
 )
 from brainspy.processors.processor import Processor
 from brainspy.algorithms.modules.optim import GeneticOptimizer
-from torchvision import transforms
-from brainspy.processors.dnpu import DNPU
 from brainspy.processors.simulation.processor import SurrogateModel
-from tests.unit.utils.testfiles.dataset import BooleanGateDataset
 
 
 class ManagerTest(unittest.TestCase):
