@@ -1,3 +1,9 @@
+"""
+Class to manage torch variables and their data types. This class can be used to retrieve torch values and settings.
+It can format data provided as a torch tensor,numpy array or an nn.Module object. It also handles the 
+intialization of seed for generation of random values.
+"""
+
 import torch
 import numpy as np
 import random

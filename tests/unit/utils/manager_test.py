@@ -1,3 +1,6 @@
+"""
+Module to test the managment of data used to train a model.
+"""
 import unittest
 import numpy as np
 import torch
