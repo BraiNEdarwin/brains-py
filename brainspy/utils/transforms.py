@@ -1,8 +1,12 @@
 """
 Class for transforming from current to voltage using linear transformations.
 The main class CurrentToVoltage takes arrays of currents and voltages.
-It then calculates the linear transform for each current-voltage pair by
-finding the line between two points.
+It then calculates the linear transform (scale/slope and offset/intercept) for
+each current-voltage pair by finding the line between two points.
+These transforms are used to map the data to the inputs of the DNPU.
+
+The following link gives more information on linear functions:
+https://en.wikipedia.org/wiki/Linear_function_(calculus)
 """
 
 from typing import Tuple, Sequence
@@ -14,7 +18,18 @@ from brainspy.utils.pytorch import TorchUtils
 
 class CurrentToVoltage:
     """
-    Class that uses a linear function to transform current to voltage.
+    Class that uses a linear function to transform current to voltage for sets
+    of points.
+
+    Attributes
+    ----------
+    map_variables : Sequence[Sequence[float]]
+        The linear map parameters (scale and offset) of each pair of data
+        points.
+    current_range : Sequence[Sequence[float]]
+        The current values.
+    cut : bool
+        Indicate whether to apply cut to the output.
     """
     def __init__(
         self,
@@ -57,7 +72,7 @@ class CurrentToVoltage:
             raise Exception("Mapping ranges are different in length")
 
         # Determine the transform parameters for each pair.
-        self.map_variables = TorchUtils.get_tensor_from_list([
+        self.map_variables = TorchUtils.format([
             get_linear_transform_constants(
                 voltage_range[i][0],
                 voltage_range[i][1],
@@ -154,7 +169,7 @@ def linear_transform(y_min: float, y_max: float, x_min: float, x_max: float,
 
     Returns
     -------
-    (x_val * scale) + offset : float
+    float
         The line is defined by w and b and evaluated at x_val.
 
     Raises
@@ -242,7 +257,8 @@ def get_scale(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
 
     Returns
     -------
-    (y_min - y_max) / (x_min - x_max) : float
+    float
+        The scale of the line.
 
     Raises
     ------
@@ -283,7 +299,7 @@ def get_offset(y_min: float, y_max: float, x_min: float,
 
     Returns
     -------
-    ((y_max * x_min) - (y_min * x_max)) / (x_min - x_max) : float
+    float
         The offset of the line.
 
     Raises

@@ -1,20 +1,34 @@
+import torch
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 from brainspy.processors.simulation.processor import SurrogateModel
-import torch
-
 import brainspy.algorithms.modules.signal as criterion
 import brainspy.algorithms.modules.optim as bspyoptim
 from brainspy.algorithms.ga import train as train_ga
 from brainspy.algorithms.gd import train as train_gd
 
-from brainspy.utils.pytorch import TorchUtils
 
-
-def get_criterion(configs):
-    """Gets the fitness function used in GA from the module FitnessFunctions
+def get_criterion(configs: dict):
+    """
+    Gets the fitness function used in GA from the module FitnessFunctions
     The fitness functions must take two arguments, the outputs of the black-box and the target
     and must return a numpy array of scores of size len(outputs).
+
+    Parameters
+    ----------
+    configs (dict):  configurations for the fitness function
+
+    Returns
+    -------
+    fitness fucntion (method/function): A function that is defined in the signal class.
+                                        These are a set of functions to measure separability and similarity of signals
+
+    Example
+    --------
+
+    configs = {"criterion" : "corr_fit" }
+    criterion = get_criterion(configs)
+
     """
     if configs["criterion"] == "corr_fit":
         return criterion.corr_fit
@@ -44,7 +58,26 @@ def get_criterion(configs):
         )
 
 
-def get_optimizer(model, configs):
+def get_optimizer(model: object, configs: dict):
+    """
+    Gets an optimizer object which include added information to train a specific model.
+
+    Parameters
+    ----------
+    model (nn.Module object): An nn.Module object which can be a DNPU,Processor or a Surrogate Model object
+    configs (dict): configurations for the model
+
+    Returns
+    -------
+    class object: Returns and optimizer object which can be a GeneticOptimizer or an Adam optimizer
+
+    Example
+    --------
+    configs = {"optimizer" : "genetic"}
+    model = CustomModel()
+    optimizer = get_optimizer(model,configs)
+
+    """
     if configs["optimizer"] == "genetic":
         # TODO: get gene ranges from model
         if "gene_range" in configs:
@@ -64,7 +97,27 @@ def get_optimizer(model, configs):
         assert False, "Optimiser name {configs['optimizer']} not recognised. Please try"
 
 
-def get_adam(model, configs):
+def get_adam(model: object, configs: dict):
+    """
+    To get an Adam optimizer object which include added information to train a specific model.
+    It is for first-order gradient-based optimization of stochastic objective functions, based on adaptive estimates of lower-order moments.
+
+    Parameters
+    ----------
+    model (nn.Module object): An nn.Module object which can be a DNPU,Processor or a SurrogateModel object
+    configs (dict): configurations of the model
+
+    Returns
+    -------
+    class object: Returns and optimizer Adam optimizer object
+
+    Example
+    --------
+    configs = {"optimizer" : "adam"}
+    model = CustomModel()
+    optimizer = get_adam(model,configs)
+
+    """
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     print("Prediction using ADAM optimizer")
     if "betas" in configs.keys():
@@ -78,7 +131,30 @@ def get_adam(model, configs):
         return torch.optim.Adam(parameters, lr=configs["learning_rate"])
 
 
-def get_algorithm(configs):
+def get_algorithm(configs: dict):
+    """
+    To get a train function, either GA - genetic algorithm or GD - Gradient Descent, based on the configurations dictionary.
+    Genetic Algorithm : In computer science and operations research, a genetic algorithm (GA) is a meta-heuristic inspired by the process of natural selection that belongs to the larger class of evolutionary algorithms (EA).
+                        Genetic algorithms are commonly used to generate high-quality solutions to optimization and search problems by relying on bio-inspired operators such as mutation, crossover and selection.
+                        This algorithm is suitable for experiments with reservoir computing.
+
+    Gradient Descent : Gradient descent is a first-order iterative optimization algorithm for finding the minimum of a function.
+                       To find a local minimum of a function using gradient descent, one takes steps proportional to the negative of the gradient (or approximate gradient) of the function at the current point.
+                       If, instead, one takes steps proportional to the positive of the gradient, one approaches a local maximum of that function; the procedure is then known as gradient ascent.
+    Parameters
+    ----------
+    configs (dict): configurations of the model
+
+    Returns
+    --------
+    Train function (method/function): A train function of GA or GD that is defined in the ga/gd classes
+
+    Example
+    --------
+    configs = {"type" : "genetic" }
+    algorithm = get_algorithm(configs)
+
+    """
     if configs["type"] == "gradient":
         return train_gd
     elif configs["type"] == "genetic":
@@ -89,7 +165,36 @@ def get_algorithm(configs):
         ), "Unrecognised algorithm field in configs. It must have the value gradient or the value genetic."
 
 
-def get_driver(configs):
+def get_driver(configs: dict):
+    """
+    To get a driver object based on the configurations dictionary.
+    The driver here are defined under the processor type tag in the configs dictionary and can be a
+        SurrogateModel (Software processor) -  It is a deep neural network with information about the  control voltage ranges,
+                        the amplification of the device and relevant noise simulations that it may have
+        Hardware Processor - It establishes a connection (for a single, or multiple hardware DNPUs) with one of the following National Instruments measurement devices:
+                * CDAQ-to-NiDAQ
+                * CDAQ-to-CDAQ
+                        * With a regular rack
+                        * With a real time rack
+
+    Parameters
+    -----------
+    configs (dict): configurations of the model
+
+    Raises
+    -------
+    NotImplementedError: if configurations is not recognised
+
+    Returns
+    --------
+    class object: Returns and driver object which can be a  CDAQtoCDAQ,CDAQtoNiDAQ or a SurrogateModel object
+
+    Example
+    --------
+    configs = {"processsor_type" : "simulation_debug" }
+    driver = get_driver(configs)
+
+    """
     if configs["processor_type"] == "cdaq_to_cdaq":
         return CDAQtoCDAQ(configs)
     elif configs["processor_type"] == "cdaq_to_nidaq":

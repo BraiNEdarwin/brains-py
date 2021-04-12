@@ -56,34 +56,44 @@ class LocalTasks:
         self.readout_task = None
 
     @Pyro4.oneway
-    def init_activation_channels(
-        self, channel_names, voltage_ranges=None
-    ):
+    def init_activation_channels(self, channel_names, voltage_ranges=None):
         """Initialises the output of the computer which is the input of the device"""
-        self.activation_task = nidaqmx.Task('activation_task_' + datetime.utcnow().strftime('%Y_%m_%d_%H%M%S_%f'))
+        self.activation_task = nidaqmx.Task(
+            "activation_task_" + datetime.utcnow().strftime("%Y_%m_%d_%H%M%S_%f")
+        )
         for i in range(len(channel_names)):
             channel_name = str(channel_names[i])
             if voltage_ranges is not None:
-                assert voltage_ranges[i][0] > -2 and voltage_ranges[i][0] < 2, "Minimum voltage ranges configuration outside of the allowed values -2 and 2"
-                assert voltage_ranges[i][1] > -2 and voltage_ranges[i][1] < 2, "Maximum voltage ranges configuration outside of the allowed values -2 and 2"
+                assert (
+                    voltage_ranges[i][0] > -2 and voltage_ranges[i][0] < 2
+                ), "Minimum voltage ranges configuration outside of the allowed values -2 and 2"
+                assert (
+                    voltage_ranges[i][1] > -2 and voltage_ranges[i][1] < 2
+                ), "Maximum voltage ranges configuration outside of the allowed values -2 and 2"
                 self.activation_task.ao_channels.add_ao_voltage_chan(
-                    #activation_instrument + "/ai" + str(activation_channels[i])
-                    channel_name, min_val=voltage_ranges[i][0].item() - RANGE_MARGIN, max_val=voltage_ranges[i][1].item() + RANGE_MARGIN
+                    # activation_instrument + "/ai" + str(activation_channels[i])
+                    channel_name,
+                    min_val=voltage_ranges[i][0].item() - RANGE_MARGIN,
+                    max_val=voltage_ranges[i][1].item() + RANGE_MARGIN,
                 )
             else:
-                print('WARNING! READ CAREFULLY THIS MESSAGE. Activation channels have been initialised without a security voltage range, they will be automatically set up to a range between -2 and 2 V. This may result in damaging the device. Press ENTER only if you are sure that you want to proceed, otherwise STOP the program. Voltage ranges can be defined in the instruments setup configurations.')
+                print(
+                    "WARNING! READ CAREFULLY THIS MESSAGE. Activation channels have been initialised without a security voltage range, they will be automatically set up to a range between -2 and 2 V. This may result in damaging the device. Press ENTER only if you are sure that you want to proceed, otherwise STOP the program. Voltage ranges can be defined in the instruments setup configurations."
+                )
                 input()
                 self.activation_task.ao_channels.add_ao_voltage_chan(
-                    #activation_instrument + "/ai" + str(activation_channels[i])
-                    channel_name, min_val=-2, max_val=2
+                    # activation_instrument + "/ai" + str(activation_channels[i])
+                    channel_name,
+                    min_val=-2,
+                    max_val=2,
                 )
 
     @Pyro4.oneway
-    def init_readout_channels(
-        self, readout_channels
-    ):
+    def init_readout_channels(self, readout_channels):
         """Initialises the input of the computer which is the output of the device"""
-        self.readout_task = nidaqmx.Task('readout_task_' + datetime.utcnow().strftime('%Y_%m_%d_%H%M%S_%f'))
+        self.readout_task = nidaqmx.Task(
+            "readout_task_" + datetime.utcnow().strftime("%Y_%m_%d_%H%M%S_%f")
+        )
         for i in range(len(readout_channels)):
             channel = readout_channels[i]
             self.readout_task.ai_channels.add_ai_voltage_chan(
@@ -108,13 +118,25 @@ class LocalTasks:
         )
 
     @Pyro4.oneway
-    def add_synchronisation_channels(self, readout_instrument, activation_instrument, activation_channel_no=7, readout_channel_no=7):
+    def add_synchronisation_channels(
+        self,
+        readout_instrument,
+        activation_instrument,
+        activation_channel_no=7,
+        readout_channel_no=7,
+    ):
         # Define ao7 as sync signal for the NI 6216 ai0
         self.activation_task.ao_channels.add_ao_voltage_chan(
-            activation_instrument + "/ao" + str(activation_channel_no), name_to_assign_to_channel="activation_synchronisation_channel", min_val=-5, max_val=5
+            activation_instrument + "/ao" + str(activation_channel_no),
+            name_to_assign_to_channel="activation_synchronisation_channel",
+            min_val=-5,
+            max_val=5,
         )
         self.readout_task.ai_channels.add_ai_voltage_chan(
-            readout_instrument + "/ai" + str(readout_channel_no), name_to_assign_to_channel="readout_synchronisation_channel", min_val=-5, max_val=5
+            readout_instrument + "/ai" + str(readout_channel_no),
+            name_to_assign_to_channel="readout_synchronisation_channel",
+            min_val=-5,
+            max_val=5,
         )
 
     def read(self, offsetted_shape, ceil):
@@ -146,11 +168,16 @@ class LocalTasks:
         try:
             self.activation_task.write(y, auto_start=auto_start)
         except nidaqmx.errors.DaqError as e:
-            print('There was an error writing to the activation task: ' + self.activation_task.name)
-            print('Trying to reset device and do the read again.')
+            print(
+                "There was an error writing to the activation task: "
+                + self.activation_task.name
+            )
+            print("Trying to reset device and do the read again.")
             for dev in self.devices:
                 dev.reset_device()
-            self.init_activation_channels(self.activation_channel_names, self.voltage_ranges)
+            self.init_activation_channels(
+                self.activation_channel_names, self.voltage_ranges
+            )
             self.activation_task.write(y, auto_start=auto_start)
 
         if not auto_start:
@@ -164,13 +191,20 @@ class LocalTasks:
 
     def init_tasks(self, configs):
         self.configs = configs
-        self.activation_channel_names, self.readout_channel_names, instruments, self.voltage_ranges = init_channel_data(configs)
+        (
+            self.activation_channel_names,
+            self.readout_channel_names,
+            instruments,
+            self.voltage_ranges,
+        ) = init_channel_data(configs)
         devices = []
         for instrument in instruments:
             devices.append(device.Device(name=instrument))
         self.devices = devices
         # TODO: add a maximum and a minimum to the activation channels
-        self.init_activation_channels(self.activation_channel_names, self.voltage_ranges)
+        self.init_activation_channels(
+            self.activation_channel_names, self.voltage_ranges
+        )
         self.init_readout_channels(self.readout_channel_names)
         return self.voltage_ranges.tolist()
 
@@ -203,8 +237,19 @@ class RemoteTasks:
     def set_shape(self, sampling_frequency, shape):
         self.tasks.set_shape(sampling_frequency, shape)
 
-    def add_synchronisation_channels(self, readout_instrument, activation_instrument, activation_channel_no=7, readout_channel_no=7):
-        self.tasks.add_synchronisation_channels(readout_instrument, activation_instrument, activation_channel_no, readout_channel_no)
+    def add_synchronisation_channels(
+        self,
+        readout_instrument,
+        activation_instrument,
+        activation_channel_no=7,
+        readout_channel_no=7,
+    ):
+        self.tasks.add_synchronisation_channels(
+            readout_instrument,
+            activation_instrument,
+            activation_channel_no,
+            readout_channel_no,
+        )
 
     def read(self, offsetted_shape, ceil):
         return self.tasks.remote_read(offsetted_shape, ceil)

@@ -36,7 +36,7 @@ class DNPU_Base(nn.Module):
             len(self.processor.data_input_indices) + len(self.processor.control_indices)
         )
         ######### set learnable parameters #########
-        self.control_list = TorchUtils.get_tensor_from_list(
+        self.control_list = TorchUtils.format(
             self.set_controls(inputs_list), data_type=torch.int64
         )
 
@@ -55,9 +55,7 @@ class DNPU_Base(nn.Module):
         )
 
         ###### Set everything as torch Tensors and send to DEVICE ######
-        self.inputs_list = TorchUtils.get_tensor_from_list(
-            inputs_list, data_type=torch.int64
-        )
+        self.inputs_list = TorchUtils.format(inputs_list, data_type=torch.int64)
         # IndexError: tensors used as indices must be long, byte or bool tensors
 
     def set_controls(self, inputs_list):
@@ -88,10 +86,7 @@ class DNPU_Base(nn.Module):
 
     def sample_controls(self, low, high):
         samples = torch.rand(
-            1,
-            len(low),
-            device=TorchUtils.get_accelerator_type(),
-            dtype=TorchUtils.get_data_type(),
+            1, len(low), device=TorchUtils.get_device(), dtype=torch.get_default_dtype()
         )
         return low + (high - low) * samples
 
@@ -176,4 +171,4 @@ class DNPU_Base(nn.Module):
             assert (
                 self.all_controls.shape == control_voltages.shape
             ), "Control voltages could not be set due to a shape missmatch with regard to the ones already in the model."
-            self.bias = torch.nn.Parameter(TorchUtils.format_tensor(control_voltages))
+            self.bias = torch.nn.Parameter(TorchUtils.format(control_voltages))

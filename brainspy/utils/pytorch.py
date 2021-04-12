@@ -7,65 +7,147 @@ class TorchUtils:
     """ A class to consistently manage declarations of torch variables for CUDA and CPU. """
 
     force_cpu = False
-    data_type = torch.float32
 
     @staticmethod
-    def set_force_cpu(force):
-        """Enable setting the force CPU option for computers with an old CUDA version,
-        where torch detects that there is cuda, but the version is too old to be compatible."""
+    def set_force_cpu(force: bool):
+        """
+        Enable setting the force CPU option for computers with an old CUDA version,
+        where torch detects that there is cuda, but the version is too old to be compatible.
+
+        Parameters
+        ----------
+        force : boolean
+            True or false to set the force_cpu option to detect cuda.
+
+        Example
+        --------
+        TorchUtils.set_force_cpu(True)
+
+        """
         TorchUtils.force_cpu = force
 
     @staticmethod
-    def set_data_type(data_type):
-        """."""
-        TorchUtils.data_type = data_type
+    def get_device():
+        """
+        Consistently returns the accelerator type for the torch. The accelerator type of the device can be "cpu" or "cuda" depending on the version of the computer.
 
-    @staticmethod
-    def get_data_type():
-        """."""
-        return TorchUtils.data_type
+        Returns
+        -------
+        torch.device
+            device type of torch tensor which can be "cpu" or "cuda" depending on computer version
 
-    @staticmethod
-    def get_accelerator_type():
-        """ Consistently returns the accelerator type for torch. """
+        Example
+        --------
+        TorchUtils.get_device()
+        """
         if torch.cuda.is_available() and not TorchUtils.force_cpu:
             return torch.device("cuda")
         return torch.device("cpu")
 
     @staticmethod
-    def get_tensor_from_list(data, device=None, data_type=None):
-        """Enables to create a torch variable with a consistent accelerator type and data type."""
+    def format(data, device=None, data_type=None):
+        """
+        Enables to create a torch variable with a consistent accelerator type and data type if a list or a numpy array is provided.
+        If an exisiting torch tensor is provided, the function enables setting the data type and device consistently for all torch tensors
+        For devices with more than one GPU, if an instance of an nn.Module is provided (for example - CustomModel,DNPU,Processor) this function helps to distribute the model and be more efficient
+
+        Parameters
+        ----------
+        data :
+            list/np.ndarray : list of data indices
+            torch.Tensor :  inital torch tensor which has to be formatted
+            nn.Module : model of an nn.Module object
+        device : torch.device, optional
+            device type of torch tensor which can be "cpu or "cuda" depending on computer version, by default None
+        data_type : torch.dtype, optional
+            desired data type of torch tensor, by default None
+
+        Returns
+        -------
+        1. torch.tensor
+            torch tensor either generated from python list or numpy array, or exisiting torch tensors formatted to given device and data type
+        2. nn.Module
+            if an nn.Module is given as an argument, a model of the nn.Module object distributed by DataParallel amongst the multiple GPUs is generated
+
+        Example
+        -------
+        1.  data = [[1, 2]]
+            tensor = TorchUtils.format(data, data_type=torch.float32)
+
+        2.  tensor = torch.randn(2, 2)
+            tensor = TorchUtils.format(tensor, data_type=torch.float64)
+
+        3.  data = [[1, 2], [3, 4]]
+            numpy_data = np.array(data)
+            tensor = TorchUtils.format(numpy_data)
+
+        4.  configs = {"optimizer" : "adam"}
+            model = CustomModel()
+            newmodel = format_model(model)
+
+        """
         if device is None:
-            device = TorchUtils.get_accelerator_type()
+            device = TorchUtils.get_device()
         if data_type is None:
-            data_type = TorchUtils.get_data_type()
-        return torch.tensor(data, device=device, dtype=data_type)
+            data_type = torch.get_default_dtype()
+        if isinstance(data, (list, np.ndarray, np.generic)):
+            return torch.tensor(data, device=device, dtype=data_type)
+        elif isinstance(data, torch.Tensor):
+            return data.to(device=device, dtype=data_type)
+        else:
+            if torch.cuda.device_count() > 1 and not TorchUtils.force_cpu:
+                data = torch.nn.DataParallel(data)
+            data.to(TorchUtils.get_device())
+            return data
 
     @staticmethod
-    def format_tensor(tensor, device=None, data_type=None):
-        """Enables setting the data type and device consistently for all torch.tensors"""
-        if device is None:
-            device = TorchUtils.get_accelerator_type()
-        if data_type is None:
-            data_type = TorchUtils.get_data_type()
-        return tensor.to(device=device, dtype=data_type)
+    def to_numpy(data: torch.tensor):
+        """
+        Creates a numpy array from a torch tensor
 
-    # _ANS = format_torch.__func__()
+        Parameters
+        ----------
+        data : torch.tensor
+            torch tensor that needs to be formatted to a numpy array
 
-    @staticmethod
-    def get_tensor_from_numpy(data):
-        """Enables to create a torch variable from numpy with a consistent accelerator type and
-        data type."""
-        return TorchUtils.get_tensor_from_list(data)
+        Returns
+        -------
+        np.array
+            numpy array from given torch tensor
 
-    @staticmethod
-    def get_numpy_from_tensor(data):
+        Example
+        -------
+        tensor = torch.tensor([[1., -1.], [1., -1.]])
+        numpy_data = TorchUtils.to_numpy(tensor)
+        """
         if data.requires_grad:
             return data.detach().cpu().numpy()
         return data.cpu().numpy()
 
     @staticmethod
     def init_seed(seed=None, deterministic=False):
+        """
+        Sets the seed for generating random numbers.
+        If the random seed is not reset, different numbers appear with every invocation
+
+        Parameters
+        ----------
+        seed : int, optional
+            value of seed, by default None
+        deterministic : bool, optional
+            if the random value should be deterministic, by default False
+
+        Returns
+        -------
+        int
+            value of seed
+
+        Example
+        -------
+        TorchUtils.init_seed(0)
+        random1 = np.random.rand(4)
+
+        """
         if seed is None:
             seed = random.randint(0, (2 ** 32) - 1)
         random.seed(seed)
@@ -77,10 +159,3 @@ class TorchUtils:
             torch.backends.cudnn.benchmark = False
 
         return seed
-
-    @staticmethod
-    def format_model(model):
-        if torch.cuda.device_count() > 1 and not TorchUtils.force_cpu:
-            model = torch.nn.DataParallel(model)
-        model.to(TorchUtils.get_accelerator_type())
-        return model

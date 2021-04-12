@@ -13,9 +13,13 @@ class Local_Receptive_Field(nn.Module):
     def __init__(self, processor, inputs_list, out_size=None, window_size=2):
         super(Local_Receptive_Field, self).__init__()
         if isinstance(processor, Processor) or isinstance(processor, dict):
-            self.processor = DNPU_Base(processor, inputs_list) # It accepts initialising a processor as a dictionary
+            self.processor = DNPU_Base(
+                processor, inputs_list
+            )  # It accepts initialising a processor as a dictionary
         else:
-            self.processor = processor # It accepts initialising as an external DNPU_Base
+            self.processor = (
+                processor  # It accepts initialising as an external DNPU_Base
+            )
         self.window_size = window_size
         self.inputs_list = inputs_list
         self.out_size = out_size
@@ -36,10 +40,10 @@ class Local_Receptive_Field(nn.Module):
             dim=1,
         )
         if self.out_size is None:
-            return x  
+            return x
         else:
             return x.view(-1, self.out_size, self.out_size)
-    
+
     def regularizer(self):
         return self.processor.regularizer()
 

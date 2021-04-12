@@ -39,14 +39,12 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     results = init_results(inputs, targets)
 
     if train:
-        accuracy, predicted_labels, node = train_perceptron(
-            results, configs, node
-        )
+        accuracy, predicted_labels, node = train_perceptron(results, configs, node)
 
     with torch.no_grad():
         node.eval()
         accuracy, predicted_labels = evaluate_accuracy(
-            results['norm_inputs'], results['targets'], node
+            results["norm_inputs"], results["targets"], node
         )
         w, b = [p for p in node.parameters()]
         threshold = -b / w
@@ -57,7 +55,7 @@ def get_accuracy(inputs, targets, configs=None, node=None):
         results["predicted_labels"] = predicted_labels
         results["node"] = node
         results["accuracy_value"] = accuracy
-        results['configs'] = configs
+        results["configs"] = configs
 
         print("Best accuracy: " + str(accuracy))
 
@@ -85,15 +83,15 @@ def train_perceptron(results, configs, node=None):
     best_accuracy = -1
     best_labels = None
     looper = trange(configs["epochs"], desc="Calculating accuracy")
-    node = node.to(device=TorchUtils.get_accelerator_type(), dtype=DTYPE)
+    node = node.to(device=TorchUtils.get_device(), dtype=DTYPE)
     # validation_index = get_index(dataloaders)
 
     for epoch in looper:
         for inputs, targets in dataloaders[0]:
-            if inputs.device != TorchUtils.get_accelerator_type():
-                inputs = inputs.to(TorchUtils.get_accelerator_type())
-            if targets.device != TorchUtils.get_accelerator_type():
-                targets = targets.to(TorchUtils.get_accelerator_type())
+            if inputs.device != TorchUtils.get_device():
+                inputs = inputs.to(TorchUtils.get_device())
+            if targets.device != TorchUtils.get_device():
+                targets = targets.to(TorchUtils.get_device())
             optimizer.zero_grad()
             predictions = node(inputs)
             cost = loss(predictions, targets)
@@ -101,7 +99,9 @@ def train_perceptron(results, configs, node=None):
             optimizer.step()
         with torch.no_grad():
             node.eval()
-            accuracy, labels = evaluate_accuracy(results['norm_inputs'], results['targets'], node)
+            accuracy, labels = evaluate_accuracy(
+                results["norm_inputs"], results["targets"], node
+            )
             if accuracy > best_accuracy:
                 best_accuracy = accuracy
                 best_labels = labels
@@ -116,7 +116,7 @@ def train_perceptron(results, configs, node=None):
             node.train()
         looper.set_description(
             f"Epoch: {epoch+1}  Accuracy {accuracy}, loss: {cost}"
-            #f"Epoch: {epoch+1} loss: {cost}"
+            # f"Epoch: {epoch+1} loss: {cost}"
         )
     node.weight = w
     node.bias = b
@@ -125,7 +125,7 @@ def train_perceptron(results, configs, node=None):
 
 def evaluate_accuracy(inputs, targets, node):
     predictions = node(inputs)
-    labels = predictions > 0.
+    labels = predictions > 0.0
     correctly_labelled = torch.sum(labels == targets)
     accuracy = 100.0 * correctly_labelled / len(targets)
     return accuracy, labels
@@ -147,18 +147,16 @@ def get_default_node_configs():
 def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
     fig = plt.figure()
     plt.title(f"Accuracy: {results['accuracy_value']:.2f} %")
+    plt.plot(TorchUtils.to_numpy(results["norm_inputs"]), label="Norm. Waveform")
     plt.plot(
-        TorchUtils.get_numpy_from_tensor(results["norm_inputs"]), label="Norm. Waveform"
-    )
-    plt.plot(
-        TorchUtils.get_numpy_from_tensor(results["predicted_labels"]),
+        TorchUtils.to_numpy(results["predicted_labels"]),
         ".",
         label="Predicted labels",
     )
-    plt.plot(TorchUtils.get_numpy_from_tensor(results["targets"]), "g", label="Targets")
+    plt.plot(TorchUtils.to_numpy(results["targets"]), "g", label="Targets")
     plt.plot(
         np.arange(len(results["predicted_labels"])),
-        TorchUtils.get_numpy_from_tensor(
+        TorchUtils.to_numpy(
             torch.ones_like(results["predicted_labels"]) * results["norm_threshold"]
         ),
         "k:",

@@ -1,43 +1,91 @@
-""" This module is part of the utils of brains-py helps managing
-    the waveforms of the signals sent to and
-    received by the hardware DNPUs (Dopant Network Processing Units).
 """
-import torch
-from brainspy.utils.pytorch import TorchUtils
-import numpy as np
+This module is part of the utils of brains-py helps managing
+the waveforms of the signals sent to and received by the hardware DNPUs.
+
+Data can exist in 3 forms:
+-points (e.g. (1, 2, 3))
+-plateaus (e.g. (1, 1, 1, 2, 2, 2, 3, 3, 3))
+-waveform (e.g (0, 0.5, 1, 1, 1, 1, 1, 1.5, 2, 2, 2, 2, 2, 2.5,
+3, 3, 3, 3, 3, 1.5, 0))
+A waveform transform is defined by its plateau length and slope length,
+in the case above 3 and 3 respectively. There are methods in this module
+that define the transformations between these three forms.
+
+The goal of the waveform representation of data is so that it can be applied
+to DNPUs without sudden changes in input, so that the hardware is not damaged.
+"""
 from typing import Union, Tuple
+
+import torch
+import numpy as np
+
+from brainspy.utils.pytorch import TorchUtils
 
 
 class WaveformManager:
-    """This class helps managing the waveforms of the signals sent to and
+    """
+    This class helps managing the waveforms of the signals sent to and
     received by the hardware DNPUs (Dopant Network Processing Units).
 
     The waveform represents a set of points. Each of the points is represented
     with a slope, a plateau and another slope. The first slope is a line that
-    goes from the previous point to the current point value. The plateau repeats
-    the same point a specified number of times. The second slope is a line that
-    goes from the current point to the next point. The starting and ending points
-    are considered zero.
+    goes from the previous point to the current point value. The plateau
+    repeats the same point a specified number of times. The second slope is a
+    line that goes from the current point to the next point. The starting and
+    ending points are considered zero.
 
-    - **parameters**, **types**, **return** and **return types**::
-
-          :param plateau_length: The lengh of the plateaus of the waveform.
-          :param slope_length: The length of the slopes of the waveform.
-          :type arg1: int
-          :type arg1: int
-
-    -  The class supports the following transformations:
-            * From points to plateau/waveform
-            * From plateau to points/waveform
-            * From waveform to plateau/points
-
+    Attributes
+    ----------
+    plateau_length : int
+        The length of the plateaus of this manager.
+    slope_length : int
+        The length of the slopes of this manager.
+    initial_mask : list[bool]
+        A mask that covers one slope and one plateau. False where there is a
+        slope, True where there is a plateau.
+    final_mask : list[bool]
+        A mask that covers one plateau - consists entirely of False.
     """
     def __init__(self, configs):
+        """
+        To initialize the data from the configs dict
+
+        Parameters
+        ----------
+        configs : dict
+            configurations of the model
+
+            :param plateau_length: int
+                 The lengh of the plateaus of the waveform.
+            :param slope_length: int
+                 The length of the slopes of the waveform.
+
+        Example
+        --------
+        configs = {}
+        configs["plateau_length"] = 80
+        configs["slope_length"] = 20
+        waveform_mgr = WaveformManager(configs)
+
+        """
         self.plateau_length = configs["plateau_length"]
         self.slope_length = configs["slope_length"]
         self.generate_mask_base()
 
     def generate_mask_base(self):
+        """
+        To generate a mask base for the torch tensor based on the slope length
+        and plateau_length.
+
+        Example
+        -------
+        configs = {}
+        configs["plateau_length"] = 80
+        configs["slope_length"] = 20
+        waveform_mgr = WaveformManager(configs)
+        waveform_mgr.generate_mask_base()
+
+        """
         mask = []
         final_mask = [False] * self.slope_length
         mask += final_mask
@@ -46,71 +94,123 @@ class WaveformManager:
         self.final_mask = torch.tensor(final_mask)
 
     def _expand(self, parameter, length):
-        """The aim of this function is to format the amplitudes and
+        """
+        The aim of this function is to format the amplitudes and
         slopes to have the same length as the amplitudes, in case
-        they are specified with an integer number."""
-        # output_data = list(data)
+        they are specified with an integer number.
+
+        Parameters
+        ----------
+        parameter : int
+            value that specifies the amplitude which can be in the form of an
+            integer or a list
+        length : int
+            length of amplitude
+
+        Returns
+        -------
+        list
+            formatted amplitudes and slope to have same length
+
+        Example
+        -------
+        parameter = 20
+        length = 4
+        waveform_mgr = WaveformManager(configs)
+        new_parameter = waveform_mgr._expand()
+
+
+        """
         if isinstance(parameter, int):
             return [parameter] * length
         return parameter
 
     def points_to_waveform(self, data):
         """
-        Generates a waveform (voltage input over time) with constant intervals of value amplitudes[i] for interval i of length[i].
+        Generates a waveform (voltage input over time) with constant intervals
+        of value amplitudes[i] for interval i of length[i].
 
-        plateaus = The input from which a waveform will be generated. The input is in form of a list.
-        plateau_length = The number of points used to represent the amplitudes. It can be provided as a single
-        number or as a list in which all the length values will correspond to its corresponding amplitude value.
-        slope_lengths = The number of points of the slope.
+        Parameters
+        ----------
+        data : torch.tensor
+            points for which waveform is generated as a torch tensor
 
-        The output is in list format
+        Returns
+        -------
+        torch.tensor
+            the generated waveworm torch tesnor
+
+        Example
+        --------
+        waveform_mgr = WaveformManager(configs)
+        data = (1,1)
+        points = torch.rand(data)
+        waveform = waveform_mgr.points_to_waveform(points)
+
         """
         data_size = len(data) - 1
-        # output = torch.tensor([])
-        # data = list(self.safety_format(data, safety_formatting))
-        # plateau_lengths = self._expand(self.plateau_lengths, len(data))
-        # slope_lengths = self._expand(self.slope_lengths, len(data))
-        # amplitudes, plateau_lengths, slope_lengths = self.format_amplitudes_and_slopes(amplitudes, self.plateau_lengths, self.slope_lengths)
-        tmp = TorchUtils.get_numpy_from_tensor(data)
-        # if len(data) == len(plateau_lengths) == len(slope_lengths):
-        output = TorchUtils.get_tensor_from_numpy(
-            np.linspace(0, tmp[0], self.slope_length))
+        tmp = TorchUtils.to_numpy(data)
+        output = TorchUtils.format(np.linspace(0, tmp[0], self.slope_length))
         for i in range(data_size):
             output = torch.cat((output, data[i].repeat(self.plateau_length,
                                                        1)))
-            output = torch.cat((output,
-                                TorchUtils.get_tensor_from_numpy(
-                                    np.linspace(tmp[i], tmp[i + 1],
-                                                self.slope_length))))
+            output = torch.cat((
+                output,
+                TorchUtils.format(
+                    np.linspace(tmp[i], tmp[i + 1], self.slope_length)),
+            ))
         output = torch.cat((output, data[-1].repeat(self.plateau_length, 1)))
-        output = torch.cat((output,
-                            TorchUtils.get_tensor_from_numpy(
-                                np.linspace(tmp[-1], 0, self.slope_length))))
+        output = torch.cat(
+            (output,
+             TorchUtils.format(np.linspace(tmp[-1], 0, self.slope_length))))
         del tmp
-        # else:
-        #     assert False, "Assignment of amplitudes and lengths/slopes is not unique!"
         return output
 
-    # def points_to_plateau(self, data):
-    #     # output = np.ndarray([])
-    #     plateau_lengths = self._expand(self.plateau_lengths, len(data))
-    #     output = np.array(([data[0]] * plateau_lengths[0]))
-    #     for i in range(1, len(data)):
-    #         output = np.concatenate((output, np.array(([data[i]] * plateau_lengths[i]))))
-    #     return output
-
     def points_to_plateaus(self, data):
-        # output = np.ndarray([])
-        # result = data[0].repeat(self.plateau_length, 1)
-        # for i in range(1, len(data)):
-        #     result = torch.cat((result, data[i].repeat(self.plateau_length, 1)), dim=0)
-        # plateau_lengths = self._expand(self.plateau_lengths, len(data))
-        # output = data[0].expand(data.shape[0] * plateau_lengths[0], -1)
-        # for i in range(1, data.shape[1]):
-        #     output = torch.cat((output, data[i].expand(data.shape[0] * plateau_lengths[i], -1)))
+        """
+        Generates plateaus for the points inputted
+
+        Parameters
+        ----------
+        data : torch.tensor
+            points for which plateaus are generated
+
+        Returns
+        -------
+        torch.tensor
+            plateaus generated from points as a torch tensor
+
+        Example
+        -------
+        waveform_mgr = WaveformManager(configs)
+        data = (1,1)
+        points = torch.rand(data)
+        plateaus = waveform_mgr.points_to_pleateaus(points)
+
+        """
         return self.tile(data, 0, self.plateau_length)
 
     def tile(self, t, dim, n_tile):
+        """
+        The function is used to convert a set a points in a torch tensor to a
+        plateau of points in the tensor. It does this by a by repeating the
+        elements of input in the torch tensor.
+
+        Parameters
+        ----------
+        t : torch.Tensor
+            The data points that have to be converted to a plateau
+        dim : int
+            integer value that specifies the number of repetitions in each
+            dimension.
+        n_tile : int
+            required length of the plateau
+
+        Returns
+        -------
+        torch.Tensor
+            plateau generated from the given points in the torch tensor
+        """
         init_dim = t.size(dim)
         repeat_idx = [1] * t.dim()
         repeat_idx[dim] = n_tile
@@ -180,7 +280,7 @@ class WaveformManager:
         f"plateau length {self.plateau_length}."
 
         data_size = int(len(data) / self.plateau_length)  # number of plateaus
-        input_copy = TorchUtils.get_numpy_from_tensor(
+        input_copy = TorchUtils.format(
             data)  # numpy copy of input data (numpy linspace works for
         # multidimensional data while torch does not)
         start = 0  # starting position of current plateau in input data
@@ -195,10 +295,11 @@ class WaveformManager:
             output_mask += [True] * self.plateau_length
             output_data = np.concatenate((output_data, input_copy[start:end]))
             output_mask += [False] * self.slope_length
-            output_data = np.concatenate(
-                (output_data,
-                 np.linspace(input_copy[end - 1], input_copy[end],
-                             self.slope_length)))
+            output_data = np.concatenate((
+                output_data,
+                np.linspace(input_copy[end - 1], input_copy[end],
+                            self.slope_length),
+            ))
             start = end
 
         # Go through last plateau and final slope.
@@ -209,9 +310,10 @@ class WaveformManager:
             (output_data, np.linspace(input_copy[-1], 0, self.slope_length)))
 
         if return_pytorch:
-            return TorchUtils.get_tensor_from_numpy(
-                output_data), TorchUtils.get_tensor_from_list(output_mask,
-                                                              data_type=bool)
+            return (
+                TorchUtils.format(output_data),
+                TorchUtils.format(output_mask, data_type=bool),
+            )
         else:
             return output_data, output_mask
 
@@ -290,7 +392,7 @@ class WaveformManager:
 
         Returns
         -------
-        self.plateaus_to_points(data[mask])
+        torch.Tensor
             A tensor where each data point is represented once.
 
         Raises
@@ -329,7 +431,7 @@ class WaveformManager:
 
         Returns
         -------
-        data[mask] : torch.Tensor
+        torch.Tensor
             Tensor with the slopes removed.
         """
         if mask is None:
@@ -363,7 +465,7 @@ class WaveformManager:
 
         Returns
         -------
-        torch.cat((mask, self.final_mask)) : torch.Tensor
+        torch.Tensor
             A mask of the required length.
 
         """
@@ -374,14 +476,13 @@ class WaveformManager:
 
 
 def process_data(waveform_transforms, inputs, targets):
-    # Data processing required to apply waveforms to the inputs and pass them onto the GPU if necessary.
+    # Data processing required to apply waveforms to the inputs and pass them
+    # onto the GPU if necessary.
     if waveform_transforms is not None:
         inputs, targets = waveform_transforms((inputs, targets))
-    if inputs is not None and inputs.device != TorchUtils.get_accelerator_type(
-    ):
-        inputs = inputs.to(device=TorchUtils.get_accelerator_type())
-    if targets is not None and targets.device != TorchUtils.get_accelerator_type(
-    ):
-        targets = targets.to(device=TorchUtils.get_accelerator_type())
+    if inputs is not None and inputs.device != TorchUtils.get_device():
+        inputs = inputs.to(device=TorchUtils.get_device())
+    if targets is not None and targets.device != TorchUtils.get_device():
+        targets = targets.to(device=TorchUtils.get_device())
 
     return inputs, targets

@@ -8,21 +8,40 @@ DTYPE = torch.float32
 
 def get_data(results, configs, shuffle=True):
     # Prepare perceptron data
-    if configs['data']['worker_no'] > 0 or configs['data']['pin_memory']:
-        dataset = PerceptronDataset(results["norm_inputs"], results["targets"], device=torch.device('cpu'))
+    if configs["data"]["worker_no"] > 0 or configs["data"]["pin_memory"]:
+        dataset = PerceptronDataset(
+            results["norm_inputs"], results["targets"], device=torch.device("cpu")
+        )
     else:
         dataset = PerceptronDataset(results["norm_inputs"], results["targets"])
 
-    if configs['data']["split"][1] != 0:
+    if configs["data"]["split"][1] != 0:
         lengths = [
             len(dataset) * configs["split"][0],
             len(dataset) * configs["split"][1],
         ]
 
         subsets = random_split(dataset, lengths)
-        dataloaders = [torch.utils.data.DataLoader(subsets[i], batch_size=configs['data']['batch_size'], shuffle=shuffle, num_workers=configs['data']['worker_no'], pin_memory=configs['data']['pin_memory']) for i in range(len(subsets))]
+        dataloaders = [
+            torch.utils.data.DataLoader(
+                subsets[i],
+                batch_size=configs["data"]["batch_size"],
+                shuffle=shuffle,
+                num_workers=configs["data"]["worker_no"],
+                pin_memory=configs["data"]["pin_memory"],
+            )
+            for i in range(len(subsets))
+        ]
     else:
-        dataloaders = [torch.utils.data.DataLoader(dataset, batch_size=configs['data']['batch_size'], shuffle=shuffle, num_workers=configs['data']['worker_no'], pin_memory=configs['data']['pin_memory'])]
+        dataloaders = [
+            torch.utils.data.DataLoader(
+                dataset,
+                batch_size=configs["data"]["batch_size"],
+                shuffle=shuffle,
+                num_workers=configs["data"]["worker_no"],
+                pin_memory=configs["data"]["pin_memory"],
+            )
+        ]
 
     return dataloaders
 
