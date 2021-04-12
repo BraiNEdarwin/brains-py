@@ -14,7 +14,7 @@ that define the transformations between these three forms.
 The goal of the waveform representation of data is so that it can be applied
 to DNPUs without sudden changes in input, so that the hardware is not damaged.
 """
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 import torch
 import numpy as np
@@ -40,10 +40,10 @@ class WaveformManager:
         The length of the plateaus of this manager.
     slope_length : int
         The length of the slopes of this manager.
-    initial_mask : list[bool]
+    initial_mask : List[bool]
         A mask that covers one slope and one plateau. False where there is a
         slope, True where there is a plateau.
-    final_mask : list[bool]
+    final_mask : List[bool]
         A mask that covers one plateau - consists entirely of False.
     """
     def __init__(self, configs):
@@ -225,7 +225,7 @@ class WaveformManager:
         self,
         data: torch.Tensor,
         return_pytorch=True
-    ) -> Tuple[Union[np.array, torch.Tensor], Union[list[bool], torch.Tensor]]:
+    ) -> Tuple[Union[np.array, torch.Tensor], Union[List[bool], torch.Tensor]]:
         """
         Transform plateau data into full waveform data by adding
         slopes inbetween the plateaus.
@@ -264,7 +264,7 @@ class WaveformManager:
         -------
         output_data : torch.Tensor or np.array
             The plateau data with the added slopes.
-        output_mask : list[bool] or torch.Tensor
+        output_mask : List[bool] or torch.Tensor
             The resulting mask - list of booleans with true at plateaus and
             false at slopes (or a 1D tensor).
 
