@@ -51,19 +51,17 @@ class SurrogateModel(nn.Module):
         Load the offset and amplitude from the model and calculate the minimum
         and maximum voltage.
         """
-        offset = TorchUtils.get_tensor_from_list(
-            self.model["info"]["data_info"]["input_data"]["offset"])
-        amplitude = TorchUtils.get_tensor_from_list(
-            self.model["info"]["data_info"]["input_data"]["amplitude"])
+        offset = TorchUtils.format(self.model.info["data_info"]["input_data"]["offset"])
+        amplitude = TorchUtils.format(
+            self.model.info["data_info"]["input_data"]["amplitude"]
+        )
         min_voltage = (offset - amplitude).unsqueeze(dim=1)
         max_voltage = (offset + amplitude).unsqueeze(dim=1)
         self.voltage_ranges = torch.cat((min_voltage, max_voltage), dim=1)
 
-    def set_effects(self,
-                    amplification=None,
-                    output_clipping=None,
-                    noise=None,
-                    **kwargs):
+    def set_effects(
+        self, amplification=None, output_clipping=None, noise=None, kwargs=None
+    ):
         """
         Set the amplification, output clipping and noise of the processor.
 
@@ -83,7 +81,10 @@ class SurrogateModel(nn.Module):
         # args.
         self.set_amplification(amplification)
         self.set_output_clipping(output_clipping)
-        self.noise = get_noise(noise, kwargs)
+        if kwargs is not None:
+            self.noise = get_noise(noise, kwargs)
+        else:
+            self.noise = get_noise(noise)
 
     def set_amplification(self, value):
         """
@@ -100,8 +101,8 @@ class SurrogateModel(nn.Module):
         """
         if value is not None and value == "default":
             self.amplification = TorchUtils.get_tensor_from_list(
-                self.model.info["data_info"]["processor"]["driver"]
-                ["amplification"])
+                self.model.info["data_info"]["processor"]["driver"]["amplification"]
+            )
         else:
             self.amplification = value
 
@@ -119,8 +120,9 @@ class SurrogateModel(nn.Module):
             The value of the output clipping (None, a value or 'default').
         """
         if value is not None and value == "default":
-            self.output_clipping = TorchUtils.get_tensor_from_list(
-                self.model.info["data_info"]["clipping_value"])
+            self.output_clipping = TorchUtils.format(
+                self.model.info["data_info"]["clipping_value"]
+            )
         else:
             self.output_clipping = value
 
@@ -145,9 +147,9 @@ class SurrogateModel(nn.Module):
         if self.noise is not None:
             x = self.noise(x)
         if self.output_clipping is not None:
-            return torch.clamp(x,
-                               min=self.clipping_value[0],
-                               max=self.clipping_value[1])
+            return torch.clamp(
+                x, min=self.output_clipping[0], max=self.output_clipping[1]
+            )
         return x
 
     # For debugging purposes
@@ -177,16 +179,14 @@ class SurrogateModel(nn.Module):
         Reset the processor.
         """
         # TODO write reset function
-        warnings.warn(
-            "Warning: Reset function in Surrogate Model not implemented.")
+        warnings.warn("Warning: Reset function in Surrogate Model not implemented.")
 
     def close(self):
         """
         Close the processor.
         """
         # TODO write close function
-        warnings.warn(
-            "Warning: Close function in Surrogate Model not implemented.")
+        warnings.warn("Warning: Close function in Surrogate Model not implemented.")
 
     def is_hardware(self):
         """
@@ -220,51 +220,20 @@ class SurrogateModel(nn.Module):
             )
             return None
 
-    # def load_file(self, data_dir: str) -> Tuple[dict, OrderedDict]:
-    #     """
-    #     Load a model from a file. Run a consistency check on smg_configs.
-    #     Checks whether the amplification of the processor is set in the config; if not, set it to 1.
-
-    #     Example
-    #     -------
-    #     >>> load_file("model.pt")
-    #     (info, state_dict)
-
-    #     In this case 'info' contains information about the model and 'state_dict' contains the weights
-    #     of the network, referring to the model in "model.pt".
-
-    #    Returns
-    #    -------
-    #    info : dict
-    #        Dictionary containing the settings.
-    #    state_dict : dict
-    #        State dictionary of the model, containing the weights and biases
-    #        of the network.
-    #    """
-    #    # Load model; contains weights (+biases) and info.
-    #    state_dict = torch.load(
-    #        data_dir, map_location=TorchUtils.get_device()
-    #    )
-    #    # state_dict is an ordered dictionary.
-
-    #     Returns
-    #     -------
-    #     info : dict
-    #         Dictionary containing the settings.
-    #     state_dict : dict
-    #         State dictionary of the model, containing the weights and biases
-    #         of the network.
-    #     """
-    #     # Load model; contains weights (+biases) and info.
-    #     state_dict = torch.load(
-    #         data_dir, map_location=TorchUtils.get_device()
-    #     )
-    #     # state_dict is an ordered dictionary.
-
-    #    # Set amplification to 1 if not specified in file.
-    #    if "amplification" not in info["data_info"]["processor"]:
-    #        info["data_info"]["processor"]["amplification"] = 1
-    #        warnings.warn(
-    #            "The model loaded does not define the amplification; set to 1."
-    #        )
-    #    return info, state_dict
+    def set_effects_from_dict(self, configs):
+        amplification = None
+        output_clipping = None
+        noise = None
+        if "amplification" in configs:
+            amplification = configs["amplification"]
+        if "output_clipping" in configs:
+            output_clipping = configs["output_clipping"]
+        if "noise" in configs:
+            noise = configs["noise"]["type"]
+            del configs["noise"]["type"]
+            self.set_effects(
+                amplification, output_clipping, noise, kwargs=configs["noise"]
+            )  # TODO: Further check if **configs['noise'] is doing what is intended to do
+            configs["noise"]["type"] = noise
+        else:
+            self.set_effects(amplification, output_clipping)
