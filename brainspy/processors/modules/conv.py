@@ -6,7 +6,7 @@ from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
 
 # from brainspy.utils.mappers import SimpleMapping
-from brainspy.utils.electrodes import (
+from brainspy.utils.transforms import (
     get_linear_transform_constants,
     format_input_ranges,
 )
@@ -28,6 +28,7 @@ class DNPUConv2d(nn.Module):
         super(DNPUConv2d, self).__init__()
 
         self.device_no = len(inputs_list)
+        self.raw_inputs_list = inputs_list
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
@@ -47,9 +48,8 @@ class DNPUConv2d(nn.Module):
         # IndexError: tensors used as indices must be long, byte or bool tensors
         self.postprocess_type = postprocess_type
         if postprocess_type == "linear":
-            self.linear = torch.nn.Linear(self.device_no, 1)
-        if self.processor.is_hardware or self.processor.processor.is_loaded:
-            self.init_params()
+            self.linear = torch.nn.Linear(self.device_no, 1, bias=False)
+        self.init_params()
 
     def init_params(self):
         # -- Setup node --
@@ -151,8 +151,7 @@ class DNPUConv2d(nn.Module):
     def add_input_transform(self, data_input_range):
         self.input_transform = True
         self.data_input_range = data_input_range
-        if self.processor.is_hardware or self.processor.processor.is_loaded:
-            self.init_input_transform()
+        self.init_input_transform()
 
     def init_input_transform(self):
         output_range = self.get_input_ranges()
