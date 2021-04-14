@@ -3,12 +3,9 @@
 
 import torch
 from torch import nn
-
 from brainspy.utils.manager import get_driver
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager
-
-# deleteme
 from brainspy.processors.simulation.processor import SurrogateModel
 
 
@@ -21,8 +18,28 @@ class HardwareProcessor(nn.Module):
     """
 
     # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
-
     def __init__(self, configs, logger=None):
+        """
+        Method to o intialise the hardware processor
+
+        Parameters
+        ----------
+        configs : dict
+        Data key,value pairs required in the configs to initialise the hardware processor :
+
+            processor_type : "simulation_debug" - Processor type to initialize a hardware processor
+            data:
+                waveform:
+                    plateau_length: int - A plateau of at least 3 is needed to train the perceptron (That requires at least 10 values (3x4 = 12)).
+                    slope_length : int - Length of the slope of a waveform
+                activation_electrode_no: int - It specifies the number of activation electrodes. Only required for simulation mode
+            driver:
+                amplification: float - To set the amplification value of the voltages
+                output_clipping_range: [float,float] - To clip the output voltage if it goes above maximum
+
+        logger : [type], optional
+            [description], by default None
+        """
         super(HardwareProcessor, self).__init__()
         # @TODO: check if all the configs inputed to the hardware processor ar really needed somewhere
         # Should only configs['driver'] be passed to the driver?

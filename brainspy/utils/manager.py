@@ -1,3 +1,9 @@
+"""
+Class to retrieve data specified in a dictionary used to train a  model.
+The class methods require a configuration dictionary with data keys specific to do a task.
+It can be used to get an optimizer,fitness function,driver or an algorithm for training a model.
+"""
+
 import torch
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ

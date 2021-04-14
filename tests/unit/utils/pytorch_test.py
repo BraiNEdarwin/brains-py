@@ -1,5 +1,7 @@
+"""
+Module for testing the management of torch variables.
+"""
 import unittest
-
 import numpy as np
 import torch
 from brainspy.utils.pytorch import TorchUtils
