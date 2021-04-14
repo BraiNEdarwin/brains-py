@@ -308,3 +308,9 @@ def get_offset(y_min: float, y_max: float, x_min: float,
         If x_min equals x_max division by 0 occurs.
     """
     return ((y_max * x_min) - (y_min * x_max)) / (x_min - x_max)
+
+def format_input_ranges(input_min, input_max, output_ranges):
+    input_ranges = torch.ones_like(output_ranges)
+    input_ranges[0] *= input_min
+    input_ranges[1] *= input_max
+    return input_ranges
