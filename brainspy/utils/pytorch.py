@@ -94,11 +94,15 @@ class TorchUtils:
             return torch.tensor(data, device=device, dtype=data_type)
         elif isinstance(data, torch.Tensor):
             return data.to(device=device, dtype=data_type)
-        else:
+        elif isinstance(data, torch.nn.Module):
             if torch.cuda.device_count() > 1 and not TorchUtils.force_cpu:
                 data = torch.nn.DataParallel(data)
             data.to(TorchUtils.get_device())
             return data
+        else:
+            raise TypeError(
+                "The type of the input is not recognised. Only lists, Numpy arrays, Pytorch tensors and Pytorch modules are supported. "
+            )
 
     @staticmethod
     def to_numpy(data: torch.tensor):
