@@ -31,6 +31,25 @@ class NationalInstrumentsSetup:
         self.init_semaphore()
 
     def init_configs(self, configs):
+        """
+        To initialise the configurations of the setup
+
+        Parameters
+        ----------
+        configs : dict
+        Data key,value pairs required in the configs to initialise the setup classes
+
+        max_ramping_time_seconds : int - To set the ramp time for the setup
+        offset : int - To set the offset value of the wave
+        auto_start : bool - Too suto start the setup tasks or not
+        data:
+            waveform:
+                plateau_length: int - A plateau of at least 3 is needed to train the perceptron (That requires at least 10 values (3x4 = 12)).
+                slope_length : int - Length of the slope of a waveform
+        driver:
+            sampling_frequency: int - defines the number of samples per second (or per other unit) taken from a continuous signal
+            amplification: float - To set the amplification value of the voltages
+        """
         self.configs = configs
         self.last_shape = -1
         self.data_results = None
