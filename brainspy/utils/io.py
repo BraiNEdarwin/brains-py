@@ -1,5 +1,6 @@
 """
-Library that handles saving data
+Library that handles loading and saving of data to a file.
+It is also used to create a new directory with a timestamp.
 """
 
 import io
