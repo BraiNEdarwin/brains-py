@@ -1,20 +1,26 @@
 """
-TODO add module docstring
+Module for creating and using a neural network model.
 """
 import warnings
+from typing import Optional, Dict
+
 import torch
 from torch import nn
-from typing import Optional, Dict
 
 
 class NeuralNetworkModel(nn.Module):
     """
-    TODO add class docstring
+    A neural network model is a basic pytorch model.
+
+    Attributes:
+    info : dict
+        Dictionary containing the model info; keys explained in constructor
+        method.
+    verbose : bool
+        Indicate whether to print certain steps.
+    raw_model : nn.Sequential
+        Torch object containing the layers and activations of the network.
     """
-
-    # TODO: Automatically register the data type according to the
-    # configurations of the amplification variable of the  info dictionary
-
     def __init__(self, model_info: dict, verbose=False):
         """
         Create a model object.
@@ -23,6 +29,14 @@ class NeuralNetworkModel(nn.Module):
         ----------
         model_info : dict
             Dictionary containing the model info.
+            D_in : int
+                Number of inputs (electrodes).
+            D_out : int
+                Number of outputs (electrodes).
+            activation : str
+                Type of activation,  for example "relu".
+            hidden_sizes : list[int]
+                Sizes of the hidden layers.
         verbose : bool, optional
             Whether to print certain steps, by default False.
         """
@@ -36,6 +50,8 @@ class NeuralNetworkModel(nn.Module):
         Build the model from the info dictionary.
         First perform the consistency check, then set the layers and
         activations.
+
+        This method is called when an object is created.
 
         Parameters
         ----------
@@ -91,7 +107,13 @@ class NeuralNetworkModel(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Do a forward pass.
+        Do a forward pass through the network.
+
+        Example
+        -------
+        >>> model = NeuralNetworkModel(d)
+        >>> model.forward(torch.tensor([1.0, 2.0, 3.0]))
+        torch.Tensor([4.0])
 
         Parameters
         ----------
@@ -105,30 +127,48 @@ class NeuralNetworkModel(nn.Module):
         """
         return self.raw_model(x)
 
-    def _get_activation(self, activation):
+    def _get_activation(self, activation: str):
         """
         Get the activation of the model. If it's a string then return an
-        actual activation object.
+        actual activation object, if that type of activation is implemented.
+        If string is not recognized, raise warning and return relu.
 
-        Currenly can only read ReLU.
+        Example
+        -------
+        >>> model = NeuralNetworkModel(d)
+        >>> model._get_activation("tanh")
+        nn.Tanh
 
         Parameters
         ----------
-        activation : [type]
-            [description]
+        activation : str
+            Type of activation, can be relu, elu, tanh, hard-tanh, sigmoid.
 
         Returns
         -------
-        [type]
-            [description]
+        activation
+            An activation object.
+
+        Raises
+        ------
+        UserWarning
+            If activation string is not recognized.
         """
-        # TODO: generalize get_activation function to allow for several
-        # options, e.g. relu, tanh, hard-tanh, sigmoid
-        if type(activation) is str:
-            if self.verbose:
-                print("Activation function is set as ReLU")
-            return nn.ReLU()
-        return activation
+        if activation == "relu":
+            return nn.ReLU
+        elif activation == "elu":
+            return nn.ELU
+        elif activation == "tanh":
+            return nn.Tanh
+        elif activation == "hard-tanh":
+            return nn.Hardtanh
+        elif activation == "sigmoid":
+            return nn.Sigmoid
+        else:
+            warnings.warn("Activation not recognized, applying ReLU")
+            return nn.ReLU
+        if self.verbose:
+            print(f"Activation function is set as {activation}")
 
     def info_consistency_check(self, model_info: dict):
         """
@@ -137,18 +177,24 @@ class NeuralNetworkModel(nn.Module):
         number and sizes are defined in the config? If they aren't, set them
         to default values and print a warning.
 
+        This method is called when an object is created.
+
         Parameters
         ----------
         model_info : dict
             Dictionary of the configs.
+
+        Raises
+        ------
+        UserWarning
+            If a parameter is not in the expected format.
         """
         default_in_size = 7
         default_out_size = 1
         default_hidden_size = 90
         default_hidden_number = 6
         default_activation = "relu"
-        if not ("activation" in model_info
-                and ["activation"] in ("relu", "elu")):
+        if not ("activation" in model_info):
             model_info["activation"] = "relu"
             warnings.warn(
                 "The model loaded does not define the activation as "
