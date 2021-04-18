@@ -155,18 +155,18 @@ class NeuralNetworkModel(nn.Module):
             If activation string is not recognized.
         """
         if activation == "relu":
-            return nn.ReLU
+            return nn.ReLU()
         elif activation == "elu":
-            return nn.ELU
+            return nn.ELU()
         elif activation == "tanh":
-            return nn.Tanh
+            return nn.Tanh()
         elif activation == "hard-tanh":
-            return nn.Hardtanh
+            return nn.Hardtanh()
         elif activation == "sigmoid":
-            return nn.Sigmoid
+            return nn.Sigmoid()
         else:
             warnings.warn("Activation not recognized, applying ReLU")
-            return nn.ReLU
+            return nn.ReLU()
         if self.verbose:
             print(f"Activation function is set as {activation}")
 
@@ -214,8 +214,8 @@ class NeuralNetworkModel(nn.Module):
                 f"expected. Changed it to default value: {default_out_size}.")
         if "hidden_sizes" not in model_info:
             # Check sizes of hidden layers.
-            model_info[
-                "hidden_sizes"] = default_hidden_size * default_hidden_number
+            model_info["hidden_sizes"] = [default_hidden_size
+                                          ] * default_hidden_number
             warnings.warn(
                 "The model loaded does not define the hidden layer sizes as "
                 f"expected. Changed it to default value: "

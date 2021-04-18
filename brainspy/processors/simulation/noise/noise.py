@@ -49,13 +49,18 @@ class GaussianNoise:
         ))
 
 
-def get_noise(noise: str, **kwargs):
+def get_noise(noise_type: str, **kwargs):
     """
     Get given noise type.
 
+    Example
+    -------
+    >>> get_noise(noise_type="gaussian", mse=1)
+    GaussianNoise
+
     Parameters
     ----------
-    noise : str
+    noise_type : str
         Type of noise to be applied.
     **kwargs
         Arguments for the noise.
@@ -71,12 +76,12 @@ def get_noise(noise: str, **kwargs):
     UserWarning
         If the string given does not correspond to an implemented noise type.
     """
-    if noise is not None:
-        if noise == "gaussian":
+    if noise_type is not None:
+        if noise_type == "gaussian":
             return GaussianNoise(kwargs["mse"])
         else:
             warnings.warn(
                 "Noise configuration not recognised. No noise is being "
                 "simulated for the model.")
             return None
-    return noise
+    return noise_type
