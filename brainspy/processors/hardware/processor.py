@@ -55,9 +55,36 @@ class HardwareProcessor(nn.Module):
                     readout_channels: [2] list - Channels for reading the output current values
                     trigger_source: str - cDAQ1/segment1 - source trigger name
                 tasks_driver_type : str - "local" or "remote" - type of tasks driver
-                amplification: float - To set the amplification value of the voltages
+                amplification: float - The output current (nA) of the device is converted by the readout hardware to voltage (V), because it is easier to do the readout of the device in voltages.
+                This output signal in nA is amplified by the hardware when doing this current to voltage conversion, as larger signals are easier to detect.
+                In order to obtain the real current (nA) output of the device, the conversion is automatically corrected in software by multiplying by the amplification value again.
+                The amplification value depends on the feedback resistance of each of the setups. Below, there is a guide of the amplification value needed for each of the setups:
+
+                                        Darwin: Variable amplification levels:
+                                            A: 1000 Amplification
+                                            Feedback resistance: 1MOhm
+                                            B: 100 Amplification
+                                            Feedback resistance 10MOhms
+                                            C: 10 Amplification
+                                            Feedback resistance: 100MOhms
+                                            D: 1 Amplification
+                                            Feedback resistance 1GOhm
+                                        Pinky:  - PCB 1 (6 converters with):
+                                                Amplification 10
+                                                Feedback resistance 100Mohm
+                                                - PCB 2 (6 converters with):
+                                                Amplification 100 tims
+                                                10 mOhm Feedback resistance
+                                        Brains: Amplfication 28.5
+                                                Feedback resistance, 33.3 MOhm
+                                        Switch: (Information to be completed)
+
+                                        If no correction is desired, the amplification can be set to 1.
+
                 sampling_frequency: int - the average number of samples to be obtained in one second
-                output_clipping_range: [float,float] - To clip the output voltage if it goes above maximum
+                output_clipping_range: [float,float] - The the setups have a limit in the range they can read. They typically clip at approximately +-4 V.
+                Note that the software will automatically multiply the clipping_range value by the amplification value set in the configs. (e.g., in the Brains setup the amplification is 28.5,
+                is the clipping_value is set to [-4,4] (V), the program will automatically calulate a value of [-110,110] (nA) ).
 
         logger : logging , optional
             To emit log messages at different levels(DEBUG, INFO, ERROR, etc.)
@@ -76,6 +103,9 @@ class HardwareProcessor(nn.Module):
             configs["driver"]["output_clipping_range"][0] * self.amplification,
             configs["driver"]["output_clipping_range"][1] * self.amplification,
         ]
+        warnings.warn(
+            f"The hardware setup has been initialised with an amplification correction of {self.amplification}, and a clipping value range between {self.clipping_value[0]} and {self.clipping_value[0]}. Please make sure that the configurations of your hardware setup match these values."
+        )
         self.electrode_no = configs["data"]["activation_electrode_no"]
 
     def forward(self, x):
@@ -133,7 +163,7 @@ class HardwareProcessor(nn.Module):
         if "close_tasks" in dir(self.driver):
             self.driver.close_tasks()
         else:
-            raise Warning("Driver tasks have not been closed.")
+            warnings.warn("Driver tasks have not been closed.")
 
     def is_hardware(self):
         """
