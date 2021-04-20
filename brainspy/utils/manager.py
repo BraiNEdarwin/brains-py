@@ -206,7 +206,9 @@ def get_driver(configs: dict):
     elif configs["processor_type"] == "cdaq_to_nidaq":
         return CDAQtoNiDAQ(configs)
     elif configs["processor_type"] == "simulation_debug":
-        return SurrogateModel(configs)
+        debug_processor = SurrogateModel(configs["driver"]["torch_model_dict"])
+        debug_processor.set_effects_from_dict(configs["driver"])
+        return debug_processor
     else:
         raise NotImplementedError(
             f"{configs['processor_type']} 'processor_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. "
