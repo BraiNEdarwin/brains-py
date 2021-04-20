@@ -12,21 +12,21 @@ class GaussianNoise:
     """
     Class for generating and applying Gaussian noise.
     """
-    def __init__(self, mse: float):
+
+    def __init__(self, variance: float):
         """
         Initiate object, set standard deviation.
 
         Parameters
         ----------
-        mse : float
-            The variance, usually obtained by mean squared error.
+        variance : float
+            The variance of the noise. It is typically defined by the root mean squared deviation error obtained during the training of a surrogate model.
         """
-        self.std = torch.sqrt(
-            torch.tensor(
-                [mse],
-                device=TorchUtils.get_device(),
-                dtype=torch.get_default_dtype(),
-            ))
+        self.std = torch.tensor(
+            [variance],
+            device=TorchUtils.get_device(),
+            dtype=torch.get_default_dtype(),
+        )
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -42,33 +42,40 @@ class GaussianNoise:
         torch.Tensor
             Output data.
         """
-        return x + (self.std * torch.randn(
-            x.shape,
-            device=TorchUtils.get_device(),
-            dtype=torch.get_default_dtype(),
-        ))
+        return x + (
+            self.std
+            * torch.randn(
+                x.shape,
+                device=TorchUtils.get_device(),
+                dtype=torch.get_default_dtype(),
+            )
+        )
 
 
-def get_noise(noise_type: str, **kwargs):
+def get_noise(configs: dict, **kwargs):
     """
     Get given noise type.
 
     Example
     -------
-    >>> get_noise(noise_type="gaussian", mse=1)
+    >>> get_noise(noise_type="gaussian", variance=1)
     GaussianNoise
 
     Parameters
     ----------
-    noise_type : str
-        Type of noise to be applied.
+    configs: dict
+        A dictionary containing the configurations to declare different types of noise. The dictionary should at least contain the following keys:
+            noise_type : str
+                Type of noise to be applied. The only currently implemented noise type is 'gaussian'.
+            variance: The variance of the noise. It is typically defined by the root mean squared deviation error obtained during the training of a surrogate model.
+
     **kwargs
         Arguments for the noise.
 
     Returns
     -------
     noise
-        A noise generating object. Will be none if input is none or not
+        A noise generating object. Will be None if input is None or not
         recognized.
 
     Raises
@@ -76,12 +83,13 @@ def get_noise(noise_type: str, **kwargs):
     UserWarning
         If the string given does not correspond to an implemented noise type.
     """
-    if noise_type is not None:
-        if noise_type == "gaussian":
-            return GaussianNoise(kwargs["mse"])
+    if configs is not None:
+        if configs["noise_type"] == "gaussian":
+            return GaussianNoise(configs["variance"])
         else:
             warnings.warn(
                 "Noise configuration not recognised. No noise is being "
-                "simulated for the model.")
+                "simulated for the model."
+            )
             return None
-    return noise_type
+    return None

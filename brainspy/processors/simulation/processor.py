@@ -105,11 +105,23 @@ class SurrogateModel(nn.Module):
         max_voltage = (offset + amplitude).unsqueeze(dim=1)
         self.voltage_ranges = torch.cat((min_voltage, max_voltage), dim=1)
 
+    def set_effects_from_dict(self, configs):
+        amplification = None
+        output_clipping = None
+        noise_configs = None
+        if "amplification" in configs:
+            amplification = configs["amplification"]
+        if "output_clipping" in configs:
+            output_clipping = configs["output_clipping"]
+        if "noise" in configs:
+            noise_configs = configs["noise"]
+        else:
+            self.set_effects(amplification, output_clipping, noise_configs)
+
     def set_effects(self,
                     amplification=None,
                     output_clipping=None,
-                    noise=None,
-                    **kwargs):
+                    noise_configs=None):
         """
         Set the amplification, output clipping and noise of the processor.
         Amplification and output clipping are explained in their respective
@@ -142,7 +154,7 @@ class SurrogateModel(nn.Module):
         # corresponds in bspy tasks.
         self.set_amplification(amplification)
         self.set_output_clipping(output_clipping)
-        self.noise = get_noise(noise, kwargs)
+        self.noise = get_noise(noise_configs)
 
     def set_amplification(self, value):
         """
