@@ -83,8 +83,8 @@ class HardwareProcessor(nn.Module):
 
                 sampling_frequency: int - the average number of samples to be obtained in one second
                 output_clipping_range: [float,float] - The the setups have a limit in the range they can read. They typically clip at approximately +-4 V.
-                Note that the software will automatically multiply the clipping_range value by the amplification value set in the configs. (e.g., in the Brains setup the amplification is 28.5,
-                is the clipping_value is set to [-4,4] (V), the program will automatically calulate a value of [-110,110] (nA) ).
+                Note that in order to calculate the clipping_range, it needs to be multiplied by the amplification value of the setup. (e.g., in the Brains setup the amplification is 28.5,
+                is the clipping_value is +-4 (V), therefore, the clipping value should be +-4 * 28.5, which is [-110,110] (nA) ).
 
         logger : logging , optional
             To emit log messages at different levels(DEBUG, INFO, ERROR, etc.)
@@ -100,11 +100,11 @@ class HardwareProcessor(nn.Module):
         self.logger = logger
         self.amplification = configs["driver"]["amplification"]
         self.clipping_value = [
-            configs["driver"]["output_clipping_range"][0] * self.amplification,
-            configs["driver"]["output_clipping_range"][1] * self.amplification,
+            configs["driver"]["output_clipping_range"][0],
+            configs["driver"]["output_clipping_range"][1],
         ]
         warnings.warn(
-            f"The hardware setup has been initialised with an amplification correction of {self.amplification}, and a clipping value range between {self.clipping_value[0]} and {self.clipping_value[0]}. Please make sure that the configurations of your hardware setup match these values."
+            f"The hardware setup has been initialised with an amplification correction of {self.amplification}, and a clipping value range between {self.clipping_value[0]} and {self.clipping_value[1]}. Please make sure that the configurations of your hardware setup match these values."
         )
         self.electrode_no = configs["data"]["activation_electrode_no"]
 
