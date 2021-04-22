@@ -70,7 +70,7 @@ class SurrogateModel(nn.Module):
     def __init__(
         self,
         model_structure: dict,
-        default_sim_params: dict,
+        electrode_info: dict,
         model_state_dict: collections.OrderedDict = None,
     ):
         """
@@ -106,8 +106,9 @@ class SurrogateModel(nn.Module):
         self.model = NeuralNetworkModel(model_structure)
         if model_state_dict is not None:
             self.model.load_state_dict(model_state_dict)
-        self.simulation_params = default_sim_params
-        self.set_effects()
+        self.electrode_info = electrode_info
+        self.set_voltage_ranges("default")
+        self.set_amplification("default")
 
     # TODO: Add description of this method
     def set_effects_from_dict(self, configs):
@@ -173,8 +174,11 @@ class SurrogateModel(nn.Module):
         # TODO: Document this function.
         if value is not None and value == "default":
             self.voltage_ranges = TorchUtils.format(
-                self.simulation_params["activation_electrodes"]["control_voltages"]
+                self.electrode_info["activation_electrodes"]["control_voltages"]
             )
+
+    def get_voltage_ranges(self):
+        return self.voltage_ranges
 
     def set_amplification(self, value):
         """
@@ -194,12 +198,12 @@ class SurrogateModel(nn.Module):
         """
         if value is not None and value == "default":
             self.amplification = TorchUtils.format(
-                self.simulation_params["output_electrodes"]["amplification"]
+                self.electrode_info["output_electrodes"]["amplification"]
             )
         else:
             self.amplification = value
 
-    def set_output_clipping(self, value):
+    def set_output_clipping(self, value: torch.Tensor):
         """
         Set the output clipping of the processor. Output clipping means to
         clip the output to a certain range. Any output above that range will
@@ -219,7 +223,7 @@ class SurrogateModel(nn.Module):
         """
         if value is not None and value == "default":
             self.output_clipping = TorchUtils.format(
-                self.simulation_params["output_electrodes"]["clipping_value"]
+                self.electrode_info["output_electrodes"]["clipping_value"]
             )
         else:
             self.output_clipping = value
