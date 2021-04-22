@@ -1,4 +1,3 @@
-import torch
 import warnings
 
 # from brainspy.processors.hardware.processor import HardwareProcessor
@@ -68,15 +67,16 @@ def set_effects(
     # Warning, this function used to be called form the init using a
     # configs file. Now it is called externally. To be changed where it
     # corresponds in bspy tasks.
-    processor.voltage_ranges = set_voltage_ranges(info, voltage_ranges)
+
     processor.amplificaiton = set_amplification(info, amplification)
     processor.output_clipping = set_output_clipping(info, output_clipping)
 
     if processor.is_hardware():
         warnings.warn(
-            f"The hardware setup has been initialised with regard to a model trained with the following parameters. Please make sure that the configurations of your hardware setup match these values: \n\t * An amplification correction of {processor.amplification}\n\t * a clipping value range between {processor.clipping_value}\n\t * and voltage ranges within {processor.voltage_ranges} "
+            f"The hardware setup has been initialised with regard to a model trained with the following parameters. Please make sure that the configurations of your hardware setup match these values: \n\t * An amplification correction of {processor.amplification}\n\t * a clipping value range between {processor.clipping_value}\n\t * and voltage ranges within {processor.voltage_ranges.T} "
         )
     else:
+        processor.voltage_ranges = set_voltage_ranges(info, voltage_ranges)
         processor.noise = get_noise(noise_configs)
     return processor
 
@@ -111,6 +111,7 @@ def set_amplification(info, value):
     if value is not None and value == "default":
         return TorchUtils.format([info["output_electrodes"]["amplification"]])
     elif value is not None:
+        # TODO: Add warning to let the user know that the original amplification has been changed.
         return TorchUtils.format([value])
     return value
 
@@ -136,5 +137,6 @@ def set_output_clipping(info, value):
     if value is not None and value == "default":
         return TorchUtils.format([info["output_electrodes"]["clipping_value"]])
     elif value is not None:
+        # TODO: Add warning to let the user know that the output clipping ranges have been changed.
         return TorchUtils.format([value])
     return value
