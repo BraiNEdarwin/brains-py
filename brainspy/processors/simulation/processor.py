@@ -39,14 +39,16 @@ data:
         Percentage of data in each category [train, validation, test].
 """
 
-import warnings
-
 import torch
+import warnings
+import collections
+
 import numpy as np
 from torch import nn
 
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.simulation.noise.noise import get_noise
+from brainspy.processors.simulation.model import NeuralNetworkModel
 
 
 class SurrogateModel(nn.Module):
@@ -62,66 +64,75 @@ class SurrogateModel(nn.Module):
         Minimum and maximum voltage for each output.
     output_clipping : Optional[torch.Tensor]
         Minimum and maximum values for clipping the output.
+    #TODO: Include also amplification
     """
-    def __init__(self, filename: str):
+
+    def __init__(
+        self,
+        model_structure: dict,
+        default_sim_params: dict,
+        model_state_dict: collections.OrderedDict = None,
+    ):
         """
         Create a processor, load the model.
 
         Parameters
         ----------
-        filename : str
+        model_structure : Dictionary containing the model structure.
+            D_in : int
+                Number of inputs (electrodes).
+            D_out : int
+                Number of outputs (electrodes).
+            activation : str
+                Type of activation. Supported activations are "relu", "elu",
+                "tanh", "hard-tanh", or "sigmoid".
+            hidden_sizes : list[int]
+                Sizes of the hidden layers.
+        default_sim_params: Dictionary containing the keys to the effects that will be simulated.
+            #TODO: Complete description
+            electrode_no
+            activation_electrodes
+                    - electrode_no
+                    - voltage_ranges
+            output_electrodes
+                    - electrode_no
+                    - amplification
+                    - clipping
             Path of the model file.
+        model_state_dict: Pytorch's ordered dictionary containing the values for the learnable parameters of the raw model. By default is set to None.
+                          If it is not None, the dictionary will be loaded to the raw model.
         """
         super(SurrogateModel, self).__init__()
-        self.load_base_model(filename)
+        self.model = NeuralNetworkModel(model_structure)
+        if model_state_dict is not None:
+            self.model.load_state_dict(model_state_dict)
+        self.simulation_params = default_sim_params
+        self.set_effects()
 
-    # Only used internally.
-    def load_base_model(self, filename: str):
-        """
-        Loads a pytorch model from a directory string.
-        Initiate voltage ranges.
-
-        This method is automatically called when creating the SurrogateModel.
-        """
-        self.model = torch.load(
-            filename,
-            map_location=TorchUtils.get_device(),
-        )
-        self._init_voltage_ranges()
-
-    # Only used internally.
-    def _init_voltage_ranges(self):
-        """
-        Load the offset and amplitude from the model and calculate the minimum
-        and maximum voltage.
-
-        This method is automatically called when creating the SurrogateModel.
-        """
-        offset = TorchUtils.format(
-            self.model.info["data_info"]["input_data"]["offset"])
-        amplitude = TorchUtils.format(
-            self.model.info["data_info"]["input_data"]["amplitude"])
-        min_voltage = (offset - amplitude).unsqueeze(dim=1)
-        max_voltage = (offset + amplitude).unsqueeze(dim=1)
-        self.voltage_ranges = torch.cat((min_voltage, max_voltage), dim=1)
-
+    # TODO: Add description of this method
     def set_effects_from_dict(self, configs):
-        amplification = None
-        output_clipping = None
-        noise_configs = None
-        if "amplification" in configs:
-            amplification = configs["amplification"]
-        if "output_clipping" in configs:
-            output_clipping = configs["output_clipping"]
-        if "noise" in configs:
-            noise_configs = configs["noise"]
-        else:
-            self.set_effects(amplification, output_clipping, noise_configs)
+        self.set_effects(
+            self._get_key(configs, "voltage_ranges"),
+            self._get_key(configs, "amplification"),
+            self._get_key(configs, "output_clipping"),
+            self._get_key(configs, "noise"),
+        )
 
-    def set_effects(self,
-                    amplification=None,
-                    output_clipping=None,
-                    noise_configs=None):
+    # TODO: Add description of this method
+    def _get_key(self, configs, effect_key):
+        if effect_key in configs:
+            return configs[effect_key]
+        if effect_key != "noise":
+            return "default"
+        return None
+
+    def set_effects(
+        self,
+        voltage_ranges="default",
+        amplification="default",
+        output_clipping="default",
+        noise_configs=None,
+    ):
         """
         Set the amplification, output clipping and noise of the processor.
         Amplification and output clipping are explained in their respective
@@ -139,6 +150,8 @@ class SurrogateModel(nn.Module):
 
         Parameters
         ----------
+        voltage_ranges:
+            Voltage ranges of the activation electrodes. Can be a value or 'default'.
         amplification
             The amplification of the processor. Can be None, a value, or
             'default'. By default None.
@@ -155,6 +168,13 @@ class SurrogateModel(nn.Module):
         self.set_amplification(amplification)
         self.set_output_clipping(output_clipping)
         self.noise = get_noise(noise_configs)
+
+    def set_voltage_ranges(self, value):
+        # TODO: Document this function.
+        if value is not None and value == "default":
+            self.voltage_ranges = TorchUtils.format(
+                self.simulation_params["activation_electrodes"]["control_voltages"]
+            )
 
     def set_amplification(self, value):
         """
@@ -174,12 +194,12 @@ class SurrogateModel(nn.Module):
         """
         if value is not None and value == "default":
             self.amplification = TorchUtils.format(
-                self.model.info["data_info"]["processor"]["driver"]
-                ["amplification"])
+                self.simulation_params["output_electrodes"]["amplification"]
+            )
         else:
             self.amplification = value
 
-    def set_output_clipping(self, value: torch.Tensor):
+    def set_output_clipping(self, value):
         """
         Set the output clipping of the processor. Output clipping means to
         clip the output to a certain range. Any output above that range will
@@ -199,7 +219,8 @@ class SurrogateModel(nn.Module):
         """
         if value is not None and value == "default":
             self.output_clipping = TorchUtils.format(
-                self.model.info["data_info"]["clipping_value"])
+                self.simulation_params["output_electrodes"]["clipping_value"]
+            )
         else:
             self.output_clipping = value
 
@@ -213,7 +234,7 @@ class SurrogateModel(nn.Module):
         Example
         -------
         >>> smg = SurrogateModel("model.pt")
-        >>> smg.forward(torch.tensor([1.0, 2.0, 3.0]))
+        >>> smg(torch.tensor([1.0, 2.0, 3.0]))
         torch.Tensor([4.0])
 
         Parameters
@@ -232,9 +253,9 @@ class SurrogateModel(nn.Module):
         if self.noise is not None:
             x = self.noise(x)
         if self.output_clipping is not None:
-            return torch.clamp(x,
-                               min=self.output_clipping[0],
-                               max=self.output_clipping[1])
+            return torch.clamp(
+                x, min=self.output_clipping[0], max=self.output_clipping[1]
+            )
         return x
 
     # For debugging purposes
@@ -299,4 +320,4 @@ class SurrogateModel(nn.Module):
         int
             The number of electrodes of the processor.
         """
-        return len(self.model.info["data_info"]["input_data"]["offset"])
+        return len(self.simulation_params["electrode_no"])
