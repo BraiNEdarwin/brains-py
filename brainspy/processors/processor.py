@@ -171,33 +171,3 @@ def merge_electrode_data(
     result[:, input_indices] = inputs
     result[:, control_voltage_indices] = control_voltages
     return result
-
-
-if __name__ == "__main__":
-    import torch
-
-    NODE_CONFIGS = {}
-    NODE_CONFIGS["processor_type"] = "simulation_debug"
-    NODE_CONFIGS["input_indices"] = [2, 3]
-    NODE_CONFIGS["electrode_effects"] = {}
-    NODE_CONFIGS["electrode_effects"]["amplification"] = 3
-    NODE_CONFIGS["electrode_effects"]["clipping_value"] = [-300, 300]
-    # NODE_CONFIGS["electrode_effects"]["control_voltages"]
-    NODE_CONFIGS["electrode_effects"]["noise"] = {}
-    NODE_CONFIGS["electrode_effects"]["noise"]["noise_type"] = "gaussian"
-    NODE_CONFIGS["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
-    NODE_CONFIGS["driver"] = {}
-    NODE_CONFIGS["waveform"] = {}
-    NODE_CONFIGS["waveform"]["plateau_length"] = 1
-    NODE_CONFIGS["waveform"]["slope_length"] = 0
-
-    model_dir = "/home/unai/Documents/3-Programming/bspy/smg/tmp/output/new_test_model/training_data_2021_04_22_105203/training_data.pt"
-    model_data = torch.load(model_dir)
-
-    sm = Processor(
-        NODE_CONFIGS,
-        model_data["info"],
-        model_data["model_state_dict"],
-    )
-
-    sm2 = Processor(NODE_CONFIGS, model_data["info"])
