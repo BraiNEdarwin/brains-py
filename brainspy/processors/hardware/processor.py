@@ -1,15 +1,9 @@
-""" 
-The accelerator class enables to statically access the accelerator
-(CUDA or CPU) that is used in the computer. The aim is to support both platforms seemlessly.
-"""
-
 import torch
 import warnings
 from torch import nn
 from brainspy.utils.manager import get_driver
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager
-from brainspy.processors.simulation.processor import SurrogateModel
 
 
 class HardwareProcessor(nn.Module):
@@ -20,15 +14,10 @@ class HardwareProcessor(nn.Module):
                         * With a regular rack
                         * With a real time rack
 
-    The TorchModel class is used to manage together a torch model and its state dictionary.
-    Usage example :
-        mymodel = TorchModel()
-        mymodel.load_model('my_path/my_model.pt')
-        mymodel.model
     """
 
     # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
-    def __init__(self, configs, logger=None):
+    def __init__(self, setup_configs, waveform_configs, debug_driver=None, logger=None):
         """
         To intialise the hardware processor
 
@@ -62,16 +51,16 @@ class HardwareProcessor(nn.Module):
 
                                         Darwin: Variable amplification levels:
                                             A: 1000 Amplification
-                                            Feedback resistance: 1MOhm
+                                            Feedback resistance: 1 MOhm
                                             B: 100 Amplification
-                                            Feedback resistance 10MOhms
+                                            Feedback resistance 10 MOhms
                                             C: 10 Amplification
-                                            Feedback resistance: 100MOhms
+                                            Feedback resistance: 100 MOhms
                                             D: 1 Amplification
-                                            Feedback resistance 1GOhm
+                                            Feedback resistance 1 GOhm
                                         Pinky:  - PCB 1 (6 converters with):
                                                 Amplification 10
-                                                Feedback resistance 100Mohm
+                                                Feedback resistance 100 MOhm
                                                 - PCB 2 (6 converters with):
                                                 Amplification 100 tims
                                                 10 mOhm Feedback resistance
@@ -83,30 +72,24 @@ class HardwareProcessor(nn.Module):
 
                 sampling_frequency: int - the average number of samples to be obtained in one second
                 output_clipping_range: [float,float] - The the setups have a limit in the range they can read. They typically clip at approximately +-4 V.
-                Note that in order to calculate the clipping_range, it needs to be multiplied by the amplification value of the setup. (e.g., in the Brains setup the amplification is 28.5,
-                is the clipping_value is +-4 (V), therefore, the clipping value should be +-4 * 28.5, which is [-110,110] (nA) ).
+                    Note that in order to calculate the clipping_range, it needs to be multiplied by the amplification value of the setup. (e.g., in the Brains setup the amplification is 28.5,
+                    is the clipping_value is +-4 (V), therefore, the clipping value should be +-4 * 28.5, which is [-110,110] (nA) ).
+                    The original clipping value of the surrogate models is obtained when running the preprocessing of the data in
+                    bspysmg.measurement.processing.postprocessing.post_process.
 
         logger : logging , optional
             To emit log messages at different levels(DEBUG, INFO, ERROR, etc.)
             It provides a way for applications to configure different log handlers , by default None
         """
         super(HardwareProcessor, self).__init__()
-        self.driver = get_driver(configs)
-        if configs["processor_type"] == "simulation_debug":
-            self.voltage_ranges = self.driver.voltage_ranges
+        if debug_driver is not None:
+            self.driver = debug_driver
         else:
+            self.driver = get_driver(setup_configs)
             self.voltage_ranges = TorchUtils.format(self.driver.voltage_ranges)
-        self.waveform_mgr = WaveformManager(configs["data"]["waveform"])
+
+        self.waveform_mgr = WaveformManager(waveform_configs)
         self.logger = logger
-        self.amplification = configs["driver"]["amplification"]
-        self.clipping_value = [
-            configs["driver"]["output_clipping_range"][0],
-            configs["driver"]["output_clipping_range"][1],
-        ]
-        warnings.warn(
-            f"The hardware setup has been initialised with an amplification correction of {self.amplification}, and a clipping value range between {self.clipping_value[0]} and {self.clipping_value[1]}. Please make sure that the configurations of your hardware setup match these values."
-        )
-        self.electrode_no = configs["data"]["activation_electrode_no"]
 
     def forward(self, x):
         """
@@ -176,13 +159,13 @@ class HardwareProcessor(nn.Module):
         """
         return self.driver.is_hardware()
 
-    def get_electrode_no(self):
-        """
-        To get the electrode number that is being used by this driver
+    # def get_electrode_no(self):
+    #     """
+    #     To get the electrode number that is being used by this driver
 
-        Returns
-        -------
-        int
-            the electrode number
-        """
-        return self.electrode_no
+    #     Returns
+    #     -------
+    #     int
+    #         the electrode number
+    #     """
+    #     return self.electrode_no
