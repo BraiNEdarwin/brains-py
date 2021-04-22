@@ -1,14 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Sep  2 11:33:38 2019
-
-@author: hruiz and ualegre
-"""
-
 import torch
+import numpy as np
 from torch import nn
 
+import collections
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
 
@@ -16,22 +10,25 @@ from brainspy.processors.processor import Processor
 class DNPU(nn.Module):
     """"""
 
-    def __init__(self, arg, alpha=1):
-        # alpha is the regularisation factor
-        # arg can either be a configs dictionary or an instance of a processor
+    def __init__(
+        self,
+        configs: dict,  # Dictionary or processor
+        info: dict = None,
+        model_state_dict: collections.OrderedDict = None,
+        processor: Processor = None,
+    ):
         super(DNPU, self).__init__()
-        if isinstance(arg, Processor):
-            self.processor = arg
+        assert (
+            processor is not None or info is not None
+        ), "The DNPU must be initialised either with a processor or an info dictionary"
+        if processor is not None:
+            self.processor = processor
         else:
-            self.processor = Processor(arg)
-        # self._init_regularization_factor(alpha)
-        self._init_dnpu(alpha)
+            self.processor = Processor(configs, info, model_state_dict)
+        self._init_electrode_info(configs["input_indices"])
+        self._init_dnpu()
 
-    def _init_dnpu(self, alpha):
-        self.alpha = torch.tensor(
-            alpha, device=TorchUtils.get_device(), dtype=torch.get_default_dtype()
-        )
-
+    def _init_dnpu(self):
         for (
             params
         ) in (
@@ -41,8 +38,8 @@ class DNPU(nn.Module):
         self._init_bias()
 
     def _init_bias(self):
-        self.control_low = self.processor.get_control_ranges()[:, 0]
-        self.control_high = self.processor.get_control_ranges()[:, 1]
+        self.control_low = self.get_control_ranges()[:, 0]
+        self.control_high = self.get_control_ranges()[:, 1]
         assert any(
             self.control_low < 0
         ), "Min. Voltage is assumed to be negative, but value is positive!"
@@ -51,22 +48,34 @@ class DNPU(nn.Module):
         ), "Max. Voltage is assumed to be positive, but value is negative!"
         bias = self.control_low + (self.control_high - self.control_low) * torch.rand(
             1,
-            len(self.processor.control_indices),
+            len(self.control_indices),
             dtype=torch.get_default_dtype(),
             device=TorchUtils.get_device(),
         )
 
         self.bias = nn.Parameter(bias)
 
+    def _init_electrode_info(self, input_indices):
+
+        # self.input_no = len(configs['data_input_indices'])
+        self.data_input_indices = TorchUtils.format(
+            input_indices, data_type=torch.int64
+        )
+
+        self.control_indices = np.delete(
+            np.arange(self.processor.get_activation_electrode_no()), input_indices
+        )
+        self.control_indices = TorchUtils.format(
+            self.control_indices, data_type=torch.int64
+        )  # IndexError: tensors used as indices must be long, byte or bool tensors
+
     def forward(self, x):
         return self.processor(x, self.bias.expand(x.size()[0], -1))
 
     def regularizer(self):
-        return self.alpha * (
-            torch.sum(
-                torch.relu(self.control_low - self.bias)
-                + torch.relu(self.bias - self.control_high)
-            )
+        return torch.sum(
+            torch.relu(self.control_low - self.bias)
+            + torch.relu(self.bias - self.control_high)
         )
 
     def hw_eval(self, arg):
@@ -96,25 +105,28 @@ class DNPU(nn.Module):
     def get_control_voltages(self):
         return next(self.parameters()).detach()
 
-    def get_control_ranges(self):
-        return self.processor.get_control_ranges()
-
     def get_input_ranges(self):
-        return self.processor.get_input_ranges()
+        return self.processor.get_voltage_ranges()[self.data_input_indices]
+
+    def get_control_ranges(self):
+        return self.processor.get_voltage_ranges()[self.control_indices]
 
     def get_clipping_value(self):
         return self.processor.get_clipping_value()
 
+    # TODO: Check if this function is really needed or if it needs to be completed.
     def reset(self):
         for k in range(len(self.control_low)):
             # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
             self.bias.data[:, k].uniform_(self.control_low[k], self.control_high[k])
 
-    def set_regul_factor(self, alpha):
-        self.alpha = alpha
-
+    # TODO: Document the need to override the closing of the processor on custom models.
     def close(self):
         self.processor.close()
 
     def is_hardware(self):
         return self.processor.is_hardware
+
+    # TODO: Document the need to override the closing of the return of the info dictionary.
+    def get_info_dict(self):
+        return self.info
