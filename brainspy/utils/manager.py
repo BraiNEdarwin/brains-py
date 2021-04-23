@@ -206,11 +206,11 @@ def get_driver(
     driver = get_driver(configs)
 
     """
-    if configs["processor_type"] == "cdaq_to_cdaq":
+    if configs["instrument_type"] == "cdaq_to_cdaq":
         return CDAQtoCDAQ(configs)
-    elif configs["processor_type"] == "cdaq_to_nidaq":
+    elif configs["instrument_type"] == "cdaq_to_nidaq":
         return CDAQtoNiDAQ(configs)
     else:
         raise NotImplementedError(
-            f"{configs['processor_type']} 'processor_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. "
+            f"{configs['instrument_type']} 'instrument_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. "
         )

@@ -41,7 +41,7 @@ class NationalInstrumentsSetup:
             configurations of the model as a python dictionary
         """
         self.init_configs(configs)
-        self.init_tasks(configs["driver"])
+        self.init_tasks(configs)
         self.enable_os_signals()
         self.init_semaphore()
 
@@ -75,19 +75,13 @@ class NationalInstrumentsSetup:
         self.offsetted_shape = None
         self.ceil = None
 
+        print(f"Sampling frequency: {configs['sampling_frequency']}")
+        print(f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. ")
         if configs["max_ramping_time_seconds"] == 0:
             input(
                 "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n The security check for the ramping time has been disabled. Steep rampings can can damage the device. Proceed only if you are sure that you will not damage the device. If you want to avoid damage simply exit the execution. \n ONLY If you are sure about what you are doing press ENTER to continue. Otherwise STOP the execution of this program."
             )
-        print("HERE")
-        print(configs["data"]["waveform"]["slope_length"])
-        print(configs["driver"]["sampling_frequency"])
-        print(configs["max_ramping_time_seconds"])
-        assert (
-            configs["data"]["waveform"]["slope_length"]
-            / configs["driver"]["sampling_frequency"]
-            >= configs["max_ramping_time_seconds"]
-        )
+
 
     def init_tasks(self, configs):
         """

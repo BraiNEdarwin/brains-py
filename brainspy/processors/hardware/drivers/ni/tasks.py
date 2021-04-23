@@ -20,14 +20,10 @@ RANGE_MARGIN = 0.01
 
 
 def get_tasks_driver(configs):
-    if configs["tasks_driver_type"] == "local":
-        return LocalTasks()
-    elif configs["tasks_driver_type"] == "remote":
+    if configs["real_time_rack"]:
         return RemoteTasks(configs["uri"])
     else:
-        raise NotImplementedError(
-            f"{configs['tasks_driver_type']} 'tasks_driver_type' configuration is not recognised. The driver type has to be defined as 'local' or 'remote'. "
-        )
+        return LocalTasks()
 
 
 def run_server(configs):

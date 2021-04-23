@@ -17,7 +17,8 @@ class HardwareProcessor(nn.Module):
     """
 
     # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
-    def __init__(self, setup_configs, waveform_configs, debug_driver=None, logger=None):
+    # Instrument configs can be a dictionary or a driver which has been already initialised
+    def __init__(self, instrument_configs, slope_length, plateau_length, logger=None):
         """
         To intialise the hardware processor
 
@@ -82,13 +83,19 @@ class HardwareProcessor(nn.Module):
             It provides a way for applications to configure different log handlers , by default None
         """
         super(HardwareProcessor, self).__init__()
-        if debug_driver is not None:
-            self.driver = debug_driver
+        if not isinstance(instrument_configs, dict):
+            self.driver = instrument_configs
         else:
-            self.driver = get_driver(setup_configs)
+            self.driver = get_driver(instrument_configs)
             self.voltage_ranges = TorchUtils.format(self.driver.voltage_ranges)
 
-        self.waveform_mgr = WaveformManager(waveform_configs)
+        self.waveform_mgr = WaveformManager({'slope_length':slope_length,'plateau_length':plateau_length})
+        #TODO: Add message for assertion. Raise an error.
+        assert (
+            (slope_length
+            / self.driver.configs["sampling_frequency"])
+            >= self.driver.configs["max_ramping_time_seconds"]
+        )
         self.logger = logger
 
     def forward(self, x):

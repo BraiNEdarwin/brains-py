@@ -41,16 +41,6 @@ class Processor(nn.Module):
         self, configs, info: dict, model_state_dict: collections.OrderedDict = None
     ):
         # @TODO: Thoroughly document the different configurations available for each processor
-        self._load_processor_from_configs(configs, info, model_state_dict)
-        # self._init_electrode_info(configs["input_indices"])
-        self.is_hardware = self.processor.is_hardware()
-
-    def _load_processor_from_configs(
-        self,
-        configs,
-        info,
-        model_state_dict: collections.OrderedDict = None,
-    ):
         if not hasattr(self, "processor") or self._get_configs() != configs:
             if configs["processor_type"] == "simulation":
                 self.processor = SurrogateModel(
@@ -63,9 +53,9 @@ class Processor(nn.Module):
                 configs["processor_type"] == "cdaq_to_cdaq"
                 or configs["processor_type"] == "cdaq_to_nidaq"
             ):
-                configs["driver"]["processor_type"] = configs["processor_type"]
+                configs["driver"]["instrument_type"] = configs["processor_type"]
                 self.processor = HardwareProcessor(
-                    configs["driver"], configs["waveform"]
+                    configs["driver"], configs["waveform"]['slope_length'], configs["waveform"]['plateau_length']
                 )
                 warnings.warn(
                     f"The hardware setup has been initialised with regard to a model trained with the following parameters. \nPlease make sure that the configurations of your hardware setup match these values: \n\t * An amplification correction of {self.info['electrode_info']['output_electrodes']['amplification']}\n\t * A clipping value range between {self.info['electrode_info']['output_electrodes']['clipping_value']}\n\t * Voltage ranges within {self.info['electrode_info']['activation_electrodes']['voltage_ranges']} "
@@ -75,7 +65,7 @@ class Processor(nn.Module):
                 driver.set_effects_from_dict(
                     info["electrode_info"], configs["electrode_effects"]
                 )
-                self.processor = HardwareProcessor(configs, debug_driver=driver)
+                self.processor = HardwareProcessor(driver_configs=driver)
             else:
                 raise NotImplementedError(
                     f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "
@@ -192,11 +182,24 @@ if __name__ == "__main__":
     NODE_CONFIGS["electrode_effects"]["noise"]["noise_type"] = "gaussian"
     NODE_CONFIGS["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
     NODE_CONFIGS["driver"] = {}
-    NODE_CONFIGS["waveform"] = {}
-    NODE_CONFIGS["waveform"]["plateau_length"] = 1
-    NODE_CONFIGS["waveform"]["slope_length"] = 0
+    NODE_CONFIGS['driver']['real_time_rack'] = False
+    NODE_CONFIGS['driver']['sampling_frequency'] = 1000
 
-    model_dir = "/home/unai/Documents/3-Programming/bspy/smg/tmp/output/new_test_model/training_data_2021_04_22_105203/training_data.pt"
+
+    NODE_CONFIGS['driver']['instruments_setup'] = {}
+    NODE_CONFIGS["driver"]['instruments_setup']['multiple_devices'] = False
+    NODE_CONFIGS["driver"]['instruments_setup']['trigger_source']= 'cDAQ1/segment1'
+    NODE_CONFIGS["driver"]['instruments_setup']['activation_instrument'] = 'cDAQ1Mod3'
+    NODE_CONFIGS["driver"]['instruments_setup']['activation_channels']= [0,2,5,3,4,6,1] # Channels through which voltages will be sent for activating the device (with both data inputs and control voltages)
+    NODE_CONFIGS["driver"]['instruments_setup']['activation_voltages'] = [[-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-0.7, 0.3], [-0.7, 0.3]]
+    NODE_CONFIGS["driver"]['instruments_setup']['readout_instrument']= 'cDAQ1Mod4'
+    NODE_CONFIGS["driver"]['instruments_setup']['readout_channels']= [4] # Channels for reading the output current values
+
+    NODE_CONFIGS["waveform"] = {}
+    NODE_CONFIGS["waveform"]["plateau_length"] = 10
+    NODE_CONFIGS["waveform"]["slope_length"] = 30
+
+    model_dir = "training_data.pt"
     model_data = torch.load(model_dir)
 
     sm = Processor(
