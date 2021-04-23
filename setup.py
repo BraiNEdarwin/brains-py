@@ -10,7 +10,7 @@ requires = [
     "mypy",
     "flake8",
     "yapf",
-    "unittest",
+    "unittest2",
     "html-testRunner",
 ]
 
