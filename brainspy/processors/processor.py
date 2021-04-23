@@ -55,7 +55,9 @@ class Processor(nn.Module):
             ):
                 configs["driver"]["instrument_type"] = configs["processor_type"]
                 self.processor = HardwareProcessor(
-                    configs["driver"], configs["waveform"]['slope_length'], configs["waveform"]['plateau_length']
+                    configs["driver"],
+                    configs["waveform"]["slope_length"],
+                    configs["waveform"]["plateau_length"],
                 )
                 warnings.warn(
                     f"The hardware setup has been initialised with regard to a model trained with the following parameters. \nPlease make sure that the configurations of your hardware setup match these values: \n\t * An amplification correction of {self.info['electrode_info']['output_electrodes']['amplification']}\n\t * A clipping value range between {self.info['electrode_info']['output_electrodes']['clipping_value']}\n\t * Voltage ranges within {self.info['electrode_info']['activation_electrodes']['voltage_ranges']} "
@@ -166,46 +168,3 @@ def merge_electrode_data(
     result[:, input_indices] = inputs
     result[:, control_voltage_indices] = control_voltages
     return result
-
-
-if __name__ == "__main__":
-    import torch
-
-    NODE_CONFIGS = {}
-    NODE_CONFIGS["processor_type"] = "cdaq_to_cdaq"
-    NODE_CONFIGS["input_indices"] = [2, 3]
-    NODE_CONFIGS["electrode_effects"] = {}
-    NODE_CONFIGS["electrode_effects"]["amplification"] = 3
-    NODE_CONFIGS["electrode_effects"]["clipping_value"] = [-300, 300]
-    # NODE_CONFIGS["electrode_effects"]["control_voltages"]
-    NODE_CONFIGS["electrode_effects"]["noise"] = {}
-    NODE_CONFIGS["electrode_effects"]["noise"]["noise_type"] = "gaussian"
-    NODE_CONFIGS["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
-    NODE_CONFIGS["driver"] = {}
-    NODE_CONFIGS['driver']['real_time_rack'] = False
-    NODE_CONFIGS['driver']['sampling_frequency'] = 1000
-
-
-    NODE_CONFIGS['driver']['instruments_setup'] = {}
-    NODE_CONFIGS["driver"]['instruments_setup']['multiple_devices'] = False
-    NODE_CONFIGS["driver"]['instruments_setup']['trigger_source']= 'cDAQ1/segment1'
-    NODE_CONFIGS["driver"]['instruments_setup']['activation_instrument'] = 'cDAQ1Mod3'
-    NODE_CONFIGS["driver"]['instruments_setup']['activation_channels']= [0,2,5,3,4,6,1] # Channels through which voltages will be sent for activating the device (with both data inputs and control voltages)
-    NODE_CONFIGS["driver"]['instruments_setup']['activation_voltages'] = [[-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-0.7, 0.3], [-0.7, 0.3]]
-    NODE_CONFIGS["driver"]['instruments_setup']['readout_instrument']= 'cDAQ1Mod4'
-    NODE_CONFIGS["driver"]['instruments_setup']['readout_channels']= [4] # Channels for reading the output current values
-
-    NODE_CONFIGS["waveform"] = {}
-    NODE_CONFIGS["waveform"]["plateau_length"] = 10
-    NODE_CONFIGS["waveform"]["slope_length"] = 30
-
-    model_dir = "training_data.pt"
-    model_data = torch.load(model_dir)
-
-    sm = Processor(
-        NODE_CONFIGS,
-        model_data["info"],
-        model_data["model_state_dict"],
-    )
-
-    sm2 = Processor(NODE_CONFIGS, model_data["info"])

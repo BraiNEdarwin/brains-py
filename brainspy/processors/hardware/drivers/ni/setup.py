@@ -82,7 +82,6 @@ class NationalInstrumentsSetup:
                 "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n The security check for the ramping time has been disabled. Steep rampings can can damage the device. Proceed only if you are sure that you will not damage the device. If you want to avoid damage simply exit the execution. \n ONLY If you are sure about what you are doing press ENTER to continue. Otherwise STOP the execution of this program."
             )
 
-
     def init_tasks(self, configs):
         """
         To intialize the tasks driver and voltage ranges based on the configurations.
