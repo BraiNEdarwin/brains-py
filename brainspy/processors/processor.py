@@ -54,10 +54,10 @@ class Processor(nn.Module):
                 or configs["processor_type"] == "cdaq_to_nidaq"
             ):
                 configs["driver"]["instrument_type"] = configs["processor_type"]
+                if not 'activation_voltages' in configs["driver"]['instruments_setup']:
+                    configs["driver"]['instruments_setup']['activation_voltages'] = info['electrode_info']['activation_electrodes']['voltage_ranges']
                 self.processor = HardwareProcessor(
-                    configs["driver"],
-                    configs["waveform"]["slope_length"],
-                    configs["waveform"]["plateau_length"],
+                    configs["driver"], configs["waveform"]['slope_length'], configs["waveform"]['plateau_length']
                 )
                 warnings.warn(
                     f"The hardware setup has been initialised with regard to a model trained with the following parameters. \nPlease make sure that the configurations of your hardware setup match these values: \n\t * An amplification correction of {self.info['electrode_info']['output_electrodes']['amplification']}\n\t * A clipping value range between {self.info['electrode_info']['output_electrodes']['clipping_value']}\n\t * Voltage ranges within {self.info['electrode_info']['activation_electrodes']['voltage_ranges']} "
