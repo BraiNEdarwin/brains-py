@@ -3,13 +3,13 @@ import torch.nn as nn
 from torch import Tensor
 from typing import Sequence, Union
 import numpy as np
+import warnings
 import collections
 
 from brainspy.processors.simulation.processor import SurrogateModel
 from brainspy.processors.hardware.processor import HardwareProcessor
 
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.utils.electrodes import set_effects_from_dict
 
 
 class Processor(nn.Module):
@@ -53,28 +53,33 @@ class Processor(nn.Module):
     ):
         if not hasattr(self, "processor") or self._get_configs() != configs:
             if configs["processor_type"] == "simulation":
-                processor = SurrogateModel(info["model_structure"], model_state_dict)
+                self.processor = SurrogateModel(
+                    info["model_structure"], model_state_dict
+                )
+                self.processor.set_effects_from_dict(
+                    info["electrode_info"], configs["electrode_effects"]
+                )
             elif (
                 configs["processor_type"] == "cdaq_to_cdaq"
                 or configs["processor_type"] == "cdaq_to_nidaq"
             ):
                 configs["driver"]["processor_type"] = configs["processor_type"]
-                processor = HardwareProcessor(configs["driver"], configs["waveform"])
+                self.processor = HardwareProcessor(
+                    configs["driver"], configs["waveform"]
+                )
+                warnings.warn(
+                    f"The hardware setup has been initialised with regard to a model trained with the following parameters. \nPlease make sure that the configurations of your hardware setup match these values: \n\t * An amplification correction of {self.info['electrode_info']['output_electrodes']['amplification']}\n\t * A clipping value range between {self.info['electrode_info']['output_electrodes']['clipping_value']}\n\t * Voltage ranges within {self.info['electrode_info']['activation_electrodes']['voltage_ranges']} "
+                )
             elif configs["processor_type"] == "simulation_debug":
                 driver = SurrogateModel(info["model_structure"], model_state_dict)
-                driver = set_effects_from_dict(
-                    driver, info["electrode_info"], configs["electrode_effects"]
+                driver.set_effects_from_dict(
+                    info["electrode_info"], configs["electrode_effects"]
                 )
-                processor = HardwareProcessor(
-                    configs["driver"], configs["waveform"], debug_driver=driver
-                )
+                self.processor = HardwareProcessor(configs, debug_driver=driver)
             else:
                 raise NotImplementedError(
                     f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "
                 )
-            self.processor = set_effects_from_dict(
-                processor, info["electrode_info"], configs["electrode_effects"]
-            )
 
     def forward(self, data, control_voltages):
         merged_data = merge_electrode_data(
@@ -108,7 +113,7 @@ class Processor(nn.Module):
         elif isinstance(self.processor, SurrogateModel):
             return self.processor.configs
         else:
-            print("Warning: Instance of processor not recognised.")
+            warnings.warn("Instance of processor not recognised.")
             return None
 
     def close(self):
@@ -171,3 +176,33 @@ def merge_electrode_data(
     result[:, input_indices] = inputs
     result[:, control_voltage_indices] = control_voltages
     return result
+
+
+if __name__ == "__main__":
+    import torch
+
+    NODE_CONFIGS = {}
+    NODE_CONFIGS["processor_type"] = "cdaq_to_cdaq"
+    NODE_CONFIGS["input_indices"] = [2, 3]
+    NODE_CONFIGS["electrode_effects"] = {}
+    NODE_CONFIGS["electrode_effects"]["amplification"] = 3
+    NODE_CONFIGS["electrode_effects"]["clipping_value"] = [-300, 300]
+    # NODE_CONFIGS["electrode_effects"]["control_voltages"]
+    NODE_CONFIGS["electrode_effects"]["noise"] = {}
+    NODE_CONFIGS["electrode_effects"]["noise"]["noise_type"] = "gaussian"
+    NODE_CONFIGS["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
+    NODE_CONFIGS["driver"] = {}
+    NODE_CONFIGS["waveform"] = {}
+    NODE_CONFIGS["waveform"]["plateau_length"] = 1
+    NODE_CONFIGS["waveform"]["slope_length"] = 0
+
+    model_dir = "/home/unai/Documents/3-Programming/bspy/smg/tmp/output/new_test_model/training_data_2021_04_22_105203/training_data.pt"
+    model_data = torch.load(model_dir)
+
+    sm = Processor(
+        NODE_CONFIGS,
+        model_data["info"],
+        model_data["model_state_dict"],
+    )
+
+    sm2 = Processor(NODE_CONFIGS, model_data["info"])

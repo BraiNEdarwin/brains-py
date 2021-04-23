@@ -46,7 +46,6 @@ import collections
 import numpy as np
 from torch import nn
 
-from brainspy.utils.electrodes import set_effects_from_dict
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.simulation.noise.noise import get_noise
 from brainspy.processors.simulation.model import NeuralNetworkModel
@@ -88,16 +87,6 @@ class SurrogateModel(nn.Module):
                 "tanh", "hard-tanh", or "sigmoid".
             hidden_sizes : list[int]
                 Sizes of the hidden layers.
-        default_sim_params: Dictionary containing the keys to the effects that will be simulated.
-            #TODO: Complete description
-            electrode_no
-            activation_electrodes
-                    - electrode_no
-                    - voltage_ranges
-            output_electrodes
-                    - electrode_no
-                    - amplification
-                    - clipping
             Path of the model file.
         model_state_dict: Pytorch's ordered dictionary containing the values for the learnable parameters of the raw model. By default is set to None.
                           If it is not None, the dictionary will be loaded to the raw model.
@@ -196,3 +185,130 @@ class SurrogateModel(nn.Module):
             False
         """
         return False
+
+    # TODO: Add description of this method
+    def set_effects_from_dict(self, info, configs):
+        return self.set_effects(
+            info,
+            self.get_key(configs, "voltage_ranges"),
+            self.get_key(configs, "amplification"),
+            self.get_key(configs, "output_clipping"),
+            self.get_key(configs, "noise"),
+        )
+
+    # TODO: Add description of this method
+    def get_key(self, configs, effect_key):
+        if effect_key in configs:
+            return configs[effect_key]
+        if effect_key != "noise":
+            return "default"
+        return None
+
+    def set_effects(
+        self,
+        info,
+        voltage_ranges="default",
+        amplification="default",
+        output_clipping="default",
+        noise_configs=None,
+    ):
+        """
+        Set the amplification, output clipping and noise of the processor.
+        Amplification and output clipping are explained in their respective
+        methods. Noise is an error which is superimposed on the output of the
+        network to give it an element of randomness.
+
+        Order of effects: amplification - noise - output clipping
+
+        Example
+        -------
+        # TODO: update example of loading model
+        >>> smg = SurrogateModel("model.pt")
+        >>> smg.set_effects(amplification=2.0,
+                            output_clipping="default",
+                            noise=None)
+
+        Parameters
+        ----------
+        voltage_ranges:
+            Voltage ranges of the activation electrodes. Can be a value or 'default'.
+        amplification
+            The amplification of the processor. Can be None, a value, or
+            'default'. By default None.
+        output_clipping
+            The output clipping of the processor. Can be None, a value, or
+            'default'. By default None.
+        noise
+            The noise of the processor. Can be None, a string determining
+            the type of noise and some args. By default None.
+        """
+        # Warning, this function used to be called form the init using a
+        # configs file. Now it is called externally. To be changed where it
+        # corresponds in bspy tasks.
+
+        self.set_amplification(info, amplification)
+        self.set_output_clipping(info, output_clipping)
+        self.set_voltage_ranges(info, voltage_ranges)
+        self.noise = get_noise(noise_configs)
+
+    def set_voltage_ranges(self, info, value):
+        # TODO: Document this function.
+        if value is not None and value == "default":
+            self.voltage_ranges = TorchUtils.format(
+                info["activation_electrodes"]["voltage_ranges"]
+            )
+        elif value is not None:
+            # TODO: Add warning to let the user know that the voltage ranges have been changed.
+            assert value.shape == info["activation_electrodes"]["voltage_ranges"].shape
+            self.voltage_ranges = TorchUtils.format([value])
+
+    def set_amplification(self, info, value):
+        """
+        Set the amplification of the processor. The amplificaiton is what the
+        output of the neural network is multiplied with after the forward pass.
+        Can be None, a value, or 'default', by default None.
+        None will not use amplification, a value will set the amplification
+        to that value, and the string 'default' will take the data from the
+        info dictionary.
+
+        This method is called through the "set_effects" method.
+
+        Parameters
+        ----------
+        value : None or double or str
+            The value of the amplification (None, a value or 'default').
+        """
+        if value is not None and value == "default":
+            self.amplificaiton = TorchUtils.format(
+                [info["output_electrodes"]["amplification"]]
+            )
+        elif value is not None:
+            # TODO: Add warning to let the user know that the original amplification has been changed.
+            self.amplificaiton = TorchUtils.format([value])
+
+    def set_output_clipping(self, info, value):
+        """
+        Set the output clipping of the processor. Output clipping means to
+        clip the output to a certain range. Any output above that range will
+        be replaced with the maximum and any output below will be set to the
+        minimum.
+        Can be None, a value, or 'default'.
+        None will not use clipping, a value will set the clipping to that
+        value, and the string 'default' will take the data from the info
+        dictionary.
+
+        This method is called through the "set_effects" method.
+
+        Parameters
+        ----------
+        value : None or double or str
+            The value of the output clipping (None, a value or 'default').
+        """
+        if value is not None and value == "default":
+            self.output_clipping = TorchUtils.format(
+                [info["output_electrodes"]["clipping_value"]]
+            )
+        elif value is not None:
+            # TODO: Add warning to let the user know that the output clipping ranges have been changed.
+            self.output_clipping = TorchUtils.format([value])
+        return value
