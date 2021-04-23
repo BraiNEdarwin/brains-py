@@ -2,12 +2,15 @@ import platform
 from setuptools import setup, find_packages
 
 requires = [
-    "nidaqmx",
-    "pyyaml",
-    "Pyro4",
     "tqdm",
     "tensorboard",
-    "unittest2",
+    "pyyaml",
+    "nidaqmx",
+    "Pyro4",
+    "mypy",
+    "flake8",
+    "yapf",
+    "unittest",
     "html-testRunner",
 ]
 
