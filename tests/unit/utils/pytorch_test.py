@@ -15,6 +15,7 @@ class PyTorchTest(unittest.TestCase):
 
     def __init__(self, test_name):
         super(PyTorchTest, self).__init__()
+        self.device = TorchUtils.get_device()
 
     def test_set_force_cpu(self):
         """
@@ -28,14 +29,17 @@ class PyTorchTest(unittest.TestCase):
         Test for the get_device() method to get the accelerator type of the torch
         """
         TorchUtils.set_force_cpu(False)
-        self.assertEqual(TorchUtils.get_device(), torch.device("cpu"))
+        self.assertTrue(
+            TorchUtils.get_device() == torch.device("cpu")
+            or TorchUtils.get_device() == torch.device("cuda")
+        )
 
     def test_format_from_list(self):
         """
         Test to get a tensor from a list of data
         """
         data = [[1, 2]]
-        tensor = TorchUtils.format(data, data_type=torch.float32)
+        tensor = TorchUtils.format(data, device=self.device, data_type=torch.float32)
         assert isinstance(tensor, torch.Tensor)
 
     def test_format(self):
@@ -43,7 +47,7 @@ class PyTorchTest(unittest.TestCase):
         Test to format a tensor with a new data type
         """
         tensor = torch.randn(2, 2)
-        tensor = TorchUtils.format(tensor, data_type=torch.float64)
+        tensor = TorchUtils.format(tensor, device=self.device, data_type=torch.float64)
         self.assertEqual(tensor.dtype, torch.float64)
 
     def test_format_from_numpy(self):
@@ -52,14 +56,15 @@ class PyTorchTest(unittest.TestCase):
         """
         data = [[1, 2], [3, 4]]
         numpy_data = np.array(data)
-        tensor = TorchUtils.format(numpy_data)
+        tensor = TorchUtils.format(numpy_data, device=self.device)
         assert isinstance(tensor, torch.Tensor)
 
     def test_to_numpy(self):
         """
         Test to get a numpy array from a given torch tensor
         """
-        tensor = torch.tensor([[1.0, -1.0], [1.0, -1.0]])
+        data = torch.tensor([[1.0, -1.0], [1.0, -1.0]])
+        tensor = TorchUtils.format(data, device=self.device)
         numpy_data = TorchUtils.to_numpy(tensor)
         assert isinstance(numpy_data, np.ndarray)
 
