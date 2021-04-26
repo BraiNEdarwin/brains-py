@@ -16,7 +16,6 @@ import os
 class IOTest(unittest.TestCase):
     """
     Tests for the io.py class.
-    To run the test, change the path variable in the places indicated below.
     """
 
     def __init__(self, test_name):
@@ -27,7 +26,10 @@ class IOTest(unittest.TestCase):
         configs["batch"] = None
         configs["data"] = {"data1": "New data"}
         self.configs = configs
-        self.path = "C:/users/humai/Downloads/brains-py/tests/unit/utils/testfiles"  # Enter path to the testfiles directory
+        while "brains-py" not in os.getcwd():
+            os.chdir("..")
+            os.chdir("brains-py")
+        self.path = os.path.join(os.getcwd(), "tests/unit/utils/testfiles")
 
     def test_save_load_configs(self):
         """
@@ -86,9 +88,6 @@ class IOTest(unittest.TestCase):
         self.assertEqual(
             data["algorithm"]["optimizer"], "genetic"
         )  # data in the boolean.yaml file
-        # self.assertEqual(
-        #     data["algorithm"]["nested"]["test_data"], "test"
-        # )   #test for nested !include : data in nested_include.yaml file
         file.close()
 
     def runTest(self):
