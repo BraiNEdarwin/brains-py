@@ -9,7 +9,6 @@ import threading
 import numpy as np
 from threading import Thread
 from brainspy.processors.hardware.drivers.ni.tasks import get_tasks_driver
-
 """
 SECURITY FLAGS.
 WARNING - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
@@ -76,7 +75,9 @@ class NationalInstrumentsSetup:
         self.ceil = None
 
         print(f"Sampling frequency: {configs['sampling_frequency']}")
-        print(f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. ")
+        print(
+            f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. "
+        )
         if configs["max_ramping_time_seconds"] == 0:
             input(
                 "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n The security check for the ramping time has been disabled. Steep rampings can can damage the device. Proceed only if you are sure that you will not damage the device. If you want to avoid damage simply exit the execution. \n ONLY If you are sure about what you are doing press ENTER to continue. Otherwise STOP the execution of this program."
@@ -150,10 +151,10 @@ class NationalInstrumentsSetup:
             data read from the device
         """
         global p
-        p = Thread(target=self._read_data, args=(y,))
+        p = Thread(target=self._read_data, args=(y, ))
         if not event.is_set():
             semaphore.acquire()
-            p = Thread(target=self._read_data, args=(y,))
+            p = Thread(target=self._read_data, args=(y, ))
             p.start()
             p.join()
             if self.data_results is None:
@@ -172,17 +173,12 @@ class NationalInstrumentsSetup:
         """
         if self.last_shape != shape:
             self.last_shape = shape
-            self.tasks_driver.set_shape(
-                self.configs["sampling_frequency"], shape
-            )
+            self.tasks_driver.set_shape(self.configs["sampling_frequency"],
+                                        shape)
             self.offsetted_shape = shape + self.configs["offset"]
-            self.ceil = (
-                math.ceil(
-                    (self.offsetted_shape)
-                    / self.configs["sampling_frequency"]
-                )
-                + 1
-            )
+            self.ceil = (math.ceil(
+                (self.offsetted_shape) / self.configs["sampling_frequency"]) +
+                         1)
 
     def is_hardware(self):
         """
