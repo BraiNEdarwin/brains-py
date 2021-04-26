@@ -1,26 +1,23 @@
-driver:
-  tasks_driver_type: local # Driver can be local or remote. Remote for the RT NI Rack (Pinky), and local for the regular one (Brains).
-  torch_model_dict: /home/unai/Documents/3-programming/brainspy-processors/tmp/input/models/test.pt # Only useful for hardware simulation debug
+  instrument_type: cdaq_to_cdaq
+  real_time_rack: False # Driver can be local or remote. Remote for the RT NI Rack (Pinky), and local for the regular one (Brains).
   sampling_frequency: 1000
   amplification: 28.5
-  output_clipping_range: [-4,4] # This value will be multiplied by the amplification value
+  #output_clipping_range: [-4,4] # This value will be multiplied by the amplification value
   instruments_setup: 
-    device_no: 'multiple'
+    multiple_devices: True
     trigger_source: cDAQ1/segment1
     A:
       activation_instrument: cDAQ1Mod2
       activation_channels: [6,0,7,5,2,4,3] #ao
-      min_activation_voltages: [-0.75, -0.75, -0.75, -0.75, -0.75, -0.75, -0.75]
-      max_activation_voltages: [0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75]
-      activation_channel_mask: [0,0,0,0,0,0,0]
+      voltage_ranges: [[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75]]
+      activation_channel_mask: [1,1,1,1,1,1,1]
       readout_instrument: cDAQ1Mod4
       readout_channels: [0] # ai0
     B:
       activation_instrument: cDAQ1Mod1
       activation_channels: [4,3,5,2,0,7,1] #ao
-      min_activation_voltages: [-0.75, -0.75, -0.75, -0.75, -0.75, -0.75, -0.75]
-      max_activation_voltages: [0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75]
-      activation_channel_mask: [0,0,0,0,0,0,0]
+      voltage_ranges: [[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75]]
+      activation_channel_mask: [1,1,1,1,1,1,1]
       readout_instrument: cDAQ1Mod4
       readout_channels: [3] #ai3
     C:
@@ -28,22 +25,19 @@ driver:
       readout_channels: [2] #ai2
       activation_instrument: cDAQ1Mod3
       activation_channels: [14,7,13,8,10,11,12]
-      min_activation_voltages: [-0.75, -0.75, -0.75, -0.75, -0.75, -0.75, -0.75]
-      max_activation_voltages: [0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75]
-      activation_channel_mask: [0,0,0,0,0,0,0]
+      voltage_ranges: [[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75]]
+      activation_channel_mask: [1,1,1,1,1,1,1]
     D:
       activation_instrument: cDAQ1Mod3
       activation_channels: [0,2,5,3,4,6,1]
-      min_activation_voltages: [-1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5]
-      max_activation_voltages: [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5]
+      voltage_ranges: [[-1.5,1.5],[-1.5,1.5],[-1.5,1.5],[-1.5,1.5],[-1.5,1.5],[-1.5,1.5],[-1.5,1.5]]
       readout_instrument: cDAQ1Mod4
       readout_channels: [4] #ai4
       activation_channel_mask: [1,1,1,1,1,1,1]
     E:
       activation_instrument: cDAQ1Mod1
       activation_channels: [10,13,9,14,8,15,11]
-      min_activation_voltages: [-0.75, -0.75, -0.75, -0.75, -0.75, -0.75, -0.75]
-      max_activation_voltages: [0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75]
+      voltage_ranges: [[-.75,0.75],[-.75,0.75],[-.75,0.75],[-.75,0.75],[-.75,0.75],[-.75,0.75],[-.75,0.75]]
       readout_instrument: cDAQ1Mod4
       readout_channels: [1] #cDAQ1Mod4/ai1
-      activation_channel_mask: [0,0,0,0,0,0,0]
+      activation_channel_mask: [1,1,1,1,1,1,1]
