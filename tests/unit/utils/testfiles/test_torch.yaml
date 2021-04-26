@@ -30,7 +30,7 @@ processor:
             plateau_length: 3 # A plateau of at least 3 is needed to train the perceptron (That requires at least 10 values (3x4 = 12)).
             slope_length: 0
 driver:
-    torch_model_dict: "C:/users/humai/Downloads/brains-py/tests/unit/utils/testfiles/testmodel.pt"
+    torch_model_dict: "testmodel.pt"
     output_clipping: False
     output_clipping_range : [1,2,3,4]
     amplification : 1

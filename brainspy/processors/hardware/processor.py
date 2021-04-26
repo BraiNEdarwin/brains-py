@@ -1,15 +1,9 @@
-""" 
-The accelerator class enables to statically access the accelerator
-(CUDA or CPU) that is used in the computer. The aim is to support both platforms seemlessly.
-"""
-
 import torch
 import warnings
 from torch import nn
 from brainspy.utils.manager import get_driver
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager
-from brainspy.processors.simulation.processor import SurrogateModel
 
 
 class HardwareProcessor(nn.Module):
@@ -20,15 +14,11 @@ class HardwareProcessor(nn.Module):
                         * With a regular rack
                         * With a real time rack
 
-    The TorchModel class is used to manage together a torch model and its state dictionary.
-    Usage example :
-        mymodel = TorchModel()
-        mymodel.load_model('my_path/my_model.pt')
-        mymodel.model
     """
 
     # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
-    def __init__(self, configs, logger=None):
+    # Instrument configs can be a dictionary or a driver which has been already initialised
+    def __init__(self, instrument_configs, slope_length, plateau_length, logger=None):
         """
         To intialise the hardware processor
 
@@ -55,28 +45,58 @@ class HardwareProcessor(nn.Module):
                     readout_channels: [2] list - Channels for reading the output current values
                     trigger_source: str - cDAQ1/segment1 - source trigger name
                 tasks_driver_type : str - "local" or "remote" - type of tasks driver
-                amplification: float - To set the amplification value of the voltages
+                amplification: float - The output current (nA) of the device is converted by the readout hardware to voltage (V), because it is easier to do the readout of the device in voltages.
+                This output signal in nA is amplified by the hardware when doing this current to voltage conversion, as larger signals are easier to detect.
+                In order to obtain the real current (nA) output of the device, the conversion is automatically corrected in software by multiplying by the amplification value again.
+                The amplification value depends on the feedback resistance of each of the setups. Below, there is a guide of the amplification value needed for each of the setups:
+
+                                        Darwin: Variable amplification levels:
+                                            A: 1000 Amplification
+                                            Feedback resistance: 1 MOhm
+                                            B: 100 Amplification
+                                            Feedback resistance 10 MOhms
+                                            C: 10 Amplification
+                                            Feedback resistance: 100 MOhms
+                                            D: 1 Amplification
+                                            Feedback resistance 1 GOhm
+                                        Pinky:  - PCB 1 (6 converters with):
+                                                Amplification 10
+                                                Feedback resistance 100 MOhm
+                                                - PCB 2 (6 converters with):
+                                                Amplification 100 tims
+                                                10 mOhm Feedback resistance
+                                        Brains: Amplfication 28.5
+                                                Feedback resistance, 33.3 MOhm
+                                        Switch: (Information to be completed)
+
+                                        If no correction is desired, the amplification can be set to 1.
+
                 sampling_frequency: int - the average number of samples to be obtained in one second
-                output_clipping_range: [float,float] - To clip the output voltage if it goes above maximum
+                output_clipping_range: [float,float] - The the setups have a limit in the range they can read. They typically clip at approximately +-4 V.
+                    Note that in order to calculate the clipping_range, it needs to be multiplied by the amplification value of the setup. (e.g., in the Brains setup the amplification is 28.5,
+                    is the clipping_value is +-4 (V), therefore, the clipping value should be +-4 * 28.5, which is [-110,110] (nA) ).
+                    The original clipping value of the surrogate models is obtained when running the preprocessing of the data in
+                    bspysmg.measurement.processing.postprocessing.post_process.
 
         logger : logging , optional
             To emit log messages at different levels(DEBUG, INFO, ERROR, etc.)
             It provides a way for applications to configure different log handlers , by default None
         """
         super(HardwareProcessor, self).__init__()
-        self.driver = get_driver(configs)
-        if configs["processor_type"] == "simulation_debug":
-            self.voltage_ranges = self.driver.voltage_ranges
+        if not isinstance(instrument_configs, dict):
+            self.driver = instrument_configs
         else:
+            self.driver = get_driver(instrument_configs)
             self.voltage_ranges = TorchUtils.format(self.driver.voltage_ranges)
-        self.waveform_mgr = WaveformManager(configs["data"]["waveform"])
+
+        self.waveform_mgr = WaveformManager(
+            {"slope_length": slope_length, "plateau_length": plateau_length}
+        )
+        # TODO: Add message for assertion. Raise an error.
+        assert (
+            slope_length / self.driver.configs["sampling_frequency"]
+        ) >= self.driver.configs["max_ramping_time_seconds"]
         self.logger = logger
-        self.amplification = configs["driver"]["amplification"]
-        self.clipping_value = [
-            configs["driver"]["output_clipping_range"][0] * self.amplification,
-            configs["driver"]["output_clipping_range"][1] * self.amplification,
-        ]
-        self.electrode_no = configs["data"]["activation_electrode_no"]
 
     def forward(self, x):
         """
@@ -133,7 +153,7 @@ class HardwareProcessor(nn.Module):
         if "close_tasks" in dir(self.driver):
             self.driver.close_tasks()
         else:
-            raise Warning("Driver tasks have not been closed.")
+            warnings.warn("Driver tasks have not been closed.")
 
     def is_hardware(self):
         """
@@ -146,13 +166,13 @@ class HardwareProcessor(nn.Module):
         """
         return self.driver.is_hardware()
 
-    def get_electrode_no(self):
-        """
-        To get the electrode number that is being used by this driver
+    # def get_electrode_no(self):
+    #     """
+    #     To get the electrode number that is being used by this driver
 
-        Returns
-        -------
-        int
-            the electrode number
-        """
-        return self.electrode_no
+    #     Returns
+    #     -------
+    #     int
+    #         the electrode number
+    #     """
+    #     return self.electrode_no

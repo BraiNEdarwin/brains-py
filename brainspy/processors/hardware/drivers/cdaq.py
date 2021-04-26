@@ -13,7 +13,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         configs["max_ramping_time_seconds"] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.tasks_driver.start_trigger(
-            self.configs["driver"]["instruments_setup"]["trigger_source"]
+            self.configs["instruments_setup"]["trigger_source"]
         )
 
     def forward_numpy(self, y):

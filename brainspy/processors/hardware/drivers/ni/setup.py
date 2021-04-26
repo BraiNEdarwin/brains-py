@@ -9,7 +9,6 @@ import threading
 import numpy as np
 from threading import Thread
 from brainspy.processors.hardware.drivers.ni.tasks import get_tasks_driver
-
 """
 SECURITY FLAGS.
 WARNING - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
@@ -41,7 +40,7 @@ class NationalInstrumentsSetup:
             configurations of the model as a python dictionary
         """
         self.init_configs(configs)
-        self.init_tasks(configs["driver"])
+        self.init_tasks(configs)
         self.enable_os_signals()
         self.init_semaphore()
 
@@ -75,19 +74,14 @@ class NationalInstrumentsSetup:
         self.offsetted_shape = None
         self.ceil = None
 
+        print(f"Sampling frequency: {configs['sampling_frequency']}")
+        print(
+            f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. "
+        )
         if configs["max_ramping_time_seconds"] == 0:
             input(
                 "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n The security check for the ramping time has been disabled. Steep rampings can can damage the device. Proceed only if you are sure that you will not damage the device. If you want to avoid damage simply exit the execution. \n ONLY If you are sure about what you are doing press ENTER to continue. Otherwise STOP the execution of this program."
             )
-        print("HERE")
-        print(configs["data"]["waveform"]["slope_length"])
-        print(configs["driver"]["sampling_frequency"])
-        print(configs["max_ramping_time_seconds"])
-        assert (
-            configs["data"]["waveform"]["slope_length"]
-            / configs["driver"]["sampling_frequency"]
-            >= configs["max_ramping_time_seconds"]
-        )
 
     def init_tasks(self, configs):
         """
@@ -138,7 +132,7 @@ class NationalInstrumentsSetup:
         data = np.array(data)
         if len(data.shape) == 1:
             data = data[np.newaxis, :]
-        return (data.T * self.configs["driver"]["amplification"]).T
+        return (data.T * self.configs["amplification"]).T
 
     def read_data(self, y):
         """
@@ -157,10 +151,10 @@ class NationalInstrumentsSetup:
             data read from the device
         """
         global p
-        p = Thread(target=self._read_data, args=(y,))
+        p = Thread(target=self._read_data, args=(y, ))
         if not event.is_set():
             semaphore.acquire()
-            p = Thread(target=self._read_data, args=(y,))
+            p = Thread(target=self._read_data, args=(y, ))
             p.start()
             p.join()
             if self.data_results is None:
@@ -179,17 +173,12 @@ class NationalInstrumentsSetup:
         """
         if self.last_shape != shape:
             self.last_shape = shape
-            self.tasks_driver.set_shape(
-                self.configs["driver"]["sampling_frequency"], shape
-            )
+            self.tasks_driver.set_shape(self.configs["sampling_frequency"],
+                                        shape)
             self.offsetted_shape = shape + self.configs["offset"]
-            self.ceil = (
-                math.ceil(
-                    (self.offsetted_shape)
-                    / self.configs["driver"]["sampling_frequency"]
-                )
-                + 1
-            )
+            self.ceil = (math.ceil(
+                (self.offsetted_shape) / self.configs["sampling_frequency"]) +
+                         1)
 
     def is_hardware(self):
         """

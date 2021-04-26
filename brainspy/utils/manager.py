@@ -5,6 +5,7 @@ It can be used to get an optimizer,fitness function,driver or an algorithm for t
 """
 
 import torch
+import collections
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 from brainspy.processors.simulation.processor import SurrogateModel
@@ -171,7 +172,11 @@ def get_algorithm(configs: dict):
         ), "Unrecognised algorithm field in configs. It must have the value gradient or the value genetic."
 
 
-def get_driver(configs: dict):
+def get_driver(
+    configs: dict,
+    info: dict = None,
+    model_state_dict: collections.OrderedDict = None,
+):
     """
     To get a driver object based on the configurations dictionary.
     The driver here are defined under the processor type tag in the configs dictionary and can be a
@@ -201,13 +206,11 @@ def get_driver(configs: dict):
     driver = get_driver(configs)
 
     """
-    if configs["processor_type"] == "cdaq_to_cdaq":
+    if configs["instrument_type"] == "cdaq_to_cdaq":
         return CDAQtoCDAQ(configs)
-    elif configs["processor_type"] == "cdaq_to_nidaq":
+    elif configs["instrument_type"] == "cdaq_to_nidaq":
         return CDAQtoNiDAQ(configs)
-    elif configs["processor_type"] == "simulation_debug":
-        return SurrogateModel(configs)
     else:
         raise NotImplementedError(
-            f"{configs['processor_type']} 'processor_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. "
+            f"{configs['instrument_type']} 'instrument_type' configuration is not recognised. The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'. "
         )
