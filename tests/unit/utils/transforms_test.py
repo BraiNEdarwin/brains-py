@@ -3,9 +3,12 @@ Module for testing transforms.py.
 """
 
 import unittest
-import numpy as np
+
 import torch
+import numpy as np
+
 import brainspy.utils.transforms as transforms
+from brainspy.utils.pytorch import TorchUtils
 
 
 class TransformsTest(unittest.TestCase):
@@ -131,7 +134,9 @@ class TransformsTest(unittest.TestCase):
         x_value = torch.tensor([[1, 3]])
 
         result = ctv(x_value)
-        target = torch.tensor([[2, 0]])
+        target = torch.tensor([[2, 0]],
+                              device=TorchUtils.get_device(),
+                              dtype=torch.get_default_dtype())
         for i in range(target.shape[0]):
             for j in range(target.shape[1]):
                 self.assertEqual(result[i][j], target[i][j])
