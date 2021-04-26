@@ -131,7 +131,7 @@ class NationalInstrumentsSetup:
         data = np.array(data)
         if len(data.shape) == 1:
             data = data[np.newaxis, :]
-        return (data.T * self.configs["driver"]["amplification"]).T
+        return (data.T * self.configs["amplification"]).T
 
     def read_data(self, y):
         """
@@ -173,13 +173,13 @@ class NationalInstrumentsSetup:
         if self.last_shape != shape:
             self.last_shape = shape
             self.tasks_driver.set_shape(
-                self.configs["driver"]["sampling_frequency"], shape
+                self.configs["sampling_frequency"], shape
             )
             self.offsetted_shape = shape + self.configs["offset"]
             self.ceil = (
                 math.ceil(
                     (self.offsetted_shape)
-                    / self.configs["driver"]["sampling_frequency"]
+                    / self.configs["sampling_frequency"]
                 )
                 + 1
             )
