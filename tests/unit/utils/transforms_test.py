@@ -141,6 +141,15 @@ class TransformsTest(unittest.TestCase):
             for j in range(target.shape[1]):
                 self.assertEqual(result[i][j], target[i][j])
 
+    def test_format_input_ranges(self):
+        """
+        Test the format_input_ranges method.
+        """
+        t = torch.tensor([[1, 2, 3], [4, 5, 6]])
+        result = transforms.format_input_ranges(7, 8, t)
+        self.assertTrue(
+            torch.equal(result, torch.tensor([[7, 7, 7], [8, 8, 8]])))
+
 
 if __name__ == "__main__":
     unittest.main()
