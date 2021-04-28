@@ -8,7 +8,6 @@ import torch
 import collections
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
-from brainspy.processors.simulation.processor import SurrogateModel
 import brainspy.algorithms.modules.signal as criterion
 import brainspy.algorithms.modules.optim as bspyoptim
 from brainspy.algorithms.ga import train as train_ga
@@ -93,7 +92,7 @@ def get_optimizer(model: object, configs: dict):
             )
         else:
             return bspyoptim.GeneticOptimizer(
-                model.get_control_ranges(), configs["partition"], configs["epochs"]
+                model.get_voltage_ranges(), configs["partition"], configs["epochs"]
             )
     elif configs["optimizer"] == "elm":
         print("ELM optimizer not implemented yet")
