@@ -106,7 +106,7 @@ class ManagerTest(unittest.TestCase):
         model_dir = os.path.join(
             os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
         )
-        model_data = torch.load(model_dir, map_location=torch.device("cpu"))
+        model_data = torch.load(model_dir, map_location=TorchUtils.get_device())
         model = Processor(
             NODE_CONFIGS,
             model_data["info"],
@@ -140,7 +140,7 @@ class ManagerTest(unittest.TestCase):
         model_dir = os.path.join(
             os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
         )
-        model_data = torch.load(model_dir, map_location=torch.device("cpu"))
+        model_data = torch.load(model_dir, map_location=TorchUtils.get_device())
         model = Processor(
             NODE_CONFIGS,
             model_data["info"],
