@@ -9,15 +9,15 @@
     A:
       activation_instrument: cDAQ1Mod2
       activation_channels: [6,0,7,5,2,4,3] #ao
-      voltage_ranges: [[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75]]
-      activation_channel_mask: [1,1,1,1,1,1,1]
+      voltage_ranges: [[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7]]
+      activation_channel_mask: [0,0,0,0,0,0,0]
       readout_instrument: cDAQ1Mod4
       readout_channels: [0] # ai0
     B:
       activation_instrument: cDAQ1Mod1
       activation_channels: [4,3,5,2,0,7,1] #ao
-      voltage_ranges: [[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75]]
-      activation_channel_mask: [1,1,1,1,1,1,1]
+      voltage_ranges: [[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7]]
+      activation_channel_mask: [0,0,0,0,0,0,0]
       readout_instrument: cDAQ1Mod4
       readout_channels: [3] #ai3
     C:
@@ -25,19 +25,19 @@
       readout_channels: [2] #ai2
       activation_instrument: cDAQ1Mod3
       activation_channels: [14,7,13,8,10,11,12]
-      voltage_ranges: [[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75],[-0.75,0.75]]
-      activation_channel_mask: [1,1,1,1,1,1,1]
+      voltage_ranges: [[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7]]
+      activation_channel_mask: [0,0,0,0,0,0,0] # You also need to remove the device from the list, if you want to use it for the ivcurve test.
     D:
       activation_instrument: cDAQ1Mod3
       activation_channels: [0,2,5,3,4,6,1]
-      voltage_ranges: [[-1.5,1.5],[-1.5,1.5],[-1.5,1.5],[-1.5,1.5],[-1.5,1.5],[-1.5,1.5],[-1.5,1.5]]
+      voltage_ranges: [[-0.2,0.2],[-1,0.7],[-1,0.7],[-1,0.7],[-1,0.7],[-0.7,0.3],[-0.7,0.3]]
       readout_instrument: cDAQ1Mod4
       readout_channels: [4] #ai4
       activation_channel_mask: [1,1,1,1,1,1,1]
     E:
       activation_instrument: cDAQ1Mod1
       activation_channels: [10,13,9,14,8,15,11]
-      voltage_ranges: [[-.75,0.75],[-.75,0.75],[-.75,0.75],[-.75,0.75],[-.75,0.75],[-.75,0.75],[-.75,0.75]]
+      voltage_ranges: [[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7]]
       readout_instrument: cDAQ1Mod4
       readout_channels: [1] #cDAQ1Mod4/ai1
-      activation_channel_mask: [1,1,1,1,1,1,1]
+      activation_channel_mask: [0,0,0,0,0,0,0]
