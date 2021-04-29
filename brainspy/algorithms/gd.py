@@ -80,10 +80,7 @@ def train(
     if logger is not None:
         logger.close()
     if (
-        save_dir is not None
-        and return_best_model
-        and dataloaders[1] is not None
-        and len(dataloaders[1]) > 0
+        save_dir is not None and return_best_model and dataloaders[1] is not None and len(dataloaders[1]) > 0
     ):
         model = torch.load(os.path.join(save_dir, "model.pt"))
     else:

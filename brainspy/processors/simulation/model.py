@@ -2,7 +2,6 @@
 Module for creating and using a neural network model.
 """
 import warnings
-from typing import Optional, Dict
 
 import torch
 from torch import nn

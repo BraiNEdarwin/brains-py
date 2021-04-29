@@ -345,8 +345,7 @@ class DNPUConv2d(nn.Module):
             buff = 0.0
             for i, p in enumerate(self.all_controls):
                 buff += torch.sum(
-                    torch.relu(self.control_low[i] - p)
-                    + torch.relu(p - self.control_high[i])
+                    torch.relu(self.control_low[i] - p) + torch.relu(p - self.control_high[i])
                 )
             return buff
 

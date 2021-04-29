@@ -163,10 +163,9 @@ class LocalTasks:
         y = np.require(y, dtype=y.dtype, requirements=["C", "W"])
         try:
             self.activation_task.write(y, auto_start=auto_start)
-        except nidaqmx.errors.DaqError as e:
+        except nidaqmx.errors.DaqError:
             print(
-                "There was an error writing to the activation task: "
-                + self.activation_task.name
+                "There was an error writing to the activation task: " + self.activation_task.name
             )
             print("Trying to reset device and do the read again.")
             for dev in self.devices:

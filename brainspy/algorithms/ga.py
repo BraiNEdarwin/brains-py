@@ -54,12 +54,7 @@ def train(
                 pearsons_correlation(best_current_output, targets).detach().cpu()
             )
             looper.set_description(
-                "  Gen: "
-                + str(epoch + 1)
-                + ". Max fitness: "
-                + str(performance_history[-1].item())
-                + ". Corr: "
-                + str(correlation_history[-1].item())
+                "  Gen: " + str(epoch + 1) + ". Max fitness: " + str(performance_history[-1].item()) + ". Corr: " + str(correlation_history[-1].item())
             )
             if performance_history[-1] > best_fitness:
                 best_fitness = performance_history[-1]
@@ -128,9 +123,7 @@ def evaluate_population(
         outputs_pool[j] = model(inputs)
 
         if (
-            torch.any(outputs_pool[j] <= model.get_clipping_value()[0])
-            or torch.any(outputs_pool[j] >= model.get_clipping_value()[1])
-            or (outputs_pool[j] - outputs_pool[j].mean() == 0.0).all()
+            torch.any(outputs_pool[j] <= model.get_clipping_value()[0]) or torch.any(outputs_pool[j] >= model.get_clipping_value()[1]) or (outputs_pool[j] - outputs_pool[j].mean() == 0.0).all()
         ):
             criterion_pool[j] = criterion(None, None, default_value=True)
         else:

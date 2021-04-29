@@ -43,8 +43,7 @@ class GaussianNoise:
             Output data.
         """
         return x + (
-            self.std
-            * torch.randn(
+            self.std * torch.randn(
                 x.shape,
                 device=TorchUtils.get_device(),
                 dtype=torch.get_default_dtype(),

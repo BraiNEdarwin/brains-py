@@ -178,7 +178,7 @@ class GeneticOptimizer:
         mask = TorchUtils.format(
             np.random.choice(
                 [0, 1],
-                size=pool[self.partition[0] :].shape,
+                size=pool[self.partition[0]:].shape,
                 p=[1 - mutation_rate, mutation_rate],
             )
         )
@@ -194,19 +194,18 @@ class GeneticOptimizer:
             else:
                 mutated_pool[:, i] = np.random.triangular(
                     gene_range[i][0],
-                    TorchUtils.to_numpy(pool[self.partition[0] :, i]),
+                    TorchUtils.to_numpy(pool[self.partition[0]:, i]),
                     gene_range[i][1],
                 )
 
         mutated_pool = TorchUtils.format(mutated_pool)
-        pool[self.partition[0] :] = (
+        pool[self.partition[0]:] = (
             torch.ones(
-                pool[self.partition[0] :].shape,
+                pool[self.partition[0]:].shape,
                 dtype=torch.get_default_dtype(),
                 device=TorchUtils.get_device(),
-            )
-            - mask
-        ) * pool[self.partition[0] :] + mask * mutated_pool
+            ) - mask
+        ) * pool[self.partition[0]:] + mask * mutated_pool
 
         # Remove duplicates (Only if they are)
         if len(pool.unique(dim=1)) < len(pool):

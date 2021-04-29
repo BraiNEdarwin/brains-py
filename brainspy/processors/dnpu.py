@@ -74,8 +74,7 @@ class DNPU(nn.Module):
 
     def regularizer(self):
         return torch.sum(
-            torch.relu(self.control_low - self.bias)
-            + torch.relu(self.bias - self.control_high)
+            torch.relu(self.control_low - self.bias) + torch.relu(self.bias - self.control_high)
         )
 
     def hw_eval(self, arg):

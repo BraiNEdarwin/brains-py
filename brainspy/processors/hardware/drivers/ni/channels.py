@@ -65,16 +65,13 @@ def concatenate_voltage_ranges(voltage_ranges):
 
 def init_activation_channels(configs, activation_channel_list=[]):
     for i in range(len(configs["activation_channels"])):
-        activation_channel_list.append(configs["activation_instrument"] +
-                                       "/ao" +
-                                       str(configs["activation_channels"][i]))
+        activation_channel_list.append(configs["activation_instrument"] + "/ao" + str(configs["activation_channels"][i]))
     return activation_channel_list
 
 
 def init_readout_channels(configs, readout_channel_list=[]):
     for i in range(len(configs["readout_channels"])):
-        readout_channel_list.append(configs["readout_instrument"] + "/ai" +
-                                    str(configs["readout_channels"][i]))
+        readout_channel_list.append(configs["readout_instrument"] + "/ai" + str(configs["readout_channels"][i]))
 
     return readout_channel_list
 

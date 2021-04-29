@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.utils.electrodes import get_map_to_voltage_vars
+from brainspy.utils.transforms import get_linear_transform_constants
 from torch.quantization import PerChannelMinMaxObserver
 
 
@@ -57,8 +57,7 @@ class VariableRangeMapper(nn.Module):
 
     def regularizer(self):
         return torch.sum(
-            torch.relu(self.min_range - self.out_min)
-            + torch.relu(self.out_max - self.max_range)
+            torch.relu(self.min_range - self.out_min) + torch.relu(self.out_max - self.max_range)
         )
 
 
@@ -100,8 +99,7 @@ class STDRangeMapper(nn.Module):
 
     def regularizer(self):
         return torch.sum(
-            torch.relu(self.min_range - self.out_min)
-            + torch.relu(self.out_max - self.max_range)
+            torch.relu(self.min_range - self.out_min) + torch.relu(self.out_max - self.max_range)
         )
 
 

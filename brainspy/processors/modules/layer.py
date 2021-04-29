@@ -42,7 +42,7 @@ class DNPU_Layer(nn.Module):
     def partition_input(self, x):
         i = 0
         while i + self.processor.inputs_list.shape[-1] <= x.shape[-1]:
-            yield x[:, i : i + self.processor.inputs_list.shape[-1]]
+            yield x[:, i: i + self.processor.inputs_list.shape[-1]]
             i += self.processor.inputs_list.shape[-1]
 
     def regularizer(self):
