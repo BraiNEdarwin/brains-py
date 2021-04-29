@@ -75,6 +75,7 @@ class WaveformTest(unittest.TestCase):
         waveform_mgr = WaveformManager(self.configs)
         data = (1, 1)
         points = torch.rand(data)
+        points = points.to(TorchUtils.get_device())
         waveform = waveform_mgr.points_to_waveform(points)
         point_value = points.tolist()[0]
         waveform_values = waveform.tolist()

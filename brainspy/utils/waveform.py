@@ -90,8 +90,9 @@ class WaveformManager:
         final_mask = [False] * self.slope_length
         mask += final_mask
         mask += [True] * self.plateau_length
-        self.initial_mask = torch.tensor(mask)
-        self.final_mask = torch.tensor(final_mask)
+        self.initial_mask = torch.tensor(mask, device=TorchUtils.get_device())
+        self.final_mask = torch.tensor(final_mask,
+                                       device=TorchUtils.get_device())
 
     def _expand(self, parameter, length):
         """
@@ -286,7 +287,8 @@ class WaveformManager:
         start = 0  # starting position of current plateau in input data
 
         # Initiate output.
-        output_data = np.linspace(0, input_copy[start], self.slope_length)
+        output_data = np.linspace(0,
+                                  input_copy.cpu()[start], self.slope_length)
         output_mask = [False] * self.slope_length
 
         # Go through all data except last plateau.

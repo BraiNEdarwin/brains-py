@@ -309,7 +309,34 @@ def get_offset(y_min: float, y_max: float, x_min: float,
     """
     return ((y_max * x_min) - (y_min * x_max)) / (x_min - x_max)
 
+
+# Used in conv.py.
 def format_input_ranges(input_min, input_max, output_ranges):
+    """
+    Generate a tensor of input ranges with the same shape as given output
+    ranges. All the input ranges are from input_min to input_max.
+
+    Example
+    -------
+    >>> t = tensor([[1, 2, 3], [4, 5, 6]])
+    >>> format_input_ranges(7, 8, t)
+    torch.tensor([[7, 7, 7], [8, 8, 8]])
+
+    Parameters
+    ----------
+    input_min : float
+        Minimum value for input.
+    input_max : float
+        Maximum value for input.
+    output_ranges : torch.Tensor
+        Tensor of output ranges.
+
+    Returns
+    -------
+    torch.Tensor
+        A tensor with the same shape as output_ranges with the values of
+        input_min and input_max.
+    """
     input_ranges = torch.ones_like(output_ranges)
     input_ranges[0] *= input_min
     input_ranges[1] *= input_max
