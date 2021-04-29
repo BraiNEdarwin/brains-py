@@ -22,7 +22,7 @@ def init_channel_data(configs):
         for device_name in configs["instruments_setup"]:
             if device_name != "trigger_source" and device_name != "multiple_devices":
                 mask = get_mask(configs["instruments_setup"][device_name])
-                if mask is None or sum(mask > 0):
+                if mask is None or sum(mask) > 0:
                     configs["instruments_setup"][device_name][
                         "activation_channels"] = list(
                             np.array(configs["instruments_setup"][device_name]
