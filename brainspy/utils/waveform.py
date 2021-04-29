@@ -281,14 +281,14 @@ class WaveformManager:
         f"plateau length {self.plateau_length}."
 
         data_size = int(len(data) / self.plateau_length)  # number of plateaus
-        input_copy = TorchUtils.format(
-            data)  # numpy copy of input data (numpy linspace works for
+        input_copy = TorchUtils.to_numpy(data)  # TorchUtils.format(
+            #data)  # numpy copy of input data (numpy linspace works for
         # multidimensional data while torch does not)
         start = 0  # starting position of current plateau in input data
 
         # Initiate output.
         output_data = np.linspace(0,
-                                  input_copy.cpu()[start], self.slope_length)
+                                  input_copy[start], self.slope_length)
         output_mask = [False] * self.slope_length
 
         # Go through all data except last plateau.

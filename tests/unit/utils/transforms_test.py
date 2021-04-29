@@ -131,7 +131,7 @@ class TransformsTest(unittest.TestCase):
 
         # First transform is line y = x + 1, second is y = x - 2.
         # For the second one input is out of range, so cut needs to work.
-        x_value = torch.tensor([[1, 3]])
+        x_value = torch.tensor([[1, 3]], device=TorchUtils.get_device(), dtype=torch.get_default_dtype())
 
         result = ctv(x_value)
         target = torch.tensor([[2, 0]],
