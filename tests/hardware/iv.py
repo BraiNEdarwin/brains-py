@@ -57,7 +57,7 @@ class IVMeasurement():
                 inputs_dict[dev][
                     self.index_prog[dev], :] = self.gen_input_wfrm(
                         self.configs["driver"]['instruments_setup'][dev]
-                        ['voltage_ranges'][self.index_prog["all"]])
+                        ['activation_voltage_ranges'][self.index_prog["all"]])
                 self.index_prog[dev] += 1
 
             else:
@@ -218,7 +218,7 @@ if __name__ == '__main__':
     configs = {}
     configs['results_base_dir'] = 'tmp/tests/iv'
     configs['show_plots'] = True
-    configs['devices'] = ["C", "D"]
+    configs['devices'] = ["D"]
     # configs['devices'] = [
     #     "A", "B", "C", "D", "E"
     # ]  #["D"]  # To remove devices from this list, set the mask to zero first in the configs.

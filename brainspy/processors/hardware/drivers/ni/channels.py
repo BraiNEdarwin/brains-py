@@ -13,7 +13,7 @@ def init_channel_data(configs):
         instruments = add_uniquely(
             instruments, configs["instruments_setup"]["readout_instrument"])
         voltage_ranges = np.array(
-            configs['instruments_setup']['activation_voltages'])
+            configs['instruments_setup']['activation_voltage_ranges'])
     else:
         instruments = []
         activation_channel_list = []
@@ -45,9 +45,10 @@ def init_channel_data(configs):
                         configs["instruments_setup"][device_name]
                         ["readout_instrument"],
                     )
-                    voltage_ranges = np.array(configs['instruments_setup']
-                                              [device_name]['voltage_ranges'],
-                                              dtype=np.double)
+                    voltage_ranges = np.array(
+                        configs['instruments_setup'][device_name]
+                        ['activation_voltage_ranges'],
+                        dtype=np.double)
                     if mask is not None:
                         voltage_ranges = voltage_ranges[mask == 1]
                     voltage_ranges_list.append(voltage_ranges)
