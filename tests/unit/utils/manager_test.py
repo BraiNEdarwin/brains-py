@@ -5,7 +5,6 @@ import os
 import unittest
 import numpy as np
 import torch
-from brainspy.utils.io import load_configs
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.manager import (
     get_criterion,
@@ -99,11 +98,15 @@ class ManagerTest(unittest.TestCase):
         NODE_CONFIGS["waveform"]["plateau_length"] = 1
         NODE_CONFIGS["waveform"]["slope_length"] = 0
         NODE_CONFIGS["optimizer"] = "genetic"
+        NODE_CONFIGS["epochs"] = 100
+        NODE_CONFIGS["partition"] = [4, 22]
         while "brains-py" not in os.getcwd():
             os.chdir("..")
             os.chdir("brains-py")
-        model_dir = os.path.join(os.getcwd(), "tests/unit/utils/testfiles/testmodel.pt")
-        model_data = torch.load(model_dir)
+        model_dir = os.path.join(
+            os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
+        )
+        model_data = torch.load(model_dir, map_location=TorchUtils.get_device())
         model = Processor(
             NODE_CONFIGS,
             model_data["info"],
@@ -130,11 +133,14 @@ class ManagerTest(unittest.TestCase):
         NODE_CONFIGS["waveform"]["plateau_length"] = 1
         NODE_CONFIGS["waveform"]["slope_length"] = 0
         NODE_CONFIGS["optimizer"] = "adam"
+        NODE_CONFIGS["learning_rate"] = 0.001
         while "brains-py" not in os.getcwd():
             os.chdir("..")
             os.chdir("brains-py")
-        model_dir = os.path.join(os.getcwd(), "tests/unit/utils/testfiles/testmodel.pt")
-        model_data = torch.load(model_dir)
+        model_dir = os.path.join(
+            os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
+        )
+        model_data = torch.load(model_dir, map_location=TorchUtils.get_device())
         model = Processor(
             NODE_CONFIGS,
             model_data["info"],
@@ -199,8 +205,8 @@ class ManagerTest(unittest.TestCase):
 
     def runTest(self):
         self.test_get_criterion()
-        # self.test_get_optimizer()
-        # self.test_get_adam()
+        self.test_get_optimizer()
+        self.test_get_adam()
         self.test_get_algorithm()
         self.test_get_driver()
 
