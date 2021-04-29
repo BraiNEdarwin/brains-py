@@ -92,7 +92,7 @@ def get_optimizer(model: object, configs: dict):
             )
         else:
             return bspyoptim.GeneticOptimizer(
-                model.get_voltage_ranges(), configs["partition"], configs["epochs"]
+                model.get_control_ranges(), configs["partition"], configs["epochs"]
             )
     elif configs["optimizer"] == "elm":
         print("ELM optimizer not implemented yet")
