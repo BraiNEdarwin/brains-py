@@ -36,9 +36,8 @@ class IVMeasurement():
             input_arrays.append(input_array[:, i])
             for j, dev in enumerate(self.configs['devices']):
                 output[exp][dev] = output_array[:, j]
-
-        self.iv_plot(configs, np.array(input_arrays).T, output)
         self.driver.close_tasks()
+        self.iv_plot(configs, np.array(input_arrays).T, output)
 
     # def create_input_arrays(self):
 
