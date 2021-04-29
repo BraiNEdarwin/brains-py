@@ -27,17 +27,49 @@ class IVMeasurement():
         self.devices_in_experiments = {}
         output = {}
         output_array = []
-        input_arrays = self.create_input_arrays()
-        for exp in experiments:
+        input_arrays = []
+        for i, exp in enumerate(experiments):
             output[exp] = {}
+            input_array = self.create_input_arrays()
             self.devices_in_experiments[exp] = self.configs['devices'].copy()
-            output_array = self.driver.forward_numpy(input_arrays)
+            output_array = self.driver.forward_numpy(input_array)
+            input_arrays.append(input_array[:, i])
+            for j, dev in enumerate(self.configs['devices']):
+                output[exp][dev] = output_array[:, j]
 
-            for i, dev in enumerate(self.configs['devices']):
-                output[exp][dev] = output_array[:, i]
-
-        self.iv_plot(configs, input_arrays, output)
+        self.iv_plot(configs, np.array(input_arrays).T, output)
         self.driver.close_tasks()
+
+    # def create_input_arrays(self):
+
+    #     inputs_dict = {}
+    #     inputs_array = []
+
+    #     for dev in self.configs['devices']:
+    #         current_mask = self.configs["driver"]['instruments_setup'][dev][
+    #             'activation_channel_mask']
+    #         input_wfrm = self.gen_input_wfrm(
+    #             self.configs["driver"]['instruments_setup'][dev]
+    #             ['voltage_ranges'][self.index_prog[dev]])
+    #         inputs_dict[dev] = np.zeros_like(
+    #             input_wfrm[:, np.array(current_mask) == 1]
+    #         )  # creates a zeros array for each '1' in the mask entry
+
+    #         if current_mask[self.index_prog["all"]] == 1:
+    #             inputs_dict[dev] = input_wfrm.copy(
+    #             )  #inputs_dict[dev][self.index_prog[dev], :] = input_wfrm.copy()
+    #             self.index_prog[dev] += 1
+
+    #         else:
+    #             self.devices_in_experiments["IV" + str(self.index_prog["all"] +
+    #                                                    1)].remove(dev)
+
+    #         inputs_array.append(inputs_dict[dev])
+
+    #     #inputs_array = np.array(inputs_array)
+    #     self.index_prog["all"] += 1
+
+    #     return np.concatenate(inputs_array, axis=1)
 
     def create_input_arrays(self):
 
@@ -45,49 +77,45 @@ class IVMeasurement():
         inputs_array = []
 
         for dev in self.configs['devices']:
-            current_mask = self.configs["driver"]['instruments_setup'][dev][
-                'activation_channel_mask']
-            input_wfrm = self.gen_input_wfrm(
-                self.configs["driver"]['instruments_setup'][dev]
-                ['voltage_ranges'])
-            inputs_dict[dev] = np.zeros_like(
-                input_wfrm[:, np.array(current_mask) == 1]
-            )  # creates a zeros array for each '1' in the mask entry
 
-            if current_mask[self.index_prog["all"]] == 1:
-                inputs_dict[dev] = input_wfrm.copy(
-                )  #inputs_dict[dev][self.index_prog[dev], :] = input_wfrm.copy()
+            inputs_dict[dev] = np.zeros(
+                (self.configs["driver"]['instruments_setup'][dev]
+                 ['activation_channel_mask'].count(1), self.configs['shape']
+                 ))  # creates a zeros array for each '1' in the mask entry
+
+            if self.configs["driver"]['instruments_setup'][dev][
+                    'activation_channel_mask'][self.index_prog["all"]] == 1:
+                inputs_dict[dev][
+                    self.index_prog[dev], :] = self.gen_input_wfrm(
+                        self.configs["driver"]['instruments_setup'][dev]
+                        ['voltage_ranges'][self.index_prog[dev]])
                 self.index_prog[dev] += 1
 
             else:
                 self.devices_in_experiments["IV" + str(self.index_prog["all"] +
                                                        1)].remove(dev)
 
-            inputs_array.append(inputs_dict[dev])
+            inputs_array.extend(inputs_dict[dev])
 
-        #inputs_array = np.array(inputs_array)
+        inputs_array = np.array(inputs_array)
         self.index_prog["all"] += 1
 
-        return np.concatenate(inputs_array, axis=1)
+        return inputs_array.T
 
     def gen_input_wfrm(self, input_range):
-        result = []
-        for i in range(len(input_range)):
-            if self.input_signal['input_signal_type'] == 'sawtooth':
-                input_data = generate_sawtooth(input_range[i],
-                                               self.configs['shape'],
-                                               self.input_signal['direction'])
-            elif self.input_signal['input_signal_type'] == 'sine':
-                input_data = generate_sinewave(
-                    self.configs['shape'],
-                    self.configs["driver"]['sampling_frequency'],
-                    input_range[i][1])  # Max from the input range
-                input_data[-1] = 0
-            else:
-                print("Specify input_signal type")
-            result.append(input_data.copy())
-        result = np.stack(result, axis=1)
-        return result
+        if self.input_signal['input_signal_type'] == 'sawtooth':
+            input_data = generate_sawtooth(input_range, self.configs['shape'],
+                                           self.input_signal['direction'])
+        elif self.input_signal['input_signal_type'] == 'sine':
+            input_data = generate_sinewave(
+                self.configs['shape'],
+                self.configs["driver"]['sampling_frequency'],
+                input_range[1])  # Max from the input range
+            input_data[-1] = 0
+        else:
+            print("Specify input_signal type")
+
+        return input_data
 
     def plot(self, x, y):
         for i in range(np.shape(y)[1]):
@@ -210,7 +238,7 @@ if __name__ == '__main__':
     configs['input_signal'][
         'input_signal_type'] = 'sine'  # Type of signal to be created in the input. It can either be 'sine' or 'sawtooth'
     configs['input_signal'][
-        'time_in_seconds'] = 60  # time_in_seconds in seconds
+        'time_in_seconds'] = 5  # time_in_seconds in seconds
     configs['input_signal']['direction'] = 'up'
 
     configs['driver'] = load_configs('tests/hardware/brains_ivcurve.yaml')
