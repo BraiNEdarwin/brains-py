@@ -112,7 +112,7 @@ class DNPU_Base(nn.Module):
         #     self.controls.data[:, k].uniform_(self.control_low[k], self.control_high[k])
 
     def regularizer(self):
-        if "control_low" in dir(self) and "control_high" in dir(self):
+        if "control_low" not in dir(self) and "control_high" not in dir(self):
             return 0
         else:
             assert any(
