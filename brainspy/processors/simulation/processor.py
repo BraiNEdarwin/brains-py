@@ -1,7 +1,9 @@
 """
 Module for creating and managing a surrogate model. A surrogate model consists
-of a basic neural network, as well as extra effects applied to its output.
+of a basic neural network, as well as extra effects applied to its output:
+amplification, output clipping, noise.
 
+Note: this should be moved
 smg_configs
 -----------
 results_base_dir : str
@@ -17,7 +19,7 @@ model_architecture:
     D_in : int
         Number of inputs of the network.
     D_out : int
-        Numberof outputs of the network.
+        Number of outputs of the network.
     activation : str
         Type of activation used in the network, for example "relu".
 data:
@@ -39,10 +41,11 @@ data:
         Percentage of data in each category [train, validation, test].
 """
 
-import torch
 import warnings
 import collections
+from typing import Optional, Union
 
+import torch
 import numpy as np
 from torch import nn
 
@@ -60,13 +63,16 @@ class SurrogateModel(nn.Module):
     ----------
     model : torch.nn.Module
         The neural network the surrogate model works on.
-    voltage_ranges : torch.Tensor
-        Minimum and maximum voltage for each output.
+    voltage_ranges : Optional[torch.Tensor]
+        Minimum and maximum voltage for each input.
     output_clipping : Optional[torch.Tensor]
         Minimum and maximum values for clipping the output.
-    #TODO: Include also amplification
+    noise : Optional[Noise]
+        Noise object that is applied to the output of the network (for example
+        Gaussian noise).
+    amplification : Optional[float]
+        Amplification applied to the output of the network.
     """
-
     def __init__(
         self,
         model_structure: dict,
@@ -74,6 +80,21 @@ class SurrogateModel(nn.Module):
     ):
         """
         Create a processor, load the model.
+
+        Example
+        -------
+        >>> model_structure = {
+                "D_in": 7,
+                "D_out": 1,
+                "activation": "relu",
+                "hidden_sizes": [20, 20, 20]
+            }
+        >>> SurrogateModel(model_structure)
+
+        In this example a SurrogateModel is instantiated with 7 input
+        electrodes, 1 output electrode, ReLU activation and 3 hidden layers
+        of 20 neurons each. Since no state dictionary is given, the weights
+        of the network will be random.
 
         Parameters
         ----------
@@ -87,16 +108,28 @@ class SurrogateModel(nn.Module):
                 "tanh", "hard-tanh", or "sigmoid".
             hidden_sizes : list[int]
                 Sizes of the hidden layers.
-            Path of the model file.
-        model_state_dict: Pytorch's ordered dictionary containing the values for the learnable parameters of the raw model. By default is set to None.
-                          If it is not None, the dictionary will be loaded to the raw model.
+        model_state_dict : collections.OrderedDict
+            Pytorch's ordered dictionary containing the values for the
+            learnable parameters of the raw model. By default is set to None.
+            If it is None, the network will be initialized with random
+            weights. If it is not None, the dictionary will be loaded to the
+            raw model.
         """
         super(SurrogateModel, self).__init__()
         self.model = NeuralNetworkModel(model_structure)
         if model_state_dict is not None:
             self.model.load_state_dict(model_state_dict)
 
-    def get_voltage_ranges(self):
+    def get_voltage_ranges(self) -> Optional[torch.Tensor]:
+        """
+        Return the voltage ranges of the processor.
+        Will return None if not set yet.
+
+        Returns
+        -------
+        torch.Tensor
+            The voltage ranges of the processor.
+        """
         return self.voltage_ranges
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -108,8 +141,7 @@ class SurrogateModel(nn.Module):
 
         Example
         -------
-        >>> smg = SurrogateModel("model.pt")
-        >>> smg(torch.tensor([1.0, 2.0, 3.0]))
+        >>> sm.forward(torch.tensor([1.0, 2.0, 3.0]))
         torch.Tensor([4.0])
 
         Parameters
@@ -128,22 +160,22 @@ class SurrogateModel(nn.Module):
         if self.noise is not None:
             x = self.noise(x)
         if self.output_clipping is not None:
-            return torch.clamp(
-                x, min=self.output_clipping[0], max=self.output_clipping[1]
-            )
+            return torch.clamp(x,
+                               min=self.output_clipping[0],
+                               max=self.output_clipping[1])
         return x
 
     # For debugging purposes
-    def forward_numpy(self, input_matrix: np.array):
+    def forward_numpy(self, input_matrix: np.array) -> np.array:
         """
-        Perform a forward pass of the model without applying effects.
+        Perform a forward pass of the model without applying effects and
+        without calculating the gradient.
         Works on a numpy tensor: first converted to tensor, then passed
         through the processor, then converted back to numpy.
 
         Example
         -------
-        >>> smg = SurrogateModel("model.pt")
-        >>> smg.forward(np.array([1.0, 2.0, 3.0]))
+        >>> sm.forward(np.array([1.0, 2.0, 3.0]))
         np.array([4.0])
 
         Parameters
@@ -177,7 +209,8 @@ class SurrogateModel(nn.Module):
 
     def is_hardware(self):
         """
-        Method to indicate whether this is a hardware processor.
+        Method to indicate whether this is a hardware processor. Returns
+        False.
 
         Returns
         -------
@@ -186,8 +219,51 @@ class SurrogateModel(nn.Module):
         """
         return False
 
-    # TODO: Add description of this method
-    def set_effects_from_dict(self, info, configs):
+    def set_effects_from_dict(self, info: dict, configs: dict):
+        """
+        Set the effects of the processor from a dictionary (voltage_ranges,
+        amplification, output_clipping, noise). See set_effects for more
+        details.
+        Need to provide info dictionary in case configs are set to "default".
+
+        Example
+        -------
+        >>> configs = {"amplification": 2,
+                       "voltage_ranges": np.array([1, 2]),
+                       "output_clipping": np.array([3, 4])}
+        >>> sm.set_effects_from_dict(info_dict, configs)
+
+        Parameters
+        ----------
+        info : dict
+            Info dictionary of the processor.
+            electrode_no : int
+                Total number of electrodes.
+            activation_electrodes:
+                electrode_no : int
+                    Number of activation electrodes.
+                voltage_ranges : np.array
+                    Voltage ranges for the input (activation) electrodes.
+            output_electrodes:
+                electrode_no : int
+                    Number of output electrodes.
+                amplification : float
+                    Amplification applied to the output electrodes.
+                output_clipping : np.array
+                    Clipping applied to the output electrodes (min and max
+                    value).
+        configs : dict
+            Dictionary containing the desired effects.
+            amplification : float
+                Optional, ampfliciation to be applied to the output of the
+                network.
+            voltage_ranges : np.array
+                Optional, voltage ranges of the input electrodes.
+            output_clipping:
+                Clipping applied to the output electrodes.
+            noise : Noise
+                Optional, noise to be applied to the output of the network.
+        """
         return self.set_effects(
             info,
             self.get_key(configs, "voltage_ranges"),
@@ -196,8 +272,34 @@ class SurrogateModel(nn.Module):
             self.get_key(configs, "noise"),
         )
 
-    # TODO: Add description of this method
-    def get_key(self, configs, effect_key):
+    def get_key(self, configs: dict,
+                effect_key: str) -> Optional[Union[str, float]]:
+        """
+        Get a key from a dictionary, if the dictionary does not contain the
+        key, return 'default' (or None if the key is 'noise').
+
+        Example
+        -------
+        >>> configs = {"amplification": 2}
+        >>> sm.get_key("amplification")
+        2
+        >>> sm.get_key("output_clipping")
+        "default"
+        >>> sm.get_key("noise")
+        None
+
+        Parameters
+        ----------
+        configs : dict
+            Dictionary from which a value is needed.
+        effect_key : str
+            The key for which the value is needed.
+
+        Returns
+        -------
+        str or float or None
+            The value of the key or 'default' or None.
+        """
         if effect_key in configs:
             return configs[effect_key]
         if effect_key != "noise":
@@ -206,7 +308,7 @@ class SurrogateModel(nn.Module):
 
     def set_effects(
         self,
-        info,
+        info: dict,
         voltage_ranges="default",
         amplification="default",
         output_clipping="default",
@@ -216,77 +318,119 @@ class SurrogateModel(nn.Module):
         Set the amplification, output clipping and noise of the processor.
         Amplification and output clipping are explained in their respective
         methods. Noise is an error which is superimposed on the output of the
-        network to give it an element of randomness.
+        network to give it an element of randomness. See noise.py for more
+        information.
+
+        If any of the inputs for the effects are 'default' the value will be
+        taken from the info dictionary.
 
         Order of effects: amplification - noise - output clipping
 
         Example
         -------
-        # TODO: update example of loading model
-        >>> smg = SurrogateModel("model.pt")
-        >>> smg.set_effects(amplification=2.0,
-                            output_clipping="default",
-                            noise=None)
+        >>> sm.set_effects(info,
+                           voltage_ranges="default",
+                           amplification=np.array([2.0]),
+                           output_clipping="default",
+                           noise={"noise_type": "gaussian", "variance": 1)
 
         Parameters
         ----------
-        voltage_ranges:
-            Voltage ranges of the activation electrodes. Can be a value or 'default'.
+        info : dict
+            Dictionary with the info of the model. Documented in
+            set_effects_from_dict.
+        voltage_ranges
+            Voltage ranges of the activation electrodes. Can be a value or
+            'default'. By default 'default'.
         amplification
             The amplification of the processor. Can be None, a value, or
-            'default'. By default None.
+            'default'. By default 'default'.
         output_clipping
             The output clipping of the processor. Can be None, a value, or
-            'default'. By default None.
-        noise
-            The noise of the processor. Can be None, a string determining
-            the type of noise and some args. By default None.
+            'default'. By default 'default'.
+        noise_configs
+            The noise of the processor. Can be None (will generate no noise)
+            or a dictionary with keys "noise_type" and "variance" (the latter
+            only in case of Gaussian noise).
         """
-        # Warning, this function used to be called form the init using a
-        # configs file. Now it is called externally. To be changed where it
-        # corresponds in bspy tasks.
-
         self.set_amplification(info, amplification)
         self.set_output_clipping(info, output_clipping)
         self.set_voltage_ranges(info, voltage_ranges)
         self.noise = get_noise(noise_configs)
 
-    def set_voltage_ranges(self, info, value):
-        # TODO: Document this function.
+    def set_voltage_ranges(self, info: dict, value):
+        """
+        Set the voltage ranges of the processor to a given value or get the
+        value from the info dictionary (if value is 'default'). If value is
+        None, nothing happens.
+
+        This method is called through the set_effects method.
+
+        Example
+        -------
+        >>> sm.set_voltage_ranges(info, "default")
+
+        Parameters
+        ----------
+        info : dict
+            Dictionary with information of the processor. Documented in
+            set_effects_from_dict.
+        value : torch.Tensor or str or None
+            Desired value for the voltage ranges, can also be None (nothing
+            happens) or 'default' (get the value from the info dict).
+
+        Raises
+        ------
+        UserWarning
+            If the voltage ranges are changed.
+        """
         if value is not None and value == "default":
             self.voltage_ranges = TorchUtils.format(
-                info["activation_electrodes"]["voltage_ranges"]
-            )
+                info["activation_electrodes"]["voltage_ranges"])
         elif value is not None:
-            # TODO: Add warning to let the user know that the voltage ranges have been changed.
-            assert value.shape == info["activation_electrodes"]["voltage_ranges"].shape
-            self.voltage_ranges = TorchUtils.format([value])
+            assert value.shape == info["activation_electrodes"][
+                "voltage_ranges"].shape
+            warnings.warn(
+                "Voltage ranges of surrogate model have been changed.")
+            self.voltage_ranges = TorchUtils.format(value)
 
-    def set_amplification(self, info, value):
+    def set_amplification(self, info: dict, value: Optional[Union[str,
+                                                                  float]]):
         """
-        Set the amplification of the processor. The amplificaiton is what the
+        Set the amplification of the processor. The amplification is what the
         output of the neural network is multiplied with after the forward pass.
-        Can be None, a value, or 'default', by default None.
+        Can be None, a value, or 'default'.
         None will not use amplification, a value will set the amplification
         to that value, and the string 'default' will take the data from the
         info dictionary.
 
         This method is called through the "set_effects" method.
 
+        Example
+        -------
+        >>> sm.set_amplification(info, "default")
+
         Parameters
         ----------
-        value : None or double or str
+        info : dict
+            Dictionary with information of the processor. Documented in
+            set_effects_from_dict.
+        value : None or float or str
             The value of the amplification (None, a value or 'default').
+
+        Raises
+        ------
+        UserWarning
+            If the amplification is changed.
         """
         if value is not None and value == "default":
-            self.amplificaiton = TorchUtils.format(
-                [info["output_electrodes"]["amplification"]]
-            )
+            self.amplification = TorchUtils.format(
+                [info["output_electrodes"]["amplification"]])
         elif value is not None:
-            # TODO: Add warning to let the user know that the original amplification has been changed.
-            self.amplificaiton = TorchUtils.format([value])
+            warnings.warn("Amplification of surrogate model has been changed.")
+            self.amplification = TorchUtils.format([value])
 
-    def set_output_clipping(self, info, value):
+    def set_output_clipping(self, info: dict, value):
         """
         Set the output clipping of the processor. Output clipping means to
         clip the output to a certain range. Any output above that range will
@@ -299,16 +443,29 @@ class SurrogateModel(nn.Module):
 
         This method is called through the "set_effects" method.
 
+        Example
+        -------
+        >>> sm.set_output_clipping(info, "default")
+
         Parameters
         ----------
-        value : None or double or str
+        info : dict
+            Dictionary with information of the processor. Documented in
+            set_effects_from_dict.
+        value : None or np.array or str
             The value of the output clipping (None, a value or 'default').
+
+        Raises
+        ------
+        UserWarning
+            If the output clipping values are changed.
         """
         if value is not None and value == "default":
             self.output_clipping = TorchUtils.format(
-                [info["output_electrodes"]["clipping_value"]]
-            )
+                info["output_electrodes"]["output_clipping"])
         elif value is not None:
-            # TODO: Add warning to let the user know that the output clipping ranges have been changed.
-            self.output_clipping = TorchUtils.format([value])
-        return value
+            assert value.shape == info["activation_electrodes"][
+                "voltage_ranges"].shape
+            warnings.warn(
+                "Output clipping values of surrogate model have been changed.")
+            self.output_clipping = TorchUtils.format(value)
