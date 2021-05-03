@@ -70,7 +70,7 @@ class SurrogateModel(nn.Module):
     noise : Optional[Noise]
         Noise object that is applied to the output of the network (for example
         Gaussian noise).
-    amplification : Optional[float]
+    amplification : Optional[torch.Tensor]
         Amplification applied to the output of the network.
     """
     def __init__(
@@ -161,8 +161,8 @@ class SurrogateModel(nn.Module):
             x = self.noise(x)
         if self.output_clipping is not None:
             return torch.clamp(x,
-                               min=self.output_clipping[0],
-                               max=self.output_clipping[1])
+                               min=self.output_clipping[1],
+                               max=self.output_clipping[0])
         return x
 
     # For debugging purposes
@@ -226,11 +226,13 @@ class SurrogateModel(nn.Module):
         details.
         Need to provide info dictionary in case configs are set to "default".
 
+        Effect values are provided as lists and stored as tensors.
+
         Example
         -------
-        >>> configs = {"amplification": 2,
-                       "voltage_ranges": np.array([1, 2]),
-                       "output_clipping": np.array([3, 4])}
+        >>> configs = {"amplification": [2.0],
+                       "voltage_ranges": [[1.0, 2.0]] * 7,
+                       "output_clipping": [2.0, 1.0]}
         >>> sm.set_effects_from_dict(info_dict, configs)
 
         Parameters
@@ -242,26 +244,28 @@ class SurrogateModel(nn.Module):
             activation_electrodes:
                 electrode_no : int
                     Number of activation electrodes.
-                voltage_ranges : np.array
+                voltage_ranges : list[list[float]]
                     Voltage ranges for the input (activation) electrodes.
+                    Should contain a pair of values (min and max) for each
+                    input.
             output_electrodes:
                 electrode_no : int
                     Number of output electrodes.
-                amplification : float
+                amplification : list[float]
                     Amplification applied to the output electrodes.
-                output_clipping : np.array
-                    Clipping applied to the output electrodes (min and max
-                    value).
+                output_clipping : list[float]
+                    Clipping applied to the output electrodes (2 elements:
+                    maximum and minimum value in that order).
         configs : dict
             Dictionary containing the desired effects.
-            amplification : float
+            amplification : list[float]
                 Optional, ampfliciation to be applied to the output of the
                 network.
-            voltage_ranges : np.array
+            voltage_ranges : list[list[float]]
                 Optional, voltage ranges of the input electrodes.
-            output_clipping:
+            output_clipping : list[float]
                 Clipping applied to the output electrodes.
-            noise : Noise
+            noise : dict
                 Optional, noise to be applied to the output of the network.
         """
         return self.set_effects(
@@ -280,9 +284,9 @@ class SurrogateModel(nn.Module):
 
         Example
         -------
-        >>> configs = {"amplification": 2}
+        >>> configs = {"amplification": [2.0]}
         >>> sm.get_key("amplification")
-        2
+        [2.0]
         >>> sm.get_key("output_clipping")
         "default"
         >>> sm.get_key("noise")
@@ -297,7 +301,7 @@ class SurrogateModel(nn.Module):
 
         Returns
         -------
-        str or float or None
+        str or list[float] or None
             The value of the key or 'default' or None.
         """
         if effect_key in configs:
@@ -324,31 +328,33 @@ class SurrogateModel(nn.Module):
         If any of the inputs for the effects are 'default' the value will be
         taken from the info dictionary.
 
+        Effect values are provided as lists and stored as tensors.
+
         Order of effects: amplification - noise - output clipping
 
         Example
         -------
         >>> sm.set_effects(info,
                            voltage_ranges="default",
-                           amplification=np.array([2.0]),
+                           amplification=[2.0]),
                            output_clipping="default",
-                           noise={"noise_type": "gaussian", "variance": 1)
+                           noise={"noise_type": "gaussian", "variance": 1.0})
 
         Parameters
         ----------
         info : dict
             Dictionary with the info of the model. Documented in
             set_effects_from_dict.
-        voltage_ranges
+        voltage_ranges : str or list[list[float]]
             Voltage ranges of the activation electrodes. Can be a value or
             'default'. By default 'default'.
-        amplification
+        amplification : str or list[float]
             The amplification of the processor. Can be None, a value, or
             'default'. By default 'default'.
-        output_clipping
+        output_clipping : str or list[float]
             The output clipping of the processor. Can be None, a value, or
             'default'. By default 'default'.
-        noise_configs
+        noise_configs : dict
             The noise of the processor. Can be None (will generate no noise)
             or a dictionary with keys "noise_type" and "variance" (the latter
             only in case of Gaussian noise).
@@ -368,19 +374,24 @@ class SurrogateModel(nn.Module):
 
         Example
         -------
-        >>> sm.set_voltage_ranges(info, "default")
+        >>> sm.set_voltage_ranges(info, [[1.0, 2.0]] * 7)
+
+        Here the voltage range is set to 1.0 to 2.0 for each of the 7
+        activation electrodes.
 
         Parameters
         ----------
         info : dict
             Dictionary with information of the processor. Documented in
             set_effects_from_dict.
-        value : torch.Tensor or str or None
+        value : str or list[list[float]]
             Desired value for the voltage ranges, can also be None (nothing
             happens) or 'default' (get the value from the info dict).
 
         Raises
         ------
+        AssertionError
+            If the list given has the wrong length.
         UserWarning
             If the voltage ranges are changed.
         """
@@ -388,14 +399,12 @@ class SurrogateModel(nn.Module):
             self.voltage_ranges = TorchUtils.format(
                 info["activation_electrodes"]["voltage_ranges"])
         elif value is not None:
-            assert value.shape == info["activation_electrodes"][
-                "voltage_ranges"].shape
+            assert len(value) == info["activation_electrodes"]["electrode_no"]
             warnings.warn(
                 "Voltage ranges of surrogate model have been changed.")
             self.voltage_ranges = TorchUtils.format(value)
 
-    def set_amplification(self, info: dict, value: Optional[Union[str,
-                                                                  float]]):
+    def set_amplification(self, info: dict, value):
         """
         Set the amplification of the processor. The amplification is what the
         output of the neural network is multiplied with after the forward pass.
@@ -408,7 +417,7 @@ class SurrogateModel(nn.Module):
 
         Example
         -------
-        >>> sm.set_amplification(info, "default")
+        >>> sm.set_amplification(info, [2.0])
 
         Parameters
         ----------
@@ -420,15 +429,18 @@ class SurrogateModel(nn.Module):
 
         Raises
         ------
+        AssertionError
+            If the list given has the wrong length.
         UserWarning
             If the amplification is changed.
         """
         if value is not None and value == "default":
             self.amplification = TorchUtils.format(
-                [info["output_electrodes"]["amplification"]])
+                info["output_electrodes"]["amplification"])
         elif value is not None:
+            assert len(value) == info["output_electrodes"]["electrode_no"]
             warnings.warn("Amplification of surrogate model has been changed.")
-            self.amplification = TorchUtils.format([value])
+            self.amplification = TorchUtils.format(value)
 
     def set_output_clipping(self, info: dict, value):
         """
@@ -445,7 +457,7 @@ class SurrogateModel(nn.Module):
 
         Example
         -------
-        >>> sm.set_output_clipping(info, "default")
+        >>> sm.set_output_clipping(info, [2.0, 1.0])
 
         Parameters
         ----------
@@ -457,6 +469,8 @@ class SurrogateModel(nn.Module):
 
         Raises
         ------
+        AssertionError
+            If the list given has the wrong length.
         UserWarning
             If the output clipping values are changed.
         """
@@ -464,8 +478,7 @@ class SurrogateModel(nn.Module):
             self.output_clipping = TorchUtils.format(
                 info["output_electrodes"]["output_clipping"])
         elif value is not None:
-            assert value.shape == info["activation_electrodes"][
-                "voltage_ranges"].shape
+            assert len(value) == 2
             warnings.warn(
                 "Output clipping values of surrogate model have been changed.")
             self.output_clipping = TorchUtils.format(value)
