@@ -27,7 +27,7 @@ class DNPU_Base(nn.Module):
             self.processor = Processor(
                 processor
             )  # It accepts initialising a processor as a dictionary
-        ######### Set up node #########
+        # ######## Set up node #########
         # Freeze parameters of node
         for params in self.processor.parameters():
             params.requires_grad = False
@@ -35,12 +35,12 @@ class DNPU_Base(nn.Module):
         self.indices_node = np.arange(
             len(self.processor.data_input_indices) + len(self.processor.control_indices)
         )
-        ######### set learnable parameters #########
+        # ######## set learnable parameters #########
         self.control_list = TorchUtils.format(
             self.set_controls(inputs_list), data_type=torch.int64
         )
 
-        ######### Initialise data input ranges #########
+        # ######## Initialise data input ranges #########
         self.data_input_low = torch.stack(
             [
                 self.processor.processor.voltage_ranges[indx_cv, 0]
@@ -54,7 +54,7 @@ class DNPU_Base(nn.Module):
             ]
         )
 
-        ###### Set everything as torch Tensors and send to DEVICE ######
+        # ##### Set everything as torch Tensors and send to DEVICE ######
         self.inputs_list = TorchUtils.format(inputs_list, data_type=torch.int64)
         # IndexError: tensors used as indices must be long, byte or bool tensors
 
@@ -112,7 +112,7 @@ class DNPU_Base(nn.Module):
         #     self.controls.data[:, k].uniform_(self.control_low[k], self.control_high[k])
 
     def regularizer(self):
-        if "control_low" in dir(self) and "control_high" in dir(self):
+        if "control_low" not in dir(self) and "control_high" not in dir(self):
             return 0
         else:
             assert any(
@@ -124,8 +124,7 @@ class DNPU_Base(nn.Module):
             buff = 0.0
             for i, p in enumerate(self.all_controls):
                 buff += torch.sum(
-                    torch.relu(self.control_low[i] - p)
-                    + torch.relu(p - self.control_high[i])
+                    torch.relu(self.control_low[i] - p) + torch.relu(p - self.control_high[i])
                 )
             return buff
 

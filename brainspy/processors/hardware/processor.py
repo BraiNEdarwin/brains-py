@@ -83,19 +83,21 @@ class HardwareProcessor(nn.Module):
             It provides a way for applications to configure different log handlers , by default None
         """
         super(HardwareProcessor, self).__init__()
+
         if not isinstance(instrument_configs, dict):
             self.driver = instrument_configs
         else:
             self.driver = get_driver(instrument_configs)
             self.voltage_ranges = TorchUtils.format(self.driver.voltage_ranges)
+            # TODO: Add message for assertion. Raise an error.
+            assert (
+                slope_length / self.driver.configs["sampling_frequency"]
+            ) >= self.driver.configs["max_ramping_time_seconds"]
 
         self.waveform_mgr = WaveformManager(
             {"slope_length": slope_length, "plateau_length": plateau_length}
         )
-        # TODO: Add message for assertion. Raise an error.
-        assert (
-            slope_length / self.driver.configs["sampling_frequency"]
-        ) >= self.driver.configs["max_ramping_time_seconds"]
+
         self.logger = logger
 
     def forward(self, x):

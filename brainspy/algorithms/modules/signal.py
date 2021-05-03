@@ -5,10 +5,7 @@ Created on Wed Aug 21 13:14:52 2019
 @author: HCRuiz and Unai Alegre
 """
 import torch
-import numpy as np
 from brainspy.algorithms.modules.performance.accuracy import get_accuracy
-from brainspy.utils.pytorch import TorchUtils
-import warnings
 
 # TODO: implement corr_lin_fit (AF's last fitness function)?
 
@@ -125,7 +122,7 @@ def fisher_multipled_corr(output, target):
 
 def sigmoid_nn_distance(outputs, target=None):
     # Sigmoid nearest neighbour distance: a squeshed version of a sum of all internal distances between points.
-    if target != None:
+    if target is not None:
         raise Warning("This loss function does not use target values. Target ignored.")
     dist_nn = get_clamped_intervals(outputs, mode="single_nn")
     return -1 * torch.mean(torch.sigmoid(dist_nn / 2) - 0.5)

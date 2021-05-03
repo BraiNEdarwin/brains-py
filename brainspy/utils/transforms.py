@@ -118,8 +118,7 @@ class CurrentToVoltage:
         x_copy = x_value.clone()
         result = torch.zeros_like(x_value)
 
-        if not (len(x_value.shape) == 2
-                and x_value.shape[1] == len(self.map_variables)):
+        if not (len(x_value.shape) == 2 and x_value.shape[1] == len(self.map_variables)):
             raise Exception("Input shape not supported.")
 
         for i in range(len(self.map_variables)):
@@ -130,8 +129,7 @@ class CurrentToVoltage:
                     max=self.current_range[i][1],
                 )
             result[:,
-                   i] = (x_copy[:, i] *
-                         self.map_variables[i][0]) + self.map_variables[i][1]
+                   i] = (x_copy[:, i] * self.map_variables[i][0]) + self.map_variables[i][1]
 
         return result
 

@@ -13,7 +13,7 @@ def init_channel_data(configs):
         instruments = add_uniquely(
             instruments, configs["instruments_setup"]["readout_instrument"])
         voltage_ranges = np.array(
-            configs['instruments_setup']['activation_voltages'])
+            configs['instruments_setup']['activation_voltage_ranges'])
     else:
         instruments = []
         activation_channel_list = []
@@ -22,7 +22,7 @@ def init_channel_data(configs):
         for device_name in configs["instruments_setup"]:
             if device_name != "trigger_source" and device_name != "multiple_devices":
                 mask = get_mask(configs["instruments_setup"][device_name])
-                if mask is None or sum(mask > 0):
+                if mask is None or sum(mask) > 0:
                     configs["instruments_setup"][device_name][
                         "activation_channels"] = list(
                             np.array(configs["instruments_setup"][device_name]
@@ -45,9 +45,10 @@ def init_channel_data(configs):
                         configs["instruments_setup"][device_name]
                         ["readout_instrument"],
                     )
-                    voltage_ranges = np.array(configs['instruments_setup']
-                                              [device_name]['voltage_ranges'],
-                                              dtype=np.double)
+                    voltage_ranges = np.array(
+                        configs['instruments_setup'][device_name]
+                        ['activation_voltage_ranges'],
+                        dtype=np.double)
                     if mask is not None:
                         voltage_ranges = voltage_ranges[mask == 1]
                     voltage_ranges_list.append(voltage_ranges)
@@ -64,16 +65,13 @@ def concatenate_voltage_ranges(voltage_ranges):
 
 def init_activation_channels(configs, activation_channel_list=[]):
     for i in range(len(configs["activation_channels"])):
-        activation_channel_list.append(configs["activation_instrument"] +
-                                       "/ao" +
-                                       str(configs["activation_channels"][i]))
+        activation_channel_list.append(configs["activation_instrument"] + "/ao" + str(configs["activation_channels"][i]))
     return activation_channel_list
 
 
 def init_readout_channels(configs, readout_channel_list=[]):
     for i in range(len(configs["readout_channels"])):
-        readout_channel_list.append(configs["readout_instrument"] + "/ai" +
-                                    str(configs["readout_channels"][i]))
+        readout_channel_list.append(configs["readout_instrument"] + "/ai" + str(configs["readout_channels"][i]))
 
     return readout_channel_list
 

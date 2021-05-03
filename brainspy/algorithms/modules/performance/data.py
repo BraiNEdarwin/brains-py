@@ -1,7 +1,5 @@
 import torch
-from torch.utils.data import SubsetRandomSampler, Dataset, random_split
-
-from brainspy.utils.pytorch import TorchUtils
+from torch.utils.data import Dataset, random_split
 
 DTYPE = torch.float32
 

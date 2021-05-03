@@ -5,7 +5,6 @@ import os
 import unittest
 import numpy as np
 import torch
-from brainspy.utils.io import load_configs
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.manager import (
     get_criterion,
@@ -15,6 +14,7 @@ from brainspy.utils.manager import (
     get_algorithm,
 )
 from brainspy.processors.processor import Processor
+from brainspy.processors.dnpu import DNPU
 from brainspy.algorithms.modules.optim import GeneticOptimizer
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 
@@ -85,62 +85,71 @@ class ManagerTest(unittest.TestCase):
         Test for the get_optimizer() method which returns an optimizer object based on the configs
         """
 
-        NODE_CONFIGS = {}
-        NODE_CONFIGS["processor_type"] = "simulation"
-        NODE_CONFIGS["input_indices"] = [2, 3]
-        NODE_CONFIGS["electrode_effects"] = {}
-        NODE_CONFIGS["electrode_effects"]["amplification"] = 3
-        NODE_CONFIGS["electrode_effects"]["clipping_value"] = [-300, 300]
-        NODE_CONFIGS["electrode_effects"]["noise"] = {}
-        NODE_CONFIGS["electrode_effects"]["noise"]["noise_type"] = "gaussian"
-        NODE_CONFIGS["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
-        NODE_CONFIGS["driver"] = {}
-        NODE_CONFIGS["waveform"] = {}
-        NODE_CONFIGS["waveform"]["plateau_length"] = 1
-        NODE_CONFIGS["waveform"]["slope_length"] = 0
-        NODE_CONFIGS["optimizer"] = "genetic"
+        configs = {}
+        configs["processor_type"] = "simulation"
+        configs["input_indices"] = [2, 3]
+        configs["electrode_effects"] = {}
+        configs["electrode_effects"]["amplification"] = 3
+        configs["electrode_effects"]["clipping_value"] = [-300, 300]
+        configs["electrode_effects"]["noise"] = {}
+        configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
+        configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
+        configs["driver"] = {}
+        configs["waveform"] = {}
+        configs["waveform"]["plateau_length"] = 1
+        configs["waveform"]["slope_length"] = 0
+        configs["optimizer"] = "genetic"
+        configs["epochs"] = 100
+        configs["partition"] = [4, 22]
         while "brains-py" not in os.getcwd():
             os.chdir("..")
             os.chdir("brains-py")
-        model_dir = os.path.join(os.getcwd(), "tests/unit/utils/testfiles/testmodel.pt")
-        model_data = torch.load(model_dir)
-        model = Processor(
-            NODE_CONFIGS,
+        model_dir = os.path.join(
+            os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
+        )
+        model_data = torch.load(model_dir, map_location=TorchUtils.get_device())
+        processor = Processor(
+            configs,
             model_data["info"],
             model_data["model_state_dict"],
         )
-        optim = get_optimizer(model, NODE_CONFIGS)
+        model = DNPU(processor=processor, configs=configs)
+        optim = get_optimizer(model, configs)
         assert isinstance(optim, GeneticOptimizer)
 
     def test_get_adam(self):
         """
         Test for the get_adam() method which returns an Adam optimizer object based on the configs
         """
-        NODE_CONFIGS = {}
-        NODE_CONFIGS["processor_type"] = "simulation"
-        NODE_CONFIGS["input_indices"] = [2, 3]
-        NODE_CONFIGS["electrode_effects"] = {}
-        NODE_CONFIGS["electrode_effects"]["amplification"] = 3
-        NODE_CONFIGS["electrode_effects"]["clipping_value"] = [-300, 300]
-        NODE_CONFIGS["electrode_effects"]["noise"] = {}
-        NODE_CONFIGS["electrode_effects"]["noise"]["noise_type"] = "gaussian"
-        NODE_CONFIGS["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
-        NODE_CONFIGS["driver"] = {}
-        NODE_CONFIGS["waveform"] = {}
-        NODE_CONFIGS["waveform"]["plateau_length"] = 1
-        NODE_CONFIGS["waveform"]["slope_length"] = 0
-        NODE_CONFIGS["optimizer"] = "adam"
+        configs = {}
+        configs["processor_type"] = "simulation"
+        configs["input_indices"] = [2, 3]
+        configs["electrode_effects"] = {}
+        configs["electrode_effects"]["amplification"] = 3
+        configs["electrode_effects"]["clipping_value"] = [-300, 300]
+        configs["electrode_effects"]["noise"] = {}
+        configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
+        configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
+        configs["driver"] = {}
+        configs["waveform"] = {}
+        configs["waveform"]["plateau_length"] = 1
+        configs["waveform"]["slope_length"] = 0
+        configs["optimizer"] = "adam"
+        configs["learning_rate"] = 0.001
         while "brains-py" not in os.getcwd():
             os.chdir("..")
             os.chdir("brains-py")
-        model_dir = os.path.join(os.getcwd(), "tests/unit/utils/testfiles/testmodel.pt")
-        model_data = torch.load(model_dir)
-        model = Processor(
-            NODE_CONFIGS,
+        model_dir = os.path.join(
+            os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
+        )
+        model_data = torch.load(model_dir, map_location=TorchUtils.get_device())
+        processor = Processor(
+            configs,
             model_data["info"],
             model_data["model_state_dict"],
         )
-        optim = get_adam(model, NODE_CONFIGS)
+        model = DNPU(processor=processor, configs=configs)
+        optim = get_adam(model, configs)
         assert isinstance(optim, torch.optim.Adam)
 
     def test_get_algorithm(self):
@@ -166,15 +175,15 @@ class ManagerTest(unittest.TestCase):
 
         # Testing for the driver type - CDAQtoCDAQ ( Test only when connected to Hardware )
 
-        NODE_CONFIGS = {}
-        NODE_CONFIGS["instrument_type"] = "cdaq_to_cdaq"
-        NODE_CONFIGS["real_time_rack"] = False
-        NODE_CONFIGS["sampling_frequency"] = 1000
-        NODE_CONFIGS["instruments_setup"] = {}
-        NODE_CONFIGS["instruments_setup"]["multiple_devices"] = False
-        NODE_CONFIGS["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-        NODE_CONFIGS["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
-        NODE_CONFIGS["instruments_setup"]["activation_channels"] = [
+        configs = {}
+        configs["instrument_type"] = "cdaq_to_cdaq"
+        configs["real_time_rack"] = False
+        configs["sampling_frequency"] = 1000
+        configs["instruments_setup"] = {}
+        configs["instruments_setup"]["multiple_devices"] = False
+        configs["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
+        configs["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+        configs["instruments_setup"]["activation_channels"] = [
             0,
             2,
             5,
@@ -183,7 +192,7 @@ class ManagerTest(unittest.TestCase):
             6,
             1,
         ]  # Channels through which voltages will be sent for activating the device (with both data inputs and control voltages)
-        NODE_CONFIGS["instruments_setup"]["activation_voltages"] = [
+        configs["instruments_setup"]["activation_voltages"] = [
             [-1.2, 0.6],
             [-1.2, 0.6],
             [-1.2, 0.6],
@@ -192,15 +201,15 @@ class ManagerTest(unittest.TestCase):
             [-0.7, 0.3],
             [-0.7, 0.3],
         ]
-        NODE_CONFIGS["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
-        NODE_CONFIGS["instruments_setup"]["readout_channels"] = [4]
-        # driver = get_driver(NODE_CONFIGS)
+        configs["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+        configs["instruments_setup"]["readout_channels"] = [4]
+        # driver = get_driver(configs)
         # assert isinstance(driver, CDAQtoCDAQ)
 
     def runTest(self):
         self.test_get_criterion()
-        # self.test_get_optimizer()
-        # self.test_get_adam()
+        self.test_get_optimizer()
+        self.test_get_adam()
         self.test_get_algorithm()
         self.test_get_driver()
 

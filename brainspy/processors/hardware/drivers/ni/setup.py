@@ -3,7 +3,6 @@
 """
 import sys
 import math
-import warnings
 import signal
 import threading
 import numpy as np
@@ -177,8 +176,7 @@ class NationalInstrumentsSetup:
                                         shape)
             self.offsetted_shape = shape + self.configs["offset"]
             self.ceil = (math.ceil(
-                (self.offsetted_shape) / self.configs["sampling_frequency"]) +
-                         1)
+                (self.offsetted_shape) / self.configs["sampling_frequency"]) + 1)
 
     def is_hardware(self):
         """

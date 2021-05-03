@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from brainspy.utils.io import load_configs
 from brainspy.utils.manager import get_driver
 import numpy as np
-import math
 
 
 class IVMeasurement():
@@ -26,68 +25,66 @@ class IVMeasurement():
         experiments = ["IV1", "IV2", "IV3", "IV4", "IV5", "IV6", "IV7"]
         self.devices_in_experiments = {}
         output = {}
+        inputs = {}
         output_array = []
-        input_arrays = self.create_input_arrays()
-        for exp in experiments:
+        input_arrays = []
+        for i, exp in enumerate(experiments):
             output[exp] = {}
+            inputs[exp] = {}
             self.devices_in_experiments[exp] = self.configs['devices'].copy()
-            output_array = self.driver.forward_numpy(input_arrays)
+            output_array = self.driver.forward_numpy(
+                self.create_input_arrays(inputs[exp]))
 
-            for i, dev in enumerate(self.configs['devices']):
-                output[exp][dev] = output_array[:, i]
-
-        self.iv_plot(configs, input_arrays, output)
+            for j, dev in enumerate(self.configs['devices']):
+                output[exp][dev] = output_array[:, j]
         self.driver.close_tasks()
+        self.iv_plot(configs, inputs, output)
 
-    def create_input_arrays(self):
+    def create_input_arrays(self, inputs_dict):
 
-        inputs_dict = {}
+        #inputs_dict = {}
         inputs_array = []
 
         for dev in self.configs['devices']:
-            current_mask = self.configs["driver"]['instruments_setup'][dev][
-                'activation_channel_mask']
-            input_wfrm = self.gen_input_wfrm(
-                self.configs["driver"]['instruments_setup'][dev]
-                ['voltage_ranges'])
-            inputs_dict[dev] = np.zeros_like(
-                input_wfrm[:, np.array(current_mask) == 1]
-            )  # creates a zeros array for each '1' in the mask entry
 
-            if current_mask[self.index_prog["all"]] == 1:
-                inputs_dict[dev] = input_wfrm.copy(
-                )  #inputs_dict[dev][self.index_prog[dev], :] = input_wfrm.copy()
+            inputs_dict[dev] = np.zeros(
+                (self.configs["driver"]['instruments_setup'][dev]
+                 ['activation_channel_mask'].count(1), self.configs['shape']
+                 ))  # creates a zeros array for each '1' in the mask entry
+
+            if self.configs["driver"]['instruments_setup'][dev][
+                    'activation_channel_mask'][self.index_prog["all"]] == 1:
+                inputs_dict[dev][
+                    self.index_prog[dev], :] = self.gen_input_wfrm(
+                        self.configs["driver"]['instruments_setup'][dev]
+                        ['activation_voltage_ranges'][self.index_prog["all"]])
                 self.index_prog[dev] += 1
 
             else:
                 self.devices_in_experiments["IV" + str(self.index_prog["all"] +
                                                        1)].remove(dev)
 
-            inputs_array.append(inputs_dict[dev])
+            inputs_array.extend(inputs_dict[dev])
 
-        #inputs_array = np.array(inputs_array)
+        inputs_array = np.array(inputs_array)
         self.index_prog["all"] += 1
 
-        return np.concatenate(inputs_array, axis=1)
+        return inputs_array.T
 
     def gen_input_wfrm(self, input_range):
-        result = []
-        for i in range(len(input_range)):
-            if self.input_signal['input_signal_type'] == 'sawtooth':
-                input_data = generate_sawtooth(input_range[i],
-                                               self.configs['shape'],
-                                               self.input_signal['direction'])
-            elif self.input_signal['input_signal_type'] == 'sine':
-                input_data = generate_sinewave(
-                    self.configs['shape'],
-                    self.configs["driver"]['sampling_frequency'],
-                    input_range[i][1])  # Max from the input range
-                input_data[-1] = 0
-            else:
-                print("Specify input_signal type")
-            result.append(input_data.copy())
-        result = np.stack(result, axis=1)
-        return result
+        if self.input_signal['input_signal_type'] == 'sawtooth':
+            input_data = generate_sawtooth(input_range, self.configs['shape'],
+                                           self.input_signal['direction'])
+        elif self.input_signal['input_signal_type'] == 'sine':
+            input_data = generate_sinewave(
+                self.configs['shape'],
+                self.configs["driver"]['sampling_frequency'],
+                input_range[1])  # Max from the input range
+            input_data[-1] = 0
+        else:
+            print("Specify input_signal type")
+
+        return input_data
 
     def plot(self, x, y):
         for i in range(np.shape(y)[1]):
@@ -96,13 +93,14 @@ class IVMeasurement():
             plt.plot(y)
             plt.show()
 
-    def iv_plot(self, configs, input_waveform, output):
+    def iv_plot(self, configs, inputs, output):
 
         #xaxis = self.gen_input_wfrm()
         devlist = configs['driver'][
             'instruments_setup']  # get_default_brains_setup_dict()
         ylabeldist = -5
         electrode_id = 0
+        cmap = plt.get_cmap("tab10")
         for k, dev in enumerate(self.configs['devices']):
             fig, axs = plt.subplots(2, 4)
             # plt.grid(True)
@@ -110,30 +108,50 @@ class IVMeasurement():
                          ' - Input voltage vs Output current')
             for i in range(2):
                 for j in range(4):
-                    current_electrode = j + i * 4
-                    exp = "IV" + str(current_electrode + 1)
-                    if current_electrode < 7:
+                    exp_index = j + i * 4
+                    exp = "IV" + str(exp_index + 1)
+                    if exp_index < 7:
                         if self.configs["driver"]['instruments_setup'][dev][
-                                "activation_channel_mask"][
-                                    current_electrode] == 1:
-                            axs[i, j].plot(input_waveform[:, electrode_id],
-                                           output[exp][dev])
+                                "activation_channel_mask"][exp_index] == 1:
+                            masked_idx = sum(
+                                self.configs["driver"]['instruments_setup']
+                                [dev]["activation_channel_mask"][:exp_index +
+                                                                 1]) - 1
+                            axs[i, j].plot(inputs[exp][dev][masked_idx],
+                                           output[exp][dev],
+                                           color=cmap(exp_index))
                             axs[i, j].set_ylabel('output (nA)',
                                                  labelpad=ylabeldist)
                             axs[i, j].set_xlabel('input (V)', labelpad=1)
                             axs[i, j].xaxis.grid(True)
                             axs[i, j].yaxis.grid(True)
                         else:
-                            axs[i, j].plot(input_waveform[:, electrode_id],
-                                           input_waveform[:, electrode_id] * 0)
+                            # if self.configs["driver"]['instruments_setup'][
+                            #         dev]["activation_channel_mask"][
+                            #             exp_index] == 1:
+                            #     axs[i,
+                            #         j].plot(input_waveform[exp_index]
+                            #                 [:, electrode_id])
+
+                            #     axs[i, j].set_title(
+                            #         devlist[dev]["activation_channels"]
+                            #         [exp_index])
+                            axs[i, j].plot([])
                             axs[i, j].set_xlabel('Channel Masked')
-                        axs[i, j].set_title(devlist[dev]["activation_channels"]
-                                            [current_electrode])
                         electrode_id += 1
                     else:
-                        for z in range(7):
-                            axs[i, j].plot(input_waveform[:, (k * 7) + z],
-                                           label="IV" + str(z + 1))
+                        for z, key in enumerate(inputs.keys()):
+                            m = 0
+                            if self.configs["driver"]['instruments_setup'][
+                                    dev]["activation_channel_mask"][z] == 1:
+                                masked_idx = sum(
+                                    self.configs["driver"]['instruments_setup']
+                                    [dev]["activation_channel_mask"][:z +
+                                                                     1]) - 1
+                                axs[i, j].plot(inputs[key][dev][masked_idx],
+                                               label="IV" + str(z),
+                                               color=cmap(z))
+                                m += 1
                         #axs[i, j].yaxis.tick_right()
                         #axs[i, j].yaxis.set_label_position("right")
                         axs[i, j].set_ylabel('input (V)')
@@ -208,9 +226,9 @@ if __name__ == '__main__':
     configs['input_signal'] = {}
     #configs['input_signal']['voltage_range'] = [1.2, 0.5]
     configs['input_signal'][
-        'input_signal_type'] = 'sine'  # Type of signal to be created in the input. It can either be 'sine' or 'sawtooth'
+        'input_signal_type'] = 'sawtooth'  # Type of signal to be created in the input. It can either be 'sine' or 'sawtooth'
     configs['input_signal'][
-        'time_in_seconds'] = 60  # time_in_seconds in seconds
+        'time_in_seconds'] = 5  # time_in_seconds in seconds
     configs['input_signal']['direction'] = 'up'
 
     configs['driver'] = load_configs('tests/hardware/brains_ivcurve.yaml')

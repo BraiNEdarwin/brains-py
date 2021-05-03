@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 from torch import Tensor
 from typing import Sequence, Union
@@ -50,11 +49,10 @@ class Processor(nn.Module):
                     info["electrode_info"], configs["electrode_effects"]
                 )
             elif (
-                configs["processor_type"] == "cdaq_to_cdaq"
-                or configs["processor_type"] == "cdaq_to_nidaq"
+                configs["processor_type"] == "cdaq_to_cdaq" or configs["processor_type"] == "cdaq_to_nidaq"
             ):
                 configs["driver"]["instrument_type"] = configs["processor_type"]
-                if not "activation_voltages" in configs["driver"]["instruments_setup"]:
+                if "activation_voltages" not in configs["driver"]["instruments_setup"]:
                     configs["driver"]["instruments_setup"][
                         "activation_voltages"
                     ] = info["electrode_info"]["activation_electrodes"][
