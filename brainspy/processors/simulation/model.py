@@ -12,14 +12,13 @@ class NeuralNetworkModel(nn.Module):
     A neural network model is a basic pytorch model.
     Attributes:
     model_structure : dict
-        Dictionary containing the model structure; keys explained in constructor
-        method.
+        Dictionary containing the model structure; keys explained in
+        constructor method.
     verbose : bool
         Indicate whether to print certain steps.
     raw_model : nn.Sequential
         Torch object containing the layers and activations of the network.
     """
-
     def __init__(self, model_structure: dict, verbose=False):
         """
         Create a model object.
@@ -73,8 +72,9 @@ class NeuralNetworkModel(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Do a forward pass through the raw neural network model simulating the input-output
-        relationship of a device.
+        Do a forward pass through the raw neural network model simulating the
+        input-output relationship of a device.
+
         Example
         -------
         >>> model = NeuralNetworkModel(d)
@@ -162,22 +162,18 @@ class NeuralNetworkModel(nn.Module):
             model_structure["D_in"] = default_in_size
             warnings.warn(
                 "The model loaded does not define the input dimension as "
-                f"expected. Changed it to default value: {default_in_size}."
-            )
+                f"expected. Changed it to default value: {default_in_size}.")
         if "D_out" not in model_structure:
             # Check output dimension.
             model_structure["D_out"] = default_out_size
             warnings.warn(
                 "The model loaded does not define the output dimension as "
-                f"expected. Changed it to default value: {default_out_size}."
-            )
+                f"expected. Changed it to default value: {default_out_size}.")
         if "hidden_sizes" not in model_structure:
             # Check sizes of hidden layers.
-            model_structure["hidden_sizes"] = [
-                default_hidden_size
-            ] * default_hidden_number
+            model_structure["hidden_sizes"] = [default_hidden_size
+                                               ] * default_hidden_number
             warnings.warn(
                 "The model loaded does not define the hidden layer sizes as "
                 f"expected. Changed it to default value: "
-                f"{default_hidden_number} layers of {default_hidden_size}."
-            )
+                f"{default_hidden_number} layers of {default_hidden_size}.")
