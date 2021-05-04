@@ -21,7 +21,10 @@ RANGE_MARGIN = 0.01
 
 def get_tasks_driver(configs):
     """
-    get the tasks driver based on the configurations dictionary
+    Get the tasks driver based on the configurations dictionary.
+    The tasks driver can either be RemoteTasks or LocalTasks.
+    The Local Tasks use Pyro which are Python Remote Objects. Objects can talk to eachother over the network with minimal effort.
+    You can just use normal Python method calls to call objects on other machines.
 
     Parameters
     ----------
@@ -30,8 +33,7 @@ def get_tasks_driver(configs):
 
     Returns
     -------
-    class - RemoteTasks() or LocalTasks() based on configs
-        [description]
+    class - RemoteTasks() or LocalTasks() based on configs defined
     """
     if configs["real_time_rack"]:
         return RemoteTasks(configs["uri"])
@@ -41,7 +43,9 @@ def get_tasks_driver(configs):
 
 def run_server(configs):
     """
-    To start and run the server for the RemoteTasks
+    To start and run the server for the RemoteTasks.
+    The method assigns a static Ip addrress to the server which will be used to run Remote Tasks Server.
+    Therefore, once the server is started, all method calls can be made remotely.
 
     Parameters
     ----------
@@ -57,7 +61,10 @@ def run_server(configs):
 
 def set_static_ip(configs):
     """
-    Give a static IP address to the system with a mask
+    Give a static IP address to the system with a mask.
+    IP addresses are either configured by a DHCP server or manually configured (static IP addresses).
+    The subnet mask splits the IP address into the host and network addresses,
+    thereby defining which part of the IP address belongs to the device and which part belongs to the network.
 
     Parameters
     ----------
@@ -79,12 +86,26 @@ def set_static_ip(configs):
 class LocalTasks:
     """
     Class to initialize and handle the Local tasks on the device.
-    Classes and methods available for remote access.
+    They include all tasks which are needed to control the device including the activation,readout and synchronization of channels.
+    It can alo be used to set the shape variables according to the requiremnets.
+
+    Methods of this class are available for remote access.
+    The Local Tasks use Pyro which are Python Remote Objects.
+    Objects can talk to eachother over the network with minimal effort.
+    You can just use normal Python method calls to call objects on other machines.
+    Pyro can be used to distribute and integrate various kinds of resources or responsibilities: computational (hardware) resources (cpu, storage),and also informational resources (data).
+
+    @Pyro.oneway -
+    For calls to such methods, Pyro will not wait for a response from the remote object.
+    The return value of these calls is always None.
+
     """
 
     def __init__(self):
         """
-        Initialize the activation and readout task as Null values in the beginning
+        Initialize the activation and readout task as Null values in the beginning.
+        These tasks will be updated as the method calls are made to do different types of tasks.
+        It also initializes the device to Acquire or generate a finite number of samples
         """
         self.acquisition_type = constants.AcquisitionType.FINITE
         self.activation_task = None
@@ -93,7 +114,13 @@ class LocalTasks:
     @Pyro4.oneway
     def init_activation_channels(self, channel_names, voltage_ranges=None):
         """
-        Initialises the output of the computer which is the input of the device
+        Initialises the activation electrodes of the device.
+        The output of the computer is the input of the device.
+        These are being sent as list of voltage values and channel names which are the start values for device. They can however be tuned later according to requirements.
+        Activation electrodes -
+            Range - 1.2 to 0.6V or -0.7 to 0.3V​
+            They have P-n junction forward bias​.Forward bias occurs when a voltage is applied such that the electric field formed by the P-N junction is decreased.
+            If it is outside the range, there are Noisy solutions which are defined in the noise.py class.
 
         Parameters
         ----------
@@ -133,7 +160,10 @@ class LocalTasks:
     @Pyro4.oneway
     def init_readout_channels(self, readout_channels):
         """
-        Initialises the input of the computer which is the output of the device
+        Initializes the readout instrument of the device.
+        The input of the computer which is the output of the device
+        The range of the readout channels depends on setup​ and on the feedback resistance produced.It also has clipping ranges​ which can be set according to preference.
+        Example ranges -400 to 400 or -100 to 100 nA​.
 
         Parameters
         ----------
@@ -150,7 +180,9 @@ class LocalTasks:
     @Pyro4.oneway
     def set_shape(self, sampling_frequency, shape):
         """
-        One way method to set the shape vars for the device based on the sampling frequency as defined in the configs dictionary
+        One way method to set the shape variables for the data that is being sent to the device.
+        Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the shape of the data that is being sent can to be specified.
+        This function helps to tackle the problem of differnt batches having differnt data shapes (for example - differnt sample size) when dealing with big data.
 
         Parameters
         ----------
@@ -179,7 +211,9 @@ class LocalTasks:
         readout_channel_no=7,
     ):
         """
-        adds a synchronization channel by specifying an activation task and doing a synchronized readout
+        The method is used to add a synchronized activation and readout channel to the device.
+        Channels can be used to synchronize goroutines which are read/write tasks on the device.
+        A channel can make a goroutine wait until its finished. Sometimes a goroutine needs to be finished before you can start the next one (synchronous). This can be solved with channels.
 
         Parameters
         ----------
@@ -208,37 +242,41 @@ class LocalTasks:
 
     def read(self, offsetted_shape, ceil):
         """
-        read from the readout channel
+        Read from the readout channel but with an offset value which can be specified. Th function alos takes a ceil value as a parameter, therefore, all reads are under this maximum value.
+        Offset on the read is done adding a number to a signal. The addition shifts the value of every sample up (or down) by the same amount.
 
         Parameters
         ----------
         offsetted_shape : (int,int)
-            shape based on the offset value
+            To set the offset value of the wave.
+
         ceil : int
-            max read value
+            maximum read value
 
         Returns
         -------
-        Task
-            task read from the readout channel
+        int
+            value read from the readout task
         """
         return self.readout_task.read(offsetted_shape, ceil)
 
     def remote_read(self, offsetted_shape, ceil):
         """
-        Remotely read the task from the readout channel
+        Read from the readout channel but with an offset value which can be specified. Th function also takes a ceil value as a parameter, therefore, all reads are under this maximum value.
+        Offset on the read is done adding a number to a signal. The addition shifts the value of every sample up (or down) by the same amount.
+        This method helps you read tasks from a machine remotely and throws an error if it is unable to read from certain task ( and will return -1 - Exit )
 
         Parameters
         ----------
         offsetted_shape : (int,int)
-            shape based on the offset value
+            To set the offset value of the wave.
         ceil : int
-            max read value
+            maximum read value
 
         Returns
         -------
-        Task
-            task read from the readout channel
+        int
+            value read from the readout task
         """
         try:
             return self.readout_task.read(offsetted_shape, ceil)
@@ -249,7 +287,10 @@ class LocalTasks:
     @Pyro4.oneway
     def start_trigger(self, trigger_source):
         """
-        One way task to start the trigger the task
+        To start triggering to the device.
+        The name of the trigger source for this device should be specified.
+        The trigger source setting of the instrument determines which trigger signals are used to trigger the instrument.
+        The trigger source can be set to a single channel or to any combination of channels or other trigger sources.
 
         Parameters
         ----------
@@ -263,8 +304,13 @@ class LocalTasks:
     @Pyro4.oneway
     def remote_start_tasks(self, y, auto_start):
         """
-        Remotely start the tasks by starting the activation task and readout task which are synchronized
-        This is a one way task.
+        To start the tasks on this device remotely .The method invokes 2 other methods:
+
+        1. self.activation_task.start() - To start the activation tasks on the device
+        2. self.readout_task.start() - To start the readout tasks on the device.
+
+        Both of these tasks occur simulataneously and are synchronized.
+        The tasks will start automatically if the "auto_start" option is set to True in the configuration dictionary used to intialize this device.
 
         Parameters
         ----------
@@ -280,8 +326,14 @@ class LocalTasks:
 
     @Pyro4.oneway
     def start_tasks(self, y, auto_start):
-        """start the tasks by starting the activation task and readout task which are synchronized
-        This is a one way task.
+        """
+        To start the tasks on this device locally.The method invokes 2 other methods:
+
+        1. self.activation_task.start() - To start the activation tasks on the device
+        2. self.readout_task.start() - To start the readout tasks on the device.
+
+        Both of these tasks occur simulataneously and are synchronized.
+        The tasks will start automatically if the "auto_start" option is set to True in the configuration dictionary used to intialize this device.
 
         Parameters
         ----------
@@ -313,14 +365,16 @@ class LocalTasks:
     @Pyro4.oneway
     def stop_tasks(self):
         """
-        stop all activation and readout tasks
+        To stop the all tasks on this device namely - the activation tasks and the readout tasks to and from the device.
+        The tasks can be started again if required by using the start_tasks() method.
         """
         self.readout_task.stop()
         self.activation_task.stop()
 
     def init_tasks(self, configs):
         """
-        Initialize the tasks based on the configurations dictionary
+        To Initialize the tasks on the device based on the configurations dictionary provided.
+        the method initializes the activation and readout tasks from the device by setting the voltage ranges and choosing the instruments that have been specified.
 
         Parameters
         ----------
@@ -353,7 +407,8 @@ class LocalTasks:
     @Pyro4.oneway
     def close_tasks(self):
         """
-        Close all tasks
+        Close all the task on this device -  both activation and readout tasks by deleting them.
+        Note - This method is different from the stop_tasks() method which only stops the current tasks temporarily.
         """
         if self.readout_task is not None:
             self.readout_task.close()
@@ -370,12 +425,16 @@ class LocalTasks:
 
 class RemoteTasks:
     """
-    Class to initialize and handle the tasks on the device from the remote server.
+    This class acts as client program that calls methods on the Pyro object - LocalTasks.
+    The methods from this class can be used to access these tasks remotely.
+    The remote method calls on Pyro objects from LocalTasks go through a proxy.Therefore the RemoteServer should be initialized.
+    The proxy can be treated as if it was the actual object, so you write normal python code to call the remote methods and deal with the return values, or even exceptions:
     """
 
     def __init__(self, uri):
         """
-        Initialize the tasks from the remote server
+        sets up the proxy server so that remote method calls can be made to the device. This enables calling methods on the Pyro object - LocalTasks.
+        It also initializes the device to Acquire or generate a finite number of samples.
 
         Parameters
         ----------
@@ -387,7 +446,13 @@ class RemoteTasks:
 
     def init_activation_channels(self, channel_names, voltage_ranges=None):
         """
-        Initialises the output of the computer which is the input of the device
+        Initialises the activation electrodes of the device.
+        The output of the computer is the input of the device.
+        These are being sent as list of voltage values and channel names which are the start values for device. They can however be tuned later according to requirements.
+        Activation electrodes -
+            Range - 1.2 to 0.6V or -0.7 to 0.3V​
+            They have P-n junction forward bias​.Forward bias occurs when a voltage is applied such that the electric field formed by the P-N junction is decreased.
+            If it is outside the range, there are Noisy solutions which are defined in the noise.py class.
 
         Parameters
         ----------
@@ -400,7 +465,10 @@ class RemoteTasks:
 
     def init_readout_channels(self, readout_channels):
         """
-        Initialises the input of the computer which is the output of the device
+        Initializes the readout instrument of the device.
+        The input of the computer which is the output of the device
+        The range of the readout channels depends on setup​ and on the feedback resistance produced.It also has clipping ranges​ which can be set according to preference.
+        Example ranges -400 to 400 or -100 to 100 nA​.
 
         Parameters
         ----------
@@ -411,7 +479,9 @@ class RemoteTasks:
 
     def set_shape(self, sampling_frequency, shape):
         """
-        One way method to set the shape vars for the device based on the sampling frequency as defined in the configs dictionary
+        One way method to set the shape variables for the data that is being sent to the device.
+        Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the shape of the data that is being sent can to be specified.
+        This function helps to tackle the problem of differnt batches having differnt data shapes (for example - differnt sample size) when dealing with big data.
 
         Parameters
         ----------
@@ -430,7 +500,9 @@ class RemoteTasks:
         readout_channel_no=7,
     ):
         """
-        adds a synchronization channel by specifying an activation task and doing a synchronized readout
+        The method is used to add a synchronized activation and readout channel to the device.
+        Channels can be used to synchronize goroutines which are read/write tasks on the device.
+        A channel can make a goroutine wait until its finished. Sometimes a goroutine needs to be finished before you can start the next one (synchronous). This can be solved with channels.
 
         Parameters
         ----------
@@ -452,7 +524,8 @@ class RemoteTasks:
 
     def read(self, offsetted_shape, ceil):
         """
-        read from the readout channel
+        Read from the readout channel but with an offset value which can be specified. Th function alos takes a ceil value as a parameter, therefore, all reads are under this maximum value.
+        Offset on the read is done adding a number to a signal. The addition shifts the value of every sample up (or down) by the same amount.
 
         Parameters
         ----------
@@ -463,26 +536,35 @@ class RemoteTasks:
 
         Returns
         -------
-        Task
+        int
             task read from the readout channel
         """
         return self.tasks.remote_read(offsetted_shape, ceil)
 
     def start_trigger(self, trigger_source):
         """
-        One way task to start the trigger the task
+        To start triggering to the device.
+         The name of the trigger source for this device should be specified.
+         The trigger source setting of the instrument determines which trigger signals are used to trigger the instrument.
+         The trigger source can be set to a single channel or to any combination of channels or other trigger sources.
 
-        Parameters
-        ----------
-        trigger_source: str
-            source trigger name
+         Parameters
+         ----------
+         trigger_source: str
+             source trigger name
         """
         self.tasks.start_trigger(trigger_source)
 
     def start_tasks(self, y, auto_start):
         """
-        start the tasks by starting the activation task and readout task which are synchronized
-        This is a one way task.
+        To start the tasks on this device remotely .The method invokes 2 other methods:
+
+        1. self.activation_task.start() - To start the activation tasks on the device
+        2. self.readout_task.start() - To start the readout tasks on the device.
+
+        Both of these tasks occur simulataneously and are synchronized.
+        The tasks will start automatically if the "auto_start" option is set to True in the configuration dictionary used to intialize this device.
+
 
         Parameters
         ----------
@@ -495,13 +577,15 @@ class RemoteTasks:
 
     def stop_tasks(self):
         """
-        stop all activation and readout tasks
+        To stop the all tasks on this device namely - the activation tasks and the readout tasks to and from the device.
+        The tasks can be started again if required by using the start_tasks() method
         """
         self.tasks.stop_tasks()
 
     def init_tasks(self, configs):
         """
-        Initialize the tasks based on the configurations dictionary
+        To Initialize the tasks on the device based on the configurations dictionary provided.
+        the method initializes the activation and readout tasks from the device by setting the voltage ranges and choosing the instruments that have been specified.
 
         Parameters
         ----------
@@ -525,12 +609,16 @@ class RemoteTasks:
 class RemoteTasksServer:
     """
     Server for the Remote Tasks on the device.
-    The class uses the Pyro remote server. It is a library that enables objects to talk to each other over the network
+    To be able to call methods on a Pyro object , an appropriate URI is created and given to the server.
+    The class uses the Pyro remote server. It enables objects between LocalTasks and RemoteTasks to talk to each other over the network.
+    This class provides the object -  (LocalTasks object) and actually runs the methods.
+
     """
 
     def __init__(self, configs):
         """
-        Initialize the remote server based on the configurations o the model
+        Initialize the remote server based on the configurations of the model and initialize the LocalTasks.
+        Remote method calls can be made after the server is initialized.
 
         Parameters
         ----------
@@ -542,7 +630,8 @@ class RemoteTasksServer:
 
     def save_uri(self, uri):
         """
-        Save the uri of this remote server
+        To give this remote server a URI which will be saved in a text file.
+
 
         Parameters
         ----------
@@ -556,7 +645,11 @@ class RemoteTasksServer:
 
     def start(self):
         """
-        Starts a daemon thread to handle to the remote server and the remote tasks on the device
+        Starts a daemon thread to handle to the remote server and the remote tasks on the device.
+        A thread is a separate flow of execution. It enables getting multiple tasks running simultaneously.
+        Therefore, read and write tasks of the device can happen concurrently.
+        This method starts a daemon thread which will shut down immediately when the program exits.
+
         """
         self.daemon = Pyro4.Daemon(host=self.configs["ip"], port=self.configs["port"])
         uri = self.daemon.register(self.tasks)
@@ -564,11 +657,21 @@ class RemoteTasksServer:
         self.daemon.requestLoop()
 
     def stop(self):
+        """
+        Method to stop the remote server by closing the daemon thread.
+        """
         self.daemon.close()
 
 
 def deploy_driver(configs):
-    """Deploy the driver based on the configs and start the server
+    """
+    Deploy the driver based on the configs and start the remote server.
+    The method initializes the IP address,port number,subnet mask to the Default values at the top of the file.
+    To access remote objects - LocalTasks on the device - (Cdaq or Nidaq) , the method starts the RemoteTasks server on these default configurations.
+
+    The remote server runs on this default IP address. An IP address is used in order to uniquely identify a device on an IP network.
+    The address is divided into a network portion and host portion with the help of a subnet mask.
+    A port number is always associated with an IP address.There ar multiple ports and we use the 8081 port (can be changed)
 
     Parameters
     ----------
