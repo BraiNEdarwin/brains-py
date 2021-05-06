@@ -1,14 +1,9 @@
 import torch.nn as nn
-from torch import Tensor
-from typing import Sequence, Union
-import numpy as np
 import warnings
 import collections
 
 from brainspy.processors.simulation.processor import SurrogateModel
 from brainspy.processors.hardware.processor import HardwareProcessor
-
-from brainspy.utils.pytorch import TorchUtils
 
 
 class Processor(nn.Module):
@@ -86,14 +81,8 @@ class Processor(nn.Module):
                     f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "
                 )
 
-    def forward(self, data, control_voltages):
-        merged_data = merge_electrode_data(
-            data,
-            control_voltages,
-            self.data_input_indices,
-            self.control_indices,
-        )
-        return self.processor(merged_data)
+    def forward(self, x):
+        return self.processor(x)
 
     def get_voltage_ranges(self):
         return self.processor.voltage_ranges
@@ -121,63 +110,16 @@ class Processor(nn.Module):
             warnings.warn("Instance of processor not recognised.")
             return None
 
+    def is_hardware(self):
+        """
+        Method to indicate whether this is a hardware processor. Returns
+        False if it is a hardware setup and returns True if it is a simulation.
+
+        Returns
+        -------
+        bool
+        """
+        return self.processor.is_hardware()
+
     def close(self):
         self.processor.close()
-
-
-def merge_electrode_data(
-    inputs,
-    control_voltages,
-    input_indices: Sequence[int],
-    control_voltage_indices,
-    use_torch=True,
-) -> Union[np.array, Tensor]:
-    """
-    Merge data from two electrodes with the specified indices for each.
-    Need to indicate whether numpy or torch is used. The result will
-    have the same type as the input.
-
-    Example
-    -------
-    >>> inputs = np.array([[1.0, 3.0], [2.0, 4.0]])
-    >>> control_voltages = np.array([[5.0, 7.0], [6.0, 8.0]])
-    >>> input_indices = [0, 2]
-    >>> control_voltage_indices = [3, 1]
-    >>> electrodes.merge_electrode_data(
-    ...     inputs=inputs,
-    ...     control_voltages=control_voltages,
-    ...     input_indices=input_indices,
-    ...     control_voltage_indices=control_voltage_indices,
-    ...     use_torch=False,
-    ... )
-    np.array([[1.0, 7.0, 3.0, 5.0], [2.0, 8.0, 4.0, 6.0]])
-
-    Merging two arrays of size 2x2, resulting in an array of size 2x4.
-
-    Parameters
-    ----------
-    inputs: np.array or torch.tensor
-        Data for the input electrodes.
-    control_voltages: np.array or torch.tensor
-        Data for the control electrodes.
-    input_indices: iterable of int
-        Indices of the input electrodes.
-    control_voltage_indices: iterable of int
-        Indices of the control electrodes.
-    use_torch : boolean
-        Indicate whether the data is pytorch tensor (instead of a numpy array)
-
-    Returns
-    -------
-    result: np.array or torch.tensor
-        Array or tensor with merged data.
-
-    """
-    result = np.empty(
-        (inputs.shape[0], len(input_indices) + len(control_voltage_indices))
-    )
-    if use_torch:
-        result = TorchUtils.format(result)
-    result[:, input_indices] = inputs
-    result[:, control_voltage_indices] = control_voltages
-    return result
