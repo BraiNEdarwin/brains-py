@@ -485,3 +485,9 @@ class SurrogateModel(nn.Module):
             warnings.warn(
                 "Output clipping values of surrogate model have been changed.")
             self.output_clipping = TorchUtils.format(value)
+
+    def get_clipping_value(self):
+        if self.output_clipping is not None:
+            return self.output_clipping
+        else:
+            return TorchUtils.format([-np.inf, np.inf])
