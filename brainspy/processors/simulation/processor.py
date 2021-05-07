@@ -119,6 +119,9 @@ class SurrogateModel(nn.Module):
         self.model = NeuralNetworkModel(model_structure)
         if model_state_dict is not None:
             self.model.load_state_dict(model_state_dict)
+        self.amplification = None
+        self.noise = None
+        self.output_clipping = None
 
     def get_voltage_ranges(self) -> Optional[torch.Tensor]:
         """
