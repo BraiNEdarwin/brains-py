@@ -1,14 +1,9 @@
 import torch.nn as nn
-from torch import Tensor
-from typing import Sequence, Union
-import numpy as np
 import warnings
 import collections
 
 from brainspy.processors.simulation.processor import SurrogateModel
 from brainspy.processors.hardware.processor import HardwareProcessor
-
-from brainspy.utils.pytorch import TorchUtils
 
 
 class Processor(nn.Module):
@@ -34,66 +29,62 @@ class Processor(nn.Module):
     ):
         super(Processor, self).__init__()
         self.info = info
+        self.configs = configs
         self.load_processor(configs, info, model_state_dict)
 
     def load_processor(
         self, configs, info: dict, model_state_dict: collections.OrderedDict = None
     ):
         # @TODO: Thoroughly document the different configurations available for each processor
-        if not hasattr(self, "processor") or self._get_configs() != configs:
-            if configs["processor_type"] == "simulation":
-                self.processor = SurrogateModel(
-                    info["model_structure"], model_state_dict
-                )
-                self.processor.set_effects_from_dict(
-                    info["electrode_info"], configs["electrode_effects"]
-                )
-            elif (
-                configs["processor_type"] == "cdaq_to_cdaq" or configs["processor_type"] == "cdaq_to_nidaq"
-            ):
-                configs["driver"]["instrument_type"] = configs["processor_type"]
-                if "activation_voltages" not in configs["driver"]["instruments_setup"]:
-                    configs["driver"]["instruments_setup"][
-                        "activation_voltages"
-                    ] = info["electrode_info"]["activation_electrodes"][
-                        "voltage_ranges"
-                    ]
-                self.processor = HardwareProcessor(
-                    configs["driver"],
-                    configs["waveform"]["slope_length"],
-                    configs["waveform"]["plateau_length"],
-                )
+        if info is not None:
+            self.info = info
+        if configs["processor_type"] == "simulation":
+            self.processor = SurrogateModel(
+                self.info["model_structure"], model_state_dict
+            )
+            self.processor.set_effects_from_dict(
+                self.info["electrode_info"], configs["electrode_effects"]
+            )
+        elif (
+            configs["processor_type"] == "cdaq_to_cdaq" or configs["processor_type"] == "cdaq_to_nidaq"
+        ):
+            configs["driver"]["instrument_type"] = configs["processor_type"]
+            if "activation_voltage_ranges" not in configs["driver"]["instruments_setup"]:
+                configs["driver"]["instruments_setup"][
+                    "activation_voltage_ranges"
+                ] = self.info["electrode_info"]["activation_electrodes"][
+                    "voltage_ranges"
+                ]
+            self.processor = HardwareProcessor(
+                configs["driver"],
+                configs["waveform"]["slope_length"],
+                configs["waveform"]["plateau_length"],
+            )
+            warnings.warn(
+                f"The hardware setup has been initialised with regard to a model trained with the following parameters. \nPlease make sure that the configurations of your hardware setup match these values: \n\t * An amplification correction of {self.info['electrode_info']['output_electrodes']['amplification']}\n\t * A clipping value range between {self.info['electrode_info']['output_electrodes']['clipping_value']}\n\t * Voltage ranges within {self.info['electrode_info']['activation_electrodes']['voltage_ranges']} "
+            )
+            if "amplification" in configs["driver"]:
                 warnings.warn(
-                    f"The hardware setup has been initialised with regard to a model trained with the following parameters. \nPlease make sure that the configurations of your hardware setup match these values: \n\t * An amplification correction of {self.info['electrode_info']['output_electrodes']['amplification']}\n\t * A clipping value range between {self.info['electrode_info']['output_electrodes']['clipping_value']}\n\t * Voltage ranges within {self.info['electrode_info']['activation_electrodes']['voltage_ranges']} "
+                    f"The amplification has been overriden by the user to a value of: {configs['driver']['amplification']}"
                 )
-                if "amplification" in configs["driver"]:
-                    warnings.warn(
-                        f"The amplification has been overriden by the user to a value of: {configs['driver']['amplification']}"
-                    )
-                else:
-                    configs["driver"]["amplification"] = self.info["electrode_info"][
-                        "output_electrodes"
-                    ]["amplification"]
-
-            elif configs["processor_type"] == "simulation_debug":
-                driver = SurrogateModel(info["model_structure"], model_state_dict)
-                driver.set_effects_from_dict(
-                    info["electrode_info"], configs["electrode_effects"]
-                )
-                self.processor = HardwareProcessor(driver_configs=driver)
             else:
-                raise NotImplementedError(
-                    f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "
-                )
+                configs["driver"]["amplification"] = self.info["electrode_info"][
+                    "output_electrodes"
+                ]["amplification"]
 
-    def forward(self, data, control_voltages):
-        merged_data = merge_electrode_data(
-            data,
-            control_voltages,
-            self.data_input_indices,
-            self.control_indices,
-        )
-        return self.processor(merged_data)
+        elif configs["processor_type"] == "simulation_debug":
+            driver = SurrogateModel(self.info["model_structure"], model_state_dict)
+            driver.set_effects_from_dict(
+                self.info["electrode_info"], configs["electrode_effects"]
+            )
+            self.processor = HardwareProcessor(driver_configs=driver)
+        else:
+            raise NotImplementedError(
+                f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "
+            )
+
+    def forward(self, x):
+        return self.processor(x)
 
     def get_voltage_ranges(self):
         return self.processor.voltage_ranges
@@ -110,74 +101,22 @@ class Processor(nn.Module):
         return self.info["electrode_info"]["activation_electrodes"]["electrode_no"]
 
     def get_clipping_value(self):
-        return self.processor.clipping_value
-
-    def _get_configs(self):
-        if isinstance(self.processor, HardwareProcessor):
-            return self.processor.driver.configs
-        elif isinstance(self.processor, SurrogateModel):
-            return self.processor.configs
+        if self.processor.is_hardware():
+            return self.info['electrode_info']['output_electrodes'][
+                'clipping_value']
         else:
-            warnings.warn("Instance of processor not recognised.")
-            return None
+            return self.processor.get_clipping_value()
+
+    def is_hardware(self):
+        """
+        Method to indicate whether this is a hardware processor. Returns
+        False if it is a hardware setup and returns True if it is a simulation.
+
+        Returns
+        -------
+        bool
+        """
+        return self.processor.is_hardware()
 
     def close(self):
         self.processor.close()
-
-
-def merge_electrode_data(
-    inputs,
-    control_voltages,
-    input_indices: Sequence[int],
-    control_voltage_indices,
-    use_torch=True,
-) -> Union[np.array, Tensor]:
-    """
-    Merge data from two electrodes with the specified indices for each.
-    Need to indicate whether numpy or torch is used. The result will
-    have the same type as the input.
-
-    Example
-    -------
-    >>> inputs = np.array([[1.0, 3.0], [2.0, 4.0]])
-    >>> control_voltages = np.array([[5.0, 7.0], [6.0, 8.0]])
-    >>> input_indices = [0, 2]
-    >>> control_voltage_indices = [3, 1]
-    >>> electrodes.merge_electrode_data(
-    ...     inputs=inputs,
-    ...     control_voltages=control_voltages,
-    ...     input_indices=input_indices,
-    ...     control_voltage_indices=control_voltage_indices,
-    ...     use_torch=False,
-    ... )
-    np.array([[1.0, 7.0, 3.0, 5.0], [2.0, 8.0, 4.0, 6.0]])
-
-    Merging two arrays of size 2x2, resulting in an array of size 2x4.
-
-    Parameters
-    ----------
-    inputs: np.array or torch.tensor
-        Data for the input electrodes.
-    control_voltages: np.array or torch.tensor
-        Data for the control electrodes.
-    input_indices: iterable of int
-        Indices of the input electrodes.
-    control_voltage_indices: iterable of int
-        Indices of the control electrodes.
-    use_torch : boolean
-        Indicate whether the data is pytorch tensor (instead of a numpy array)
-
-    Returns
-    -------
-    result: np.array or torch.tensor
-        Array or tensor with merged data.
-
-    """
-    result = np.empty(
-        (inputs.shape[0], len(input_indices) + len(control_voltage_indices))
-    )
-    if use_torch:
-        result = TorchUtils.format(result)
-    result[:, input_indices] = inputs
-    result[:, control_voltage_indices] = control_voltages
-    return result

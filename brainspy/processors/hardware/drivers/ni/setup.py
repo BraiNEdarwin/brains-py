@@ -189,12 +189,13 @@ class NationalInstrumentsSetup:
 
     def is_hardware(self):
         """
-        To check if the device is a hardware or not
+        Method to indicate whether this is a hardware processor. Returns
+        True.
 
         Returns
         -------
         bool
-            True or False based on wheather the device is a hardware or not
+            True
         """
         return True
 
