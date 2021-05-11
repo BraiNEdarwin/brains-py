@@ -3,7 +3,6 @@
 """
 import sys
 import math
-import warnings
 import signal
 import threading
 import numpy as np
@@ -13,7 +12,30 @@ from brainspy.processors.hardware.drivers.ni.tasks import get_tasks_driver
 """
 SECURITY FLAGS.
 WARNING - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
+
+General flags:
+
+    * INPUT_VOLTAGE_THRESHOLD: The maximum voltage threshold that will be allowed to be sent to devices.
+
+Flags related to the CDAQ TO NIDAQ Setup:
+
+    * CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS: The value will be added to the flag max_ramping_time_seconds : int
+                                          This is an internal flag used to control that devices do not exceed
+                                          this time threshold, as steep rampings can can damage DNPU devices.
+                                          It will only apply to the CDAQ to NIDAQ setup.
+    * SYNCHRONISATION_VALUE: It determines the time that will be taken to do the synchronisation signal from
+                             the cdaq to the nidaq device. Do not reduce it to less than 0.02
+
+Flags related to the CDAQ TO CDAQ Setup:
+
+    * CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS: The value will be added to the flag max_ramping_time_seconds : int
+                                         This is an internal flag used to control that devices do not exceed
+                                         this time threshold, as steep rampings can can damage DNPU devices.
+                                         It will apply to any CDAQ to CDAQ setups, with or without real-time
+                                         rack.
+
 """
+
 INPUT_VOLTAGE_THRESHOLD = 1.5
 CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS = 0.1
 CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS = 0.03
@@ -56,18 +78,66 @@ class NationalInstrumentsSetup:
             configurations of the model as a python dictionary
 
         Data key,value pairs required in the configs to initialise the setup classes
+            real_time_rack : boolean - Only to be used when having a rack that works with real-time. True will attempt a connection to a server on the real time rack via Pyro. False will execute the drivers locally.
+            sampling_frequency: int - The average number of samples to be obtained in one second, when transforming the signal from analogue to digital.
+            output_clipping_range: [float,float] - The the setups have a limit in the range they can read. They typically clip at approximately +-4 V.
+                Note that in order to calculate the clipping_range, it needs to be multiplied by the amplification value of the setup. (e.g., in the Brains setup the amplification is 28.5,
+                is the clipping_value is +-4 (V), therefore, the clipping value should be +-4 * 28.5, which is [-110,110] (nA) ).
+                The original clipping value of the surrogate models is obtained when running the preprocessing of the data in
+                bspysmg.measurement.processing.postprocessing.post_process.
+            amplification: float - The output current (nA) of the device is converted by the readout hardware to voltage (V), because it is easier to do the readout of the device in voltages.
+            This output signal in nA is amplified by the hardware when doing this current to voltage conversion, as larger signals are easier to detect.
+            In order to obtain the real current (nA) output of the device, the conversion is automatically corrected in software by multiplying by the amplification value again.
+            The amplification value depends on the feedback resistance of each of the setups. Below, there is a guide of the amplification value needed for each of the setups:
 
-            max_ramping_time_seconds : int - To set the ramp time for the setup
-                                            WARNING -The security check for the ramping time has been disabled. Steep rampings can can damage the device.
-            offset : int - To set the offset value of the wave
-            auto_start : bool - Too auto start the setup tasks or not
-            data:
-                waveform:
-                    plateau_length: int - A plateau of at least 3 is needed to train the perceptron (That requires at least 10 values (3x4 = 12)).
-                    slope_length : int - Length of the slope of a waveform
-            driver:
-                sampling_frequency: int - defines the number of samples per second (or per other unit) taken from a continuous signal
-                amplification: float - To set the amplification value of the voltages
+                                    Darwin: Variable amplification levels:
+                                        A: 1000 Amplification
+                                        Feedback resistance: 1 MOhm
+                                        B: 100 Amplification
+                                        Feedback resistance 10 MOhms
+                                        C: 10 Amplification
+                                        Feedback resistance: 100 MOhms
+                                        D: 1 Amplification
+                                        Feedback resistance 1 GOhm
+                                    Pinky:  - PCB 1 (6 converters with):
+                                            Amplification 10
+                                            Feedback resistance 100 MOhm
+                                            - PCB 2 (6 converters with):
+                                            Amplification 100 tims
+                                            10 mOhm Feedback resistance
+                                    Brains: Amplfication 28.5
+                                            Feedback resistance, 33.3 MOhm
+                                    Switch: (Information to be completed)
+
+                                    If no correction is desired, the amplification can be set to 1.
+            instruments_setup:
+                multiple_devices: boolean - False will initialise the drivers to read from a single hardware DNPU.
+                                            True, will enable to read from more than one DNPU device at the same time.
+                activation_instrument: str - Name of the activation instrument as observed in the NI Max software. E.g.,  cDAQ1Mod3
+                activation_channels: list - Channels through which voltages will be sent for activating the device
+                                            (both data inputs and control voltage electrodes). The channels can be
+                                            checked in the schematic of the DNPU device.
+                                            E.g., [8,10,13,11,7,12,14]
+                activation_voltage_ranges: list - Minimum and maximum voltage for the activation electrodes. E.g., [[-1.2, 0.6], [-1.2, 0.6],
+                                                    [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-0.7, 0.3], [-0.7, 0.3]]
+                readout_instrument: str - Name of the readout instrument as observed in the NI Max software. E.g., cDAQ1Mod4
+                readout_channels: [2] list - Channels for reading the output current values. The channels can be checked in the schematic of the DNPU device.
+                trigger_source: str - For synchronisation purposes, sending data for the activation voltages on one NI Task can trigger the readout device 
+                                        of another NI Task. In these cases, the trigger source name should be specified in the configs. This is only applicable 
+                                        for CDAQ to CDAQ setups (with or without real-time rack). E.g., cDAQ1/segment1 - More information at 
+                                        https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
+
+            -------------------------------------------------------------------------------------------------------------------------------------------------
+            Appart from these values, there are some internal keys that are added internally during the initialisation of the drivers. 
+            These are not required to be passed on the configs.
+
+            offset : int - Value (in milliseconds) that the original activation voltage will be displaced,
+                           in order to enable the spiking signal to reach the nidaq setup. Each requires a different offset value.
+            auto_start : bool - If the task is not explicitly started with the DAQmx start_task method, it will start it anyway. Used for synchronisation. It is set-up to True
+                                for the CDAQ TO CDAQ setup and set up to False for the CDAQ TO NIDAQ setup.  
+            max_ramping_time_seconds : int - To set the ramp time for the setup. It is defined with the flags CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS and 
+                                             CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS.
+                                            
         """
         self.configs = configs
         self.last_shape = -1
@@ -84,7 +154,7 @@ class NationalInstrumentsSetup:
 
     def init_tasks(self, configs):
         """
-        To intialize the tasks driver and voltage ranges based on the configurations.
+        Initializes the tasks driver and voltage ranges based on the configurations.
 
         Parameters
         ----------
@@ -99,24 +169,20 @@ class NationalInstrumentsSetup:
 
     def init_semaphore(self):
         """
-        To initialize the semaphore which will manage the main thread by synchronsing it with the read/write of data
+        Initializes the semaphore that will manage the main thread by synchronsing it with the read/write of data
         """
         global event
         global semaphore
         event = threading.Event()
         semaphore = threading.Semaphore()
 
-    def reset(self):
-        """
-        To reset the tasks driver by closing all tasks
-        """
-        self.tasks_driver.close_tasks()
-
     def process_output_data(self, data):
         """
-        To processs the output data.
-        The function creates a numpy array from a list with dimensions (n,1) and multiplies it by the amplification of the device.
-        It is transposed to enable the multiplication of multiple outputs by an array of amplification values.
+        Processes the output data. The convention for pytorch and nidaqmx is different. Therefore, the input to the device needs to be
+        transposed before sending it to the device. Also the hardware does a current to voltage transformation to do the reading. For this,
+        the output gets amplified. An amplification correction factor is applied to obtain the real current value again. This is done
+        using the configs['driver']['amplification'] value. The function creates a numpy array from a list with dimensions (n,1) and multiplies
+        it by the amplification of the device. It is transposed to enable the multiplication of multiple outputs by an array of amplification values.
 
         Parameters
         ----------
@@ -135,7 +201,7 @@ class NationalInstrumentsSetup:
 
     def read_data(self, y):
         """
-        initializes the semaphore to read data from the device
+        Initializes the semaphore to read data from the device
         if the data cannot be read, a signal is sent to the signal handler which blocks the calling thread and closes the nidaqmx tasks
 
         Parameters
@@ -201,7 +267,8 @@ class NationalInstrumentsSetup:
 
     def _read_data(self, y):
         """
-        To read data from the device
+        Perfoms a series of security checks to the data, initialises the NI Tasks, and sends the data to the DNPU hardware.
+        Returns the raw value obtained from the readout of the setup. 
 
         Parameters
         -----------
@@ -227,7 +294,7 @@ class NationalInstrumentsSetup:
 
     def read_security_checks(self, y):
         """
-        This method reads the security checks from the input data, and makes sure that the input voltage does not go above certain threshhold
+        This method reads the security checks from the input data, and makes sure that the input voltage does not go above certain threshhold.
 
         Parameters
         ----------
@@ -250,7 +317,7 @@ class NationalInstrumentsSetup:
 
     def close_tasks(self):
         """
-        To close all tasks currently running on this device
+        To close all NI tasks currently running on this device
         """
         self.tasks_driver.close_tasks()
 
@@ -268,13 +335,16 @@ class NationalInstrumentsSetup:
     def forward_numpy(self):
         """
         The forward function computes output numpy values from input numpy array.
-        This is done to enable compatibility of the the model which is an nn.Module with numpy
+        This is done to enable compatibility of the the model which is an nn.Module with numpy.
+        This function will be overriden by the specific implementation in the CDAQ TO CDAQ or 
+        CDAQ TO NIDAQ setup.
         """
         pass
 
     def os_signal_handler(self, signum, frame=None):
         """
-        used to handle the termination of the read task in such a way that enables the last read to finish, and closes the tasks afterwards
+        Used to handle the termination of the read task in such a way that enables the last read call to the drivers to finish, 
+        and adequately closing the NI tasks afterwards.
 
         Parameters
         ----------
@@ -294,7 +364,8 @@ class NationalInstrumentsSetup:
 
     def enable_os_signals(self):
         """
-        To enable the OS signals by adding an a signal HandlerRoutine to support read/write in both linux and windows based operating systems
+        Enables the OS signals by adding an a signal HandlerRoutine to support read/write in both linux and windows in
+        Windows and Linux operating systems.
         """
         import win32api
 
@@ -306,7 +377,7 @@ class NationalInstrumentsSetup:
 
     def disable_os_signals(self):
         """
-        To disable the OS signals by removing the signal HandlerRoutine in the the win32 OS or ignoring the signal incase of other processors
+        Disables the OS signals by removing the signal HandlerRoutine in the the win32 OS or ignoring the signal incase of other processors
         """
         import win32api
 

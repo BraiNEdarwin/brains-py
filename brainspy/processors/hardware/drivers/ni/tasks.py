@@ -99,6 +99,9 @@ class LocalTasks:
     For calls to such methods, Pyro will not wait for a response from the remote object.
     The return value of these calls is always None.
 
+    More information about NI tasks can be found at: https://nidaqmx-python.readthedocs.io/en/latest/task.html
+    More information about remote objects can be found at: https://pyro4.readthedocs.io/en/stable/
+
     """
 
     def __init__(self):

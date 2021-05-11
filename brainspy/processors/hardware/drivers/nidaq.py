@@ -9,7 +9,8 @@ from brainspy.processors.hardware.drivers.ni.setup import (
 
 class CDAQtoNiDAQ(NationalInstrumentsSetup):
     """
-    Class to establish a connection (for a single, or multiple hardware DNPUs) with the CDAQtoNiDAQ national instrument
+    Class to establish a connection (for a single, or multiple hardware DNPUs) with the CDAQtoNiDAQ national instrument. It requires an additional channel to send a spike
+    from the CDAQ to the NIDAQ. The data is offsetted to let the NIDAQ read the spike and start synchronising.
     """
 
     def __init__(self, configs):
@@ -19,42 +20,66 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             Parameters
             ----------
             configs : dict
-            Data key,value pairs required in the configs to initialise the hardware processor :
+            key-value pairs required in the configs dictionary to initialise the driver are as follows:
 
-            max_ramping_time_seconds : int - The ramping time for the setup of the this device.The Ramp Time is used to designate the amount of time it will take to ramp to a pressure.
-                                            WARNING -The security check for the ramping time has been disabled. Steep rampings can can damage the device.
+            real_time_rack : boolean - Only to be used when having a rack that works with real-time. True will attempt a connection to a server on the real time rack via Pyro. False will execute the drivers locally.
+            sampling_frequency: int - The average number of samples to be obtained in one second, when transforming the signal from analogue to digital.
+            output_clipping_range: [float,float] - The the setups have a limit in the range they can read. They typically clip at approximately +-4 V.
+                Note that in order to calculate the clipping_range, it needs to be multiplied by the amplification value of the setup. (e.g., in the Brains setup the amplification is 28.5,
+                is the clipping_value is +-4 (V), therefore, the clipping value should be +-4 * 28.5, which is [-110,110] (nA) ).
+                The original clipping value of the surrogate models is obtained when running the preprocessing of the data in
+                bspysmg.measurement.processing.postprocessing.post_process.
+            amplification: float - The output current (nA) of the device is converted by the readout hardware to voltage (V), because it is easier to do the readout of the device in voltages.
+            This output signal in nA is amplified by the hardware when doing this current to voltage conversion, as larger signals are easier to detect.
+            In order to obtain the real current (nA) output of the device, the conversion is automatically corrected in software by multiplying by the amplification value again.
+            The amplification value depends on the feedback resistance of each of the setups. Below, there is a guide of the amplification value needed for each of the setups:
 
-            offset : int - To set the offset value of the wave.
-                            This done by adding a number to a signal performs an offset. The addition shifts the value of every sample up (or down) by the same amount.
+                                    Darwin: Variable amplification levels:
+                                        A: 1000 Amplification
+                                        Feedback resistance: 1 MOhm
+                                        B: 100 Amplification
+                                        Feedback resistance 10 MOhms
+                                        C: 10 Amplification
+                                        Feedback resistance: 100 MOhms
+                                        D: 1 Amplification
+                                        Feedback resistance 1 GOhm
+                                    Pinky:  - PCB 1 (6 converters with):
+                                            Amplification 10
+                                            Feedback resistance 100 MOhm
+                                            - PCB 2 (6 converters with):
+                                            Amplification 100 tims
+                                            10 mOhm Feedback resistance
+                                    Brains: Amplfication 28.5
+                                            Feedback resistance, 33.3 MOhm
+                                    Switch: (Information to be completed)
 
-            auto_start : bool - Too auto start the setup tasks for this device or not based on wheather the value is True or False.
+                                    If no correction is desired, the amplification can be set to 1.
+            instruments_setup:
+                multiple_devices: boolean - False will initialise the drivers to read from a single hardware DNPU.
+                                            True, will enable to read from more than one DNPU device at the same time.
+                activation_instrument: str - Name of the activation instrument as observed in the NI Max software. E.g.,  cDAQ1Mod3
+                activation_channels: list - Channels through which voltages will be sent for activating the device
+                                            (both data inputs and control voltage electrodes). The channels can be
+                                            checked in the schematic of the DNPU device.
+                                            E.g., [8,10,13,11,7,12,14]
+                activation_voltage_ranges: list - Minimum and maximum voltage for the activation electrodes. E.g., [[-1.2, 0.6], [-1.2, 0.6],
+                                                    [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-0.7, 0.3], [-0.7, 0.3]]
+                readout_instrument: str - Name of the readout instrument as observed in the NI Max software. E.g., cDAQ1Mod4
+                readout_channels: [2] list - Channels for reading the output current values. The channels can be checked in the schematic of the DNPU device.
+                trigger_source: str - For synchronisation purposes, sending data for the activation voltages on one NI Task can trigger the readout device 
+                                        of another NI Task. In these cases, the trigger source name should be specified in the configs. This is only applicable for CDAQ to CDAQ setups (with or without real-time rack).
+                                        E.g., cDAQ1/segment1 - More information at https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
 
-            driver:
-                instruments_setup:
-                    device_no: str - "single" or "multiple" - This depends on the number of devices being used.
-                                      If the "multiple" option is used, specify the trigger source only once.
+ -------------------------------------------------------------------------------------------------------------------------------------------------
+            Appart from these values, there are some internal keys that are added internally during the initialisation of the drivers. 
+            These are not required to be passed on the configs.
 
-                    activation_instrument: str - () eg. "cDAQ1Mod3"  ) - The activation instrument for this device.
-                                                                        Different materials can be used as dopant or host and the number of electrodes can vary.
-                                                                        Once we choose input and readout electrodes, the device can be activated by applying voltages to the remaining electrodes.
-                                                                        By tuning the voltages applied to some of the electrodes, the output current can be controlled as a function of the voltages at the remaining electrodes.
-                                                                        Range - 1.2 to 0.6V or -0.7 to 0.3V​
-                                                                        They have P-n junction forward bias​.Forward bias occurs when a voltage is applied such that the electric field formed by the P-N junction is decreased.
-                                                                        It it is outside the range, there are Noisy solutions which are defined in the noise.py class.
-
-                    activation_channels: list - ( eg. [8,10,13,11,7,12,14] ) - Channels through which voltages will be sent for activating the device (with both data inputs and control voltages)
-
-                    min_activation_voltages: list - ( eg. [-1.2, -1.2, -1.2, -1.2, -1.2, -0.7, -0.7] ) - The minimum value for each of the activation electrodes expressed as a list of integers.
-
-                    max_activation_voltages: list - ( eg. [0.6, 0.6, 0.6, 0.6, 0.6, 0.3, 0.3] ) - The maximum value for each of the activation electrodes expressed as a list of integers.
-
-                    readout_instrument: str - (eg. "cDAQ1Mod4" )- The readout instrument for this device. It is used to accept the signal transmitted from the device.
-
-                    readout_channels: list -( eg. [2] ) - The channels for reading the output current values expressed as a list.
-                                                          The range of the readout channels depends on setup​ and on the feedback resistance produced.It also has clipping ranges​ which can be set according to preference.
-                                                          Example ranges -400 to 400 or -100 to 100 nA​.
-
-
+            offset : int - Value (in milliseconds) that the original activation voltage will be displaced,
+                           in order to enable the spiking signal to reach the nidaq setup. It will be defined by SYNCHRONISATION_VALUE * sampling_frequency.
+            auto_start : bool - If the task is not explicitly started with the DAQmx start_task method, it will start it anyway.
+                                This value is set to False for this setup.
+            max_ramping_time_seconds : int - To set the ramp time for the setup. It is defined with the flags CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS in
+                                        brainspy/processors/hardware/drivers/ni/setup.py
 
         """
         configs["auto_start"] = False
@@ -199,4 +224,4 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             synchronized output data
         """
         cut_value = self.get_output_cut_value(read_data)
-        return read_data[:-1, cut_value : self.configs["data"]["shape"] + cut_value]
+        return read_data[:-1, cut_value: self.configs["data"]["shape"] + cut_value]

@@ -86,15 +86,6 @@ class Hardware_Processor_Test(unittest.TestCase):
         x = self.model.forward_numpy(x)
         self.assertEqual(list(x.shape), [1])
 
-    def test_reset(self):
-        """
-        Test if resetting the processor raises a warning.
-        """
-        with warnings.catch_warnings(record=True) as caught_warnings:
-            warnings.simplefilter("always")
-            self.model.reset()
-            self.assertEqual(len(caught_warnings), 1)
-
     def test_close(self):
         """
         Test if closing the processor raises a warning.
@@ -114,7 +105,6 @@ class Hardware_Processor_Test(unittest.TestCase):
         self.test_init()
         self.test_forward()
         self.test_forward_numpy()
-        self.test_reset()
         self.test_close()
         self.test_is_hardware()
 

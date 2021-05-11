@@ -119,4 +119,9 @@ class Processor(nn.Module):
         return self.processor.is_hardware()
 
     def close(self):
+        """
+        Closes the driver related to the NI Tasks if the main processor is hardware. 
+        If the main processor is a simulation model, this does
+        nothing.
+        """
         self.processor.close()
