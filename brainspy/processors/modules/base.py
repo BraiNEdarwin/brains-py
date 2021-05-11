@@ -32,9 +32,7 @@ class DNPU_Base(nn.Module):
         for params in self.processor.parameters():
             params.requires_grad = False
 
-        self.indices_node = np.arange(
-            len(self.processor.data_input_indices) + len(self.processor.control_indices)
-        )
+        self.indices_node = np.arange(self.processor.get_activation_electrode_no())
         # ######## set learnable parameters #########
         self.control_list = TorchUtils.format(
             self.set_controls(inputs_list), data_type=torch.int64

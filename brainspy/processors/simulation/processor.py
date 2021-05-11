@@ -92,6 +92,9 @@ class SurrogateModel(nn.Module):
         self.model = NeuralNetworkModel(model_structure)
         if model_state_dict is not None:
             self.model.load_state_dict(model_state_dict)
+        self.amplification = None
+        self.noise = None
+        self.output_clipping = None
 
     def get_voltage_ranges(self) -> Optional[torch.Tensor]:
         """
@@ -134,8 +137,8 @@ class SurrogateModel(nn.Module):
             x = self.noise(x)
         if self.output_clipping is not None:
             return torch.clamp(x,
-                               min=self.output_clipping[1],
-                               max=self.output_clipping[0])
+                               min=self.output_clipping[0],
+                               max=self.output_clipping[1])
         return x
 
     # For debugging purposes
@@ -380,7 +383,7 @@ class SurrogateModel(nn.Module):
         else:
             warnings.warn("Voltage ranges cannot be set to None.")
 
-    def set_amplification(self, info: dict, value):
+    def set_amplification(self, info: dict, value: list):
         """
         Set the amplification of the processor. The amplification is what the
         output of the neural network is multiplied with after the forward pass.
@@ -455,7 +458,7 @@ class SurrogateModel(nn.Module):
         """
         if value is not None and value == "default":
             self.output_clipping = TorchUtils.format(
-                info["output_electrodes"]["output_clipping"])
+                info["output_electrodes"]["clipping_value"])
         elif value is not None:
             assert len(value) == 2
             warnings.warn(
@@ -464,3 +467,9 @@ class SurrogateModel(nn.Module):
         else:
             warnings.warn("Output clipping of surrogate model set to None")
             self.output_clipping = None
+
+    def get_clipping_value(self):
+        if self.output_clipping is not None:
+            return self.output_clipping
+        else:
+            return TorchUtils.format([-np.inf, np.inf])

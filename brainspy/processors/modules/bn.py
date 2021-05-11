@@ -29,29 +29,30 @@ class DNPU_BatchNorm(nn.Module):
         processor,  # It is either a dictionary or the reference to a processor or a DNPU_Base module, or any other of the modules channel, layer, lrf
         inputs_list=None,  # It allows to declare a DNPU_Layer from a configs dictionary
         # Transformation configs
-        input_clip=True,  # Whether if the input will be clipped by the
-        transform_to_voltage=True,  # Whether if a transformation to from the data input range to the data input voltages will be applied.
-        input_range=None,  # For example: [-1,1], this variable is required if there is an input clip or a transformation to voltage
-        # Output clipping  configs
-        device_output_clip=True,  # Whether the device output will be clipped with the same clipping values as the setup used for gathering the training data with which it was trained
-        # Batch norm related configs
-        batch_norm=True,  # Whether if batch norm is applied
-        affine=False,
-        track_running_stats=True,  # Whether the batchnorm will track the running stats.
-        momentum=0.1,
+        # input_clip=True,  # Whether if the input will be clipped by the
+        # transform_to_voltage=True,  # Whether if a transformation to from the data input range to the data input voltages will be applied.
+        # input_range=None,  # For example: [-1,1], this variable is required if there is an input clip or a transformation to voltage
+        # # Output clipping  configs
+        # device_output_clip=True,  # Whether the device output will be clipped with the same clipping values as the setup used for gathering the training data with which it was trained
+        # # Batch norm related configs
+        # batch_norm=True,  # Whether if batch norm is applied
+        # affine=False,
+        # track_running_stats=True,  # Whether the batchnorm will track the running stats.
+        # momentum=0.1,
     ):
         # default current_range = 2  * std, where std is assumed to be 1
         super(DNPU_BatchNorm, self).__init__()
-        self.input_clip = input_clip
-        self.device_output_clip = device_output_clip
+        # self.input_clip = input_clip
+        # self.device_output_clip = device_output_clip
         self.init_processor(processor, inputs_list)
-        if input_range is None:
-            assert input_clip is False and transform_to_voltage is False
-            self.transform_to_voltage = False
-        else:
-            self.init_input_range(input_range)
-            self.init_transform_to_voltage(transform_to_voltage, self.input_range)
-        self.init_batch_norm(batch_norm, affine, track_running_stats, momentum)
+
+        self.input_clip = False
+        self.transform_to_voltage = False
+        self.bn = False
+        # else:
+            
+        #     self.init_transform_to_voltage(transform_to_voltage, self.input_range)
+        # self.init_batch_norm(batch_norm, affine, track_running_stats, momentum)
 
     def init_processor(self, processor, inputs_list):
         if isinstance(processor, Processor) or isinstance(
@@ -75,17 +76,18 @@ class DNPU_BatchNorm(nn.Module):
         self.input_range[:, 0] *= self.min_input
         self.input_range[:, 1] *= self.max_input
 
-    def init_batch_norm(self, batch_norm, affine, track_running_stats, momentum):
-        if batch_norm:
+    def init_batch_norm(self, affine=False, track_running_stats=True, momentum=0.1, eps=1e-5, custom_bn=None):
+        if custom_bn is None:
             self.init_output_node_no()
             self.bn = nn.BatchNorm1d(
                 self.bn_outputs,
                 affine=affine,
                 track_running_stats=track_running_stats,
                 momentum=momentum,
+                eps=eps
             ).to(device=TorchUtils.get_device())
         else:
-            self.bn = batch_norm
+            self.bn = custom_bn
 
     def init_output_node_no(self):
         if isinstance(self.processor, DNPU):
@@ -97,9 +99,12 @@ class DNPU_BatchNorm(nn.Module):
                 "Warning: self.processor in DNPU_BatchNorm is from a type that is not identified. The outputs of batch norm are not automatically detected."
             )
 
-    def init_transform_to_voltage(self, transform_to_voltage, input_range):
+    # Strict defines if the input is going to be clipped before doing the linear transformation in order to ensure that the transformation is correct
+    def init_transform_to_voltage(self, input_range, strict=True):
+        self.input_clip = strict
+        self.init_input_range(input_range)
         self.transform_to_voltage = CurrentToVoltage(
-            input_range, self.processor.get_input_ranges()
+            self.input_range, self.processor.get_input_ranges(), cut=False
         )
 
     def clamp_input(self, x):
@@ -112,15 +117,6 @@ class DNPU_BatchNorm(nn.Module):
             x = self.transform_to_voltage(x)
         return x
 
-    def clamp_output(self, x):
-        if self.device_output_clip:
-            x = torch.clamp(
-                x,
-                min=self.processor.get_clipping_value()[0],
-                max=self.processor.get_clipping_value()[1],
-            )
-        return x
-
     def apply_batch_norm(self, x):
         if self.bn:
             x = self.bn(x)
@@ -130,8 +126,7 @@ class DNPU_BatchNorm(nn.Module):
         self.clamped_input = self.clamp_input(x)
         self.transformed_input = self.transform_input(self.clamped_input)
         self.dnpu_output = self.processor(self.transformed_input)
-        self.clamped_dnpu_output = self.clamp_output(self.dnpu_output)
-        self.batch_norm_output = self.apply_batch_norm(self.clamped_dnpu_output)
+        self.batch_norm_output = self.apply_batch_norm(self.dnpu_output)
 
         return self.batch_norm_output
 
@@ -161,37 +156,5 @@ class DNPU_BatchNorm(nn.Module):
             "a_clamped_input": self.clamped_input.clone().detach(),
             "b_transformed_input": self.transformed_input.clone().detach(),
             "c_dnpu_output": self.dnpu_output.clone().detach(),
-            "d_clamped_dnpu_output": self.clamped_dnpu_output.clone().detach(),
-            "e_batch_norm_output": self.batch_norm_output.clone().detach(),
+            "d_batch_norm_output": self.batch_norm_output.clone().detach(),
         }
-
-
-if __name__ == "__main__":
-    from brainspy.utils.io import load_configs
-    import matplotlib.pyplot as plt
-    import time
-
-    NODE_CONFIGS = load_configs(
-        "/home/hruiz/Documents/PROJECTS/DARWIN/Code/packages/brainspy/brainspy-processors/configs/configs_nn_model.json"
-    )
-    node = DNPU(NODE_CONFIGS)
-    # linear_layer = nn.Linear(20, 3).to(device=TorchUtils.get_device())
-    # dnpu_layer = DNPU_Channels([[0, 3, 4]] * 1000, node)
-    linear_layer = nn.Linear(20, 300).to(device=TorchUtils.get_device())
-    dnpu_layer = DNPU_Layer([[0, 3, 4]] * 100, node)
-
-    model = nn.Sequential(linear_layer, dnpu_layer)
-
-    data = torch.rand((200, 20)).to(device=TorchUtils.get_device())
-    start = time.time()
-    output = model(data)
-    end = time.time()
-
-    # print([param.shape for param in model.parameters() if param.requires_grad])
-    print(
-        f"(inputs,outputs) = {output.shape} of layer evaluated in {end-start} seconds"
-    )
-    print(f"Output range : [{output.min()},{output.max()}]")
-
-    plt.hist(output.flatten().cpu().detach().numpy(), bins=100)
-    plt.show()

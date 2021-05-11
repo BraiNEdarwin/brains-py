@@ -111,7 +111,7 @@ class TorchUtils:
             )
 
     @staticmethod
-    def to_numpy(data: torch.tensor):
+    def to_numpy(data: torch.Tensor):
         """
         Creates a numpy array from a torch tensor
 
