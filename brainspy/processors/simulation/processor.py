@@ -196,13 +196,6 @@ class SurrogateModel(nn.Module):
             output = self.forward(inputs_torch)
         return TorchUtils.to_numpy(output)
 
-    def reset(self):
-        """
-        Reset the processor. Since this is a simulation model, this does
-        nothing.
-        """
-        warnings.warn("Simulation processor does not reset.")
-
     def close(self):
         """
         Close the processor. Since this is a simulation model, this does

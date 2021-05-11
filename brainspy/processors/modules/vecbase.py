@@ -144,12 +144,6 @@ class DNPUBase(nn.Module):
         # self.VariableRangeMapper()
         # self.transform = SimpleMapping(input_range=[-0.4242,2.8215], output_range=self.get_input_ranges().flatten(1,-1), clip_input=clip_input)
 
-    def reset(self):
-        raise NotImplementedError("Resetting controls not implemented!!")
-        # for k in range(len(self.control_low)):
-        #     # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
-        #     self.controls.data[:, k].uniform_(self.control_low[k], self.control_high[k])
-
     def regularizer(self):
         if "control_low" in dir(self) and "control_high" in dir(self):
             return 0

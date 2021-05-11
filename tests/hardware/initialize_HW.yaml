@@ -1,5 +1,4 @@
 processor_type: cdaq_to_cdaq # str - Processor type to initialize a hardware processor
-max_ramping_time_seconds : 0 # int -To set the ramp time for the setup
 driver:
   tasks_driver_type: local # "local" or "remote" - type of tasks driver
   instruments_setup:

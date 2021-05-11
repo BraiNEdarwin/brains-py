@@ -103,12 +103,6 @@ class DNPU_Base(nn.Module):
         data[:, c_indices] = expand_controls
         return self.processor.processor(data)  # * self.node.amplification
 
-    def reset(self):
-        raise NotImplementedError("Resetting controls not implemented!!")
-        # for k in range(len(self.control_low)):
-        #     # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
-        #     self.controls.data[:, k].uniform_(self.control_low[k], self.control_high[k])
-
     def regularizer(self):
         if "control_low" not in dir(self) and "control_high" not in dir(self):
             return 0

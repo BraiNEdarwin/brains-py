@@ -122,11 +122,9 @@ class DNPU(nn.Module):
     def get_clipping_value(self):
         return self.processor.get_clipping_value()
 
-    # TODO: Check if this function is really needed or if it needs to be completed.
     def reset(self):
-        for k in range(len(self.control_low)):
-            # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
-            self.bias.data[:, k].uniform_(self.control_low[k], self.control_high[k])
+        del self.bias
+        self._init_bias()
 
     # TODO: Document the need to override the closing of the processor on custom models.
     def close(self):

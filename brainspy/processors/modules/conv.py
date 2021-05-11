@@ -319,12 +319,6 @@ class DNPUConv2d(nn.Module):
 
         return x
 
-    def reset(self):
-        raise NotImplementedError("Resetting controls not implemented!!")
-        # for k in range(len(self.control_low)):
-        #     # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
-        #     self.controls.data[:, k].uniform_(self.control_low[k], self.control_high[k])
-
     def load_state_dict(self, state_dict, strict=True):
         print("Reached conv processor")
         super().load_state_dict(state_dict, strict)

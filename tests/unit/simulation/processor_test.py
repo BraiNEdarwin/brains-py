@@ -78,15 +78,6 @@ class ModelTest(unittest.TestCase):
         x = self.sm.forward_numpy(x)
         self.assertEqual(list(x.shape), [1])
 
-    def test_reset(self):
-        """
-        Test if resetting the processor raises a warning.
-        """
-        with warnings.catch_warnings(record=True) as caught_warnings:
-            warnings.simplefilter("always")
-            self.sm.reset()
-            self.assertEqual(len(caught_warnings), 1)
-
     def test_close(self):
         """
         Test if closing the processor raises a warning.
