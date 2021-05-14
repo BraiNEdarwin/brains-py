@@ -37,13 +37,13 @@ class ModelTest(unittest.TestCase):
         # input layer, 6 activations, 5 hidden layers, output layer
         self.assertEqual(len(raw), 13)
 
-    def test_info_dict(self):
-        """
-        Test setting and getting info dict.
-        """
-        info_dict = {"test1": 1, "test2": 2}
-        self.model.set_info_dict(info_dict)
-        self.assertEqual(info_dict, self.model.get_info_dict())
+    # def test_info_dict(self):
+    #     """
+    #     Test setting and getting info dict.
+    #     """
+    #     info_dict = {"test1": 1, "test2": 2}
+    #     self.model.set_info_dict(info_dict)
+    #     self.assertEqual(info_dict, self.model.get_info_dict())
 
     def test_get_activation(self):
         """
@@ -82,7 +82,7 @@ class ModelTest(unittest.TestCase):
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter("always")
             d = {}
-            self.model.info_consistency_check(d)
+            self.model.structure_consistency_check(d)
             self.assertTrue("D_out" in d)
             self.assertTrue("hidden_sizes" in d)
             self.assertTrue("activation" in d)

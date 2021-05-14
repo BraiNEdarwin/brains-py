@@ -46,11 +46,12 @@ class Hardware_Processor_Test(unittest.TestCase):
             self.model_data["info"]["model_structure"],
             self.model_data["model_state_dict"],
         )
-        self.model = HardwareProcessor(
+        model = HardwareProcessor(
             self.debug_model,
             slope_length=self.configs["waveform"]["slope_length"],
             plateau_length=self.configs["waveform"]["plateau_length"],
         )
+        self.model = TorchUtils.format(model)
 
     def test_init(self):
         """

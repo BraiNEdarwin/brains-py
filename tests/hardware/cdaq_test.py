@@ -2,6 +2,7 @@ import os
 import torch
 import unittest
 import numpy as np
+import brainspy
 from brainspy.processors.processor import Processor
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 
@@ -13,9 +14,9 @@ class CDAQ_Processor_Test(unittest.TestCase):
 
     """
 
+    #@unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ", "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup")
     def __init__(self, test_name):
         super(CDAQ_Processor_Test, self).__init__()
-
         configs = {}
         configs["processor_type"] = "cdaq_to_cdaq"
         configs["input_indices"] = [2, 3]
@@ -64,23 +65,25 @@ class CDAQ_Processor_Test(unittest.TestCase):
             os.chdir("..")
             os.chdir("brains-py")
 
-        self.model_dir = os.path.join(
-            os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
-        )
-        self.model_data = torch.load(self.model_dir, map_location=torch.device("cpu"))
+        if brainspy.TEST_MODE == "HARDWARE_CDAQ":
+            self.model_dir = os.path.join(
+                os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
+            )
+            self.model_data = torch.load(self.model_dir, map_location=torch.device("cpu"))
+            self.model = Processor(
+                configs,
+                self.model_data["info"],
+                self.model_data["model_state_dict"],
+            )
 
-        self.model = Processor(
-            configs,
-            self.model_data["info"],
-            self.model_data["model_state_dict"],
-        )
-
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ", "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup")
     def test_init(self):
         """
         Test to check correct initialization of the Hardware processor with the cdaq_to_cdaq driver.
         """
         isinstance(self.model.driver, CDAQtoCDAQ)
-
+    
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ", "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup")
     def test_forward_numpy(self):
         """
         Test if a forward pass through the processor returns a tensor of the
@@ -90,6 +93,7 @@ class CDAQ_Processor_Test(unittest.TestCase):
         x = self.model.forward_numpy(x)
         self.assertEqual(list(x.shape), [1])
 
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ", "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup")
     def runTest(self):
         self.test_init()
         self.test_forward_numpy()

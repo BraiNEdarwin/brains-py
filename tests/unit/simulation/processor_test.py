@@ -27,19 +27,13 @@ class ModelTest(unittest.TestCase):
             "activation": "relu",
             "hidden_sizes": [20, 20, 20]
         }
-        self.sm = SurrogateModel(model_structure)
-        self.info_dict = {
-            "electrode_no": 8,
-            "activation_electrodes": {
-                "electrode_no": 7,
-                "voltage_ranges": [[1.0, 2.0]] * 7
-            },
-            "output_electrodes": {
-                "electrode_no": 1,
-                "amplification": [2.0],
-                "output_clipping": [2.0, 1.0]
-            }
-        }
+        self.sm = TorchUtils.format(SurrogateModel(model_structure))
+        self.info_dict = {'electrode_no': 8,
+                        'activation_electrodes': {'electrode_no': 7,
+                        'voltage_ranges': [[1.0, 2.0]] * 7},
+                        'output_electrodes': {'electrode_no': 1,
+                        'amplification': [28.5],
+                        'clipping_value': [-114.0, 114.0]}}
         self.sm.set_effects_from_dict(self.info_dict, dict())
 
     def test_get_voltage_ranges(self):
@@ -199,7 +193,7 @@ class ModelTest(unittest.TestCase):
             torch.equal(
                 self.sm.output_clipping,
                 TorchUtils.format(
-                    self.info_dict["output_electrodes"]["output_clipping"])))
+                    self.info_dict["output_electrodes"]["clipping_value"])))
 
     def test_set_noise(self):
         """
@@ -210,7 +204,7 @@ class ModelTest(unittest.TestCase):
         self.assertIsNone(self.sm.noise)
 
         # set to Gaussian
-        noise_dict = {"noise_type": "gaussian", "variance": 1.0}
+        noise_dict = {"type": "gaussian", "variance": 1.0}
         self.sm.set_effects(self.info_dict, noise_configs=noise_dict)
         self.assertIsInstance(self.sm.noise, GaussianNoise)
 
