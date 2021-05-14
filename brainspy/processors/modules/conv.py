@@ -58,7 +58,7 @@ class DNPUConv2d(nn.Module):
             params.requires_grad = False
 
         self.indices_node = np.arange(
-            len(self.processor.data_input_indices) + len(self.processor.control_indices)
+            self.processor.get_activation_electrode_no()
         )
 
         # -- Set learnable parameters --
