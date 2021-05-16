@@ -16,6 +16,7 @@ from brainspy.utils.manager import (
 from brainspy.processors.processor import Processor
 from brainspy.processors.dnpu import DNPU
 from brainspy.algorithms.modules.optim import GeneticOptimizer
+
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 
 
@@ -89,10 +90,10 @@ class ManagerTest(unittest.TestCase):
         configs["processor_type"] = "simulation"
         configs["input_indices"] = [2, 3]
         configs["electrode_effects"] = {}
-        configs["electrode_effects"]["amplification"] = 3
-        configs["electrode_effects"]["clipping_value"] = [-300, 300]
+        configs["electrode_effects"]["amplification"] = [28.5]
+        configs["electrode_effects"]["clipping_value"] = [-110, 110]
         configs["electrode_effects"]["noise"] = {}
-        configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
+        configs["electrode_effects"]["noise"]["type"] = "gaussian"
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
         configs["waveform"] = {}
@@ -125,10 +126,10 @@ class ManagerTest(unittest.TestCase):
         configs["processor_type"] = "simulation"
         configs["input_indices"] = [2, 3]
         configs["electrode_effects"] = {}
-        configs["electrode_effects"]["amplification"] = 3
-        configs["electrode_effects"]["clipping_value"] = [-300, 300]
+        configs["electrode_effects"]["amplification"] = [28.5]
+        configs["electrode_effects"]["clipping_value"] = [-110, 110]
         configs["electrode_effects"]["noise"] = {}
-        configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
+        configs["electrode_effects"]["noise"]["type"] = "gaussian"
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
         configs["waveform"] = {}

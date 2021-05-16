@@ -58,7 +58,7 @@ class DNPUConv2d(nn.Module):
             params.requires_grad = False
 
         self.indices_node = np.arange(
-            len(self.processor.data_input_indices) + len(self.processor.control_indices)
+            self.processor.get_activation_electrode_no()
         )
 
         # -- Set learnable parameters --
@@ -318,12 +318,6 @@ class DNPUConv2d(nn.Module):
         x = self.postprocess(x, data_dim, input_dim)
 
         return x
-
-    def reset(self):
-        raise NotImplementedError("Resetting controls not implemented!!")
-        # for k in range(len(self.control_low)):
-        #     # print(f'    resetting control {k} between : {self.control_low[k], self.control_high[k]}')
-        #     self.controls.data[:, k].uniform_(self.control_low[k], self.control_high[k])
 
     def load_state_dict(self, state_dict, strict=True):
         print("Reached conv processor")

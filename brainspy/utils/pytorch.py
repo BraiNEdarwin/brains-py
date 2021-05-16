@@ -10,15 +10,18 @@ import random
 
 
 class TorchUtils:
-    """ A class to consistently manage declarations of torch variables for CUDA and CPU. """
-
+    """ Consistently manage data movement and formatting of pytorch tensors and torch.nn.Module instances. This includes data movement to/from CUDA and CPU, 
+    as well as transformations to/from lists and numpy arrays. It also enables to manage the seeds for reproducibility purposes."""
+   
     force_cpu = False
 
     @staticmethod
     def set_force_cpu(force: bool):
         """
-        Enable setting the force CPU option for computers with an old CUDA version,
-        where torch detects that there is cuda, but the version is too old to be compatible.
+        Facilitates running all tensors on the CPU even when having a GPU with cuda correctly installed.
+        Ideal for GPUs that do not have enough memory to run certain experiments or for computers with or
+        with older GPUs. Also, for cases where torch detects that there is cuda, but the version is too old
+        to be compatible.
 
         Parameters
         ----------
@@ -35,7 +38,8 @@ class TorchUtils:
     @staticmethod
     def get_device():
         """
-        Consistently returns the accelerator type for the torch. The accelerator type of the device can be "cpu" or "cuda" depending on the version of the computer.
+        Consistently returns the device type for the torch. The device type can be "cpu" or "cuda", depending on if the computer has a GPU
+        with a cuda installation, and on the variable force_cpu. This method does not manage multiple GPUs.
 
         Returns
         -------
@@ -59,14 +63,18 @@ class TorchUtils:
 
         Parameters
         ----------
-        data :
-            list/np.ndarray : list of data indices
+        data : It can be one of these data types:
+            list : list of data indices
+            np.ndarray : list of data indices
             torch.Tensor :  inital torch tensor which has to be formatted
             nn.Module : model of an nn.Module object
         device : torch.device, optional
-            device type of torch tensor which can be "cpu or "cuda" depending on computer version, by default None
+            device type of torch tensor which can be "cpu or "cuda" depending on computer version, by default None.
+            When set to none, it will take the default value from the global variable force_cpu of this class.
         data_type : torch.dtype, optional
             desired data type of torch tensor, by default None
+            When set to None, it will take the default data type from pytorch. This datatype can be changed using the
+            torch.set_default_dtype. More info on this method at: https://pytorch.org/docs/stable/generated/torch.set_default_dtype.html
 
         Returns
         -------
@@ -75,10 +83,10 @@ class TorchUtils:
         2. nn.Module
             if an nn.Module is given as an argument, a model of the nn.Module object distributed by DataParallel amongst the multiple GPUs is generated
 
-        Example
+        Examples
         -------
         1.  data = [[1, 2]]
-            tensor = TorchUtils.format(data, data_type=torch.float32)
+            tensor = TorchUtils.format(data, device=torch.device('cpu'))
 
         2.  tensor = torch.randn(2, 2)
             tensor = TorchUtils.format(tensor, data_type=torch.float64)
@@ -87,8 +95,7 @@ class TorchUtils:
             numpy_data = np.array(data)
             tensor = TorchUtils.format(numpy_data)
 
-        4.  configs = {"optimizer" : "adam"}
-            model = CustomModel()
+        4.  model = CustomModel() # Where CustomModel is an instance of torch.nn.Module
             newmodel = format_model(model)
 
         """
@@ -113,7 +120,9 @@ class TorchUtils:
     @staticmethod
     def to_numpy(data: torch.Tensor):
         """
-        Creates a numpy array from a torch tensor
+        Transforms torch tensor into a numpy array, detatching it first, and 
+        moving the data to the cpu (if needed). The aim is to simplify the lines 
+        of code required for this purpose with the original pytorch library. 
 
         Parameters
         ----------
@@ -137,8 +146,10 @@ class TorchUtils:
     @staticmethod
     def init_seed(seed=None, deterministic=False):
         """
-        Sets the seed for generating random numbers.
-        If the random seed is not reset, different numbers appear with every invocation
+        It enables to set a fixed seed, or retrieve the current seed used for generating random numbers.
+        If the random seed is not reset, different numbers appear with every invocation.
+        It can be used to reproduce results. 
+        More information at: https://pytorch.org/docs/stable/notes/randomness.html
 
         Parameters
         ----------

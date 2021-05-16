@@ -169,13 +169,6 @@ class SurrogateModel(nn.Module):
             output = self.forward(inputs_torch)
         return TorchUtils.to_numpy(output)
 
-    def reset(self):
-        """
-        Reset the processor. Since this is a simulation model, this does
-        nothing.
-        """
-        warnings.warn("Simulation processor does not reset.")
-
     def close(self):
         """
         Close the processor. Since this is a simulation model, this does
@@ -315,7 +308,7 @@ class SurrogateModel(nn.Module):
                            voltage_ranges="default",
                            amplification=[2.0]),
                            output_clipping="default",
-                           noise={"noise_type": "gaussian", "variance": 1.0})
+                           noise={"type": "gaussian", "variance": 1.0})
 
         Parameters
         ----------
@@ -333,7 +326,7 @@ class SurrogateModel(nn.Module):
             'default'. By default 'default'.
         noise_configs : dict
             The noise of the processor. Can be None (will generate no noise)
-            or a dictionary with keys "noise_type" and "variance" (the latter
+            or a dictionary with keys "type" and "variance" (the latter
             only in case of Gaussian noise).
         """
         self.set_amplification(info, amplification)

@@ -27,17 +27,17 @@ class ModelTest(unittest.TestCase):
             "activation": "relu",
             "hidden_sizes": [20, 20, 20]
         }
-        self.model = SurrogateModel(model_structure)
+        self.model = TorchUtils.format(SurrogateModel(model_structure))
         self.info_dict = {
-            "electrode_no": 8,
-            "activation_electrodes": {
-                "electrode_no": 7,
-                "voltage_ranges": [[1.0, 2.0]] * 7
+            'electrode_no': 8,
+            'activation_electrodes': {
+                'electrode_no': 7,
+                'voltage_ranges': [[1.0, 2.0]] * 7
             },
-            "output_electrodes": {
-                "electrode_no": 1,
-                "amplification": [2.0],
-                "output_clipping": [2.0, 1.0]
+            'output_electrodes': {
+                'electrode_no': 1,
+                'amplification': [28.5],
+                'clipping_value': [-114.0, 114.0]
             }
         }
         self.model.set_effects_from_dict(self.info_dict, dict())
@@ -77,15 +77,6 @@ class ModelTest(unittest.TestCase):
         x = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
         x = self.model.forward_numpy(x)
         self.assertEqual(list(x.shape), [1])
-
-    def test_reset(self):
-        """
-        Test if resetting the processor raises a warning.
-        """
-        with warnings.catch_warnings(record=True) as caught_warnings:
-            warnings.simplefilter("always")
-            self.model.reset()
-            self.assertEqual(len(caught_warnings), 1)
 
     def test_close(self):
         """
@@ -212,7 +203,7 @@ class ModelTest(unittest.TestCase):
             torch.equal(
                 self.model.output_clipping,
                 TorchUtils.format(
-                    self.info_dict["output_electrodes"]["output_clipping"])))
+                    self.info_dict["output_electrodes"]["clipping_value"])))
 
         # set to None
         self.model.set_output_clipping(self.info_dict, None)
@@ -227,7 +218,7 @@ class ModelTest(unittest.TestCase):
         self.assertIsNone(self.model.noise)
 
         # set to Gaussian
-        noise_dict = {"noise_type": "gaussian", "variance": 1.0}
+        noise_dict = {"type": "gaussian", "variance": 1.0}
         self.model.set_effects(self.info_dict, noise_configs=noise_dict)
         self.assertIsInstance(self.model.noise, GaussianNoise)
 
