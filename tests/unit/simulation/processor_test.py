@@ -29,7 +29,6 @@ class ModelTest(unittest.TestCase):
         }
         self.model = TorchUtils.format(SurrogateModel(model_structure))
         self.info_dict = {
-            'electrode_no': 8,
             'activation_electrodes': {
                 'electrode_no': 7,
                 'voltage_ranges': [[1.0, 2.0]] * 7
@@ -65,18 +64,20 @@ class ModelTest(unittest.TestCase):
         Test if a forward pass through the processor returns a tensor of the
         right shape.
         """
-        x = TorchUtils.format(torch.rand(7))
-        x = self.model.forward(x)
-        self.assertEqual(list(x.shape), [1])
+        for i in range(100):
+            x = TorchUtils.format(torch.rand(7))
+            x = self.model.forward(x)
+            self.assertEqual(list(x.shape), [1])
 
     def test_forward_numpy(self):
         """
         Test if a forward pass through the processor returns a tensor of the
         right shape (the numpy version).
         """
-        x = np.array(np.random.random(7))
-        x = self.model.forward_numpy(x)
-        self.assertEqual(list(x.shape), [1])
+        for i in range(100):
+            x = np.array(np.random.random(7))
+            x = self.model.forward_numpy(x)
+            self.assertEqual(list(x.shape), [1])
 
     def test_close(self):
         """
