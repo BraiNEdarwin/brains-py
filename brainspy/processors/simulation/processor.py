@@ -208,9 +208,6 @@ class SurrogateModel(nn.Module):
         ----------
         info : dict
             Info dictionary of the processor.
-            electrode_no : int
-                Total number of electrodes. This key is not directly used in
-                this method or other methods calling it so it can be omitted.
             activation_electrodes:
                 electrode_no : int
                     Number of activation electrodes.
