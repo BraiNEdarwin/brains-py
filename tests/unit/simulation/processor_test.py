@@ -65,7 +65,7 @@ class ModelTest(unittest.TestCase):
         Test if a forward pass through the processor returns a tensor of the
         right shape.
         """
-        x = TorchUtils.format([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+        x = TorchUtils.format(torch.rand(7))
         x = self.model.forward(x)
         self.assertEqual(list(x.shape), [1])
 
@@ -74,7 +74,7 @@ class ModelTest(unittest.TestCase):
         Test if a forward pass through the processor returns a tensor of the
         right shape (the numpy version).
         """
-        x = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+        x = np.array(np.random.random(7))
         x = self.model.forward_numpy(x)
         self.assertEqual(list(x.shape), [1])
 
