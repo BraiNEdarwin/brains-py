@@ -64,7 +64,7 @@ def get_noise(configs: dict, **kwargs):
     configs: dict
         A dictionary containing the configurations to declare different types
         of noise. The dictionary should at least contain the following keys:
-            noise_type : str
+            type : str
                 Type of noise to be applied. The only currently implemented
                 noise type is 'gaussian'.
             variance:

@@ -2,43 +2,6 @@
 Module for creating and managing a surrogate model. A surrogate model consists
 of a basic neural network, as well as extra effects applied to its output:
 amplification, output clipping, noise.
-
-Note: this should be moved
-smg_configs
------------
-results_base_dir : str
-    Path for storing results.
-hyperparameters:
-    epochs : int
-        Number of epochs.
-    learning_rate : float
-        Learning rate.
-model_architecture:
-    hidden_sizes : list[int]
-        Number of neurons in each hidden layer of the network.
-    D_in : int
-        Number of inputs of the network.
-    D_out : int
-        Number of outputs of the network.
-    activation : str
-        Type of activation used in the network, for example "relu".
-data:
-    postprocessed_data_path : str
-        Path for storing processed data.
-    steps : int
-        Step size for sampling data.
-    batch_size : int
-        Number of data points per batch.
-    worker_no : int
-        Distribute data loading to subprocesses. Value 0 will only use the
-        main process, while value >0 will create that number of subprocesses
-        and not use the main process.
-        https://pytorch.org/docs/stable/data.html
-    pin_memory : bool
-        Use CUDA pinned memory when loading data.
-        https://pytorch.org/docs/stable/data.html
-    split_percentages : list[float]
-        Percentage of data in each category [train, validation, test].
 """
 
 import warnings
@@ -58,6 +21,9 @@ class SurrogateModel(nn.Module):
     """
     Consists of nn model with added effects: amplification, output clipping,
     and noise. The different effects are explained in their respective methods.
+
+    The effects need to be set after creating a SurrogateModel, this is
+    explained in init.
 
     Attributes
     ----------
@@ -79,7 +45,14 @@ class SurrogateModel(nn.Module):
         model_state_dict: collections.OrderedDict = None,
     ):
         """
-        Create a processor, load the model.
+        Create a processor, load the model. The effects of the model need to
+        be set after initialization, there are 3 ways to do this:
+        - set_effects_from_dict
+        - set_effects
+        - using the method for each effect (set_amplitude, set_voltage_ranges,
+        set_output_clipping)
+        For all of these, an info dictionary is required, which is explained
+        in set_effects_from_dict
 
         Example
         -------
@@ -144,7 +117,7 @@ class SurrogateModel(nn.Module):
 
         Example
         -------
-        >>> sm.forward(torch.tensor([1.0, 2.0, 3.0]))
+        >>> model.forward(torch.tensor([1.0, 2.0, 3.0]))
         torch.Tensor([4.0])
 
         Parameters
@@ -178,7 +151,7 @@ class SurrogateModel(nn.Module):
 
         Example
         -------
-        >>> sm.forward(np.array([1.0, 2.0, 3.0]))
+        >>> model.forward(np.array([1.0, 2.0, 3.0]))
         np.array([4.0])
 
         Parameters
@@ -229,14 +202,12 @@ class SurrogateModel(nn.Module):
         >>> configs = {"amplification": [2.0],
                        "voltage_ranges": [[1.0, 2.0]] * 7,
                        "output_clipping": [2.0, 1.0]}
-        >>> sm.set_effects_from_dict(info_dict, configs)
+        >>> model.set_effects_from_dict(info_dict, configs)
 
         Parameters
         ----------
         info : dict
             Info dictionary of the processor.
-            electrode_no : int
-                Total number of electrodes.
             activation_electrodes:
                 electrode_no : int
                     Number of activation electrodes.
@@ -281,11 +252,11 @@ class SurrogateModel(nn.Module):
         Example
         -------
         >>> configs = {"amplification": [2.0]}
-        >>> sm.get_key("amplification")
+        >>> model.get_key("amplification")
         [2.0]
-        >>> sm.get_key("output_clipping")
+        >>> model.get_key("output_clipping")
         "default"
-        >>> sm.get_key("noise")
+        >>> model.get_key("noise")
         None
 
         Parameters
@@ -330,11 +301,11 @@ class SurrogateModel(nn.Module):
 
         Example
         -------
-        >>> sm.set_effects(info,
+        >>> model.set_effects(info,
                            voltage_ranges="default",
                            amplification=[2.0]),
                            output_clipping="default",
-                           noise={"noise_type": "gaussian", "variance": 1.0})
+                           noise={"type": "gaussian", "variance": 1.0})
 
         Parameters
         ----------
@@ -352,7 +323,7 @@ class SurrogateModel(nn.Module):
             'default'. By default 'default'.
         noise_configs : dict
             The noise of the processor. Can be None (will generate no noise)
-            or a dictionary with keys "noise_type" and "variance" (the latter
+            or a dictionary with keys "type" and "variance" (the latter
             only in case of Gaussian noise).
         """
         self.set_amplification(info, amplification)
@@ -364,13 +335,13 @@ class SurrogateModel(nn.Module):
         """
         Set the voltage ranges of the processor to a given value or get the
         value from the info dictionary (if value is 'default'). If value is
-        None, nothing happens.
+        None, nothing happens, since the voltage ranges should never be None.
 
         This method is called through the set_effects method.
 
         Example
         -------
-        >>> sm.set_voltage_ranges(info, [[1.0, 2.0]] * 7)
+        >>> model.set_voltage_ranges(info, [[1.0, 2.0]] * 7)
 
         Here the voltage range is set to 1.0 to 2.0 for each of the 7
         activation electrodes.
@@ -380,7 +351,7 @@ class SurrogateModel(nn.Module):
         info : dict
             Dictionary with information of the processor. Documented in
             set_effects_from_dict.
-        value : str or list[list[float]]
+        value : str or list[list[float]] or None
             Desired value for the voltage ranges, can also be None (nothing
             happens) or 'default' (get the value from the info dict).
 
@@ -399,6 +370,8 @@ class SurrogateModel(nn.Module):
             warnings.warn(
                 "Voltage ranges of surrogate model have been changed.")
             self.voltage_ranges = TorchUtils.format(value)
+        else:
+            warnings.warn("Voltage ranges cannot be set to None.")
 
     def set_amplification(self, info: dict, value: list):
         """
@@ -413,14 +386,14 @@ class SurrogateModel(nn.Module):
 
         Example
         -------
-        >>> sm.set_amplification(info, [2.0])
+        >>> model.set_amplification(info, [2.0])
 
         Parameters
         ----------
         info : dict
             Dictionary with information of the processor. Documented in
             set_effects_from_dict.
-        value : None or float or str
+        value : None or list[float] or str
             The value of the amplification (None, a value or 'default').
 
         Raises
@@ -437,6 +410,9 @@ class SurrogateModel(nn.Module):
             assert len(value) == info["output_electrodes"]["electrode_no"]
             warnings.warn("Amplification of surrogate model has been changed.")
             self.amplification = TorchUtils.format(value)
+        else:
+            warnings.warn("Amplification of surrogate model set to None")
+            self.amplification = None
 
     def set_output_clipping(self, info: dict, value):
         """
@@ -453,14 +429,14 @@ class SurrogateModel(nn.Module):
 
         Example
         -------
-        >>> sm.set_output_clipping(info, [2.0, 1.0])
+        >>> model.set_output_clipping(info, [2.0, 1.0])
 
         Parameters
         ----------
         info : dict
             Dictionary with information of the processor. Documented in
             set_effects_from_dict.
-        value : None or np.array or str
+        value : None or list[float] or str
             The value of the output clipping (None, a value or 'default').
 
         Raises
@@ -478,6 +454,9 @@ class SurrogateModel(nn.Module):
             warnings.warn(
                 "Output clipping values of surrogate model have been changed.")
             self.output_clipping = TorchUtils.format(value)
+        else:
+            warnings.warn("Output clipping of surrogate model set to None")
+            self.output_clipping = None
 
     def get_clipping_value(self):
         if self.output_clipping is not None:

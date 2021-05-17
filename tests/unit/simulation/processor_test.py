@@ -27,14 +27,19 @@ class ModelTest(unittest.TestCase):
             "activation": "relu",
             "hidden_sizes": [20, 20, 20]
         }
-        self.sm = TorchUtils.format(SurrogateModel(model_structure))
-        self.info_dict = {'electrode_no': 8,
-                        'activation_electrodes': {'electrode_no': 7,
-                        'voltage_ranges': [[1.0, 2.0]] * 7},
-                        'output_electrodes': {'electrode_no': 1,
-                        'amplification': [28.5],
-                        'clipping_value': [-114.0, 114.0]}}
-        self.sm.set_effects_from_dict(self.info_dict, dict())
+        self.model = TorchUtils.format(SurrogateModel(model_structure))
+        self.info_dict = {
+            'activation_electrodes': {
+                'electrode_no': 7,
+                'voltage_ranges': [[1.0, 2.0]] * 7
+            },
+            'output_electrodes': {
+                'electrode_no': 1,
+                'amplification': [28.5],
+                'clipping_value': [-114.0, 114.0]
+            }
+        }
+        self.model.set_effects_from_dict(self.info_dict, dict())
 
     def test_get_voltage_ranges(self):
         """
@@ -43,15 +48,15 @@ class ModelTest(unittest.TestCase):
         """
         # should set to configs
         configs = {"voltage_ranges": [[3.0, 4.0]] * 7}
-        self.sm.set_effects_from_dict(self.info_dict, configs)
+        self.model.set_effects_from_dict(self.info_dict, configs)
         self.assertTrue(
-            torch.equal(self.sm.get_voltage_ranges(),
+            torch.equal(self.model.get_voltage_ranges(),
                         TorchUtils.format([[3.0, 4.0]] * 7)))
 
         # should set to default from info dict
-        self.sm.set_effects_from_dict(self.info_dict, {})
+        self.model.set_effects_from_dict(self.info_dict, {})
         self.assertTrue(
-            torch.equal(self.sm.get_voltage_ranges(),
+            torch.equal(self.model.get_voltage_ranges(),
                         TorchUtils.format([[1.0, 2.0]] * 7)))
 
     def test_forward(self):
@@ -59,18 +64,20 @@ class ModelTest(unittest.TestCase):
         Test if a forward pass through the processor returns a tensor of the
         right shape.
         """
-        x = TorchUtils.format([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
-        x = self.sm.forward(x)
-        self.assertEqual(list(x.shape), [1])
+        for i in range(100):
+            x = TorchUtils.format(torch.rand(7))
+            x = self.model.forward(x)
+            self.assertEqual(list(x.shape), [1])
 
     def test_forward_numpy(self):
         """
         Test if a forward pass through the processor returns a tensor of the
         right shape (the numpy version).
         """
-        x = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
-        x = self.sm.forward_numpy(x)
-        self.assertEqual(list(x.shape), [1])
+        for i in range(100):
+            x = np.array(np.random.random(7))
+            x = self.model.forward_numpy(x)
+            self.assertEqual(list(x.shape), [1])
 
     def test_close(self):
         """
@@ -78,34 +85,34 @@ class ModelTest(unittest.TestCase):
         """
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter("always")
-            self.sm.close()
+            self.model.close()
             self.assertEqual(len(caught_warnings), 1)
 
     def test_is_hardware(self):
         """
         Test if processor knows it is not hardware.
         """
-        self.assertFalse(self.sm.is_hardware())
+        self.assertFalse(self.model.is_hardware())
 
     def test_set_effects_from_dict(self):
         """
         Test setting effects from a dictionary.
         """
         configs = {
-            "amplification": [3.0],
+            "amplification": None,
             "output_clipping": [4.0, 3.0],
             "voltage_ranges": "default",
             "noise": None,
             "test": 0
         }
-        self.sm.set_effects_from_dict(self.info_dict, configs)
-        self.assertEquals(self.sm.amplification, TorchUtils.format([3.0]))
+        self.model.set_effects_from_dict(self.info_dict, configs)
+        self.assertIsNone(self.model.amplification)
         self.assertTrue(
-            torch.equal(self.sm.output_clipping, TorchUtils.format([4.0,
-                                                                    3.0])))
+            torch.equal(self.model.output_clipping,
+                        TorchUtils.format([4.0, 3.0])))
         self.assertTrue(
             torch.equal(
-                self.sm.get_voltage_ranges(),
+                self.model.get_voltage_ranges(),
                 TorchUtils.format(self.info_dict["activation_electrodes"]
                                   ["voltage_ranges"])))
 
@@ -118,25 +125,25 @@ class ModelTest(unittest.TestCase):
         key2 = "key2"
         key_noise = "noise"
         d = {"key1": 1}
-        self.assertEquals(self.sm.get_key(d, key1), 1)
-        self.assertEquals(self.sm.get_key(d, key2), "default")
-        self.assertIsNone(self.sm.get_key(d, key_noise))
+        self.assertEquals(self.model.get_key(d, key1), 1)
+        self.assertEquals(self.model.get_key(d, key2), "default")
+        self.assertIsNone(self.model.get_key(d, key_noise))
 
     def test_set_effects(self):
         """
         Test setting effects.
         """
-        self.sm.set_effects(self.info_dict,
-                            amplification=[3.0],
-                            voltage_ranges="default",
-                            output_clipping=np.array([4.0, 3.0]))
-        self.assertEquals(self.sm.amplification, TorchUtils.format([3.0]))
+        self.model.set_effects(self.info_dict,
+                               amplification=[3.0],
+                               voltage_ranges="default",
+                               output_clipping=np.array([4.0, 3.0]))
+        self.assertEquals(self.model.amplification, TorchUtils.format([3.0]))
         self.assertTrue(
-            torch.equal(self.sm.output_clipping, TorchUtils.format([4.0,
-                                                                    3.0])))
+            torch.equal(self.model.output_clipping,
+                        TorchUtils.format([4.0, 3.0])))
         self.assertTrue(
             torch.equal(
-                self.sm.get_voltage_ranges(),
+                self.model.get_voltage_ranges(),
                 TorchUtils.format(self.info_dict["activation_electrodes"]
                                   ["voltage_ranges"])))
 
@@ -146,67 +153,75 @@ class ModelTest(unittest.TestCase):
         """
         # set to value
         value = [[3.0, 4.0]] * 7
-        self.sm.set_voltage_ranges(self.info_dict, value)
+        self.model.set_voltage_ranges(self.info_dict, value)
         self.assertTrue(
-            torch.equal(self.sm.get_voltage_ranges(),
+            torch.equal(self.model.get_voltage_ranges(),
                         TorchUtils.format(value)))
 
         # set to default
-        self.sm.set_voltage_ranges(self.info_dict, "default")
+        self.model.set_voltage_ranges(self.info_dict, "default")
         self.assertTrue(
             torch.equal(
-                self.sm.get_voltage_ranges(),
+                self.model.get_voltage_ranges(),
                 TorchUtils.format(self.info_dict["activation_electrodes"]
                                   ["voltage_ranges"])))
 
     def test_set_amplification(self):
         """
-        Test setting amplification to default and new value.
+        Test setting amplification to default, None or a new value.
         """
         # set to value
         value = [3.0]
-        self.sm.set_amplification(self.info_dict, value)
+        self.model.set_amplification(self.info_dict, value)
         self.assertTrue(
-            torch.equal(self.sm.amplification, TorchUtils.format(value)))
+            torch.equal(self.model.amplification, TorchUtils.format(value)))
 
         # set to default
-        self.sm.set_amplification(self.info_dict, "default")
+        self.model.set_amplification(self.info_dict, "default")
         self.assertTrue(
             torch.equal(
-                self.sm.amplification,
+                self.model.amplification,
                 TorchUtils.format(
                     self.info_dict["output_electrodes"]["amplification"])))
 
+        # set to None
+        self.model.set_amplification(self.info_dict, None)
+        self.assertIsNone(self.model.amplification)
+
     def test_set_output_clipping(self):
         """
-        Test setting output clipping to default and new value.
+        Test setting output clipping to default, None or a new value.
         """
         # set to value
         value = [4.0, 3.0]
-        self.sm.set_output_clipping(self.info_dict, value)
+        self.model.set_output_clipping(self.info_dict, value)
         self.assertTrue(
-            torch.equal(self.sm.output_clipping, TorchUtils.format(value)))
+            torch.equal(self.model.output_clipping, TorchUtils.format(value)))
 
         # set to default
-        self.sm.set_output_clipping(self.info_dict, "default")
+        self.model.set_output_clipping(self.info_dict, "default")
         self.assertTrue(
             torch.equal(
-                self.sm.output_clipping,
+                self.model.output_clipping,
                 TorchUtils.format(
                     self.info_dict["output_electrodes"]["clipping_value"])))
+
+        # set to None
+        self.model.set_output_clipping(self.info_dict, None)
+        self.assertIsNone(self.model.output_clipping)
 
     def test_set_noise(self):
         """
         Test setting the noise to gaussian or None.
         """
         # set to none
-        self.sm.set_effects(self.info_dict)
-        self.assertIsNone(self.sm.noise)
+        self.model.set_effects(self.info_dict)
+        self.assertIsNone(self.model.noise)
 
         # set to Gaussian
         noise_dict = {"type": "gaussian", "variance": 1.0}
-        self.sm.set_effects(self.info_dict, noise_configs=noise_dict)
-        self.assertIsInstance(self.sm.noise, GaussianNoise)
+        self.model.set_effects(self.info_dict, noise_configs=noise_dict)
+        self.assertIsInstance(self.model.noise, GaussianNoise)
 
 
 if __name__ == "__main__":
