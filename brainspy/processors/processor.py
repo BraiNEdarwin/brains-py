@@ -88,8 +88,6 @@ class Processor(nn.Module):
             by default None.
         """
         super(Processor, self).__init__()
-        self.info = info
-        self.configs = configs
         self.load_processor(configs, info, model_state_dict)
         self.waveform_mgr = WaveformManager(configs['waveform'])
 
@@ -133,9 +131,8 @@ class Processor(nn.Module):
         """
 
         self.processor: Union[SurrogateModel, HardwareProcessor]
-        # set info dict
-        if info is not None:
-            self.info = info
+        self.info = info
+        self.configs = configs
 
         # create SurrogateModel
         if configs["processor_type"] == "simulation":
@@ -160,13 +157,6 @@ class Processor(nn.Module):
                     "activation_voltage_ranges"] = self.info["electrode_info"][
                         "activation_electrodes"]["voltage_ranges"]
 
-            # create processor
-            self.processor = HardwareProcessor(
-                configs["driver"],
-                configs["waveform"]["slope_length"],
-                configs["waveform"]["plateau_length"],
-            )
-
             # create warning with electrode info
             electrode_info = self.info["electrode_info"]  # avoid line too long
             warnings.warn(
@@ -189,7 +179,13 @@ class Processor(nn.Module):
                     f"value of: {configs['driver']['amplification']}")
             else:
                 configs["driver"]["amplification"] = self.info[
-                    "electrode_info"]["output_electrodes"]["amplification"]
+                    "electrode_info"]["output_electrodes"]["amplification"]   
+
+            self.processor = HardwareProcessor(
+                configs["driver"],
+                configs["waveform"]["slope_length"],
+                configs["waveform"]["plateau_length"],
+            )
 
         # create simulation processor for debugging
         elif configs["processor_type"] == "simulation_debug":
@@ -264,6 +260,10 @@ class Processor(nn.Module):
                 'clipping_value']  # will return list
         else:
             return self.processor.get_clipping_value()  # will return tensor
+
+    def swap(self, configs: dict, info: dict, model_state_dict: collections.OrderedDict = None):
+        self.load_processor(configs, info, model_state_dict)
+        self.waveform_mgr = WaveformManager(configs['waveform'])
 
     def is_hardware(self) -> bool:
         """
