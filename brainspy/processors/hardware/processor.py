@@ -131,7 +131,7 @@ class HardwareProcessor(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-            input data
+            input data in 'plateau' format (the forward pass will add/remove the slopes to the data).
 
         Returns
         -------
