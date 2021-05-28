@@ -174,13 +174,17 @@ def get_linear_transform_constants(y_min: float, y_max: float, x_min: float,
     Parameters
     ----------
     y_min : float
-        Y-coordinate of first point.
+        Y-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the voltage.
     y_max : float
-        Y-coordinate of second point.
+        Y-coordinate of second point. In a current to voltage linear transformation,
+        the expected maximum value(s) for the voltage.
     x_min : float
-        X-coordinate of first point.
+        X-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
     x_max : float
-        X-coordinate of second point.
+        X-coordinate of second point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
 
     Returns
     -------
@@ -218,13 +222,17 @@ def get_scale(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
     Parameters
     ----------
     y_min : float
-        Y-coordinate of first point.
+        Y-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the voltage.
     y_max : float
-        Y-coordinate of second point.
+        Y-coordinate of second point. In a current to voltage linear transformation,
+        the expected maximum value(s) for the voltage.
     x_min : float
-        X-coordinate of first point.
+        X-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
     x_max : float
-        X-coordinate of second point.
+        X-coordinate of second point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
 
     Returns
     -------
@@ -260,13 +268,17 @@ def get_offset(y_min: float, y_max: float, x_min: float,
     Parameters
     ----------
     y_min : float
-        Y-coordinate of first point.
+        Y-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the voltage.
     y_max : float
-        Y-coordinate of second point.
+        Y-coordinate of second point. In a current to voltage linear transformation,
+        the expected maximum value(s) for the voltage.
     x_min : float
-        X-coordinate of first point.
+        X-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
     x_max : float
-        X-coordinate of second point.
+        X-coordinate of second point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
 
     Returns
     -------
