@@ -314,7 +314,7 @@ class DNPUConv2d(nn.Module):
 
         x, batch_size, window_no = self.preprocess(x)
         x, data_dim = self.merge_electrode_data(x, batch_size, window_no)
-        x = self.processor.processor(x)
+        x = self.processor(x)
         x = self.postprocess(x, data_dim, input_dim)
 
         return x
