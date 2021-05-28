@@ -8,6 +8,9 @@ from typing import Sequence, Union
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
 
+from brainspy.utils.transforms import get_linear_transform_constants
+
+import warnings
 
 class DNPU(nn.Module):
     """
@@ -40,6 +43,8 @@ class DNPU(nn.Module):
         self.init_electrode_info(data_input_indices)
         self._init_learnable_parameters()
         self.set_forward_pass(forward_pass_type)
+        self.transform_to_voltage = False
+        self.input_clip = False
         
     def set_forward_pass(self, forward_pass_type):
         if forward_pass_type == 'vec':
@@ -86,9 +91,8 @@ class DNPU(nn.Module):
         """
         voltage_ranges = self.processor.processor.get_voltage_ranges()
 
-
         # Define data input voltage ranges
-        #TODO: Add to documentation. data input ranges are defined as follows: (node_no, electrode_no, 2) where last 2 is for min and max
+        # TODO: Add to documentation. data input ranges are defined as follows: (node_no, electrode_no, 2) where last 2 is for min and max
         # Define data input electrode indices
         self.data_input_indices = TorchUtils.format(
             data_input_indices, data_type=torch.int64
@@ -96,16 +100,13 @@ class DNPU(nn.Module):
         assert len(self.data_input_indices.shape) == 2, "Please revise the format in which data input indices has been passed to the DNPU. Data input indices should be represented with two dimensions (number of DNPU nodes, number of data input electrodes) (e.g., [[1,2]] or [[1,2],[1,3]], data input indices CANNOT be represented as just [1,2]. )"
         self.data_input_ranges = torch.stack([voltage_ranges[i] for i in data_input_indices])
 
-
-
         # Define control voltage ranges
         activation_electrode_indices = np.arange(self.processor.get_activation_electrode_no())
         control_list = [np.delete(activation_electrode_indices, i) for i in data_input_indices]
-        #TODO: Add to documentation. control ranges are defined as follows: (node_no, electrode_no, 2) where last 2 is for min and max
+        # TODO: Add to documentation. control ranges are defined as follows: (node_no, electrode_no, 2) where last 2 is for min and max
         self.control_ranges = TorchUtils.format(torch.stack([voltage_ranges[i] for i in control_list]))
 
         # Define control electrode indices
-        
         self.control_indices = TorchUtils.format(control_list, data_type=torch.int64)  # IndexError: tensors used as indices must be long, byte or bool tensors
 
     # Returns a random single value of a control voltage within a specified range.
@@ -155,9 +156,6 @@ class DNPU(nn.Module):
         """
         return self.forward_pass(x)
 
-    # def default_forward_single(self, x):
-    #     self.forward_single(x, control_voltages=self.bias, data_input_indices=self.data_input_indices, control_indices=self.control_indices)
-
     def forward_single(self, x, control_voltages, data_input_indices, control_indices):
         merged_data = merge_electrode_data(
             x,
@@ -168,6 +166,12 @@ class DNPU(nn.Module):
         return self.processor(merged_data)
 
     def forward_for(self, x):
+        # Cut input values to force linear transform or force being between a voltage range.
+        x = self.clamp_input(x)
+
+        # Apply a linear transformation from raw data to the voltage ranges of the dnpu.
+        if self.transform_to_voltage:
+            x = (self.scale.flatten() * x) + self.offset.flatten()
         assert (
             x.shape[-1] == self.data_input_indices.numel()
         ), f"size mismatch: data is {x.shape}, DNPU_Layer expecting {self.processor.inputs_list.numel()}"
@@ -194,11 +198,12 @@ class DNPU(nn.Module):
         last_dim = len(x.size()) - 1
         controls = self.bias.expand(bias_shape)
 
-        # If necessary apply a transformation to the input ranges
-        # if not (self.amplitude is None):
-        #     amplitude = self.amplitude.unsqueeze(0).repeat_interleave(batch_size, dim=0)
-        #     offset = self.offset.unsqueeze(0).repeat_interleave(batch_size, dim=0)
-        #     x = (x * amplitude) + offset
+        # Cut input values to force linear transform or force being between a voltage range.
+        x = self.clamp_input(x)
+
+        # Apply a linear transformation from raw data to the voltage ranges of the dnpu.
+        if self.transform_to_voltage:
+            x = (self.scale * x) + self.offset
 
         # Expand indices according to batch size
         input_indices = self.data_input_indices.expand(data_input_shape)
@@ -212,6 +217,27 @@ class DNPU(nn.Module):
         # pass data through the processor
         return self.processor(data).squeeze(-1)  # * self.node.amplification
 
+    # Strict defines if the input is going to be clipped before doing the linear transformation in order to ensure that the transformation is correct
+    # Input range can be simply a [min,max] values for the raw input data, which will be 
+    def init_transform_to_voltage(self, input_range, strict=True):
+        self.input_clip = strict
+        input_range = TorchUtils.format(input_range)
+        if input_range.shape != self.data_input_ranges.shape:
+            input_range = input_range.expand_as(self.data_input_ranges)
+        elif strict is True:
+            warnings.warn('Tranformation for multiple raw input data ranges in strict mode only works for the maximum and the minimum values of all the ranges, not per electrode.')
+        self.min_input = input_range.min()
+        self.max_input = input_range.max()
+        self.transform_to_voltage = True
+        scale, offset = get_linear_transform_constants(self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T, input_range.T[0].T, input_range.T[1].T)
+        self.scale = scale
+        self.offset = offset
+        
+
+    def clamp_input(self, x):
+        if self.input_clip:
+            x = torch.clamp(x, min=self.min_input, max=self.max_input)
+        return x
 
     def get_node_input_data(self, x):
         i = 0
@@ -251,13 +277,6 @@ class DNPU(nn.Module):
         control_voltages = self.get_control_voltages().T
         control_ranges = self.get_control_ranges().T
         return torch.sum(torch.relu(control_ranges[0] - control_voltages) + torch.relu(control_voltages - control_ranges[1]) )
-        # buff = 0.0
-        # for i, p in enumerate(self.all_controls):
-            
-        #     buff += torch.sum(
-        #         torch.relu(self.get_control_ranges().T[0] - p) + torch.relu(p - self.get_control_ranges()[i, 1])
-        #     )
-        # return buff
 
     # @TODO: Update documentation
     def hw_eval(self, configs: dict, info: dict, model_state_dict: collections.OrderedDict = None,):
