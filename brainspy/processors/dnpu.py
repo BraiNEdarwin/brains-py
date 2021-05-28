@@ -139,7 +139,7 @@ class DNPU(nn.Module):
         self.bias = nn.Parameter(self.sample_controls())
 
     # node_index: For time multiplexing only. Is the index of the processor to which the data will be sent.
-    def forward(self, x: torch.Tensor, node_index: int = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """ 
         Run a forward pass through the processor after merging the input data voltages with the control
         voltages.
