@@ -52,16 +52,15 @@ def get_criterion(configs: dict):
         return criterion.sqrt_corrsig
     elif configs["criterion"] == "fisher_added_corr":
         return criterion.fisher_added_corr
-    elif configs["criterion"] == "fisher_multipled_corr":
-        return criterion.fisher_multipled_corr
+    elif configs["criterion"] == "fisher_multiplied_corr":
+        return criterion.fisher_multiplied_corr
     elif configs["criterion"] == "bce":
         return torch.nn.BCEWithLogitsLoss()
     elif configs["criterion"] == "sigmoid_nn_distance":
         return criterion.sigmoid_nn_distance
     else:
         raise NotImplementedError(
-            f"Criterion {configs['criterion']} is not recognised."
-        )
+            f"Criterion {configs['criterion']} is not recognised.")
 
 
 def get_optimizer(model: object, configs: dict):
@@ -87,13 +86,13 @@ def get_optimizer(model: object, configs: dict):
     if configs["optimizer"] == "genetic":
         # TODO: get gene ranges from model
         if "gene_range" in configs:
-            return bspyoptim.GeneticOptimizer(
-                configs["gene_range"], configs["partition"], configs["epochs"]
-            )
+            return bspyoptim.GeneticOptimizer(configs["gene_range"],
+                                              configs["partition"],
+                                              configs["epochs"])
         else:
-            return bspyoptim.GeneticOptimizer(
-                model.get_control_ranges(), configs["partition"], configs["epochs"]
-            )
+            return bspyoptim.GeneticOptimizer(model.get_control_ranges(),
+                                              configs["partition"],
+                                              configs["epochs"])
     elif configs["optimizer"] == "elm":
         print("ELM optimizer not implemented yet")
         # return get_adam(parameters, configs)
@@ -129,9 +128,9 @@ def get_adam(model: object, configs: dict):
     if "betas" in configs.keys():
         print("Set betas to values from the config file: ")
         print(*configs["betas"], sep=", ")
-        return torch.optim.Adam(
-            parameters, lr=configs["learning_rate"], betas=configs["betas"]
-        )
+        return torch.optim.Adam(parameters,
+                                lr=configs["learning_rate"],
+                                betas=configs["betas"])
 
     else:
         return torch.optim.Adam(parameters, lr=configs["learning_rate"])

@@ -1,133 +1,126 @@
 """
-Set of functions to measure separability and similarity of signals.
+Set of fitness functions for genetic algorithm and loss functions for gradient
+descent.
 """
 import warnings
-from typing import Union
 
 import torch
 
+from brainspy.utils.pytorch import TorchUtils
 from brainspy.algorithms.modules.performance.accuracy import get_accuracy
-
-# TODO: implement corr_lin_fit (AF's last fitness function)? Is this relevant?
 
 
 def accuracy_fit(output: torch.Tensor,
                  target: torch.Tensor,
-                 default_value=False) -> Union[float, torch.Tensor]:
+                 default_value=False) -> torch.Tensor:
     """
-    Measure the separability of a fit or return a default value (0):
+    Fitness function for genetic algorithm using accuracy of a perceptron.
     Teaches single perceptron to transform output to target and
     evaluates the accuracy; is a percentage.
+    Will return default value (0) if indicated.
+
+    Needs at least 10 datapoints.
 
     Example
     -------
     >>> accuracy_fit(torch.rand((100, 1)), torch.rand(100, 1))
     torch.Tensor(48.)
     >>> accuracy_fit(torch.rand((100, 1)), torch.rand(100, 1), True)
-    0.0
-
-    This example shows usage of both options of the method with random
-    tensors.
+    torch.Tensor(0.0)
 
     Parameters
     ----------
     output : torch.Tensor
-        The output signal, should be n-by-1 with n datapoints.
+        The output data, shape [n, 1] with n datapoints.
     target : torch.Tensor
-        The target signal, should be n-by-1 with n datapoints.
+        The target data, shape [n, 1] with n datapoints.
     default_value : bool, optional
         Return the default value or not, by default False.
 
     Returns
     -------
-    float or torch.Tensor
-        Default value or tensor with accuracy percentage.
+    torch.Tensor
+        Default value or calculated fitness.
     """
     if default_value:
-        return 0.0
+        return TorchUtils.format(torch.tensor(0.0))
     else:
         return get_accuracy(output, target)["accuracy_value"]
 
 
 def corr_fit(output: torch.Tensor,
              target: torch.Tensor,
-             default_value=False) -> Union[float, torch.Tensor]:
+             default_value=False) -> torch.Tensor:
     """
-    Measure the similarity of two signals using pearson correlation or return
-    default value (-1).
-    See pearson_correlation method documentation for more info.
+    Fitness function for genetic algorithm using Pearson correlation.
+    See pearsons_correlation for more info.
+    Will return default value (-1) if indicated.
 
     Example
     -------
     >>> corr_fit(torch.rand((100, 1)), torch.rand(100, 1))
     torch.Tensor(0.5)
     >>> corr_fit(torch.rand((100, 1)), torch.rand(100, 1), True)
-    -1.0
-
-    This example shows usage of both options of the method with random
-    tensors.
+    torch.Tensor(-1.0)
 
     Parameters
     ----------
     output : torch.Tensor
-        The output signal, should be n-by-1 with n datapoints.
+        The output data, shape [n, 1] with n datapoints.
     target : torch.Tensor
-        The target signal, should be n-by-1 with n datapoints.
+        The target data, shape [n, 1] with n datapoints.
     default_value : bool, optional
         Return the default value or not, by default False.
 
     Returns
     -------
-    float or torch.Tensor
-        Default value or tensor with correlation.
+    torch.Tensor
+        Default value or calculated fitness.
     """
     if default_value:
-        return -1.0
+        return TorchUtils.format(torch.tensor(-1.0))
     else:
-        return pearsons_correlation(output[:, 0], target[:, 0])
+        return pearsons_correlation(output, target)
 
 
 def corrsig_fit(output: torch.Tensor,
                 target: torch.Tensor,
-                default_value=False) -> Union[float, torch.Tensor]:
+                default_value=False) -> torch.Tensor:
     """
-    Measure the similarity of two signals using a combination of a sigmoid
-    with pre-defined separation threshold and the correlation function, or
-    return default value (-1).
+    Fitness function for genetic algorithm using correlation and a sigmoid
+    function.
+    Will return default value (-1) if indicated.
 
-    Note: target signal must be binary for this to work.
+    Note: target data must be binary for this to work.
 
     Example
     -------
-    >>> corrsig_fit(torch.rand((100, 1)), torch.roundtorch.rand(100, 1)))
+    >>> corrsig_fit(torch.rand((100, 1)), torch.round(torch.rand(100, 1)))
     torch.Tensor(0.5)
     >>> corrsig_fit(torch.rand((100, 1)), torch.round(torch.rand(100, 1)),
                     True)
-    -1.0
-
-    This example shows usage of both options of the method with random
-    tensors.
+    torch.Tensor(-1.0)
 
     Parameters
     ----------
     output : torch.Tensor
-        The output signal, should be n-by-1 with n datapoints.
+        The output data, shape [n, 1] with n datapoints.
     target : torch.Tensor
-        The target signal, should be n-by-1 with n datapoints;
+        The target data, shape [n, 1] with n datapoints;
         should be binary.
     default_value : bool, optional
         Return the default value or not, by default False.
 
     Returns
     -------
-    float or torch.Tensor
-        Default value or tensor with correlation.
-        Will be NaN if target signal is not binary.
+    torch.Tensor
+        Default value or calculated fitness.
+        Will be NaN if target data is not binary.
     """
     if default_value:
-        return -1.0
+        return TorchUtils.format(torch.tensor(-1.0))
     else:
-        corr = pearsons_correlation(output[:, 0], target[:, 0])
+        corr = pearsons_correlation(output, target)
         sep = output[target == 1].mean() - output[target == 0].mean()
         # average of output where target is 1 minus average of output where
         # target is 0
@@ -146,53 +139,61 @@ def pearsons_correlation(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
     Example
     -------
-    >>> corrsig_fit(torch.rand(100), torch.rand(100))
+    >>> pearsons_correlation(torch.rand((100, 1)), torch.rand((100, 1)))
     torch.Tensor(0.5)
 
     Parameters
     ----------
     x : torch.Tensor
-        Dataset, should be one dimensional.
+        Dataset, shape [n, 1] with n datapoints.
     y : torch.Tensor
-        Dataset, should be one dimensional.
+        Dataset, shape [n, 1] with n datapoints.
 
     Returns
     -------
     torch.Tensor
-        Correlation between x and y (shape []). Will be nan if a signal is
+        Correlation between x and y (shape []). Will be nan if a data is
         uniform.
+
+    Raises
+    ------
+    UserWarning
+        If result is nan (which happens if a dataset has variance 0, is
+        uniform).
     """
     vx = x - x.mean(dim=0)
     vy = y - y.mean(dim=0)
-    return torch.sum(vx * vy) / (torch.sqrt(torch.sum(vx**2)) *
-                                 torch.sqrt(torch.sum(vy**2)))
+    sum_vx = torch.sum(vx**2)
+    sum_vy = torch.sum(vy**2)
+    sum_vxy = torch.sum(vx * vy)
+    if 0.0 in sum_vx or 0.0 in sum_vy:
+        warnings.warn("Variance of dataset is 0, correlation is nan.")
+    return sum_vxy / (torch.sqrt(sum_vx) * torch.sqrt(sum_vy))
 
 
 def corrsig(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
-    Measures similarity of two signals using a predefined sigmoid function.
+    Loss function for gradient descent using a predefined sigmoid function.
 
     Example
     -------
-    >>> corrsig_fit(torch.rand(100), torch.ones_like(torch.rand(100)))
+    >>> corrsig(torch.rand((100, 1)), torch.round(torch.rand((100, 1))))
     torch.Tensor(2.5)
 
     Parameters
     ----------
-    x : torch.Tensor
-        Dataset, should be one dimensional.
-    y : torch.Tensor
-        Dataset, should be one dimensional.
+    output : torch.Tensor
+        Dataset, shape [n, 1] with n datapoints.
+    target : torch.Tensor
+        Dataset, shape [n, 1] with n datapoints; should be binary.
 
     Returns
     -------
     torch.Tensor
-        Similarity (shape []).
+        Value of loss function.
     """
     # get correlation
-    corr = torch.mean(
-        (output - torch.mean(output)) * (target - torch.mean(target))) / (
-            torch.std(output) * torch.std(target) + 1e-10)
+    corr = pearsons_correlation(output, target)
 
     # difference between smallest false negative and largest false positive
     x_high_min = torch.min(output[(target == 1)])
@@ -204,24 +205,28 @@ def corrsig(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
 def sqrt_corrsig(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
-    Measures similarity of two signals using a predefined sigmoid function.
+    Loss function for gradient descent using a predefined sigmoid function.
+
+    Example
+    -------
+    >>> sqrt_corrsig(torch.rand((100, 1)),
+                     torch.round(torch.rand((100, 1))))
+    torch.Tensor(2.5)
 
     Parameters
     ----------
     x : torch.Tensor
-        Dataset, should be one dimensional.
+        Dataset, shape [n, 1] with n datapoints.
     y : torch.Tensor
-        Dataset, should be one dimensional.
+        Dataset, shape [n, 1] with n datapoints; should be binary.
 
     Returns
     -------
     torch.Tensor
-        Similarity (shape []).
+        Value of loss function.
     """
     # get correlation
-    corr = torch.mean(
-        (output - torch.mean(output)) * (target - torch.mean(target))) / (
-            torch.std(output) * torch.std(target) + 1e-10)
+    corr = pearsons_correlation(output, target)
 
     # difference between smallest false negative and largest false positive
     x_high_min = torch.min(output[(target == 1)])
@@ -233,137 +238,151 @@ def sqrt_corrsig(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
 def fisher_fit(output: torch.Tensor,
                target: torch.Tensor,
-               default_value=False) -> Union[float, torch.Tensor]:
+               default_value=False) -> torch.Tensor:
     """
-    Apply a fisher fit? or return default value (0)
-    TODO description
+    Fitness function for genetic algorithm using Fisher linear discriminant.
+    For more information see fisher method.
+
+    Can return default value (0).
+
+    Example
+    -------
+    >>> fisher_fit(torch.rand((100, 1)), torch.rand((100, 1)),
+                   False)
+    torch.Tensor(2.5)
+    >>> fisher_fit(torch.rand((100, 1)), torch.rand((100, 1)),
+                   True)
+    torch.Tensor(0.0)
 
     Parameters
     ----------
-    TODO check dimensions
     output : torch.Tensor
-        The output signal, should be n-by-1 with n datapoints.
+        The output data, shape [n, 1] with n datapoints.
     target : torch.Tensor
-        The target signal, should be n-by-1 with n datapoints.
+        The target data, shape [n, 1] with n datapoints.
     default_value : bool, optional
         Return the default value or not, by default False.
 
     Returns
     -------
-    float or torch.Tensor
-        Default value or tensor with fisher value.
-        TODO return
+    torch.Tensor
+        Default value or calculated fitness.
     """
     if default_value:
-        return 0
+        return TorchUtils.format(torch.tensor(0.0))
     else:
-        return -fisher(output, target)
+        return fisher(output, target)
 
 
 def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
-    Separates classes irrespective of assignments.
-    Reliable, but insensitive to actual classes
-    TODO description
+    Calculate the Fisher linear discriminant between two datasets.
+    Used as a loss function for gradient descent.
+
+    More information here:
+    https://sthalles.github.io/fisher-linear-discriminant/
+
+    Example
+    -------
+    >>> fisher(torch.rand((100, 1)), torch.rand((100, 1)))
+    torch.Tensor(0.5)
 
     Parameters
     ----------
-    TODO check dimensions
     output : torch.Tensor
-        The output signal, should be n-by-1 with n datapoints.
+        The output data, shape [n, 1] with n datapoints.
     target : torch.Tensor
-        The target signal, should be n-by-1 with n datapoints.
+        The target data, shape [n, 1] with n datapoints.
 
     Returns
     -------
     torch.Tensor
-        [description] TODO return
+        Value of Fisher linear discriminant.
     """
     x_high = output[(target == 1)]
     x_low = output[(target == 0)]
     m0, m1 = torch.mean(x_low), torch.mean(x_high)
     s0, s1 = torch.var(x_low), torch.var(x_high)
     mean_separation = (m1 - m0)**2
-    return -mean_separation / (s0 + s1)
+    return mean_separation / (s0 + s1)
 
 
 def fisher_added_corr(output: torch.Tensor,
                       target: torch.Tensor) -> torch.Tensor:
     """
-    Fisher and correlation, added together. TODO description
+    Loss function using Fisher linear discriminant and Pearson correlation,
+    added together.
+
+    Example
+    -------
+    >>> fisher_added_corr(torch.rand((100, 1)), torch.rand((100, 1)))
+    torch.Tensor(0.5)
 
     Parameters
     ----------
-    TODO check dimensions
     output : torch.Tensor
-        The output signal, should be n-by-1 with n datapoints.
+        The output data, shape [n, 1] with n datapoints.
     target : torch.Tensor
-        The target signal, should be n-by-1 with n datapoints.
+        The target data, shape [n, 1] with n datapoints.
 
     Returns
     -------
     torch.Tensor
-        [description] TODO return
+        Value of loss function.
     """
-    x_high = output[(target == 1)]
-    x_low = output[(target == 0)]
-    m0, m1 = torch.mean(x_low), torch.mean(x_high)
-    s0, s1 = torch.var(x_low), torch.var(x_high)
-    mean_separation = (m1 - m0)**2
-    corr = torch.mean(
-        (output - torch.mean(output)) * (target - torch.mean(target))) / (
-            torch.std(output) * torch.std(target) + 1e-10)
-    return (1 - corr) - 0.5 * mean_separation / (s0 + s1)
+    return (1 - pearsons_correlation(output,
+                                     target)) - 0.5 * fisher(output, target)
 
 
-def fisher_multipled_corr(output: torch.Tensor,
-                          target: torch.Tensor) -> torch.Tensor:
+def fisher_multiplied_corr(output: torch.Tensor,
+                           target: torch.Tensor) -> torch.Tensor:
     """
-    Fisher and correlation, multiplied together. TODO description
+    Loss function using Fisher linear discriminant and Pearson correlation,
+    multiplied with each other.
+
+    Example
+    -------
+    >>> fisher_multiplied_corr(torch.rand((100, 1)), torch.rand((100, 1)))
+    torch.Tensor(0.5)
 
     Parameters
     ----------
-    TODO check dimensions
     output : torch.Tensor
-        The output signal, should be n-by-1 with n datapoints.
+        The output data, shape [n, 1] with n datapoints.
     target : torch.Tensor
-        The target signal, should be n-by-1 with n datapoints.
+        The target data, shape [n, 1] with n datapoints.
 
     Returns
     -------
     torch.Tensor
-        [description] TODO return
+        Value of loss function.
     """
-    x_high = output[(target == 1)]
-    x_low = output[(target == 0)]
-    m0, m1 = torch.mean(x_low), torch.mean(x_high)
-    s0, s1 = torch.var(x_low), torch.var(x_high)
-    mean_separation = (m1 - m0)**2
-    corr = torch.mean(
-        (output - torch.mean(output)) * (target - torch.mean(target))) / (
-            torch.std(output) * torch.std(target) + 1e-10)
-    return (1 - corr) * (s0 + s1) / mean_separation
+    return (1 - pearsons_correlation(output, target)) * fisher(output, target)
 
 
 def sigmoid_nn_distance(outputs: torch.Tensor,
                         target: torch.Tensor = None) -> torch.Tensor:
     """
-    Sigmoid nearest neighbour distance: a squeshed version of a sum of all
+    Sigmoid of nearest neighbour distance: a squashed version of a sum of all
     internal distances between points.
-    # TODO description
+    Used as a loss function for gradient descent.
+
+    Example
+    -------
+    >>> sigmoid_nn_distance(torch.rand((100, 1)))
+    torch.Tensor(20.0)
 
     Parameters
     ----------
-    TODO check dimensions
     output : torch.Tensor
-        The output signal, should be n-by-1 with n datapoints.
+        The output data, shape [n, 1] with n datapoints.
     target : torch.Tensor
-        The target signal, will not be used.
+        The target data, will not be used.
 
     Returns
     -------
     torch.Tensor
-        [description] # TODO return
+        Sigmoid of the sum of the nearest neighbor distances (output).
 
     Raises
     ------
@@ -377,33 +396,61 @@ def sigmoid_nn_distance(outputs: torch.Tensor,
     return -1 * torch.mean(torch.sigmoid(dist_nn / 2) - 0.5)
 
 
-def get_clamped_intervals(outputs: torch.Tensor, mode, boundaries=[-352, 77]):
-    """[summary]
-    TODO entire docstring
+def get_clamped_intervals(outputs: torch.Tensor,
+                          mode: str,
+                          boundaries=[0.0, 1.0]) -> torch.Tensor:
+    """
+    Sort and clamp the data, and find the distances between the datapoints.
+
+    There are three modes:
+    "single_nn" - for each point the smaller distance to a neighbor
+    "double_nn" - simply the distances between the points
+    "intervals" - for each point the summed distance to the point in front
+                  and behind it
+
+    Example
+    -------
+    >>> output = torch.tensor([3.0, 1.0, 8.0, 9.0, 5.0]).unsqueeze(dim=1)
+    >>> clamp = [1, 9]
+    >>> get_clamped_intervals(output, "single_nn", clamp)
+    torch.tensor([0.0, 2.0, 2.0, 1.0, 0.0])
+    >>> get_clamped_intervals(output, "double_nn", clamp)
+    torch.tensor([0.0, 2.0, 2.0, 3.0, 1.0, 0.0])
+    >>> get_clamped_intervals(output, "intervals", clamp)
+    torch.tensor([2.0, 4.0, 5.0, 4.0, 1.0])
+
+    Here we have a dataset which ordered is 1, 3, 5, 8, 9.
+    The distances between the points are 0, 2, 2, 3, 1, 0 (double).
+    The smaller distance for each is 0, 2, 2, 1, 0 (single).
+    The sum from both sides is 2, 4, 5, 4, 1 (intervals).
 
     Parameters
     ----------
     outputs : torch.Tensor
-        [description]
-    mode : [type]
-        [description]
-    boundaries : list, optional
-        [description], by default [-352, 77]
+        Dataset, shape [n, 1] with n datapoints.
+    mode : str
+        Mode for nearest neighbor. Can be
+        "single_nn", "double_nn" or "intervals"
+    boundaries : list[float], optional
+        Boundary values for clamping [min, max].
 
     Returns
     -------
-    [type]
-        [description]
+    torch.Tensor
+        Distances between the datapoints.
+
+    Raises
+    ------
+    UserWarning
+        If mode not recognized.
     """
     # First we sort the output, and clip the output to a fixed interval.
     outputs_sorted = outputs.sort(dim=0)[0]
     outputs_clamped = outputs_sorted.clamp(boundaries[0], boundaries[1])
 
-    # THen we prepare two tensors which we subtract from each other to
+    # Then we prepare two tensors which we subtract from each other to
     # calculate nearest neighbour distances.
-    boundaries = torch.tensor(boundaries,
-                              dtype=outputs_sorted.dtype,
-                              device=outputs_sorted.device)
+    boundaries = TorchUtils.format(boundaries)
     boundary_low = boundaries[0].unsqueeze(0).unsqueeze(1)
     boundary_high = boundaries[1].unsqueeze(0).unsqueeze(1)
     outputs_highside = torch.cat((outputs_clamped, boundary_high), dim=0)
@@ -411,9 +458,9 @@ def get_clamped_intervals(outputs: torch.Tensor, mode, boundaries=[-352, 77]):
 
     # Most intervals are multiplied by 0.5 because they are shared between two
     # neighbours
-    # The first and last interval do not get divided bu two because they are
+    # The first and last interval do not get divided by two because they are
     # not shared
-    multiplier = 0.5 * torch.ones_like(outputs_highside)
+    multiplier = torch.ones_like(outputs_highside)
     multiplier[0] = 1
     multiplier[-1] = 1
 
@@ -426,10 +473,15 @@ def get_clamped_intervals(outputs: torch.Tensor, mode, boundaries=[-352, 77]):
                              dim=1)  # both nearest neighbours
         dist_nn = torch.min(dist_nns,
                             dim=1)  # only the closes nearest neighbour
-        return dist_nn[0]  # entry 0 is the tensor, entry 1 are the indices
+        return dist_nn[0].unsqueeze(
+            dim=1)  # entry 0 is the tensor, entry 1 are the indices
     elif mode == "double_nn":
         return dist
     elif mode == "intervals":
         # Determine the intervals between the points, up and down together.
         intervals = dist[1:] + dist[:-1]
         return intervals
+    else:
+        warnings.warn("Nearest neightbour distance mode not recongized; "
+                      "assuming double_nn.")
+        return dist
