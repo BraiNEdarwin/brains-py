@@ -43,7 +43,7 @@ class DNPU(nn.Module):
         self.init_electrode_info(data_input_indices)
         self._init_learnable_parameters()
         self.set_forward_pass(forward_pass_type)
-        self.transform_to_voltage = False
+        self.input_transform = False
         self.input_clip = False
         
     def set_forward_pass(self, forward_pass_type):
@@ -55,11 +55,15 @@ class DNPU(nn.Module):
             assert False, "Dnpu type not recognised. It should be either 'single', 'for' or 'vec'"
             # TODO: Change the assestion for raising an exception
 
-    def get_node_no(self):
-        if len(self.data_input_indices.shape) == 1:
+    def init_node_no(self, data_input_indices):
+        aux = TorchUtils.format(data_input_indices)
+        if len(aux.shape) == 1:
             return 1
         else:
-            return len(self.data_input_indices)
+            return len(aux)
+
+    def get_node_no(self):
+        return self.node_no
 
     def init_electrode_info(self, data_input_indices: Sequence[int]):
         """
@@ -89,6 +93,8 @@ class DNPU(nn.Module):
         data_input_indices : Sequence[int]
             Indices of the input electrodes.
         """
+        self.node_no = self.init_node_no(data_input_indices)
+
         voltage_ranges = self.processor.processor.get_voltage_ranges()
 
         # Define data input voltage ranges
@@ -219,7 +225,8 @@ class DNPU(nn.Module):
 
     # Strict defines if the input is going to be clipped before doing the linear transformation in order to ensure that the transformation is correct
     # Input range can be simply a [min,max] values for the raw input data, which will be 
-    def init_transform_to_voltage(self, input_range, strict=True):
+    def add_input_transform(self, input_range, strict=True):
+        self.input_transform = True
         self.input_clip = strict
         input_range = TorchUtils.format(input_range)
         if input_range.shape != self.data_input_ranges.shape:
@@ -232,7 +239,11 @@ class DNPU(nn.Module):
         scale, offset = get_linear_transform_constants(self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T, input_range.T[0].T, input_range.T[1].T)
         self.scale = scale
         self.offset = offset
-        
+
+    def remove_input_transform(self):
+        self.input_transform = False
+        del self.amplitude
+        del self.offset
 
     def clamp_input(self, x):
         if self.input_clip:
