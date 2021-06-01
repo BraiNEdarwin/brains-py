@@ -1,17 +1,7 @@
 import torch
-import numpy as np
-from torch import nn
-from brainspy.utils.pytorch import TorchUtils
 
 from brainspy.processors.processor import Processor
 from brainspy.processors.dnpu import DNPU
-
-# from brainspy.utils.mappers import SimpleMapping
-from brainspy.utils.transforms import (
-    get_linear_transform_constants,
-    format_input_ranges,
-)
-import torch.nn.functional as F
 
 
 class DNPUConv2d(DNPU):
@@ -114,7 +104,7 @@ class DNPUConv2d(DNPU):
         x = x.transpose(1, 2)
 
         # Reshape as: [Batch_size, window_no, in_chanels, node_no, input_electrode_no], where node_no is the number of DNPUs
-        x = x.reshape(x.shape[0], x.shape[1], self.in_channels, self.get_node_no(), self.data_input_indices.shape[-1])
+        x = x.reshape(x.shape[0], x.shape[1], self.in_channels, self.get_node_no(), self.get_data_input_electrode_no())
 
         if self.batch_norm:
             x = self.apply_batch_norm(x)
@@ -141,7 +131,6 @@ class DNPUConv2d(DNPU):
         return x
 
     def merge_electrode_data(self, x):
-
         # Expand controls according to batch_size and window_no
         controls_shape = list(self.bias.shape)
         controls_shape.insert(0, x.shape[1])  # Add window_no dimension
@@ -149,15 +138,16 @@ class DNPUConv2d(DNPU):
         controls = self.bias.expand(controls_shape)
 
         # Expand indices according to batch size
-        control_indices = self.control_indices.expand_as(controls)
-        input_indices = self.data_input_indices.expand_as(x)  
+        control_indices = self.control_indices.expand(controls_shape)
+        input_indices = self.data_input_indices.expand_as(x)
+        original_data_dim = x.shape
 
         # Create input data and order it according to the indices
         last_dim = len(controls.shape) - 1  # For concatenating purposes
-        indices = torch.cat((input_indices, control_indices), dim=last_dim)
+        indices = torch.argsort(torch.cat((input_indices, control_indices), dim=last_dim), dim=last_dim)
+
         data = torch.cat((x, controls), dim=last_dim)
         data = torch.gather(data, last_dim, indices)
-        original_data_dim = data.shape
         data = data.reshape(-1, data.shape[-1])
 
         return data, original_data_dim
@@ -165,11 +155,13 @@ class DNPUConv2d(DNPU):
     def postprocess(self, result, data_dim, output_dim):
         result = result.reshape(data_dim[:-1])
         result = result.sum(dim=2)  # Sum values from the input kernels
+
         if self.postprocess_type == "linear":
             # Pass the output from the DNPUs through a linear layer to combine them
             result = self.linear_nodes(result).squeeze(-1)
         elif self.postprocess_type == "sum":
             result = result.sum(dim=3)  # Sum the output from the devices used for the convolution
+
         result = result.transpose(1, 2)  # Return the output_kernel_no dimension to dimension 1.
         result = result.reshape(
             result.shape[0], result.shape[1], output_dim, -1
@@ -179,17 +171,9 @@ class DNPUConv2d(DNPU):
     # Evaluate node
     def forward(self, x):
         output_dim = self.get_output_dim(x.shape[2])
-
         x = self.preprocess(x)
         x, original_data_dim = self.merge_electrode_data(x)
         x = self.processor(x)
         x = self.postprocess(x, original_data_dim, output_dim)
 
         return x
-
-    # def load_state_dict(self, state_dict, strict=True):
-    #     print("Reached conv processor")
-    #     super().load_state_dict(state_dict, strict)
-    #     self.init_params()
-    #     if self.input_transform:
-    #         self.init_input_transform()
