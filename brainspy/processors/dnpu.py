@@ -62,6 +62,12 @@ class DNPU(nn.Module):
         else:
             return len(aux)
 
+    def init_activation_electrode_no(self, data_input_indices):
+        aux = TorchUtils.format(data_input_indices)
+        input_data_electrode_no = len(aux[0])
+        control_electrode_no = self.processor.get_activation_electrode_no() - input_data_electrode_no
+        return input_data_electrode_no, control_electrode_no
+
     def get_node_no(self):
         return self.node_no
 
@@ -94,7 +100,7 @@ class DNPU(nn.Module):
             Indices of the input electrodes.
         """
         self.node_no = self.init_node_no(data_input_indices)
-
+        self.data_input_electrode_no, self.control_electrode_no = self.init_activation_electrode_no(data_input_indices)
         voltage_ranges = self.processor.processor.get_voltage_ranges()
 
         # Define data input voltage ranges
@@ -114,6 +120,12 @@ class DNPU(nn.Module):
 
         # Define control electrode indices
         self.control_indices = TorchUtils.format(control_list, data_type=torch.int64)  # IndexError: tensors used as indices must be long, byte or bool tensors
+
+    def get_data_input_electrode_no(self):
+        return self.data_input_electrode_no
+
+    def get_control_electrode_no(self):
+        return self.control_electrode_no
 
     # Returns a random single value of a control voltage within a specified range.
     # Control voltage range = [min,max]
