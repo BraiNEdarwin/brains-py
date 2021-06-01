@@ -6,9 +6,16 @@ from brainspy.utils.pytorch import TorchUtils
 
 def get_data(results, configs):
     """
-    Get the Perceptron data.
-    This method prepares the dataset for the perceptron algorithm based on the configurations of the model
-    and required rseults. The dataset is then returned as a torch Dataloader which can be given to the Perceptron algorithm.
+    Initialises the perceptron Dataset and loads the dataset into the Pytorch Dataloader.
+    The dataloader loads the data into the memory according to the configs dictionary.
+
+    batch size - The batch size defines the number of samples that will be propagated through the network.
+    pin_memory - boolean value to pin the data to memory or not.
+                 If you load your samples in the Dataset on CPU and would like to push it during training to the GPU,
+                 you can speed up the host to device transfer by enabling pin_memory.
+    worker_no - number of workers on the pytorch dataset
+
+    The data can be shuffled. After each epoch the data is shuffled automatically.
 
     Parameters
     ----------
@@ -40,9 +47,10 @@ def get_data(results, configs):
 
 class PerceptronDataset(Dataset):
     """
-    Class which creates a dataset for the Perceptron algorithm
+    This class is an instace of the Pytorch Dataset. It passes all the information onto the Pytorch dataset.
+
     The Perceptron is a linear machine learning algorithm for binary classification tasks.
-    ike logistic regression, it can quickly learn a linear separation in feature space for two-class classification tasks,
+    Like logistic regression, it can quickly learn a linear separation in feature space for two-class classification tasks,
     although unlike logistic regression, it learns using the stochastic gradient descent optimization algorithm and does not predict calibrated probabilities.
     """
 
@@ -88,7 +96,8 @@ class PerceptronDataset(Dataset):
         return (inputs, targets)
 
     def __len__(self):
-        """Get the lengh=th of the input values
+        """
+        Get the length of the input values
 
         Returns
         -------
