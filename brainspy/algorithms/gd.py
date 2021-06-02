@@ -15,7 +15,6 @@ def train(
     configs,
     logger=None,
     save_dir=None,
-    waveform_transforms=None,
     return_best_model=True,
 ):
 
@@ -37,7 +36,6 @@ def train(
             dataloaders[0],
             criterion,
             optimizer,
-            waveform_transforms=waveform_transforms,
             logger=logger,
         )
         train_losses.append(running_loss)
@@ -45,14 +43,14 @@ def train(
 
         if dataloaders[1] is not None and len(dataloaders[1]) > 0:
             val_loss = default_val_step(
+                epoch,
                 model,
                 dataloaders[1],
                 criterion,
-                waveform_transforms=waveform_transforms,
                 logger=logger,
             )
             val_losses.append(val_loss)
-            description += "Test Loss: {:.6f}.. ".format(val_losses[-1])
+            description += "Validation Loss: {:.6f}.. ".format(val_losses[-1])
             # Save only when peak val performance is reached
             if save_dir is not None and val_losses[-1] < min_val_loss:
                 min_val_loss = val_losses[-1]
@@ -92,44 +90,58 @@ def train(
 
 
 def default_train_step(
-    model, dataloader, criterion, optimizer, waveform_transforms=None, logger=None
+    model, dataloader, criterion, optimizer, logger=None
 ):
-    train_loss = 0
+    running_loss = 0
     model.train()
     for inputs, targets in dataloader:
-        inputs, targets = process_data(waveform_transforms, inputs, targets)
+        inputs, targets = TorchUtils.format(inputs), model.format_targets(TorchUtils.format(targets))
         optimizer.zero_grad()
         predictions = model(inputs)
-
+        
         if "regularizer" in dir(model):
             loss = criterion(predictions, targets) + model.regularizer()
         else:
             loss = criterion(predictions, targets)
         loss.backward()
         optimizer.step()
+        running_loss += loss.item() * inputs.shape[0]
         if logger is not None and "log_train_step" in dir(logger):
             logger.log_train_step(
                 epoch, inputs, targets, predictions, model, loss, running_loss
             )
-        train_loss += loss.item()
-    train_loss /= len(dataloader)
-    return model, train_loss
+        
+    running_loss /= len(dataloader.dataset)
+    return model, running_loss
 
 
 def default_val_step(
-    model, dataloader, criterion, waveform_transforms=None, logger=None
+    epoch, model, dataloader, criterion, logger=None
 ):
     with torch.no_grad():
         val_loss = 0
         model.eval()
         for inputs, targets in dataloader:
-            inputs, targets = process_data(waveform_transforms, inputs, targets)
+            inputs, targets = process_data(inputs, targets)
+            targets = model.format_targets(targets)
             predictions = model(inputs)
             loss = criterion(predictions, targets).item()
-            val_loss += loss
+            val_loss += loss * inputs.shape[0]
             if logger is not None and "log_val_step" in dir(logger):
                 logger.log_val_step(
                     epoch, inputs, targets, predictions, model, loss, val_loss
                 )
-        val_loss /= len(dataloader)
+        val_loss /= len(dataloader.dataset)
     return val_loss
+
+# def format_data(inputs, targets):
+#     # Data processing required to apply waveforms to the inputs and pass them
+#     # onto the GPU if necessary.
+#     # if waveform_transforms is not None:
+#     #     inputs, targets = waveform_transforms((inputs, targets))
+#     if inputs is not None and inputs.device != TorchUtils.get_device():
+#         inputs = inputs.to(device=TorchUtils.get_device())
+#     if targets is not None and targets.device != TorchUtils.get_device():
+#         targets = targets.to(device=TorchUtils.get_device())
+
+#     return inputs, targets
