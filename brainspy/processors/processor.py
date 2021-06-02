@@ -23,12 +23,11 @@ class Processor(nn.Module):
 
     Attributes
     ----------
-    info : dict
-        Info dictionary, documented in init method.
     configs : dict
         Configs dictionary, documented in init method.
-    processor : SurrogateModel or HardwareProcessor
-        Processor object, can be hardware or simulation.
+    info : dict
+        Info dictionary, documented in init method.
+    model_state_dict : collections.OrderedDict, optional. Documented in init method.
     """
     def __init__(
         self,
@@ -211,7 +210,7 @@ class Processor(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-            Input data.
+            Input data. It is expected to have a shape of [batch_size, activation_electrode_no].
 
         Returns
         -------
@@ -220,6 +219,16 @@ class Processor(nn.Module):
         """
         x = self.waveform_mgr.points_to_plateaus(x)
         return self.processor(x)
+
+    def format_targets(self, x: torch.Tensor) -> torch.Tensor:
+        """[summary]
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            [description]
+        """
+        return self.waveform_mgr.points_to_plateaus(x)
 
     def get_voltage_ranges(self) -> torch.Tensor:
         """

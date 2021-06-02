@@ -35,7 +35,6 @@ class CurrentToVoltage:
         self,
         current_range: Sequence[Sequence[float]],
         voltage_range: Sequence[Sequence[float]],
-        cut=True,
     ):
         """
         Initialize object, find linear transform parameters for each
@@ -71,19 +70,10 @@ class CurrentToVoltage:
         if len(current_range) != len(voltage_range):
             raise Exception("Mapping ranges are different in length")
 
-        # Determine the transform parameters for each pair.
-        self.map_variables = TorchUtils.format([
-            get_linear_transform_constants(
-                voltage_range[i][0],
-                voltage_range[i][1],
-                current_range[i][0],
-                current_range[i][1],
-            ) for i in range(len(current_range))
-        ])
+        self.scale, self.offset = get_linear_transform_constants(voltage_range.T[0].T, voltage_range.T[1].T, current_range.T[0].T, current_range.T[1].T)
         self.current_range = current_range
-        self.cut = cut
 
-    def __call__(self, x_value: torch.Tensor) -> torch.Tensor:
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
         """
         For given input currents determine the output voltages using the
         linear transforms.
@@ -101,7 +91,7 @@ class CurrentToVoltage:
 
         Parameters
         ----------
-        x_value : torch.Tensor
+        x : torch.Tensor
             Input current values.
 
         Returns
@@ -114,24 +104,7 @@ class CurrentToVoltage:
         Exception
             If the shape the dimension of the input is wrong.
         """
-        # If cut will be applied, we need a copy of the x values.
-        x_copy = x_value.clone()
-        result = torch.zeros_like(x_value)
-
-        if not (len(x_value.shape) == 2 and x_value.shape[1] == len(self.map_variables)):
-            raise Exception("Input shape not supported.")
-
-        for i in range(len(self.map_variables)):
-            if self.cut:
-                x_copy[:, i] = torch.clamp(
-                    x_value[:, i],
-                    min=self.current_range[i][0],
-                    max=self.current_range[i][1],
-                )
-            result[:,
-                   i] = (x_copy[:, i] * self.map_variables[i][0]) + self.map_variables[i][1]
-
-        return result
+        return (self.scale * x) + self.offset
 
 
 # Not used anywhere
@@ -201,13 +174,17 @@ def get_linear_transform_constants(y_min: float, y_max: float, x_min: float,
     Parameters
     ----------
     y_min : float
-        Y-coordinate of first point.
+        Y-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the voltage.
     y_max : float
-        Y-coordinate of second point.
+        Y-coordinate of second point. In a current to voltage linear transformation,
+        the expected maximum value(s) for the voltage.
     x_min : float
-        X-coordinate of first point.
+        X-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
     x_max : float
-        X-coordinate of second point.
+        X-coordinate of second point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
 
     Returns
     -------
@@ -245,13 +222,17 @@ def get_scale(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
     Parameters
     ----------
     y_min : float
-        Y-coordinate of first point.
+        Y-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the voltage.
     y_max : float
-        Y-coordinate of second point.
+        Y-coordinate of second point. In a current to voltage linear transformation,
+        the expected maximum value(s) for the voltage.
     x_min : float
-        X-coordinate of first point.
+        X-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
     x_max : float
-        X-coordinate of second point.
+        X-coordinate of second point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
 
     Returns
     -------
@@ -287,13 +268,17 @@ def get_offset(y_min: float, y_max: float, x_min: float,
     Parameters
     ----------
     y_min : float
-        Y-coordinate of first point.
+        Y-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the voltage.
     y_max : float
-        Y-coordinate of second point.
+        Y-coordinate of second point. In a current to voltage linear transformation,
+        the expected maximum value(s) for the voltage.
     x_min : float
-        X-coordinate of first point.
+        X-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
     x_max : float
-        X-coordinate of second point.
+        X-coordinate of second point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
 
     Returns
     -------

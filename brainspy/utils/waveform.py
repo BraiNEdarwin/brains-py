@@ -473,14 +473,13 @@ class WaveformManager:
         return torch.cat((mask, self.final_mask))
 
 
-def process_data(waveform_transforms, inputs, targets):
+def process_data(inputs, targets):
     # Data processing required to apply waveforms to the inputs and pass them
     # onto the GPU if necessary.
-    if waveform_transforms is not None:
-        inputs, targets = waveform_transforms((inputs, targets))
+#    if waveform_transforms is not None:
+#        inputs, targets = waveform_transforms((inputs, targets))
     if inputs is not None and inputs.device != TorchUtils.get_device():
         inputs = inputs.to(device=TorchUtils.get_device())
     if targets is not None and targets.device != TorchUtils.get_device():
         targets = targets.to(device=TorchUtils.get_device())
-
     return inputs, targets
