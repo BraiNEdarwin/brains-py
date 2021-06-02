@@ -12,6 +12,7 @@ from brainspy.utils.transforms import get_linear_transform_constants
 
 import warnings
 
+
 class DNPU(nn.Module):
     """
 
@@ -27,7 +28,7 @@ class DNPU(nn.Module):
     bias : torch.Tensor
         The biases of the network (control voltages).
     data_input_indices : torch.Tensor
-        The indices of the input electrodes. 
+        The indices of the input electrodes.
     control_indices : torch.Tesnor
         The indices of the control electrodes.
     """
@@ -228,7 +229,7 @@ class DNPU(nn.Module):
         control_indices = self.control_indices.expand(bias_shape)
 
         # Create input data and order it according to the indices
-        indices = torch.cat((input_indices, control_indices), dim=last_dim)
+        indices = torch.argsort(torch.cat((input_indices, control_indices), dim=last_dim),dim=last_dim)
         data = torch.cat((x, controls), dim=last_dim)
         data = torch.gather(data, last_dim, indices)
 
@@ -333,7 +334,7 @@ class DNPU(nn.Module):
     # @TODO: Update documentation
     def sw_train(self, configs: dict, info: dict, model_state_dict: collections.OrderedDict = None,):
         """
-        It helps setting the DNPU to training mode. While evaluation happens in hardware, training
+        It helps swap the DNPU to training mode. While evaluation happens in hardware, training
         happens in software. This function sets the nn.Module to training mode and swaps
         the processor (typically to software).
         Checks if the voltage ranges of the new processor are the same as the ones of the old.
