@@ -10,8 +10,6 @@ from brainspy.processors.processor import Processor
 
 from brainspy.utils.transforms import get_linear_transform_constants
 
-import warnings
-
 
 class DNPU(nn.Module):
     """
@@ -244,10 +242,7 @@ class DNPU(nn.Module):
         input_range = TorchUtils.format(input_range)
         if input_range.shape != self.data_input_ranges.shape:
             input_range = input_range.expand_as(self.data_input_ranges)
-        elif strict is True:
-            warnings.warn('Tranformation for multiple raw input data ranges in strict mode only works for the maximum and the minimum values of all the ranges, not per electrode.')
-        self.min_input = input_range.min()
-        self.max_input = input_range.max()
+        self.raw_input_range = input_range
         self.transform_to_voltage = True
         scale, offset = get_linear_transform_constants(self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T, input_range.T[0].T, input_range.T[1].T)
         self.scale = scale
@@ -260,7 +255,7 @@ class DNPU(nn.Module):
 
     def clamp_input(self, x):
         if self.input_clip:
-            x = torch.clamp(x, min=self.min_input, max=self.max_input)
+            x = torch.max(torch.min(x, self.raw_input_range[:, :, 1]), self.raw_input_range[:, :, 0])
         return x
 
     def get_node_input_data(self, x):
@@ -396,7 +391,8 @@ class DNPU(nn.Module):
     def get_input_ranges(self) -> torch.Tensor:
         """
         Get the voltage ranges of the input electrodes.
-
+        It has a shape of (dnpu_no, electrode_no, 2), where the last dimension is
+        0 for the minimum value of the range and 1 for the maximum value of the range.
         Returns
         -------
         torch.Tensor
@@ -407,7 +403,8 @@ class DNPU(nn.Module):
     def get_control_ranges(self) -> torch.Tensor:
         """
         Get the voltage ranges of the control electrodes.
-
+        It has a shape of (dnpu_no, electrode_no, 2), where the last dimension is
+        0 for the minimum value of the range and 1 for the maximum value of the range.
         Returns
         -------
         torch.Tensor
