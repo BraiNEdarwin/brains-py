@@ -171,9 +171,16 @@ def pearsons_correlation(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return sum_vxy / (torch.sqrt(sum_vx) * torch.sqrt(sum_vy))
 
 
-def corrsig(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+def corrsig(output: torch.Tensor,
+            target: torch.Tensor,
+            center: float = 5.0,
+            scale: float = 3.0,
+            shift: float = 1.1) -> torch.Tensor:
     """
-    Loss function for gradient descent using a predefined sigmoid function.
+    Loss function for gradient descent using a sigmoid function.
+
+    The default values of the parameters are used for an objective
+    function in the Nature Nano paper.
 
     Example
     -------
@@ -186,6 +193,12 @@ def corrsig(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         Dataset, shape [n, 1] with n datapoints.
     target : torch.Tensor
         Dataset, shape [n, 1] with n datapoints; should be binary.
+    center : float
+        Center of the sigmoid.
+    scale : float
+        Scale of the sigmoid, between 0 and 1.
+    shift : float
+        Shifting the correlation value.
 
     Returns
     -------
@@ -200,40 +213,7 @@ def corrsig(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     x_low_max = torch.max(output[(target == 0)])
     delta = x_high_min - x_low_max
 
-    return (1.1 - corr) / torch.sigmoid((delta - 5) / 3)
-
-
-def sqrt_corrsig(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-    """
-    Loss function for gradient descent using a predefined sigmoid function.
-
-    Example
-    -------
-    >>> sqrt_corrsig(torch.rand((100, 1)),
-                     torch.round(torch.rand((100, 1))))
-    torch.Tensor(2.5)
-
-    Parameters
-    ----------
-    x : torch.Tensor
-        Dataset, shape [n, 1] with n datapoints.
-    y : torch.Tensor
-        Dataset, shape [n, 1] with n datapoints; should be binary.
-
-    Returns
-    -------
-    torch.Tensor
-        Value of loss function.
-    """
-    # get correlation
-    corr = pearsons_correlation(output, target)
-
-    # difference between smallest false negative and largest false positive
-    x_high_min = torch.min(output[(target == 1)])
-    x_low_max = torch.max(output[(target == 0)])
-    delta = x_high_min - x_low_max
-
-    return (1.0 - corr)**(1 / 2) / torch.sigmoid((delta - 2) / 5)
+    return (shift - corr) / torch.sigmoid((delta - center) / scale)
 
 
 def fisher_fit(output: torch.Tensor,
@@ -307,65 +287,17 @@ def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     return mean_separation / (s0 + s1)
 
 
-def fisher_added_corr(output: torch.Tensor,
-                      target: torch.Tensor) -> torch.Tensor:
-    """
-    Loss function using Fisher linear discriminant and Pearson correlation,
-    added together.
-
-    Example
-    -------
-    >>> fisher_added_corr(torch.rand((100, 1)), torch.rand((100, 1)))
-    torch.Tensor(0.5)
-
-    Parameters
-    ----------
-    output : torch.Tensor
-        The output data, shape [n, 1] with n datapoints.
-    target : torch.Tensor
-        The target data, shape [n, 1] with n datapoints.
-
-    Returns
-    -------
-    torch.Tensor
-        Value of loss function.
-    """
-    return (1 - pearsons_correlation(output,
-                                     target)) - 0.5 * fisher(output, target)
-
-
-def fisher_multiplied_corr(output: torch.Tensor,
-                           target: torch.Tensor) -> torch.Tensor:
-    """
-    Loss function using Fisher linear discriminant and Pearson correlation,
-    multiplied with each other.
-
-    Example
-    -------
-    >>> fisher_multiplied_corr(torch.rand((100, 1)), torch.rand((100, 1)))
-    torch.Tensor(0.5)
-
-    Parameters
-    ----------
-    output : torch.Tensor
-        The output data, shape [n, 1] with n datapoints.
-    target : torch.Tensor
-        The target data, shape [n, 1] with n datapoints.
-
-    Returns
-    -------
-    torch.Tensor
-        Value of loss function.
-    """
-    return (1 - pearsons_correlation(output, target)) * fisher(output, target)
-
-
 def sigmoid_nn_distance(outputs: torch.Tensor,
-                        target: torch.Tensor = None) -> torch.Tensor:
+                        target: torch.Tensor = None,
+                        center: float = 0.5,
+                        scale: float = 2.0) -> torch.Tensor:
     """
     Sigmoid of nearest neighbour distance: a squashed version of a sum of all
     internal distances between points.
     Used as a loss function for gradient descent.
+
+    The default values of the parameters are used for an objective
+    function in the Nature Nano paper.
 
     Example
     -------
@@ -378,6 +310,10 @@ def sigmoid_nn_distance(outputs: torch.Tensor,
         The output data, shape [n, 1] with n datapoints.
     target : torch.Tensor
         The target data, will not be used.
+    center : float
+        Center of the sigmoid.
+    scale : float
+        Scale of the sigmoid, between 0 and 1.
 
     Returns
     -------
@@ -393,7 +329,7 @@ def sigmoid_nn_distance(outputs: torch.Tensor,
         warnings.warn(
             "This loss function does not use target values. Target ignored.")
     dist_nn = get_clamped_intervals(outputs, mode="single_nn")
-    return -1 * torch.mean(torch.sigmoid(dist_nn / 2) - 0.5)
+    return -1 * torch.mean(torch.sigmoid(dist_nn / scale) - center)
 
 
 def get_clamped_intervals(outputs: torch.Tensor,

@@ -94,15 +94,6 @@ class SignalTest(unittest.TestCase):
             self.assertIsInstance(result, torch.Tensor)
             self.assertEqual(list(result.shape), [])
 
-    def test_sqrt_corrsig(self):
-        """
-        Test if sqrt_corrsig method works (type and shape of result).
-        """
-        for output, target in self.data:
-            result = signal.sqrt_corrsig(output, target)
-            self.assertIsInstance(result, torch.Tensor)
-            self.assertEqual(list(result.shape), [])
-
     def test_fisher_fit(self):
         """
         Check if result has right shape and value is non-negative in both
@@ -124,25 +115,6 @@ class SignalTest(unittest.TestCase):
             result = signal.fisher(output, target)
             self.assertEqual(list(result.shape), [])
             self.assertTrue(result.item() >= 0)
-
-    def test_fisher_added_corr(self):
-        """
-        Check if fisher_added_corr method works (type and shape of result).
-        """
-        for output, target in self.data:
-            result = signal.fisher_added_corr(output, target)
-            self.assertIsInstance(result, torch.Tensor)
-            self.assertEqual(list(result.shape), [])
-
-    def test_fisher_multiplied_corr(self):
-        """
-        Check if fisher_multiplied_corr method works (type and shape of
-        result).
-        """
-        for output, target in self.data:
-            result = signal.fisher_added_corr(output, target)
-            self.assertIsInstance(result, torch.Tensor)
-            self.assertEqual(list(result.shape), [])
 
     def test_sigmoid_nn_distance(self):
         """
