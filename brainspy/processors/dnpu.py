@@ -189,10 +189,10 @@ class DNPU(nn.Module):
 
     def forward_for(self, x):
         # Cut input values to force linear transform or force being between a voltage range.
-        x = self.clamp_input(x)
+        x = self.clip_input(x)
 
         # Apply a linear transformation from raw data to the voltage ranges of the dnpu.
-        if self.transform_to_voltage:
+        if self.input_transform:
             x = (self.scale.flatten() * x) + self.offset.flatten()
         assert (
             x.shape[-1] == self.data_input_indices.numel()
@@ -221,10 +221,10 @@ class DNPU(nn.Module):
         controls = self.bias.expand(bias_shape)
 
         # Cut input values to force linear transform or force being between a voltage range.
-        x = self.clamp_input(x)
+        x = self.clip_input(x)
 
         # Apply a linear transformation from raw data to the voltage ranges of the dnpu.
-        if self.transform_to_voltage:
+        if self.input_transform:
             x = (self.scale * x) + self.offset
 
         # Expand indices according to batch size
@@ -248,7 +248,6 @@ class DNPU(nn.Module):
         if input_range.shape != self.data_input_ranges.shape:
             input_range = input_range.expand_as(self.data_input_ranges)
         self.raw_input_range = input_range
-        self.transform_to_voltage = True
         scale, offset = get_linear_transform_constants(self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T, input_range.T[0].T, input_range.T[1].T)
         self.scale = scale
         self.offset = offset
@@ -258,7 +257,7 @@ class DNPU(nn.Module):
         del self.amplitude
         del self.offset
 
-    def clamp_input(self, x):
+    def clip_input(self, x):
         if self.input_clip:
             x = torch.max(torch.min(x, self.raw_input_range[:, :, 1]), self.raw_input_range[:, :, 0])
         return x
