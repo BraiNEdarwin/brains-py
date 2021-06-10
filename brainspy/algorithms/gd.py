@@ -37,6 +37,7 @@ def train(
             criterion,
             optimizer,
             logger=logger,
+            constraint_control_voltages=configs['constraint_control_voltages']
         )
         train_losses.append(running_loss)
         description = "Training Loss: {:.6f}.. ".format(train_losses[-1])
@@ -60,6 +61,7 @@ def train(
                     {
                         "epoch": epoch,
                         "optimizer_state_dict": optimizer.state_dict(),
+                        "model_state_dict": model.state_dict(),
                         "train_losses": train_losses,
                         "val_losses": val_losses,
                         "min_val_loss": min_val_loss,
@@ -83,28 +85,51 @@ def train(
         model = torch.load(os.path.join(save_dir, "model.pt"))
     else:
         torch.save(model, os.path.join(save_dir, "model.pt"))
+        torch.save(
+            {
+                "epoch": epoch,
+                "optimizer_state_dict": optimizer.state_dict(),
+                "model_state_dict": model.state_dict(),
+                "train_losses": train_losses,
+                "val_losses": val_losses,
+                "min_val_loss": min_val_loss,
+            },
+            os.path.join(save_dir, "training_data.pickle"),
+        )
     # print(prof)
     return model, {
         "performance_history": [torch.tensor(train_losses), torch.tensor(val_losses)]
     }
 
-
+# Constraint_control_voltages can either be 'regul' to apply the models regularizer, or 'clip'. The first option allows a bit of freedom to go outside the voltage ranges, where the NN model would be extrapolating.
+# The second option forces to remain within the control_voltage_ranges.
 def default_train_step(
-    model, dataloader, criterion, optimizer, logger=None
+    model, dataloader, criterion, optimizer, logger=None, constraint_control_voltages=None
 ):
     running_loss = 0
     model.train()
     for inputs, targets in dataloader:
         inputs, targets = TorchUtils.format(inputs), model.format_targets(TorchUtils.format(targets))
+        
         optimizer.zero_grad()
+        #
         predictions = model(inputs)
         
-        if "regularizer" in dir(model):
+        if constraint_control_voltages is None or constraint_control_voltages == 'regul':
+            loss = criterion(predictions, targets)
+        elif constraint_control_voltages == 'clip':
             loss = criterion(predictions, targets) + model.regularizer()
         else:
-            loss = criterion(predictions, targets)
-        loss.backward()
+            #TODO Throw an error adequately
+            assert False, "Constraint_control_voltages variable should be either 'regul',  'clip' or None. "
+ 
+        loss.backward() 
         optimizer.step()
+
+        if constraint_control_voltages is not None and constraint_control_voltages == 'clip':
+            with torch.no_grad():
+                model.constraint_weights()
+
         running_loss += loss.item() * inputs.shape[0]
         if logger is not None and "log_train_step" in dir(logger):
             logger.log_train_step(
