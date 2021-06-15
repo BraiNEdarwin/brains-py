@@ -115,9 +115,9 @@ def default_train_step(
         #
         predictions = model(inputs)
         
-        if constraint_control_voltages is None or constraint_control_voltages == 'regul':
+        if constraint_control_voltages is None or constraint_control_voltages == 'clip':
             loss = criterion(predictions, targets)
-        elif constraint_control_voltages == 'clip':
+        elif constraint_control_voltages == 'regul':
             loss = criterion(predictions, targets) + model.regularizer()
         else:
             #TODO Throw an error adequately
