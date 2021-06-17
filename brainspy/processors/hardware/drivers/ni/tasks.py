@@ -181,7 +181,7 @@ class LocalTasks:
             self.readout_task.ai_channels.add_ai_voltage_chan(channel)
 
     @Pyro4.oneway
-    def set_shape(self, sampling_frequency, shape):
+    def set_shape(self, sampling_frequency, shape, trigger_source):
         """
         One way method to set the shape variables for the data that is being sent to the device.
         Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the shape of the data that is being sent can to be specified.
@@ -196,6 +196,7 @@ class LocalTasks:
         """
         self.activation_task.timing.cfg_samp_clk_timing(
             sampling_frequency,
+            source="/" + trigger_source + "/ai/SampleClock",
             sample_mode=self.acquisition_type,
             samps_per_chan=shape,
         )
@@ -480,7 +481,7 @@ class RemoteTasks:
         """
         self.tasks.init_readout_channels(readout_channels)
 
-    def set_shape(self, sampling_frequency, shape):
+    def set_shape(self, sampling_frequency, shape, trigger_source):
         """
         One way method to set the shape variables for the data that is being sent to the device.
         Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the shape of the data that is being sent can to be specified.
@@ -493,7 +494,7 @@ class RemoteTasks:
         shape : (int,int)
             required shape of for sampling
         """
-        self.tasks.set_shape(sampling_frequency, shape)
+        self.tasks.set_shape(sampling_frequency, shape, trigger_source)
 
     def add_synchronisation_channels(
         self,
