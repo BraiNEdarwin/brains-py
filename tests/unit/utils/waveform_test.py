@@ -135,8 +135,7 @@ class WaveformTest(unittest.TestCase):
         self.assertTrue(
             torch.equal(
                 output_data,
-                torch.tensor([[0.], [1.], [1.], [1.], [1.], [3.], [3.], [3.],
-                              [3.], [0.]],
+                torch.tensor([[0.0], [0.5], [1.0], [1.0], [1.6666667461395264], [2.3333334922790527], [3.0], [3.0], [1.5], [0.0]],
                              device=TorchUtils.get_device(),
                              dtype=torch.get_default_dtype())),
             "Plateaus to waveform error")
