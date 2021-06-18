@@ -10,6 +10,10 @@ import nidaqmx.system.device as device
 from datetime import datetime
 from brainspy.processors.hardware.drivers.ni.channels import init_channel_data
 
+from nidaqmx.stream_writers import AnalogMultiChannelWriter
+from nidaqmx.stream_readers import AnalogMultiChannelReader
+
+
 DEFAULT_IP = "192.168.1.5"
 DEFAULT_SUBNET_MASK = "255.255.255.0"
 DEFAULT_PORT = 8081
@@ -110,7 +114,7 @@ class LocalTasks:
         These tasks will be updated as the method calls are made to do different types of tasks.
         It also initializes the device to Acquire or generate a finite number of samples
         """
-        self.acquisition_type = constants.AcquisitionType.FINITE
+        self.acquisition_type = constants.AcquisitionType.CONTINUOUS # constants.AcquisitionType.FINITE
         self.activation_task = None
         self.readout_task = None
 
@@ -135,6 +139,7 @@ class LocalTasks:
         self.activation_task = nidaqmx.Task(
             "activation_task_" + datetime.utcnow().strftime("%Y_%m_%d_%H%M%S_%f")
         )
+        self.activation_channel_no = len(channel_names)
         for i in range(len(channel_names)):
             channel_name = str(channel_names[i])
             if voltage_ranges is not None:
@@ -159,6 +164,7 @@ class LocalTasks:
                     min_val=-2,
                     max_val=2,
                 )
+            
 
     @Pyro4.oneway
     def init_readout_channels(self, readout_channels):
@@ -176,12 +182,13 @@ class LocalTasks:
         self.readout_task = nidaqmx.Task(
             "readout_task_" + datetime.utcnow().strftime("%Y_%m_%d_%H%M%S_%f")
         )
+        self.readout_channel_no = len(readout_channels)
         for i in range(len(readout_channels)):
             channel = readout_channels[i]
             self.readout_task.ai_channels.add_ai_voltage_chan(channel)
 
     @Pyro4.oneway
-    def set_shape(self, sampling_frequency, shape, trigger_source):
+    def set_sampling_clocks(self, sampling_frequency, activation_clk_source):
         """
         One way method to set the shape variables for the data that is being sent to the device.
         Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the shape of the data that is being sent can to be specified.
@@ -196,14 +203,12 @@ class LocalTasks:
         """
         self.activation_task.timing.cfg_samp_clk_timing(
             sampling_frequency,
-            source="/" + trigger_source + "/ai/SampleClock",
+            source="/" + activation_clk_source + "/ai/SampleClock",
             sample_mode=self.acquisition_type,
-            samps_per_chan=shape,
         )
         self.readout_task.timing.cfg_samp_clk_timing(
             sampling_frequency,
             sample_mode=self.acquisition_type,
-            samps_per_chan=shape,  # TODO: Add shape + 1 ?
         )
 
     @Pyro4.oneway
@@ -244,49 +249,61 @@ class LocalTasks:
             max_val=5,
         )
 
-    def read(self, offsetted_shape, ceil):
-        """
-        Read from the readout channel but with an offset value which can be specified. Th function alos takes a ceil value as a parameter, therefore, all reads are under this maximum value.
-        Offset on the read is done adding a number to a signal. The addition shifts the value of every sample up (or down) by the same amount.
-
-        Parameters
-        ----------
-        offsetted_shape : (int,int)
-            To set the offset value of the wave.
-
-        ceil : int
-            maximum read value
-
-        Returns
-        -------
-        int
-            value read from the readout task
-        """
-        return self.readout_task.read(offsetted_shape, ceil)
-
-    def remote_read(self, offsetted_shape, ceil):
-        """
-        Read from the readout channel but with an offset value which can be specified. Th function also takes a ceil value as a parameter, therefore, all reads are under this maximum value.
-        Offset on the read is done adding a number to a signal. The addition shifts the value of every sample up (or down) by the same amount.
-        This method helps you read tasks from a machine remotely and throws an error if it is unable to read from certain task ( and will return -1 - Exit )
-
-        Parameters
-        ----------
-        offsetted_shape : (int,int)
-            To set the offset value of the wave.
-        ceil : int
-            maximum read value
-
-        Returns
-        -------
-        int
-            value read from the readout task
-        """
+    def write_read(self, y):
+        y = np.require(y, dtype=y.dtype, requirements=["C", "W"]) 
         try:
-            return self.readout_task.read(offsetted_shape, ceil)
+            write_no = self.writer.write_many_sample(y)
+            read_data = np.zeros((self.readout_channel_no, write_no), dtype = np.float64)
+            read_no = self.reader.read_many_sample(read_data, number_of_samples_per_channel = write_no)
         except nidaqmx.errors.DaqError as e:
             print("Error reading: " + str(e))
-        return -1
+            return None
+        return read_data
+
+    # def read(self, offsetted_shape, ceil=None):
+    #     """
+    #     Read from the readout channel but with an offset value which can be specified. Th function alos takes a ceil value as a parameter, therefore, all reads are under this maximum value.
+    #     Offset on the read is done adding a number to a signal. The addition shifts the value of every sample up (or down) by the same amount.
+
+    #     Parameters
+    #     ----------
+    #     offsetted_shape : (int,int)
+    #         To set the offset value of the wave.
+
+    #     ceil : int
+    #         Specifies the amount of time in seconds to wait for samples to become available. 
+    #         If the time elapses, the method returns an error and any samples read before the timeout elapsed.
+
+    #     Returns
+    #     -------
+    #     int
+    #         value read from the readout task
+    #     """
+    #     return self.readout_task.read(offsetted_shape, nidaqmx.constants.READ_ALL_AVAILABLE)
+
+    # def remote_read(self, offsetted_shape, timeout):
+    #     """
+    #     Read from the readout channel but with an offset value which can be specified. Th function also takes a ceil value as a parameter, therefore, all reads are under this maximum value.
+    #     Offset on the read is done adding a number to a signal. The addition shifts the value of every sample up (or down) by the same amount.
+    #     This method helps you read tasks from a machine remotely and throws an error if it is unable to read from certain task ( and will return -1 - Exit )
+
+    #     Parameters
+    #     ----------
+    #     offsetted_shape : (int,int)
+    #         To set the offset value of the wave.
+    #     ceil : int
+    #         maximum read value
+
+    #     Returns
+    #     -------
+    #     int
+    #         value read from the readout task
+    #     """
+    #     try:
+    #         return self.readout_task.read(offsetted_shape, timeout=timeout)
+    #     except nidaqmx.errors.DaqError as e:
+    #         print("Error reading: " + str(e))
+    #     return -1
 
     @Pyro4.oneway
     def start_trigger(self, trigger_source):
@@ -300,71 +317,73 @@ class LocalTasks:
         ----------
         trigger_source: str
             source trigger name
-        """
+        # """
         self.activation_task.triggers.start_trigger.cfg_dig_edge_start_trig(
             "/" + trigger_source + "/ai/StartTrigger"
         )
 
-    @Pyro4.oneway
-    def remote_start_tasks(self, y, auto_start):
-        """
-        To start the tasks on this device remotely .The method invokes 2 other methods:
+    # @Pyro4.oneway
+    # def remote_start_tasks(self, y, auto_start):
+    #     """
+    #     To start the tasks on this device remotely .The method invokes 2 other methods:
 
-        1. self.activation_task.start() - To start the activation tasks on the device
-        2. self.readout_task.start() - To start the readout tasks on the device.
+    #     1. self.activation_task.start() - To start the activation tasks on the device
+    #     2. self.readout_task.start() - To start the readout tasks on the device.
 
-        Both of these tasks occur simulataneously and are synchronized.
-        The tasks will start automatically if the "auto_start" option is set to True in the configuration dictionary used to intialize this device.
+    #     Both of these tasks occur simulataneously and are synchronized.
+    #     The tasks will start automatically if the "auto_start" option is set to True in the configuration dictionary used to intialize this device.
 
-        Parameters
-        ----------
-        y : list
-            list of tasks
-        auto_start : Bool
-            True or False based on wheather to auto start the tasks or not
-        """
-        self.activation_task.write(np.asarray(y), auto_start=auto_start)
-        if not auto_start:
-            self.activation_task.start()
-            self.readout_task.start()
+    #     Parameters
+    #     ----------
+    #     y : list
+    #         list of tasks
+    #     auto_start : Bool
+    #         True or False based on wheather to auto start the tasks or not
+    #     """
+    #     self.activation_task.write(np.asarray(y), auto_start=auto_start)
+    #     if not auto_start:
+    #         self.activation_task.start()
+    #         self.readout_task.start()
 
-    @Pyro4.oneway
-    def start_tasks(self, y, auto_start):
-        """
-        To start the tasks on this device locally.The method invokes 2 other methods:
+    # @Pyro4.oneway
+    # def start_tasks(self, y, auto_start):
+    #     """
+    #     To start the tasks on this device locally.The method invokes 2 other methods:
 
-        1. self.activation_task.start() - To start the activation tasks on the device
-        2. self.readout_task.start() - To start the readout tasks on the device.
+    #     1. self.activation_task.start() - To start the activation tasks on the device
+    #     2. self.readout_task.start() - To start the readout tasks on the device.
 
-        Both of these tasks occur simulataneously and are synchronized.
-        The tasks will start automatically if the "auto_start" option is set to True in the configuration dictionary used to intialize this device.
+    #     Both of these tasks occur simulataneously and are synchronized.
+    #     The tasks will start automatically if the "auto_start" option is set to True in the configuration dictionary used to intialize this device.
 
-        Parameters
-        ----------
-        y : list
-            list of tasks
-        auto_start : Bool
-            True or False based on wheather to auto start the tasks or not
-        """
-        y = np.require(y, dtype=y.dtype, requirements=["C", "W"])
-        try:
-            self.activation_task.write(y, auto_start=auto_start)
-        except nidaqmx.errors.DaqError:
-            print(
-                "There was an error writing to the activation task: "
-                + self.activation_task.name
-            )
-            print("Trying to reset device and do the read again.")
-            for dev in self.devices:
-                dev.reset_device()
-            self.init_activation_channels(
-                self.activation_channel_names, self.voltage_ranges
-            )
-            self.activation_task.write(y, auto_start=auto_start)
+    #     Parameters
+    #     ----------
+    #     y : list
+    #         list of tasks
+    #     auto_start : Bool
+    #         True or False based on wheather to auto start the tasks or not
+    #     """
+    #     y = np.require(y, dtype=y.dtype, requirements=["C", "W"])
+    #     sample_no = 0
+    #     try:
+    #         sample_no = self.activation_task.write(y, auto_start=auto_start)
+    #     except nidaqmx.errors.DaqError:
+    #         print(
+    #             "There was an error writing to the activation task: "
+    #             + self.activation_task.name
+    #         )
+    #         print("Trying to reset device and do the read again.")
+    #         for dev in self.devices:
+    #             dev.reset_device()
+    #         self.init_activation_channels(
+    #             self.activation_channel_names, self.voltage_ranges
+    #         )
+    #         self.activation_task.write(y, auto_start=auto_start)
 
-        if not auto_start:
-            self.activation_task.start()
-            self.readout_task.start()
+    #     if not auto_start:
+    #         self.activation_task.start()
+    #         self.readout_task.start()
+    #     return sample_no
 
     @Pyro4.oneway
     def stop_tasks(self):
@@ -406,6 +425,12 @@ class LocalTasks:
             self.activation_channel_names, self.voltage_ranges
         )
         self.init_readout_channels(self.readout_channel_names)
+        self.set_sampling_clocks(self.configs["sampling_frequency"], 
+                                 self.configs['instruments_setup']['trigger_source'])
+        self.readout_task.control(constants.TaskMode.TASK_COMMIT)
+
+        self.reader = AnalogMultiChannelReader(self.readout_task.in_stream)
+        self.writer = AnalogMultiChannelWriter(self.activation_task.out_stream, auto_start=self.configs['auto_start'])
         return self.voltage_ranges.tolist()
 
     @Pyro4.oneway
@@ -445,7 +470,7 @@ class RemoteTasks:
         uri : str
             uri of the remote server
         """
-        self.acquisition_type = constants.AcquisitionType.FINITE
+        self.acquisition_type = constants.AcquisitionType.CONTINUOUS # constants.AcquisitionType.FINITE
         self.tasks = Pyro4.Proxy(uri)
 
     def init_activation_channels(self, channel_names, voltage_ranges=None):
@@ -481,7 +506,7 @@ class RemoteTasks:
         """
         self.tasks.init_readout_channels(readout_channels)
 
-    def set_shape(self, sampling_frequency, shape, trigger_source):
+    def set_sampling_clocks(self, sampling_frequency, activation_clk_source):
         """
         One way method to set the shape variables for the data that is being sent to the device.
         Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the shape of the data that is being sent can to be specified.
@@ -494,7 +519,7 @@ class RemoteTasks:
         shape : (int,int)
             required shape of for sampling
         """
-        self.tasks.set_shape(sampling_frequency, shape, trigger_source)
+        self.tasks.set_sampling_clocks(sampling_frequency, activation_clk_source)
 
     def add_synchronisation_channels(
         self,
@@ -526,7 +551,10 @@ class RemoteTasks:
             readout_channel_no,
         )
 
-    def read(self, offsetted_shape, ceil):
+    def write_read(self, y):
+        return self.tasks.write_read(y)
+
+    def read(self, offsetted_shape, timeout):
         """
         Read from the readout channel but with an offset value which can be specified. Th function alos takes a ceil value as a parameter, therefore, all reads are under this maximum value.
         Offset on the read is done adding a number to a signal. The addition shifts the value of every sample up (or down) by the same amount.
@@ -543,7 +571,7 @@ class RemoteTasks:
         int
             task read from the readout channel
         """
-        return self.tasks.remote_read(offsetted_shape, ceil)
+        return self.tasks.remote_read(offsetted_shape, timeout)
 
     def start_trigger(self, trigger_source):
         """

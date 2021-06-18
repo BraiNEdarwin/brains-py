@@ -109,8 +109,8 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
             output data
         """
 
-        y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
-        y = y.T
+        #y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1])))) # An extra point is added. To synchronise the input with the output, as the drivers take one extra point to read.
+        y = y.T # The format in pytorch is (batch_size, electrode_no), the format for the nidaqmx drivers is (channel_no, batch_size) where each channel corresponds to each electrode
         data = self.read_data(y)
-        data = -1 * self.process_output_data(data)[:, 1:]
+        data = -1 * self.process_output_data(data) #[:, 1:] # Data is inverted, and returned to its original output shape (first point is not taken into acocunt). 
         return data.T

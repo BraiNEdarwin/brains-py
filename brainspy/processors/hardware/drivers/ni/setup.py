@@ -8,7 +8,8 @@ import threading
 import numpy as np
 from threading import Thread
 from brainspy.processors.hardware.drivers.ni.tasks import get_tasks_driver
-
+import time
+from nidaqmx.constants import TaskMode
 """
 SECURITY FLAGS.
 WARNING - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
@@ -66,6 +67,7 @@ class NationalInstrumentsSetup:
         self.init_tasks(configs)
         self.enable_os_signals()
         self.init_semaphore()
+        
 
     def init_configs(self, configs):
         """
@@ -282,17 +284,17 @@ class NationalInstrumentsSetup:
 
         """
         self.data_results = None
-        self.read_security_checks(y)
-        self.set_shape_vars(y.shape[1])
+        self.security_checks(y)
+        self.data_results =  self.tasks_driver.write_read(y)
+        return self.data_results
+        #sample_no = self.tasks_driver.start_tasks(y, self.configs["auto_start"])
+        #read_data = self.tasks_driver.read(sample_no, self.ceil)
+        #self.tasks_driver.stop_tasks()
 
-        self.tasks_driver.start_tasks(y, self.configs["auto_start"])
-        read_data = self.tasks_driver.read(self.offsetted_shape, self.ceil)
-        self.tasks_driver.stop_tasks()
+        #self.data_results = read_data
+        #return read_data
 
-        self.data_results = read_data
-        return read_data
-
-    def read_security_checks(self, y):
+    def security_checks(self, y):
         """
         This method reads the security checks from the input data, and makes sure that the input voltage does not go above certain threshhold.
 
