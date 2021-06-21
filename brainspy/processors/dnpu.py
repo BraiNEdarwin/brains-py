@@ -10,7 +10,6 @@ from brainspy.processors.processor import Processor
 
 from brainspy.utils.transforms import get_linear_transform_constants
 
-import warnings
 
 class DNPU(nn.Module):
     """
@@ -27,7 +26,7 @@ class DNPU(nn.Module):
     bias : torch.Tensor
         The biases of the network (control voltages).
     data_input_indices : torch.Tensor
-        The indices of the input electrodes. 
+        The indices of the input electrodes.
     control_indices : torch.Tesnor
         The indices of the control electrodes.
     """
@@ -127,6 +126,11 @@ class DNPU(nn.Module):
     def get_control_electrode_no(self):
         return self.control_electrode_no
 
+    # Allows to constraint the control voltages to their corresponding maximum and minimum values.
+    # Can be used after loss.backward() and optimizer.step() to clip out those control voltages that are outside their ranges.
+    def constraint_control_voltages(self):
+        self.bias = torch.nn.Parameter(torch.max(torch.min(self.bias, self.get_control_ranges().T[1].T), self.get_control_ranges().T[0].T))
+
     # Returns a random single value of a control voltage within a specified range.
     # Control voltage range = [min,max]
     def sample_controls(self):
@@ -185,10 +189,10 @@ class DNPU(nn.Module):
 
     def forward_for(self, x):
         # Cut input values to force linear transform or force being between a voltage range.
-        x = self.clamp_input(x)
+        x = self.clip_input(x)
 
         # Apply a linear transformation from raw data to the voltage ranges of the dnpu.
-        if self.transform_to_voltage:
+        if self.input_transform:
             x = (self.scale.flatten() * x) + self.offset.flatten()
         assert (
             x.shape[-1] == self.data_input_indices.numel()
@@ -217,10 +221,10 @@ class DNPU(nn.Module):
         controls = self.bias.expand(bias_shape)
 
         # Cut input values to force linear transform or force being between a voltage range.
-        x = self.clamp_input(x)
+        x = self.clip_input(x)
 
         # Apply a linear transformation from raw data to the voltage ranges of the dnpu.
-        if self.transform_to_voltage:
+        if self.input_transform:
             x = (self.scale * x) + self.offset
 
         # Expand indices according to batch size
@@ -228,7 +232,7 @@ class DNPU(nn.Module):
         control_indices = self.control_indices.expand(bias_shape)
 
         # Create input data and order it according to the indices
-        indices = torch.cat((input_indices, control_indices), dim=last_dim)
+        indices = torch.argsort(torch.cat((input_indices, control_indices), dim=last_dim),dim=last_dim)
         data = torch.cat((x, controls), dim=last_dim)
         data = torch.gather(data, last_dim, indices)
 
@@ -243,11 +247,7 @@ class DNPU(nn.Module):
         input_range = TorchUtils.format(input_range)
         if input_range.shape != self.data_input_ranges.shape:
             input_range = input_range.expand_as(self.data_input_ranges)
-        elif strict is True:
-            warnings.warn('Tranformation for multiple raw input data ranges in strict mode only works for the maximum and the minimum values of all the ranges, not per electrode.')
-        self.min_input = input_range.min()
-        self.max_input = input_range.max()
-        self.transform_to_voltage = True
+        self.raw_input_range = input_range
         scale, offset = get_linear_transform_constants(self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T, input_range.T[0].T, input_range.T[1].T)
         self.scale = scale
         self.offset = offset
@@ -257,9 +257,9 @@ class DNPU(nn.Module):
         del self.amplitude
         del self.offset
 
-    def clamp_input(self, x):
+    def clip_input(self, x):
         if self.input_clip:
-            x = torch.clamp(x, min=self.min_input, max=self.max_input)
+            x = torch.max(torch.min(x, self.raw_input_range[:, :, 1]), self.raw_input_range[:, :, 0])
         return x
 
     def get_node_input_data(self, x):
@@ -333,7 +333,7 @@ class DNPU(nn.Module):
     # @TODO: Update documentation
     def sw_train(self, configs: dict, info: dict, model_state_dict: collections.OrderedDict = None,):
         """
-        It helps setting the DNPU to training mode. While evaluation happens in hardware, training
+        It helps swap the DNPU to training mode. While evaluation happens in hardware, training
         happens in software. This function sets the nn.Module to training mode and swaps
         the processor (typically to software).
         Checks if the voltage ranges of the new processor are the same as the ones of the old.
@@ -395,7 +395,8 @@ class DNPU(nn.Module):
     def get_input_ranges(self) -> torch.Tensor:
         """
         Get the voltage ranges of the input electrodes.
-
+        It has a shape of (dnpu_no, electrode_no, 2), where the last dimension is
+        0 for the minimum value of the range and 1 for the maximum value of the range.
         Returns
         -------
         torch.Tensor
@@ -406,7 +407,8 @@ class DNPU(nn.Module):
     def get_control_ranges(self) -> torch.Tensor:
         """
         Get the voltage ranges of the control electrodes.
-
+        It has a shape of (dnpu_no, electrode_no, 2), where the last dimension is
+        0 for the minimum value of the range and 1 for the maximum value of the range.
         Returns
         -------
         torch.Tensor
