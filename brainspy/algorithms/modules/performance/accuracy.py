@@ -97,7 +97,8 @@ def get_accuracy(inputs, targets, configs=None, node=None):
 def init_results(inputs, targets, configs):
     """
     To initialize the results of the accuracy test and the results of the Perceptron algorithm.
-    The method initializes the results dictionary for evaluation of accuracy , and initializes the perceptron dataset from thge Dataloader (Refer to data.py for the Perceptron dataloader)
+    The method initializes the results dictionary for evaluation of accuracy , and initializes the perceptron dataset from thge Dataloader
+    (Refer to data.py for the Perceptron dataloader)
 
     Parameters
     ----------
@@ -125,7 +126,7 @@ def zscore_norm(inputs, eps=1e-5):
     """
     To calculate the standard normal distribution from the input data.
     The standard normal distribution, represented by the letter Z, is the normal distribution having a mean of 0 and a standard deviation of 1.
-    If X is a random variable from a normal distribution with mean μ and standard deviation σ, its Z-score may be calculated from X by subtracting μ and dividing by the standard deviation
+    Refer to https://towardsdatascience.com/the-surprising-longevity-of-the-z-score-a8d4f65f64a0 to read about zcore and normalisation of data in PyTorch.
 
     Parameters
     ----------
@@ -140,10 +141,10 @@ def zscore_norm(inputs, eps=1e-5):
        normalized distibution of data
     """
     assert (
-        inputs.std(dim=0) != 0
+        inputs.std() != 0
     ), "The standard deviation of the inputs is 0. Please check that the inputs are correct. "
 
-    return (inputs - inputs.mean(axis=0)) / inputs.std(dim=0)
+    return (inputs - inputs.mean(axis=0)) / inputs.std()
 
 
 def train_perceptron(
@@ -152,6 +153,11 @@ def train_perceptron(
     """
     To train the Perceptron obtain a set of weights w that accurately classifies each instance in our training set.
     In order to train our Perceptron, we iteratively feed the network with our training data multiple times.
+
+    The perceptron is used as a linear classifier to facilitate supervised learning of binary classifiers.
+    The objective of this learning problem is to use data with correct labels for making predictions for training a model.
+    This supervised learning include classification to predict class labels.
+
     Refer to https://medium.com/biaslyai/pytorch-introduction-to-neural-network-feedforward-neural-network-model-e7231cff47cb for an example of training a Perceptron in PyTorch.
 
     Parameters

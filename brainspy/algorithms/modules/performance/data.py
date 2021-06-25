@@ -18,7 +18,7 @@ def get_data(results, configs):
 
                  Refer to https://pytorch.org/docs/stable/data.html for batching of data and memory pinning in PyTorch.
 
-    worker_no - number of workers on the pytorch dataset which is by default set to 0.add()
+    worker_no - number of workers on the pytorch dataset which is by default set to 0.
                 Refer to https://deeplizard.com/learn/video/kWVgvsejXsE to understand how the number of workers are used in deep neural network programming.
 
 
