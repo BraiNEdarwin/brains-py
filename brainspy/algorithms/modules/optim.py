@@ -144,6 +144,8 @@ class GeneticOptimizer:
                     minimum[i] - diff_maxmin[i] * self.beta,
                     maximum[i] + diff_maxmin[i] * self.alpha,
                 ).sample()
+            elif parent1[i] == parent2[i]:
+                offspring[i] = parent1[i].clone()
             else:
                 offspring[i] = uniform(
                     minimum[i] - diff_maxmin[i] * self.alpha,

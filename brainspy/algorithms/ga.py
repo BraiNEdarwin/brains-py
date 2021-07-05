@@ -16,7 +16,7 @@ def train(
     configs,
     logger=None,
     save_dir=None,
-    waveform_transforms=None,
+    #waveform_transforms=None,
     return_best_model=True,
 ):
 
@@ -34,7 +34,7 @@ def train(
         model.eval()
         for epoch in looper:
             inputs, targets = dataloaders[0].dataset[:]
-            inputs, targets = process_data(waveform_transforms, inputs, targets)
+            inputs, targets = process_data(inputs, targets)
             outputs, criterion_pool = evaluate_population(
                 inputs, targets, pool, model, criterion, clipvalue=clipping_value
             )
@@ -51,7 +51,7 @@ def train(
 
             genome_history.append(pool[current_best_index].detach().cpu())
             correlation_history.append(
-                pearsons_correlation(best_current_output, targets).detach().cpu()
+                pearsons_correlation(best_current_output, model.format_targets(targets)).detach().cpu()
             )
             looper.set_description(
                 "  Gen: " + str(epoch + 1) + ". Max fitness: " + str(performance_history[-1].item()) + ". Corr: " + str(correlation_history[-1].item())
@@ -61,7 +61,7 @@ def train(
                 best_result_index = epoch
                 best_correlation = correlation_history[-1].detach().cpu()
                 best_output = best_current_output.detach().cpu()
-                model.set_control_voltages(genome_history[best_result_index])
+                model.set_control_voltages(genome_history[best_result_index].unsqueeze(0)) #Only one device is supported, therefore it is unesqueezed for the first dimension.
                 if save_dir is not None:
                     if model.is_hardware():
                         torch.save(
@@ -107,7 +107,7 @@ def evaluate_population(
 ):
     """Optimisation function of the platform """
     outputs_pool = torch.zeros(
-        (len(pool),) + (len(inputs), 1),
+        (len(pool),) + (len(model.format_targets(inputs)), 1),
         dtype=torch.get_default_dtype(),
         device=TorchUtils.get_device(),
     )
@@ -119,7 +119,7 @@ def evaluate_population(
         # control_voltage_genes = self.get_control_voltages(gene_pool[j], len(inputs_wfm))  # , gene_pool[j, self.gene_trafo_index]
         # inputs_without_offset_and_scale = self._input_trafo(inputs_wfm, gene_pool[j, self.gene_trafo_index])
         # assert False, 'Check the case for inputing voltages with plateaus to check if it works when merging control voltages and inputs'
-        model.set_control_voltages(pool[j])
+        model.set_control_voltages(pool[j].unsqueeze(0))
         outputs_pool[j] = model(inputs)
 
         if (
@@ -127,7 +127,7 @@ def evaluate_population(
         ):
             criterion_pool[j] = criterion(None, None, default_value=True)
         else:
-            criterion_pool[j] = criterion(outputs_pool[j], targets)
+            criterion_pool[j] = criterion(outputs_pool[j], model.format_targets(targets))
 
         # output_popul[j] = self.processor.get_output(merge_inputs_and_control_voltages_in_numpy(inputs_without_offset_and_scale, control_voltage_genes, self.input_indices, self.control_voltage_indices))
     return outputs_pool, criterion_pool

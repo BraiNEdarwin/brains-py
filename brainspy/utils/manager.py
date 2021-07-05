@@ -90,9 +90,10 @@ def get_optimizer(model: object, configs: dict):
                                               configs["partition"],
                                               configs["epochs"])
         else:
-            return bspyoptim.GeneticOptimizer(model.get_control_ranges(),
-                                              configs["partition"],
-                                              configs["epochs"])
+            # Only a single device is supported, therefore model.get_control_ranges()[0]
+            return bspyoptim.GeneticOptimizer(
+                model.get_control_ranges()[0], configs["partition"], configs["epochs"]
+            )
     elif configs["optimizer"] == "elm":
         print("ELM optimizer not implemented yet")
         # return get_adam(parameters, configs)
