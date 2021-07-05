@@ -88,7 +88,7 @@ class ManagerTest(unittest.TestCase):
 
         configs = {}
         configs["processor_type"] = "simulation"
-        configs["input_indices"] = [2, 3]
+        configs["input_indices"] = [[2, 3]]
         configs["electrode_effects"] = {}
         configs["electrode_effects"]["amplification"] = [28.5]
         configs["electrode_effects"]["clipping_value"] = [-110, 110]
@@ -114,7 +114,7 @@ class ManagerTest(unittest.TestCase):
             model_data["info"],
             model_data["model_state_dict"],
         )
-        model = DNPU(processor=processor, configs=configs)
+        model = DNPU(processor=processor, data_input_indices=configs['input_indices'])
         optim = get_optimizer(model, configs)
         assert isinstance(optim, GeneticOptimizer)
 
@@ -124,7 +124,7 @@ class ManagerTest(unittest.TestCase):
         """
         configs = {}
         configs["processor_type"] = "simulation"
-        configs["input_indices"] = [2, 3]
+        configs["input_indices"] = [[2, 3]]
         configs["electrode_effects"] = {}
         configs["electrode_effects"]["amplification"] = [28.5]
         configs["electrode_effects"]["clipping_value"] = [-110, 110]
@@ -149,7 +149,7 @@ class ManagerTest(unittest.TestCase):
             model_data["info"],
             model_data["model_state_dict"],
         )
-        model = DNPU(processor=processor, configs=configs)
+        model = DNPU(processor=processor, data_input_indices=configs['input_indices'])
         optim = get_adam(model, configs)
         assert isinstance(optim, torch.optim.Adam)
 
