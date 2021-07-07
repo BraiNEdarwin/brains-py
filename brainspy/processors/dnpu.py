@@ -129,7 +129,7 @@ class DNPU(nn.Module):
     # Allows to constraint the control voltages to their corresponding maximum and minimum values.
     # Can be used after loss.backward() and optimizer.step() to clip out those control voltages that are outside their ranges.
     def constraint_control_voltages(self):
-        self.bias = torch.nn.Parameter(torch.max(torch.min(self.bias, self.get_control_ranges().T[1].T), self.get_control_ranges().T[0].T))
+        self.bias.data = torch.max(torch.min(self.bias, self.get_control_ranges().T[1].T), self.get_control_ranges().T[0].T)
 
     # Returns a random single value of a control voltage within a specified range.
     # Control voltage range = [min,max]
