@@ -181,7 +181,7 @@ class LocalTasks:
             self.readout_task.ai_channels.add_ai_voltage_chan(channel)
 
     @Pyro4.oneway
-    def set_shape(self, sampling_frequency, shape):
+    def set_sampling_clocks(self, sampling_frequency, activation_clk_source, samps_per_chan=1000):
         """
         One way method to set the shape variables for the data that is being sent to the device.
         Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the shape of the data that is being sent can to be specified.
@@ -196,14 +196,40 @@ class LocalTasks:
         """
         self.activation_task.timing.cfg_samp_clk_timing(
             sampling_frequency,
+            source="/" + activation_clk_source + "/ai/SampleClock",
             sample_mode=self.acquisition_type,
-            samps_per_chan=shape,
+            samps_per_chan=samps_per_chan
         )
         self.readout_task.timing.cfg_samp_clk_timing(
             sampling_frequency,
             sample_mode=self.acquisition_type,
-            samps_per_chan=shape,  # TODO: Add shape + 1 ?
+            samps_per_chan=samps_per_chan
         )
+
+#    @Pyro4.oneway
+#    def set_shape(self, sampling_frequency, shape):
+#        """
+#        One way method to set the shape variables for the data that is being sent to the device.
+#        Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the shape of the data that is being sent can to be specified.
+#        This function helps to tackle the problem of differnt batches having differnt data shapes (for example - differnt sample size) when dealing with big data.
+#
+#        Parameters
+#        ----------
+#        sampling_frequency : float
+#             the average number of samples to be obtained in one second
+#        shape : (int,int)
+#            required shape of for sampling
+#        """
+#        self.activation_task.timing.cfg_samp_clk_timing(
+#            sampling_frequency,
+#            sample_mode=self.acquisition_type,
+#            samps_per_chan=shape,
+#        )
+#        self.readout_task.timing.cfg_samp_clk_timing(
+#            sampling_frequency,
+#            sample_mode=self.acquisition_type,
+#            samps_per_chan=shape,  # TODO: Add shape + 1 ?
+#        )
 
     @Pyro4.oneway
     def add_synchronisation_channels(
@@ -405,6 +431,8 @@ class LocalTasks:
             self.activation_channel_names, self.voltage_ranges
         )
         self.init_readout_channels(self.readout_channel_names)
+        self.set_sampling_clocks(self.configs["sampling_frequency"], 
+                                 self.configs['instruments_setup']['trigger_source'])
         return self.voltage_ranges.tolist()
 
     @Pyro4.oneway
@@ -480,20 +508,20 @@ class RemoteTasks:
         """
         self.tasks.init_readout_channels(readout_channels)
 
-    def set_shape(self, sampling_frequency, shape):
-        """
-        One way method to set the shape variables for the data that is being sent to the device.
-        Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the shape of the data that is being sent can to be specified.
-        This function helps to tackle the problem of differnt batches having differnt data shapes (for example - differnt sample size) when dealing with big data.
-
-        Parameters
-        ----------
-        sampling_frequency : float
-             the average number of samples to be obtained in one second
-        shape : (int,int)
-            required shape of for sampling
-        """
-        self.tasks.set_shape(sampling_frequency, shape)
+#    def set_shape(self, sampling_frequency, shape):
+#        """
+#        One way method to set the shape variables for the data that is being sent to the device.
+#        Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the shape of the data that is being sent can to be specified.
+#       This function helps to tackle the problem of differnt batches having differnt data shapes (for example - differnt sample size) when dealing with big data.
+#
+#        Parameters
+#        ----------
+#        sampling_frequency : float
+#             the average number of samples to be obtained in one second
+#        shape : (int,int)
+#            required shape of for sampling
+#        """
+#        self.tasks.set_shape(sampling_frequency, shape)
 
     def add_synchronisation_channels(
         self,

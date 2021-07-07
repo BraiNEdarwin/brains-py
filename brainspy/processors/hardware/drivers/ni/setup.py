@@ -241,8 +241,8 @@ class NationalInstrumentsSetup:
         """
         if self.last_shape != shape:
             self.last_shape = shape
-            self.tasks_driver.set_shape(
-                self.configs["sampling_frequency"], shape
+            self.tasks_driver.set_sampling_clocks(
+                self.configs["sampling_frequency"], self.configs['instruments_setup']['trigger_source'], samps_per_chan=shape
             )
             self.offsetted_shape = shape + self.configs["offset"]
             self.ceil = (
