@@ -57,21 +57,22 @@ def get_data(results, configs):
 class PerceptronDataset(Dataset):
     """
     This class is an instace of the Pytorch Dataset. It passes all the information onto the Pytorch dataset.
+    Dataset stores the samples and their corresponding labels, and DataLoader wraps an iterable around the Dataset to enable easy access to the samples.
 
-    The Perceptron is a linear machine learning algorithm for binary classification tasks.
-    Like logistic regression, it can quickly learn a linear separation in feature space for two-class classification tasks,
-    although unlike logistic regression, it learns using the stochastic gradient descent optimization algorithm and does not predict calibrated probabilities.
+    Refer to https://pytorch.org/tutorials/beginner/basics/data_tutorial.html to see how Pytorch datasets are created and used.
+
     """
 
     def __init__(self, inputs, targets, device=None):
-        """Initialize the dataset of the Perceptron
+        """
+        Initialize the dataset of the Perceptron
 
         Parameters
         ----------
         inputs : torch.Tensor
-            The Perceptron receives multiple input signals,it either outputs a signal or does not return an output.
+            the inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU architectures that you want to evaluate the accuracy against
         targets : torch.Tensor
-            target values required for this perceptron algorithm
+            binary targets against which the outuut of the perceptron algorithm is compared
         device : torch.Device, optional
             torch device is CUDA or CPU, by default None
         """
