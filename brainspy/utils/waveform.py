@@ -151,19 +151,19 @@ class WaveformManager:
         """
         data_size = len(data) - 1
         tmp = TorchUtils.to_numpy(data)
-        output = TorchUtils.format(np.linspace(0, tmp[0], self.slope_length))
+        output = TorchUtils.format(np.linspace(0, tmp[0], num=self.slope_length, endpoint=False))
         for i in range(data_size):
             output = torch.cat((output, data[i].repeat(self.plateau_length,
                                                        1)))
             output = torch.cat((
                 output,
                 TorchUtils.format(
-                    np.linspace(tmp[i], tmp[i + 1], self.slope_length)),
+                    np.linspace(tmp[i], tmp[i + 1], num=self.slope_length + 1, endpoint=False)[1:]),
             ))
         output = torch.cat((output, data[-1].repeat(self.plateau_length, 1)))
         output = torch.cat(
             (output,
-             TorchUtils.format(np.linspace(tmp[-1], 0, self.slope_length))))
+             TorchUtils.format(np.linspace(tmp[-1], 0, num=self.slope_length + 1)[1:])))
         del tmp
         return output
 
@@ -285,7 +285,7 @@ class WaveformManager:
         start = 0  # starting position of current plateau in input data
 
         # Initiate output.
-        output_data = np.linspace(0, input_copy[start], self.slope_length)
+        output_data = np.linspace(0, input_copy[start], num=self.slope_length, endpoint=False)
         output_mask = [False] * self.slope_length
 
         # Go through all data except last plateau.
@@ -297,7 +297,7 @@ class WaveformManager:
             output_data = np.concatenate((
                 output_data,
                 np.linspace(input_copy[end - 1], input_copy[end],
-                            self.slope_length),
+                            num=self.slope_length + 1, endpoint=False)[1:],
             ))
             start = end
 
@@ -306,7 +306,7 @@ class WaveformManager:
         output_data = np.concatenate((output_data, input_copy[start:]))
         output_mask += [False] * self.slope_length
         output_data = np.concatenate(
-            (output_data, np.linspace(input_copy[-1], 0, self.slope_length)))
+            (output_data, np.linspace(input_copy[-1], 0, num=self.slope_length + 1)[1:]))
 
         if return_pytorch:
             return (

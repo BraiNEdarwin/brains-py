@@ -127,8 +127,8 @@ def default_train_step(
         optimizer.step()
 
         if constraint_control_voltages is not None and constraint_control_voltages == 'clip':
-            with torch.no_grad():
-                model.constraint_weights()
+        #    with torch.no_grad():
+            model.constraint_weights()
 
         running_loss += loss.item() * inputs.shape[0]
         if logger is not None and "log_train_step" in dir(logger):
