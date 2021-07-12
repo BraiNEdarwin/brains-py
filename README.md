@@ -12,8 +12,8 @@ You can find detailed instructions for the following topics on the [wiki](https:
 *  [Introduction](https://github.com/BraiNEdarwin/brains-py/wiki/A.-Introduction): Provides a general description behind the background of this project project. These instructions are strongly recommended for new students joining the research group.
 *  [Package description](https://github.com/BraiNEdarwin/brains-py/wiki/B.-Package-description): Gives more information on how the package is structured and the particular usage of files.
 *  [Installation instructions](https://github.com/BraiNEdarwin/brains-py/wiki/C.-Installation-Instructions): How to correctly install this package
-*  [User instructions and usage examples](https://github.com/BraiNEdarwin/brains-py/wiki/E.-User-Instructions-and-usage-examples): Instructions for users and examples on how brains-py can be used for different purposes
-*  [Developer instructions](https://github.com/BraiNEdarwin/brains-py/wiki/D.-Developer-Instructions): Instructions for people wanting to develop brains-py
+*  [User instructions and usage examples](https://github.com/BraiNEdarwin/brains-py/wiki/D.-User-Instructions-and-usage-examples): Instructions for users and examples on how brains-py can be used for different purposes
+*  [Developer instructions](https://github.com/BraiNEdarwin/brains-py/wiki/E.-Developer-Instructions): Instructions for people wanting to develop brains-py
 
 ## 2. License and libraries ##
 
