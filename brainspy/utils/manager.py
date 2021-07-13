@@ -87,7 +87,8 @@ def get_optimizer(model: object, configs: dict):
 
     Returns
     -------
-    Returns an object which can be a brainspy.algorithms.optim.GeneticOptimizer or an torch.optim.Adam optimizer
+    Returns an object which can be a brainspy.algorithms.optim.GeneticOptimizer or
+    an torch.optim.Adam optimizer
 
     Example
     --------
