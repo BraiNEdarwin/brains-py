@@ -71,22 +71,23 @@ def get_optimizer(model: object, configs: dict):
     parameters from the model. On the genetic algorithm, it is required to gather the
     control ranges.
 
-    configs (dict): This configuration is different depending on whether a genetic or
-                    a gradient descent optimiser is requested.
-                        Gradient descent keys: See the function get_adam
-                        Genetic algorithm keys:
-                            * Gene range (Optional): Specifies what is the range of the control
-                                                     electrodes. If this key is not present, the
-                                                     gene range will be calculated automatically
-                                                     from the control electrode range function
-                                                     of the model.
-                            * Partition: Tuple[int, int] Defines the partition of genomes when
-                              generating offspring.
-                            * Epochs: Number of loops that the algorithm is going to take.
+    configs : dict
+            This configuration is different depending on whether a genetic or
+            a gradient descent optimiser is requested.
+                Gradient descent keys: See the function get_adam
+                Genetic algorithm keys:
+                    * Gene range (Optional): Specifies what is the range of the control
+                                                electrodes. If this key is not present, the
+                                                gene range will be calculated automatically
+                                                from the control electrode range function
+                                                of the model.
+                    * Partition: Tuple[int, int] Defines the partition of genomes when
+                        generating offspring.
+                    * Epochs: Number of loops that the algorithm is going to take.
 
     Returns
     -------
-    class object: Returns and optimizer object which can be a GeneticOptimizer or an Adam optimizer
+    Returns an object which can be a brainspy.algorithms.optim.GeneticOptimizer or an torch.optim.Adam optimizer
 
     Example
     --------
@@ -132,8 +133,9 @@ def get_adam(model: object, configs: dict = {}):
 
     Parameters
     ----------
-    model (nn.Module object): An nn.Module object which can be a DNPU,Processor or a SurrogateModel
-                              object
+    model : torch.nn.Module
+        A Module object which can be a DNPU,Processor or a SurrogateModel
+        object.
     configs (dict): Configurations of the adam optimizer. The configurations do not require to have
                     all of these keys. The keys of the dictionary are as follows:
                         * learning_rate: float
@@ -207,7 +209,8 @@ def get_algorithm(name: str):
 
     Parameters
     ----------
-    name (str): Name of the algorithm. The string value can either be 'gradient' or 'genetic'.
+    name : str
+        Name of the algorithm. The string value can either be 'gradient' or 'genetic'.
 
     Returns
     --------
@@ -247,7 +250,8 @@ def get_driver(configs: dict):
 
     Parameters
     -----------
-    configs (dict): configurations of the model
+    configs : dict
+        configurations of the model
 
     Raises
     -------
@@ -255,8 +259,8 @@ def get_driver(configs: dict):
 
     Returns
     --------
-    class object: Returns and driver object which can be a CDAQtoCDAQ, CDAQtoNiDAQ
-                  or a SurrogateModel object
+    brainspy.processors.hardware.drivers.ni.NationalInstrumentsSetup: Returns and driver object
+    which can be CDAQtoCDAQ or CDAQtoNiDAQ.
 
     Example
     --------
