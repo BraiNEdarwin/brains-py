@@ -17,16 +17,12 @@ from brainspy.processors.processor import Processor
 from brainspy.processors.dnpu import DNPU
 from brainspy.algorithms.modules.optim import GeneticOptimizer
 
-from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
-
 
 class ManagerTest(unittest.TestCase):
-
     """
     Tests for the manager.py class.
 
     """
-
     def __init__(self, test_name):
         super(ManagerTest, self).__init__()
         self.device = TorchUtils.get_device()
@@ -35,11 +31,10 @@ class ManagerTest(unittest.TestCase):
         """
         Test for the get_criterion() method to return a valid fitness function.
         This method is tested with the test_torch.yaml file that defines a fitness criterion.
-        This fitness function is tested with 2 arbitrary torch tensors namely "predictions" and "targets".
+        This fitness function is tested with 2 arbitrary torch tensors namely "predictions" and
+        "targets".
         """
-        configs = {}
-        configs["criterion"] = "corrsig_fit"
-        criterion = get_criterion(configs)
+        criterion = get_criterion("corrsig_fit")
         targets = torch.tensor(
             [
                 [0.0],
@@ -58,22 +53,20 @@ class ManagerTest(unittest.TestCase):
             device=self.device,
         )
         predictions = torch.tensor(
-            np.array(
-                [
-                    [-0.6571],
-                    [-1.7871],
-                    [-1.1129],
-                    [-0.7235],
-                    [0.3469],
-                    [-0.5552],
-                    [-0.3134],
-                    [0.5727],
-                    [1.4812],
-                    [0.3388],
-                    [0.9651],
-                    [0.9615],
-                ]
-            ),
+            np.array([
+                [-0.6571],
+                [-1.7871],
+                [-1.1129],
+                [-0.7235],
+                [0.3469],
+                [-0.5552],
+                [-0.3134],
+                [0.5727],
+                [1.4812],
+                [0.3388],
+                [0.9651],
+                [0.9615],
+            ]),
             device=self.device,
         )
         corsigfit = criterion(predictions, targets)
@@ -106,15 +99,16 @@ class ManagerTest(unittest.TestCase):
             os.chdir("..")
             os.chdir("brains-py")
         model_dir = os.path.join(
-            os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
-        )
-        model_data = torch.load(model_dir, map_location=TorchUtils.get_device())
+            os.getcwd(), "tests/unit/utils/testfiles/training_data.pt")
+        model_data = torch.load(model_dir,
+                                map_location=TorchUtils.get_device())
         processor = Processor(
             configs,
             model_data["info"],
             model_data["model_state_dict"],
         )
-        model = DNPU(processor=processor, data_input_indices=configs['input_indices'])
+        model = DNPU(processor=processor,
+                     data_input_indices=configs['input_indices'])
         optim = get_optimizer(model, configs)
         assert isinstance(optim, GeneticOptimizer)
 
@@ -123,33 +117,10 @@ class ManagerTest(unittest.TestCase):
         Test for the get_adam() method which returns an Adam optimizer object based on the configs
         """
         configs = {}
-        configs["processor_type"] = "simulation"
-        configs["input_indices"] = [[2, 3]]
-        configs["electrode_effects"] = {}
-        configs["electrode_effects"]["amplification"] = [28.5]
-        configs["electrode_effects"]["clipping_value"] = [-110, 110]
-        configs["electrode_effects"]["noise"] = {}
-        configs["electrode_effects"]["noise"]["type"] = "gaussian"
-        configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
-        configs["driver"] = {}
-        configs["waveform"] = {}
-        configs["waveform"]["plateau_length"] = 1
-        configs["waveform"]["slope_length"] = 0
         configs["optimizer"] = "adam"
         configs["learning_rate"] = 0.001
-        while "brains-py" not in os.getcwd():
-            os.chdir("..")
-            os.chdir("brains-py")
-        model_dir = os.path.join(
-            os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
-        )
-        model_data = torch.load(model_dir, map_location=TorchUtils.get_device())
-        processor = Processor(
-            configs,
-            model_data["info"],
-            model_data["model_state_dict"],
-        )
-        model = DNPU(processor=processor, data_input_indices=configs['input_indices'])
+
+        model = torch.nn.Linear(1, 1)
         optim = get_adam(model, configs)
         assert isinstance(optim, torch.optim.Adam)
 
@@ -158,9 +129,7 @@ class ManagerTest(unittest.TestCase):
         Test for the get_algorithm() method which returns a train function based on the configs. We test if this train function is callable
 
         """
-        configs = {}
-        configs["type"] = "genetic"
-        algorithm = get_algorithm(configs)
+        algorithm = get_algorithm("genetic")
         self.assertTrue(callable(algorithm))
 
     def test_get_driver(self):
@@ -170,8 +139,7 @@ class ManagerTest(unittest.TestCase):
         configs = {}
         configs["instrument_type"] = "wrong_input"
         with self.assertRaises(
-            NotImplementedError
-        ):  # Testing for driver that does not exist
+                NotImplementedError):  # Testing for driver that does not exist
             get_driver(configs)
 
         # Testing for the driver type - CDAQtoCDAQ ( Test only when connected to Hardware )
