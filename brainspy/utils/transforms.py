@@ -13,8 +13,6 @@ from typing import Tuple, Sequence
 
 import torch
 
-from brainspy.utils.pytorch import TorchUtils
-
 
 class CurrentToVoltage:
     """
@@ -70,7 +68,9 @@ class CurrentToVoltage:
         if len(current_range) != len(voltage_range):
             raise Exception("Mapping ranges are different in length")
 
-        self.scale, self.offset = get_linear_transform_constants(voltage_range.T[0].T, voltage_range.T[1].T, current_range.T[0].T, current_range.T[1].T)
+        self.scale, self.offset = get_linear_transform_constants(
+            voltage_range.T[0].T, voltage_range.T[1].T, current_range.T[0].T,
+            current_range.T[1].T)
         self.current_range = current_range
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
