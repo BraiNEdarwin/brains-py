@@ -1,14 +1,3 @@
-"""
-Class for transforming from current to voltage using linear transformations.
-The main class CurrentToVoltage takes arrays of currents and voltages.
-It then calculates the linear transform (scale/slope and offset/intercept) for
-each current-voltage pair by finding the line between two points.
-These transforms are used to map the data to the inputs of the DNPU.
-
-The following link gives more information on linear functions:
-https://en.wikipedia.org/wiki/Linear_function_(calculus)
-"""
-
 from typing import Tuple, Sequence
 
 import torch
@@ -17,7 +6,14 @@ import torch
 class CurrentToVoltage:
     """
     Class that uses a linear function to transform current to voltage for sets
-    of points.
+    of points. It is typically used for doing current to voltage transformations
+    The main class CurrentToVoltage takes arrays of currents and voltages.
+    It then calculates the linear transform (scale/slope and offset/intercept) for
+    each current-voltage pair by finding the line between two points.
+    These transforms are used to map the data to the inputs of the DNPU.
+
+    The following link gives more information on linear functions:
+    https://en.wikipedia.org/wiki/Linear_function_(calculus)
 
     Attributes
     ----------
