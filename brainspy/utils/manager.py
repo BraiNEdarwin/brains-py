@@ -96,7 +96,7 @@ def get_optimizer(model: object, configs: dict):
                "partition": [4,22],
                "epochs": 100}
 
-    model = CustomModel()
+    model = CustomDNPUModel()
 
     optimizer = get_optimizer(model,configs)
 
@@ -104,7 +104,7 @@ def get_optimizer(model: object, configs: dict):
     configs = {"optimizer" : "adam",
             "learning_rate": 1e-3}
 
-    model = CustomModel()
+    model = torch.nn.Linear(1,1)
 
     optimizer = get_optimizer(model,configs)
 
@@ -153,8 +153,8 @@ def get_adam(model: object, configs: dict = {}):
 
     Example
     --------
-    configs = {"optimizer" : "adam"}
-    model = CustomModel()
+    configs = {"learning_rate": 0.0001}
+    model = torch.nn.Linear(1,1)
     optimizer = get_adam(model,configs)
 
     """
@@ -220,8 +220,10 @@ def get_algorithm(name: str):
 
     Example
     --------
-    configs = {"type" : "genetic" }
-    algorithm = get_algorithm(configs)
+    algorithm = get_algorithm('genetic')
+
+    --------
+    algorithm = get_algorithm('gradient')
 
     """
     if name == "gradient":
