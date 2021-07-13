@@ -26,9 +26,6 @@ class IOTest(unittest.TestCase):
         configs["batch"] = None
         configs["data"] = {"data1": "New data"}
         self.configs = configs
-        while "brains-py" not in os.getcwd():
-            os.chdir("..")
-            os.chdir("brains-py")
         self.path = os.path.join(os.getcwd(), "tests/unit/utils/testfiles")
 
     def test_save_load_configs(self):
