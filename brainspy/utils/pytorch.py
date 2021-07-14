@@ -51,7 +51,7 @@ class TorchUtils:
         Returns
         -------
         torch.device
-            device type of torch tensor which can be "cpu" or "cuda" depending on computer version
+            Device type of torch tensor which can be "cpu" or "cuda" depending on computer version.
 
         Example
         --------
@@ -72,7 +72,7 @@ class TorchUtils:
 
         Parameters
         ----------
-        data : It can be one of these data types:
+        data : Data to be formatted. It can be one of these data types:
             list : list of data indices
             np.ndarray : list of data indices
             torch.Tensor :  inital torch tensor which has to be formatted
@@ -90,10 +90,10 @@ class TorchUtils:
         Returns
         -------
         1. torch.tensor
-            torch tensor either generated from python list or numpy array, or exisiting torch
+            Torch tensor either generated from python list or numpy array, or exisiting torch
             tensors formatted to given device and data type.
         2. nn.Module
-            if an nn.Module is given as an argument, a model of the nn.Module object distributed by
+            If an nn.Module is given as an argument, a model of the nn.Module object distributed by
             DataParallel amongst the multiple GPUs is generated.
 
         Examples
@@ -141,12 +141,12 @@ class TorchUtils:
         Parameters
         ----------
         data : torch.tensor
-            torch tensor that needs to be formatted to a numpy array
+            Torch tensor that needs to be formatted to a numpy array.
 
         Returns
         -------
         np.array
-            numpy array from given torch tensor
+            Numpy array from given torch tensor.
 
         Example
         -------
@@ -168,14 +168,14 @@ class TorchUtils:
         Parameters
         ----------
         seed : int, optional
-            value of seed, by default None
+            Value of seed, by default None.
         deterministic : bool, optional
-            if the random value should be deterministic, by default False
+            If the random value should be deterministic, by default False.
 
         Returns
         -------
         int
-            value of seed
+            Value of the seed that is being used.
 
         Example
         -------
