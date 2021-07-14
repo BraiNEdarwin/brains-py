@@ -12,16 +12,16 @@ import yaml
 
 def load_configs(file_name: str):
     """
-    loads a yaml file from the given file path
+    Loads a yaml file from the given file path.
 
     Parameters
     ----------
     file_name : str
-        file object or path to yaml file
+        File object or path to yaml file.
 
     Returns
     -------
-    dict : Python dictionary with formatted yaml data
+    dict : Python dictionary with formatted yaml data.
 
     Example
     --------
@@ -35,16 +35,16 @@ def load_configs(file_name: str):
 
 def save_configs(configs: dict, file_name: str):
     """
-    formats data from a dictionary and saves it to the given yaml file
+    Formats data from a dictionary and saves it to the given yaml file.
 
     Parameters
     ----------
 
     configs : dict
-        data that needs to be stored in the yaml file
+        Data to be stored in the yaml file.
 
     file_name : str
-        file object or path to yaml file
+        File object or path to yaml file.
 
     Example
     --------
@@ -59,13 +59,16 @@ def save_configs(configs: dict, file_name: str):
 
 def create_directory(path: str, overwrite=False):
     """
-    Checks if there exists a directory with - filepath+datetime_name , and if not it will create it and return this path.
+    Creates a directory to the input path appending datetime to it.
 
     Parameters
     -----------
 
     path : str
-        file object or path to file
+        File object or path to file
+    overwrite: boolean
+        When True, if the directory exists, it will overwrite it. When False, if the directory
+        exists it will not do anything. By default is False.
 
     Example
     -------
@@ -89,13 +92,13 @@ def create_directory_timestamp(path: str, name: str, overwrite=False):
     ----------
 
     path : str
-        file object or path to file
+        File object or path to file
 
     name : str
 
     Returns
     --------
-    str : path to file created - filepath+datetime_name
+    str : Path to file created - filepath+datetime_name
 
     Example
     --------
@@ -143,10 +146,9 @@ class IncludeLoader(yaml.Loader):
                 'invisibility'}], 'Name': 'The One Ring', 'Specials':
                 ['resize-to-wearer']}
     """
-
     def __init__(self, *args, **kwargs):
         """
-        Constructer to initialize the file root and load the file
+        Constructor to initialize the file root and load the file.
         """
         super(IncludeLoader, self).__init__(*args, **kwargs)
         self.add_constructor("!include", self._include)
