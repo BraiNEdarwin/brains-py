@@ -25,7 +25,7 @@ def get_criterion(name: str):
 
     Returns
     -------
-    A method from brainspy.algorithms.modules.signal containing either a loss or a fitness function
+    A method from brainspy.algorithms.modules.signal containing either a loss or a fitness function.
 
     Example
     --------
@@ -66,7 +66,7 @@ def get_optimizer(model: object, configs: dict):
 
     Parameters
     ----------
-    model (nn.Module object): An nn.Module object which can also be a DNPU, Processor or
+    Model (nn.Module object): An nn.Module object which can also be a DNPU, Processor or
     a SurrogateModel. On the gradient descent, it is required to gather the learnable
     parameters from the model. On the genetic algorithm, it is required to gather the
     control ranges.
@@ -149,7 +149,7 @@ def get_adam(model: object, configs: dict = {}):
 
     Returns
     -------
-    class object: Returns and optimizer Adam optimizer object
+    class object: Returns and optimizer Adam optimizer object.
 
     Example
     --------
@@ -216,7 +216,7 @@ def get_algorithm(name: str):
     Returns
     --------
     A method containting a default training function for GA or GD as defined in from
-    brainspy.algorithms.ga/gd
+    brainspy.algorithms.ga/gd.
 
     Example
     --------
@@ -254,11 +254,11 @@ def get_driver(configs: dict):
     Parameters
     -----------
     configs : dict
-        configurations of the model
+        Configurations of the model.
 
     Raises
     -------
-    NotImplementedError: if configurations is not recognised
+    NotImplementedError: If configurations is not recognised.
 
     Returns
     --------
