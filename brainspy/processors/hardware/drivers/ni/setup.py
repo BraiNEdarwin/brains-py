@@ -295,9 +295,10 @@ class NationalInstrumentsSetup:
         Parameters
         -----------
         y : np.array
-            It represents the input data as matrix where the shape is defined by the "number of
-            inputs to the device" times "input points that you want to input to the device".
-
+            Input data matrix to be sent to the device.
+            The data should have a shape of: (device_input_channel_no, data_point_no)
+            Where device_input_channel_no is typically the number of activation
+            electrodes of the DNPU.
         Returns
         --------
         np.array

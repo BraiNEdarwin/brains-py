@@ -60,7 +60,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         Parameters
         ----------
         y : np.array
-            Input data to be sent to the device.
+            Input data matrix to be sent to the device.
             The data should have a shape of: (device_input_channel_no, data_point_no)
             Where device_input_channel_no is typically the number of activation
             electrodes of the DNPU.

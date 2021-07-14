@@ -61,12 +61,12 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         This is done to enable compatibility of the the model with numpy
         The first point of the read_data does not perform a reading.
         To synchronise it with the original signal, a point is added at the original signal y.
-        The signal read in 'data' discards the first point
+        The signal read in 'data' discards the first point.
 
         Parameters
         ----------
         y : np.array
-            Input data to be sent to the device.
+            Input data matrix to be sent to the device.
             The data should have a shape of: (device_input_channel_no, data_point_no)
             Where device_input_channel_no is typically the number of activation
             electrodes of the DNPU.
@@ -94,18 +94,22 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def readout_trial(self, y):
         """
-        Readout data from the device.
-        Reads the data, processes it and synchronises the output data.
+        Attempts to perform a readout from the device given an input array.
+        Reads the data, processes it and synchronises the output with regard
+        to the input data.
 
         Parameters
         ----------
         y : np.array
-            It represents the output data as matrix.
+            Input data matrix to be sent to the device.
+            The data should have a shape of: (device_input_channel_no, data_point_no)
+            Where device_input_channel_no is typically the number of activation
+            electrodes of the DNPU.
 
         Returns
         -------
         np.array,bool
-            synchronised output data from the device and wheather the readout is complete
+            Synchronised output data from the device and wheather the readout is complete
         """
         data = self.read_data(y)
         data = self.process_output_data(data)
@@ -128,7 +132,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         Returns
         -------
         np.array
-            Synchronized input data based on the offset value, where the synchronisation spike
+            Synchronised input data based on the offset value, where the synchronisation spike
             should have been received.
         """
         # TODO: Are the following three lines really necessary?
@@ -155,8 +159,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
     def get_output_cut_value(self, read_data):
         """
-        Get the value where the output data should be cut in order to make the output signal
-        be synchronised with the input signal.
+        The input signal is synchronised with the output sending a spike through a synchronisation
+        channel. This method gets the value where the output data should be cut in order to make
+        the output signal be synchronised with regard to the input signal.
 
         Parameters
         ----------
