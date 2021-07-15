@@ -97,11 +97,11 @@ def get_accuracy(inputs, targets, configs=None, node=None):
                                 batch_size: int
                                     Batch size used to train the perceptron. (default: 256)
                                 worker_no: int
-                                    How many subprocesses to use for data loading. 0 means that the data will be
-                                    loaded in the main process. (default: 0)
+                                    How many subprocesses to use for data loading. 0 means that the
+                                    data will be loaded in the main process. (default: 0)
                                 pin_memory: boolean (default: False)
-                                    If True, the data loader will copy Tensors into CUDA pinned memory before
-                                    returning them.
+                                    If True, the data loader will copy Tensors into CUDA pinned
+                                    memory before returning them.
 
     """
 
@@ -291,10 +291,10 @@ def train_perceptron(epochs,
         accuracy = 100.0 * correctly_labelled / evaluated_sample_no
         running_loss /= evaluated_sample_no
         looper.set_description(
-            f"Training perceptron: Epoch: {epoch}  Accuracy {accuracy}, running loss: {running_loss}"
-        )
+            f"Training perceptron: Epoch: {epoch}  Accuracy {accuracy}," +
+            " running loss: {running_loss}")
         if accuracy >= 100.0:
-            print(f"Reached 100/% accuracy. Stopping.")
+            print("Reached 100/% accuracy. Stopping.")
             break
     return accuracy, node
 
