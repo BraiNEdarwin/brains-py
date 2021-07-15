@@ -14,7 +14,7 @@ class CDAQ_Processor_Test(unittest.TestCase):
 
     """
 
-    #@unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ", "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup")
+    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ", "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup")
     def __init__(self, test_name):
         super(CDAQ_Processor_Test, self).__init__()
         configs = {}
@@ -61,29 +61,48 @@ class CDAQ_Processor_Test(unittest.TestCase):
         configs["waveform"]["slope_length"] = 30
 
         self.configs = configs
-        while "brains-py" not in os.getcwd():
-            os.chdir("..")
-            os.chdir("brains-py")
-
         if brainspy.TEST_MODE == "HARDWARE_CDAQ":
-            self.model_dir = os.path.join(
-                os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
-            )
-            self.model_data = torch.load(self.model_dir, map_location=torch.device("cpu"))
+            self.model_data = {}
+            self.model_data["info"] = {}
+            self.model_data["info"]["electrode_info"] = {
+                "electrode_no": 8,
+                "activation_electrodes": {
+                    "electrode_no": 7,
+                    "voltage_ranges": [
+                        [-1.2, 0.6],
+                        [-1.2, 0.6],
+                        [-1.2, 0.6],
+                        [-1.2, 0.6],
+                        [-1.2, 0.6],
+                        [-0.3, 0.6],
+                        [-0.7, 0.3],
+                    ],
+                },
+                "output_electrodes": {
+                    "electrode_no": 1,
+                    "amplification": 28.5,
+                    "clipping_value": [-114.0, 114.0],
+                },
+            }
             self.model = Processor(
-                configs,
+                self.configs,
                 self.model_data["info"],
-                self.model_data["model_state_dict"],
             )
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ", "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup")
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
+    )
     def test_init(self):
         """
         Test to check correct initialization of the Hardware processor with the cdaq_to_cdaq driver.
         """
         isinstance(self.model.driver, CDAQtoCDAQ)
-    
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ", "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup")
+
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
+    )
     def test_forward_numpy(self):
         """
         Test if a forward pass through the processor returns a tensor of the
@@ -93,7 +112,6 @@ class CDAQ_Processor_Test(unittest.TestCase):
         x = self.model.forward_numpy(x)
         self.assertEqual(list(x.shape), [1])
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ", "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup")
     def runTest(self):
         self.test_init()
         self.test_forward_numpy()

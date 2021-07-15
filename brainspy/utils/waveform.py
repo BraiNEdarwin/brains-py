@@ -151,19 +151,25 @@ class WaveformManager:
         """
         data_size = len(data) - 1
         tmp = TorchUtils.to_numpy(data)
-        output = TorchUtils.format(np.linspace(0, tmp[0], self.slope_length))
+        output = TorchUtils.format(
+            np.linspace(0, tmp[0], num=self.slope_length, endpoint=False))
         for i in range(data_size):
             output = torch.cat((output, data[i].repeat(self.plateau_length,
                                                        1)))
             output = torch.cat((
                 output,
                 TorchUtils.format(
-                    np.linspace(tmp[i], tmp[i + 1], self.slope_length)),
+                    np.linspace(tmp[i],
+                                tmp[i + 1],
+                                num=self.slope_length + 1,
+                                endpoint=False)[1:]),
             ))
         output = torch.cat((output, data[-1].repeat(self.plateau_length, 1)))
-        output = torch.cat(
-            (output,
-             TorchUtils.format(np.linspace(tmp[-1], 0, self.slope_length))))
+        output = torch.cat((output,
+                            TorchUtils.format(
+                                np.linspace(tmp[-1],
+                                            0,
+                                            num=self.slope_length + 1)[1:])))
         del tmp
         return output
 
@@ -217,7 +223,8 @@ class WaveformManager:
         repeat_idx[dim] = n_tile
         t = t.repeat(*(repeat_idx))
         order_index = torch.cat([
-            init_dim * torch.arange(n_tile, device=t.device, dtype=torch.long) + i for i in range(init_dim)
+            init_dim * torch.arange(n_tile, device=t.device, dtype=torch.long)
+            + i for i in range(init_dim)
         ])
         return torch.index_select(t, dim, order_index)
 
@@ -280,12 +287,16 @@ class WaveformManager:
         f"plateau length {self.plateau_length}."
 
         data_size = int(len(data) / self.plateau_length)  # number of plateaus
-        input_copy = TorchUtils.to_numpy(data)  # numpy copy of input data (numpy linspace works for
+        input_copy = TorchUtils.to_numpy(
+            data)  # numpy copy of input data (numpy linspace works for
         # multidimensional data while torch does not)
         start = 0  # starting position of current plateau in input data
 
         # Initiate output.
-        output_data = np.linspace(0, input_copy[start], self.slope_length)
+        output_data = np.linspace(0,
+                                  input_copy[start],
+                                  num=self.slope_length,
+                                  endpoint=False)
         output_mask = [False] * self.slope_length
 
         # Go through all data except last plateau.
@@ -296,8 +307,10 @@ class WaveformManager:
             output_mask += [False] * self.slope_length
             output_data = np.concatenate((
                 output_data,
-                np.linspace(input_copy[end - 1], input_copy[end],
-                            self.slope_length),
+                np.linspace(input_copy[end - 1],
+                            input_copy[end],
+                            num=self.slope_length + 1,
+                            endpoint=False)[1:],
             ))
             start = end
 
@@ -306,7 +319,8 @@ class WaveformManager:
         output_data = np.concatenate((output_data, input_copy[start:]))
         output_mask += [False] * self.slope_length
         output_data = np.concatenate(
-            (output_data, np.linspace(input_copy[-1], 0, self.slope_length)))
+            (output_data,
+             np.linspace(input_copy[-1], 0, num=self.slope_length + 1)[1:]))
 
         if return_pytorch:
             return (
@@ -468,7 +482,8 @@ class WaveformManager:
             A mask of the required length.
 
         """
-        repetitions = int(((data_size - self.slope_length) / (self.slope_length + self.plateau_length)))
+        repetitions = int(((data_size - self.slope_length) /
+                           (self.slope_length + self.plateau_length)))
         mask = self.initial_mask.clone().repeat(repetitions)
         return torch.cat((mask, self.final_mask))
 
@@ -476,8 +491,8 @@ class WaveformManager:
 def process_data(inputs, targets):
     # Data processing required to apply waveforms to the inputs and pass them
     # onto the GPU if necessary.
-#    if waveform_transforms is not None:
-#        inputs, targets = waveform_transforms((inputs, targets))
+    # if waveform_transforms is not None:
+    # inputs, targets = waveform_transforms((inputs, targets))
     if inputs is not None and inputs.device != TorchUtils.get_device():
         inputs = inputs.to(device=TorchUtils.get_device())
     if targets is not None and targets.device != TorchUtils.get_device():

@@ -33,19 +33,16 @@ class Hardware_Processor_Test(unittest.TestCase):
         configs["waveform"]["slope_length"] = 30
 
         self.configs = configs
-        while "brains-py" not in os.getcwd():
-            os.chdir("..")
-            os.chdir("brains-py")
+        self.model_data = {}
+        self.model_data["info"] = {}
+        self.model_data["info"]["model_structure"] = {
+            "hidden_sizes": [90, 90, 90],
+            "D_in": 7,
+            "D_out": 1,
+            "activation": "relu",
+        }
 
-        self.model_dir = os.path.join(
-            os.getcwd(), "tests/unit/utils/testfiles/training_data.pt"
-        )
-        self.model_data = torch.load(self.model_dir, map_location=torch.device("cpu"))
-
-        self.debug_model = SurrogateModel(
-            self.model_data["info"]["model_structure"],
-            self.model_data["model_state_dict"],
-        )
+        self.debug_model = SurrogateModel(self.model_data["info"]["model_structure"])
         model = HardwareProcessor(
             self.debug_model,
             slope_length=self.configs["waveform"]["slope_length"],
