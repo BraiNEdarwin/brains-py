@@ -19,7 +19,8 @@ from brainspy.processors.simulation.model import NeuralNetworkModel
 
 class SurrogateModel(nn.Module):
     """
-    Consists of a brainspy.processors.simulation.model.NeuralNetworkModel that
+    A class that consists of an instance of
+    brainspy.processors.simulation.model.NeuralNetworkModel which
     maps the raw input/output relationships of a hardware DNPU. It adds the
     following effects to the output: amplification correction, output clipping,
     and noise. The aim of these effects is to obtain a closer output to that
@@ -27,7 +28,7 @@ class SurrogateModel(nn.Module):
     The different effects are explained in their respective methods.
 
     The effects need to be set after creating a SurrogateModel, this is
-    explained in init.
+    explained in __init__.
 
     Attributes
     ----------

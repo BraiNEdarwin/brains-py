@@ -11,7 +11,7 @@ class NeuralNetworkModel(nn.Module):
     """
     A class for predicting the raw input/output relationship of a DNPU hardware device
     with a neural network model. It consists of a custom length fully connected layer.
-    
+
     Attributes:
     model_structure : dict
         Dictionary containing the model structure; keys explained in
