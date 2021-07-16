@@ -21,19 +21,15 @@ class DNPUBatchNorm(DNPU):
     raw_model : nn.Sequential
         Torch object containing the layers and activations of the network.
     """
-    def __init__(
-            self,
-            processor: Processor,
-            data_input_indices:
-        list,  # Data input electrode indices. It should be a double list (e.g., [[1,2]] or [[1,2],[1,3]])
-            forward_pass_type:
-        str = 'vec',  # It can be 'for' in order to do time multiplexing with the same device using a for loop, and 'vec' in order to do time multiplexing with vectorisation. )
-            # Parameters related to BatchNorm1d from pytorch
-        affine=False,
-            track_running_stats=True,
-            momentum=0.1,
-            eps=1e-5,
-            custom_bn=nn.BatchNorm1d):
+    def __init__(self,
+                 processor: Processor,
+                 data_input_indices: list,
+                 forward_pass_type: str = 'vec',
+                 affine=False,
+                 track_running_stats=True,
+                 momentum=0.1,
+                 eps=1e-5,
+                 custom_bn=nn.BatchNorm1d):
         """
         Initialises the super class and the batch normalisation module, according to the batch norm
         parameters given (affine, track_running_stats, momentum, eps, custom_bn).
