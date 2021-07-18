@@ -19,33 +19,44 @@ def accuracy_fit(output: torch.Tensor,
     evaluates the accuracy; is a percentage.
     Will return default value (0) if indicated.
 
-    Needs at least 10 datapoints.
+    Needs at least 10 datapoints in each signal.
 
     Example
     -------
-    >>> accuracy_fit(torch.rand((100, 1)), torch.rand(100, 1))
-    torch.Tensor(48.)
-    >>> accuracy_fit(torch.rand((100, 1)), torch.rand(100, 1), True)
-    torch.Tensor(0.0)
+    >>> accuracy_fit(torch.rand((100, 3)), torch.rand(100, 3))
+    torch.Tensor([48., 21.2, 3.5])
+    >>> accuracy_fit(torch.rand((100, 3)), torch.rand(100, 3), True)
+    torch.Tensor([0.0, 0.0, 0.0])
 
     Parameters
     ----------
     output : torch.Tensor
-        The output data, shape [n, 1] with n datapoints.
+        The output data, shape [n, m] with m signals of n datapoints.
     target : torch.Tensor
-        The target data, shape [n, 1] with n datapoints.
+        The target data, shape [n, m] with m signals of n datapoints.
     default_value : bool, optional
         Return the default value or not, by default False.
 
     Returns
     -------
     torch.Tensor
-        Default value or calculated fitness.
+        Default value or calculated fitness for each pair of signals.
+
+    Raises
+    ------
+    AssertionError
+        If dimensions of output and target are not the same.
     """
+    assert output.shape == target.shape, "Dimensions of data are different."
     if default_value:
-        return TorchUtils.format(torch.tensor(0.0))
+        return TorchUtils.format(torch.zeros(output.shape[1]))
     else:
-        return get_accuracy(output, target)["accuracy_value"]
+        result = TorchUtils.format(torch.zeros(output.shape[1]))
+        for i in range(output.shape[1]):
+            result[i] = get_accuracy(output[:, i].unsqueeze(1),
+                                     target[:,
+                                            i].unsqueeze(1))["accuracy_value"]
+        return result
 
 
 def corr_fit(output: torch.Tensor,
@@ -58,73 +69,95 @@ def corr_fit(output: torch.Tensor,
 
     Example
     -------
-    >>> corr_fit(torch.rand((100, 1)), torch.rand(100, 1))
-    torch.Tensor(0.5)
-    >>> corr_fit(torch.rand((100, 1)), torch.rand(100, 1), True)
-    torch.Tensor(-1.0)
+    >>> corr_fit(torch.rand((100, 3)), torch.rand(100, 3))
+    torch.Tensor([0.5, 0.4, -0.34])
+    >>> corr_fit(torch.rand((100, 3)), torch.rand(100, 3), True)
+    torch.Tensor([-1.0, -1.0, -1.0])
 
     Parameters
     ----------
     output : torch.Tensor
-        The output data, shape [n, 1] with n datapoints.
+        The output data, shape [n, m] with m signals of n datapoints.
     target : torch.Tensor
-        The target data, shape [n, 1] with n datapoints.
+        The target data, shape [n, m] with m signals of n datapoints.
     default_value : bool, optional
         Return the default value or not, by default False.
 
     Returns
     -------
     torch.Tensor
-        Default value or calculated fitness.
+        Default value or calculated fitness for each pair of signals.
+
+    Raises
+    ------
+    AssertionError
+        If dimensions of output and target are not the same.
     """
+    assert output.shape == target.shape, "Dimensions of data are different."
     if default_value:
-        return TorchUtils.format(torch.tensor(-1.0))
+        return TorchUtils.format(-torch.ones(output.shape[1]))
     else:
         return pearsons_correlation(output, target)
 
 
 def corrsig_fit(output: torch.Tensor,
                 target: torch.Tensor,
-                default_value=False) -> torch.Tensor:
+                default_value=False,
+                param1=-2.0,
+                param2=2.0) -> torch.Tensor:
     """
     Fitness function for genetic algorithm using correlation and a sigmoid
     function.
     Will return default value (-1) if indicated.
 
+    For values of parameters see this paper:
+    https://www.nature.com/articles/s41565-020-00779-y
+
     Note: target data must be binary for this to work.
 
     Example
     -------
-    >>> corrsig_fit(torch.rand((100, 1)), torch.round(torch.rand(100, 1)))
-    torch.Tensor(0.5)
-    >>> corrsig_fit(torch.rand((100, 1)), torch.round(torch.rand(100, 1)),
+    >>> corrsig_fit(torch.rand((100, 3)), torch.round(torch.rand(100, 3)))
+    torch.Tensor([0.5, 0.4, -0.34])
+    >>> corrsig_fit(torch.rand((100, 3)), torch.round(torch.rand(100, 3)),
                     True)
-    torch.Tensor(-1.0)
+    torch.Tensor([-1.0, -1.0, -1.0])
 
     Parameters
     ----------
     output : torch.Tensor
-        The output data, shape [n, 1] with n datapoints.
+        The output data, shape [n, m] with m signals of n datapoints.
     target : torch.Tensor
-        The target data, shape [n, 1] with n datapoints;
+        The target data, shape [n, m] with m signals of n datapoints;
         should be binary.
     default_value : bool, optional
         Return the default value or not, by default False.
+    param1 : float
+        Shift of the sigmoid, by default -2.0.
+    param2 : float
+        Scale of the sigmoid, by default 2.0.
 
     Returns
     -------
     torch.Tensor
-        Default value or calculated fitness.
+        Default value or calculated fitness for each pair of signals.
         Will be NaN if target data is not binary.
+
+    Raises
+    ------
+    AssertionError
+        If dimensions of output and target are not the same.
     """
+    assert output.shape == target.shape, "Dimensions of data are different."
     if default_value:
-        return TorchUtils.format(torch.tensor(-1.0))
+        return TorchUtils.format(-torch.ones(output.shape[1]))
     else:
         corr = pearsons_correlation(output, target)
-        sep = output[target == 1].mean() - output[target == 0].mean()
-        # average of output where target is 1 minus average of output where
-        # target is 0
-        sig = torch.sigmoid(-2 * (sep - 2))
+        sig = TorchUtils.format(torch.zeros(output.shape[1]))
+        for i in range(output.shape[1]):
+            sep = output[:, i][target[:, i] == 1].mean() - output[:, i][
+                target[:, i] == 0].mean()
+            sig[i] = torch.sigmoid(param1 * (sep - param2))
         return corr * sig
 
 
@@ -145,27 +178,30 @@ def pearsons_correlation(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     Parameters
     ----------
     x : torch.Tensor
-        Dataset, shape [n, 1] with n datapoints.
+        Dataset, shape [n, m] with m signals of n datapoints.
     y : torch.Tensor
-        Dataset, shape [n, 1] with n datapoints.
+        Dataset, shape [n, m] with m signals of n datapoints.
 
     Returns
     -------
     torch.Tensor
-        Correlation between x and y (shape []). Will be nan if a data is
-        uniform.
+        Correlation between x and y for each pair of signals.
+        Will be nan if a data is uniform.
 
     Raises
     ------
+    AssertionError
+        If dimensions of x and y are not the same.
     UserWarning
         If result is nan (which happens if a dataset has variance 0, is
         uniform).
     """
+    assert x.shape == y.shape, "Dimensions of data are different."
     vx = x - x.mean(dim=0)
     vy = y - y.mean(dim=0)
-    sum_vx = torch.sum(vx**2)
-    sum_vy = torch.sum(vy**2)
-    sum_vxy = torch.sum(vx * vy)
+    sum_vx = torch.sum(vx**2, dim=0)
+    sum_vy = torch.sum(vy**2, dim=0)
+    sum_vxy = torch.sum(vx * vy, dim=0)
     if 0.0 in sum_vx or 0.0 in sum_vy:
         warnings.warn("Variance of dataset is 0, correlation is nan.")
     return sum_vxy / (torch.sqrt(sum_vx) * torch.sqrt(sum_vy))
@@ -179,8 +215,8 @@ def corrsig(output: torch.Tensor,
     """
     Loss function for gradient descent using a sigmoid function.
 
-    The default values of the parameters are used for an objective
-    function in the Nature Nano paper.
+    For values of parameters see this paper:
+    https://www.nature.com/articles/s41565-020-00779-y
 
     Example
     -------
@@ -190,9 +226,10 @@ def corrsig(output: torch.Tensor,
     Parameters
     ----------
     output : torch.Tensor
-        Dataset, shape [n, 1] with n datapoints.
+        The output data, shape [n, m] with m signals of n datapoints.
     target : torch.Tensor
-        Dataset, shape [n, 1] with n datapoints; should be binary.
+        The target data, shape [n, m] with m signals of n datapoints;
+        should be binary.
     center : float
         Center of the sigmoid.
     scale : float
@@ -203,15 +240,23 @@ def corrsig(output: torch.Tensor,
     Returns
     -------
     torch.Tensor
-        Value of loss function.
+        Value of loss function for each pair of signals.
+
+    Raises
+    ------
+    AssertionError
+        If dimensions of x and y are not the same.
     """
-    # get correlation
+    assert output.shape == target.shape, "Dimensions of data are different."
+
     corr = pearsons_correlation(output, target)
 
     # difference between smallest false negative and largest false positive
-    x_high_min = torch.min(output[(target == 1)])
-    x_low_max = torch.max(output[(target == 0)])
-    delta = x_high_min - x_low_max
+    delta = torch.zeros(output.shape[1])
+    for i in range(output.shape[1]):
+        x_high_min = torch.min(output[:, i][target[:, i] == 1])
+        x_low_max = torch.max(output[:, i][(target[:, i] == 0)])
+        delta[i] = x_high_min - x_low_max
 
     return (shift - corr) / torch.sigmoid((delta - center) / scale)
 
@@ -227,29 +272,36 @@ def fisher_fit(output: torch.Tensor,
 
     Example
     -------
-    >>> fisher_fit(torch.rand((100, 1)), torch.rand((100, 1)),
+    >>> fisher_fit(torch.rand((100, 3)), torch.rand((100, 3)),
                    False)
-    torch.Tensor(2.5)
-    >>> fisher_fit(torch.rand((100, 1)), torch.rand((100, 1)),
+    torch.Tensor([2.5, 1.2, 0.5])
+    >>> fisher_fit(torch.rand((100, 3)), torch.rand((100, 3)),
                    True)
-    torch.Tensor(0.0)
+    torch.Tensor([0.0, 0.0, 0.0])
 
     Parameters
     ----------
     output : torch.Tensor
-        The output data, shape [n, 1] with n datapoints.
+        The output data, shape [n, m] with m signals of n datapoints.
     target : torch.Tensor
-        The target data, shape [n, 1] with n datapoints.
+        The target data, shape [n, m] with m signals of n datapoints;
+        should be binary.
     default_value : bool, optional
         Return the default value or not, by default False.
 
     Returns
     -------
     torch.Tensor
-        Default value or calculated fitness.
+        Default value or calculated fitness for each pair of signals.
+
+    Raises
+    ------
+    AssertionError
+        If dimensions of x and y are not the same.
     """
+    assert output.shape == target.shape, "Dimensions of data are different."
     if default_value:
-        return TorchUtils.format(torch.tensor(0.0))
+        return TorchUtils.format(torch.zeros(output.shape[1]))
     else:
         return fisher(output, target)
 
@@ -264,30 +316,46 @@ def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
     Example
     -------
-    >>> fisher(torch.rand((100, 1)), torch.rand((100, 1)))
-    torch.Tensor(0.5)
+    >>> fisher(torch.rand((100, 3)), torch.rand((100, 3)),
+                   False)
+    torch.Tensor([2.5, 1.2, 0.5])
 
     Parameters
     ----------
-    output : torch.Tensor
-        The output data, shape [n, 1] with n datapoints.
-    target : torch.Tensor
-        The target data, shape [n, 1] with n datapoints.
+    x : torch.Tensor
+        Dataset, shape [n, m] with m signals of n datapoints.
+    y : torch.Tensor
+        Dataset, shape [n, m] with m signals of n datapoints;
+        should be binary.
 
     Returns
     -------
     torch.Tensor
-        Value of Fisher linear discriminant.
+        Value of Fisher linear discriminant for each pair of signals.
+
+    Raises
+    ------
+    AssertionError
+        If dimensions of x and y are not the same.
+    UserWarning
+        If result is nan (which happens if a dataset has variance 0, is
+        uniform).
     """
-    x_high = output[(target == 1)]
-    x_low = output[(target == 0)]
-    m0, m1 = torch.mean(x_low), torch.mean(x_high)
-    s0, s1 = torch.var(x_low), torch.var(x_high)
-    mean_separation = (m1 - m0)**2
-    return mean_separation / (s0 + s1)
+    assert output.shape == target.shape, "Dimensions of data are different."
+    result = TorchUtils.format(torch.zeros(output.shape[1]))
+    for i in range(output.shape[1]):
+        x_high = output[:, i][(target[:, i] == 1)]
+        x_low = output[:, i][(target[:, i] == 0)]
+        m0, m1 = torch.mean(x_low), torch.mean(x_high)
+        s0, s1 = torch.var(x_low), torch.var(x_high)
+        if 0.0 in s0 or 0.0 in s1:
+            warnings.warn("Variance of dataset is 0, correlation is nan.")
+        mean_separation = (m1 - m0)**2
+        result[i] = mean_separation / (s0 + s1)
+    return result
 
 
-def sigmoid_nn_distance(outputs: torch.Tensor,
+def sigmoid_nn_distance(output: torch.Tensor,
                         target: torch.Tensor = None,
                         center: float = 0.5,
                         scale: float = 2.0) -> torch.Tensor:
@@ -296,18 +364,18 @@ def sigmoid_nn_distance(outputs: torch.Tensor,
     internal distances between points.
     Used as a loss function for gradient descent.
 
-    The default values of the parameters are used for an objective
-    function in the Nature Nano paper.
+    For values of parameters see this paper:
+    https://www.nature.com/articles/s41565-020-00779-y
 
     Example
     -------
-    >>> sigmoid_nn_distance(torch.rand((100, 1)))
-    torch.Tensor(20.0)
+    >>> sigmoid_nn_distance(torch.rand((100, 3)))
+    torch.Tensor([20.0, 11.0, 10.0])
 
     Parameters
     ----------
     output : torch.Tensor
-        The output data, shape [n, 1] with n datapoints.
+        The output data, shape [n, m] with m signals of n datapoints.
     target : torch.Tensor
         The target data, will not be used.
     center : float
@@ -328,11 +396,11 @@ def sigmoid_nn_distance(outputs: torch.Tensor,
     if target is not None:
         warnings.warn(
             "This loss function does not use target values. Target ignored.")
-    dist_nn = get_clamped_intervals(outputs, mode="single_nn")
-    return -1 * torch.mean(torch.sigmoid(dist_nn / scale) - center)
+    dist_nn = get_clamped_intervals(output, mode="single_nn")
+    return -1 * torch.mean(torch.sigmoid(dist_nn / scale) - center, dim=0)
 
 
-def get_clamped_intervals(outputs: torch.Tensor,
+def get_clamped_intervals(output: torch.Tensor,
                           mode: str,
                           boundaries=[0.0, 1.0]) -> torch.Tensor:
     """
@@ -362,8 +430,8 @@ def get_clamped_intervals(outputs: torch.Tensor,
 
     Parameters
     ----------
-    outputs : torch.Tensor
-        Dataset, shape [n, 1] with n datapoints.
+    output : torch.Tensor
+        Dataset, shape [n, m] with m signals of n datapoints.
     mode : str
         Mode for nearest neighbor. Can be
         "single_nn", "double_nn" or "intervals"
@@ -381,36 +449,29 @@ def get_clamped_intervals(outputs: torch.Tensor,
         If mode not recognized.
     """
     # First we sort the output, and clip the output to a fixed interval.
-    outputs_sorted = outputs.sort(dim=0)[0]
-    outputs_clamped = outputs_sorted.clamp(boundaries[0], boundaries[1])
+    output_sorted = output.sort(dim=0)[0]
+    output_clamped = output_sorted.clamp(boundaries[0], boundaries[1])
 
     # Then we prepare two tensors which we subtract from each other to
     # calculate nearest neighbour distances.
     boundaries = TorchUtils.format(boundaries)
-    boundary_low = boundaries[0].unsqueeze(0).unsqueeze(1)
-    boundary_high = boundaries[1].unsqueeze(0).unsqueeze(1)
-    outputs_highside = torch.cat((outputs_clamped, boundary_high), dim=0)
-    outputs_lowside = torch.cat((boundary_low, outputs_clamped), dim=0)
+    boundary_low = TorchUtils.format(boundaries[0] *
+                                     torch.ones([1, output.shape[1]]))
+    boundary_high = TorchUtils.format(boundaries[1] *
+                                      torch.ones([1, output.shape[1]]))
+    output_highside = torch.cat((output_clamped, boundary_high), dim=0)
+    output_lowside = torch.cat((boundary_low, output_clamped), dim=0)
 
-    # Most intervals are multiplied by 0.5 because they are shared between two
-    # neighbours
-    # The first and last interval do not get divided by two because they are
-    # not shared
-    multiplier = torch.ones_like(outputs_highside)
+    multiplier = TorchUtils.format(torch.ones_like(output_highside))
     multiplier[0] = 1
     multiplier[-1] = 1
 
     # Calculate the actual distance between points
-    dist = (outputs_highside - outputs_lowside) * multiplier
+    dist = (output_highside - output_lowside) * multiplier
 
     if mode == "single_nn":
         # Only give nearest neighbour (single!) distance
-        dist_nns = torch.cat((dist[1:], dist[:-1]),
-                             dim=1)  # both nearest neighbours
-        dist_nn = torch.min(dist_nns,
-                            dim=1)  # only the closes nearest neighbour
-        return dist_nn[0].unsqueeze(
-            dim=1)  # entry 0 is the tensor, entry 1 are the indices
+        return torch.minimum(dist[1:], dist[:-1])
     elif mode == "double_nn":
         return dist
     elif mode == "intervals":
