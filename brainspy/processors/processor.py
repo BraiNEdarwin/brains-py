@@ -250,10 +250,21 @@ class Processor(nn.Module):
         Returns
         -------
         int
-            The number of electrodes of the processor.
+            The number of activation electrodes of the processor.
         """
         return self.info["electrode_info"]["activation_electrodes"][
             "electrode_no"]
+
+    def get_readout_electrode_no(self):
+        """
+        Get the number of readout electrodes of the processor.
+
+        Returns
+        -------
+        int
+            The number of readout electrodes of the processor.
+        """
+        return self.info["electrode_info"]["output_electrodes"]["electrode_no"]
 
     def get_clipping_value(self):
         """
