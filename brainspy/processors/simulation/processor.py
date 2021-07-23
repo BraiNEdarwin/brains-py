@@ -452,8 +452,11 @@ class SurrogateModel(nn.Module):
             If the output clipping values are changed.
         """
         if value is not None and value == "default":
-            self.output_clipping = TorchUtils.format(
-                info["output_electrodes"]["clipping_value"])
+            if info["output_electrodes"]["clipping_value"] is not None:
+                self.output_clipping = TorchUtils.format(
+                    info["output_electrodes"]["clipping_value"])
+            else:
+                self.output_clipping = None
         elif value is not None:
             assert len(value) == 2
             warnings.warn(
