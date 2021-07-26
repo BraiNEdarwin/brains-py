@@ -1,14 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Jun  1 11:42:27 2018
-
-@author: hruiz and ualegre
-"""
-
 import os
 import torch
-import warnings
 import numpy as np
 from tqdm import trange
 import matplotlib.pyplot as plt
@@ -18,65 +9,104 @@ from brainspy.algorithms.modules.performance.data import get_data
 
 def get_accuracy(inputs, targets, configs=None, node=None):
     """
-    To calculate the accuracy of the device on a binary task.
+    To calculate the accuracy of the device on a binary classification task. Binary classification
+    is the task of classifying the elements of a set into groups on the basis of a classification
+    rule. This function helps finding a binary threshold for separating the output of a DNPU or
+    DNPU architecture, and assigns a True/False label to the output depending on whether if the
+    signal is above or below the discovered threshold. In this way, this function helps calculating
+    the number of correctly classified binary targets out of the total number of targets, for a
+    given dataset.
 
-    Binary classification is the task of classifying the elements of a set into groups on the basis of a classification rule. The following classifiers can be used :
+    To calculate the accuracy, a perceptron is trained using binary cross entropy on the output of
+    the DNPU or DNPU architecture for the training dataset. The model trained consists of a single
+    linear layer, where the sigmoid of the perceptron is included in the binary cross entropy loss
+    function. For calculating the accuracy of the test and validation datasets, the already trained
+    perceptron is passed to the function, and the method calculates the accuracy based on that.
 
-    Boolean classifier:
-        A single boolean gate classifier
-    Ring classifier:
-        A particular ring classifier with a given separation gap
-        Multiple runs on a ring classifier with a given separation gap
+    Refer to https://www.upgrad.com/blog/perceptron-learning-algorithm-how-it-works/ to see how a
+    Perceptron works.
 
-    This classification rule can be defined in the configurations dict. The configs contain the hyperparameters to get the accuracy of the perceptron.
-
-    To calculate the accuracy, a perceptron is trained using binary cross entropy on the output of the DNPU or DNPU architecture for the training dataset.
-    The trained perceptron is applied to the test and validation test. The method evaluates the Perceptron algorithm on the synthetic dataset and reports the average accuracy across the n-fold cross-validation.
-    It is assumed that the input_waveform and the target_waveform have the shape (n_total,1) and that the target_waveform has binary values.
-
-    The Perceptron is a linear machine learning algorithm for binary classification tasks.
-    Like logistic regression, it can quickly learn a linear separation in feature space for two-class classification tasks,
-    although unlike logistic regression, it learns using the stochastic gradient descent optimization algorithm and does not predict calibrated probabilities.
-
-    Refer to https://www.upgrad.com/blog/perceptron-learning-algorithm-how-it-works/ to see how a Perceptron works
-
-    The method :
+    The specific method for calculating the accuracy is:
 
         1. Normalises the input data (which is the output data of the DNPU or DNPU architecture)
-        2. (Optional) Train a perceptron, only needed when using the normalised output of the DNPU or DNPU architecture corresponding to the training dataset of a particular task. To use it leave the option node=None.
-        3. Pass the normalised output of the DNPU or DNPU architecture through the trained perceptron, and compare the output against the binary targets. This comparison is used to calculate the accuracy of the solution.
+        2. (Optional) Train a perceptron, only needed when using the normalised output of the DNPU
+           or DNPU architecture corresponding to the training dataset of a particular task. To use
+           it leave the option node=None.
+        3. Pass the normalised output of the DNPU or DNPU architecture through the trained
+           perceptron, and compare the output against the binary targets. This comparison is used
+           to calculate the accuracy of the solution.
         4. Store all the data including results in a dictionary and return it
 
-    Refer to https://pytorch-lightning.readthedocs.io/en/1.2.6/_modules/pytorch_lightning/metrics/classification/accuracy.html to see how accuracy is calculated in PyTorch.
+    Refer to:
+    https://pytorch-lightning.readthedocs.io/en/1.2.6/_modules/pytorch_lightning/metrics/classification/accuracy.html
+    to see how accuracy is calculated in PyTorch.
 
     Parameters
     ----------
     inputs : torch.Tensor
-        the inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU architectures that you want to evaluate the accuracy against
+        The inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU
+        architectures that you want to evaluate the accuracy against.
+
     targets : torch.Tensor
-        binary targets against which the outuut of the perceptron algorithm is compared
+        Binary targets against which the outuut of the perceptron algorithm is compared.
+
     configs : dict, optional
-        configurations of the model to get the accuracy using the perceptron algorithm.
-        The configs should contain a description of the hyperparameters that can be used for get_accuracy., by default None
-    node : torch.nn., optional
-        Is the trained perceptron. Leave it as None if you want to train a perceptron from scratch, by default None
+        Configurations of the model to get the accuracy using the perceptron algorithm.
+        The configs should contain a description of the hyperparameters that can be used for
+        get_accuracy. By default is None. It has the following keys:
+
+            epochs: int
+                Number of loops used for training the perceptron. (default: 100)
+            learning_rate: float
+                Learning rate used to train the perceptron. (default: 1e-3)
+            data:
+                batch_size: int
+                    Batch size used to train the perceptron. (default: 256)
+                worker_no: int
+                    How many subprocesses to use for data loading. 0 means that the data will be
+                    loaded in the main process. (default: 0)
+                pin_memory: boolean (default: False)
+                    If True, the data loader will copy Tensors into CUDA pinned memory before
+                    returning them.
+
+    node : Optional[torch.nn.Module]
+        Is the trained linear layer of the perceptron. Leave it as None if you want to train a
+        perceptron from scratch. (default: None)
 
     Returns
     -------
     dict
         Results/accuracy of the algorithm in a dictionary with the following keys:
 
-                    accuracy_value : Percentage Accuracy of the Algorithm
-                    node : the transformation applied to the dataset
-                    predicted_labels : predicted labels used to calculate accuracy
-                    norm_threshold : Threshold probability value for accuracy calculation of the Perceptron
-                    configs : configurations of the node
+                    accuracy_value: float
+                        Percentage accuracy obtained by calculating the number of
+                        correct binary outputs against the targets.
+                    node: torch.nn.Linear
+                        The linear layer of the trained/used perceptron.
+                    predicted_labels:
+                        Predicted labels after passing the normalised inputs through
+                        the perceptron.
+                    norm_threshold : Normalised threshold used for the classification.
+                    configs : Configurations of the node. It has the following keys:
+
+                            epochs: int
+                                Number of loops used for training the perceptron. (default: 100)
+                            learning_rate: float
+                                Learning rate used to train the perceptron. (default: 1e-3)
+                            data:
+                                batch_size: int
+                                    Batch size used to train the perceptron. (default: 256)
+                                worker_no: int
+                                    How many subprocesses to use for data loading. 0 means that the
+                                    data will be loaded in the main process. (default: 0)
+                                pin_memory: boolean (default: False)
+                                    If True, the data loader will copy Tensors into CUDA pinned
+                                    memory before returning them.
 
     """
 
-    assert (
-        len(inputs.shape) != 1 and len(targets.shape) != 1
-    ), "Please unsqueeze inputs and targets"
+    assert (len(inputs.shape) != 1
+            and len(targets.shape) != 1), "Please unsqueeze inputs and targets"
 
     if configs is None:
         configs = get_default_node_configs()
@@ -90,21 +120,24 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     results, dataloader = init_results(inputs, targets, configs)
 
     if train:
-        optimizer = torch.optim.Adam(node.parameters(), lr=configs["learning_rate"])
-        accuracy, node = train_perceptron(
-            configs["epochs"], dataloader, optimizer, node=node
-        )
+        optimizer = torch.optim.Adam(node.parameters(),
+                                     lr=configs["learning_rate"])
+        accuracy, node = train_perceptron(configs["epochs"],
+                                          dataloader,
+                                          optimizer,
+                                          node=node)
 
     with torch.no_grad():
         node.eval()
-        accuracy, predicted_labels = evaluate_accuracy(
-            results["norm_inputs"], results["targets"], node
-        )
+        accuracy, predicted_labels = evaluate_accuracy(results["norm_inputs"],
+                                                       results["targets"],
+                                                       node)
         w, b = [p for p in node.parameters()]
         threshold = -b / w
 
         results["norm_threshold"] = threshold.clone()
-        results["threshold"] = (threshold * inputs.std(dim=0)) + inputs.mean(dim=0)
+        results["threshold"] = (threshold *
+                                inputs.std(dim=0)) + inputs.mean(dim=0)
         results["predicted_labels"] = predicted_labels
         results["node"] = node
         results["accuracy_value"] = accuracy
@@ -116,18 +149,36 @@ def get_accuracy(inputs, targets, configs=None, node=None):
 def init_results(inputs, targets, configs):
     """
     To initialize the results of the accuracy test and the results of the Perceptron algorithm.
-    The method initializes the results dictionary for evaluation of accuracy , and initializes the perceptron dataset from thge Dataloader
-    (Refer to data.py for the Perceptron dataloader)
+    The method initializes the results dictionary for evaluation of accuracy , and initializes the
+    perceptron dataset from thge Dataloader (Refer to data.py for the Perceptron dataloader).
 
     Parameters
     ----------
     inputs : torch.Tensor
-        the inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU architectures that you want to evaluate the accuracy against
+        The inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU
+        architectures that you want to evaluate the accuracy against.
+
     targets : torch.Tensor
-        binary targets against which the outuut of the perceptron algorithm is compared
+        Binary targets against which the output of the perceptron algorithm is compared.
+
     configs : dict, optional
-        configurations of the model to get the accuracy using the perceptron algorithm.
-        The configs should contain a description of the hyperparameters that can be used for get_accuracy., by default None
+        Configurations of the model to get the accuracy using the perceptron algorithm.
+        The configs should contain a description of the hyperparameters that can be used for
+        get_accuracy. By default is None. It has the following keys:
+
+            epochs: int
+                Number of loops used for training the perceptron. (default: 100)
+            learning_rate: float
+                Learning rate used to train the perceptron. (default: 1e-3)
+            data:
+                batch_size: int
+                    Batch size used to train the perceptron. (default: 256)
+                worker_no: int
+                    How many subprocesses to use for data loading. 0 means that the data will be
+                    loaded in the main process. (default: 0)
+                pin_memory: boolean (default: False)
+                    If True, the data loader will copy Tensors into CUDA pinned memory before
+                    returning them.
 
     Returns
     -------
@@ -145,20 +196,23 @@ def init_results(inputs, targets, configs):
 def zscore_norm(inputs, eps=1e-5):
     """
     To calculate the standard normal distribution from the input data.
-    The standard normal distribution, represented by the letter Z, is the normal distribution having a mean of 0 and a standard deviation of 1.
-    Refer to https://towardsdatascience.com/the-surprising-longevity-of-the-z-score-a8d4f65f64a0 to read about zcore and normalisation of data in PyTorch.
+    The standard normal distribution, represented by the letter Z, is the normal distribution
+    having a mean of 0 and a standard deviation of 1.
+    Refer to https://towardsdatascience.com/the-surprising-longevity-of-the-z-score-a8d4f65f64a0 to
+    read about z-score and normalisation of data in PyTorch.
 
     Parameters
     ----------
     inputs : torch.Tensor
-        the inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU architectures that you want to evaluate the accuracy against
+        The inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU
+        architectures that you want to evaluate the accuracy against.
     eps : int , optional
-        value of epsilon , by default 1e-5
+        Value of epsilon. (default: 1e-5)
 
     Returns
     -------
     torch.Tensor
-       normalized distibution of data
+       Normalised inputs.
     """
     assert (
         inputs.std() != 0
@@ -167,31 +221,43 @@ def zscore_norm(inputs, eps=1e-5):
     return (inputs - inputs.mean(axis=0)) / inputs.std(dim=0)
 
 
-def train_perceptron(
-    epochs, dataloader, optimizer, loss_fn=torch.nn.BCEWithLogitsLoss(), node=None
-):
+def train_perceptron(epochs,
+                     dataloader,
+                     optimizer,
+                     loss_fn=torch.nn.BCEWithLogitsLoss(),
+                     node=None):
     """
-    To train the Perceptron obtain a set of weights w that accurately classifies each instance in our training set.
-    In order to train our Perceptron, we iteratively feed the network with our training data multiple times.
+    To train the Perceptron obtain a set of weights w that accurately classifies each instance in
+    our training set. In order to train our Perceptron, we iteratively feed the network with our
+    training data multiple times.
 
-    The perceptron is used as a linear classifier to facilitate supervised learning of binary classifiers.
-    The objective of this learning problem is to use data with correct labels for making predictions for training a model.
-    This supervised learning include classification to predict class labels.
+    The perceptron is used as a linear classifier to facilitate supervised learning of binary
+    classifiers. The objective of this learning problem is to use data with correct labels for
+    making predictions for training a model. This supervised learning include classification to
+    predict class labels.
 
-    Refer to https://medium.com/biaslyai/pytorch-introduction-to-neural-network-feedforward-neural-network-model-e7231cff47cb for an example of training a Perceptron in PyTorch.
+    Refer to:
+    https://medium.com/biaslyai/pytorch-introduction-to-neural-network-feedforward-neural-network-model-e7231cff47cb
+    for an example of training a Perceptron in PyTorch.
 
     Parameters
     ----------
     epochs : int
-        number of epochs - The data can be shuffled. After each epoch the data is shuffled automatically.
+        Number of epochs.
+
     dataloader : torch.utils.data.Dataloader
-        results of the Perceptron dataloader
-    optimizer : torch.optim
-        Optimization algorithm
-    loss_fn : torch.nn, optional
-       Loss functions are used to gauge the error between the prediction output and the provided target value, by default torch.nn.BCEWithLogitsLoss()
-    node : torch.nn., optional
-        Is the trained perceptron. Leave it as None if you want to train a perceptron from scratch, by default None
+        The normalised output from the DNPU or DNPU architecture, already in a dataloader format.
+
+    optimizer : torch.optim.Optimizer
+        Optimization algorithm. (default: torch.optim.Adam)
+
+    loss_fn : Optional[torch.nn.modules.loss._Loss]
+       Loss functions are used to gauge the error between the prediction output and the provided
+       target value, by default torch.nn.BCEWithLogitsLoss()
+
+    node : Optional[torch.nn.Module]
+        Is the trained linear layer of the perceptron. Leave it as None if you want to train a
+        perceptron from scratch. (default: None)
 
 
     Returns
@@ -200,7 +266,8 @@ def train_perceptron(
     node : torch.nn -  node of the perceptron
     """
     looper = trange(epochs, desc="Calculating accuracy")
-    node = node.to(device=TorchUtils.get_device(), dtype=torch.get_default_dtype())
+    node = node.to(device=TorchUtils.get_device(),
+                   dtype=torch.get_default_dtype())
 
     for epoch in looper:
         evaluated_sample_no = 0
@@ -224,25 +291,31 @@ def train_perceptron(
         accuracy = 100.0 * correctly_labelled / evaluated_sample_no
         running_loss /= evaluated_sample_no
         looper.set_description(
-            f"Training perceptron: Epoch: {epoch}  Accuracy {accuracy}, running loss: {running_loss}"
-        )
+            f"Training perceptron: Epoch: {epoch}  Accuracy {accuracy}," +
+            " running loss: {running_loss}")
         if accuracy >= 100.0:
-            print(f"Reached 100/% accuracy. Stopping.")
+            print("Reached 100/% accuracy. Stopping.")
             break
     return accuracy, node
 
 
 def evaluate_accuracy(inputs, targets, node):
     """
-    To evaluate the accuracy of the Perceptron algorithm on the input data ( which is the outut of the DNPU or DNPU architecture ) based on the inputs and target values provided.
-    The accuarcy is evaluated by passing the normalised output of the DNPU or DNPU architecture through the trained perceptron, and compare the output against the binary targets
+    To evaluate the accuracy of the Perceptron algorithm on the input data ( which is the outut of
+    the DNPU or DNPU architecture ) based on the inputs and target values provided.
+    The accuarcy is evaluated by passing the normalised output of the DNPU or DNPU architecture
+    through the trained perceptron, and compare the output against the binary targets
 
     inputs : torch.Tensor
-        the inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU architectures that you want to evaluate the accuracy against
+        The inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU
+        architectures that you want to evaluate the accuracy against.
+
     targets : torch.Tensor
-        binary targets against which the outuut of the perceptron algorithm is compared
-    node : torch.nn., optional
-        Is the trained perceptron. It applies the neccesary transformation to the incoming data
+        Binary targets against which the output of the perceptron algorithm is compared.
+
+    node : Optional[torch.nn.Module]
+        Is the trained linear layer of the perceptron. Leave it as None if you want to train a
+        perceptron from scratch. (default: None)
 
     Returns
     -------
@@ -250,8 +323,7 @@ def evaluate_accuracy(inputs, targets, node):
     labels - bool - if the predictions of the noda are greatrer than 0
 
     """
-    w, b = [p for p in node.parameters()]
-    threshold = -b / w
+
     predictions = node(inputs)
     labels = predictions > 0.0
     correctly_labelled = torch.sum(labels == (targets == 1.0))
@@ -267,7 +339,25 @@ def get_default_node_configs():
     Returns
     -------
     dict
-        configurations of the perceptron to calculate the accuracy on the input data (which is the output of the DNU or DNPU architecture)
+        configurations of the perceptron to calculate the accuracy on the input data (which is the
+        output of the DNU or DNPU architecture). The dictionary contains the following keys:
+            epochs : int
+                Number of epochs.
+
+            dataloader : torch.utils.data.Dataloader
+                The normalised output from the DNPU or DNPU architecture, already in a dataloader
+                format.
+
+            optimizer : torch.optim.Optimizer
+                Optimization algorithm. (default: torch.optim.Adam)
+
+            loss_fn : Optional[torch.nn.modules.loss._Loss]
+            Loss functions are used to gauge the error between the prediction output and the
+            provided target value, by default torch.nn.BCEWithLogitsLoss()
+
+            node : Optional[torch.nn.Module]
+                Is the trained linear layer of the perceptron. Leave it as None if you want to
+                train a perceptron from scratch. (default: None)
     """
     configs = {}
     configs["epochs"] = 100
@@ -281,35 +371,39 @@ def get_default_node_configs():
 
 def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
     """
-    Plot the results of the perceptron algorithm.
-    You can choose to see how the data has been plotted and also save the results to a specified directory.
+    Plot the results of the perceptron algorithm. You can choose to see how the data has been
+    plotted and also save the results to a specified directory.
 
     Parameters
     ----------
     results : dict
         Results/accuracy of the algorithm in a dictionary with the following keys:
-
                     accuracy_value : Percentage Accuracy of the Algorithm
                     node : the transformation applied to the dataset
                     predicted_labels : predicted labels used to calculate accuracy
-                    norm_threshold : Threshold probability value for accuracy calculation of the Perceptron
+                    norm_threshold : Threshold probability value for accuracy calculation of the
+                    Perceptron
                     configs : configurations of the node
 
     save_dir : str, optional
-        directory in wwhich you want to save the results, by default None
+        Directory in which you want to save the results. (default: None)
+
     show_plot : bool, optional
         To see how the perceptron plotted the data, by default False
+
     name : str, optional
-        to train the data, by default "train"
+        To train the data, by default "train".
 
     Returns
     -------
     matplotlib.pyplot.figure
-        a new figure contaning the results
+        A new figure contaning the results.
     """
     fig = plt.figure()
     plt.title(f"Accuracy: {results['accuracy_value']:.2f} %")
-    plt.plot(TorchUtils.to_numpy(results["norm_inputs"]), ".", label="Norm. Waveform")
+    plt.plot(TorchUtils.to_numpy(results["norm_inputs"]),
+             ".",
+             label="Norm. Waveform")
     plt.plot(
         TorchUtils.to_numpy(results["predicted_labels"]),
         ".",
@@ -319,8 +413,8 @@ def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
     plt.plot(
         np.arange(len(results["predicted_labels"])),
         TorchUtils.to_numpy(
-            torch.ones_like(results["predicted_labels"]) * results["norm_threshold"]
-        ),
+            torch.ones_like(results["predicted_labels"]) *
+            results["norm_threshold"]),
         "k:",
         label="Norm. Threshold",
     )

@@ -20,53 +20,64 @@ class SignalTest(unittest.TestCase):
         """
         # make two dimensional data tensors
         self.data = []
-        for i in range(20, 100, 10):
-            output = TorchUtils.format(torch.rand((i, 1)))
-            target = TorchUtils.format(torch.rand((i, 1)))
-            target = torch.round(target)  # target vector is binary
-            self.data.append((output, target))
+        for i in range(20, 50, 10):
+            for j in range(1, 5, 1):
+                output = TorchUtils.format(torch.rand((i, j)))
+                target = TorchUtils.format(torch.rand((i, j)))
+                target = torch.round(target)  # target vector is binary
+                self.data.append((output, target))
 
     def test_accuracy_fit(self):
         """
-        Check if value is between 0 and 100 in both cases.
+        Check if result has right shape and values are between 0 and 100 in
+        both cases (default or not).
         """
         for output, target in self.data:
             result = signal.accuracy_fit(output, target, True)
-            self.assertEqual(list(result.shape), [])
-            self.assertTrue(result.item() >= 0 and result.item() <= 100)
+            self.assertEqual(list(result.shape), [output.shape[1]])
+            for i in result:
+                self.assertTrue(i.item() >= 0 and i.item() <= 100)
             result = signal.accuracy_fit(output, target, False)
-            self.assertEqual(list(result.shape), [])
-            self.assertTrue(result.item() >= 0 and result.item() <= 100)
+            self.assertEqual(list(result.shape), [output.shape[1]])
+            for i in result:
+                self.assertTrue(i.item() >= 0 and i.item() <= 100)
 
     def test_corr_fit(self):
         """
-        Check if value is between -1 and 1 in both cases.
+        Check if shape of result is correct and values are between -1 and 1
+        in both cases (default or not).
         Pearson correlation more extensively tested in own method.
         """
         for output, target in self.data:
             result = signal.corr_fit(output, target, True)
-            self.assertEqual(list(result.shape), [])
-            self.assertTrue(result.item() >= -1 and result.item() <= 1)
+            self.assertEqual(list(result.shape), [output.shape[1]])
+            for i in result:
+                self.assertTrue(i.item() >= -1 and i.item() <= 1)
             result = signal.corr_fit(output, target, False)
-            self.assertEqual(list(result.shape), [])
-            self.assertTrue(result.item() >= -1 and result.item() <= 1)
+            self.assertEqual(list(result.shape), [output.shape[1]])
+            for i in result:
+                self.assertTrue(i.item() >= -1 and i.item() <= 1)
 
     def test_corrsig_fit(self):
         """
-        Test if value is between -1 and 1.
+        Test if shape of results is correct and values are between -1 and 1
+        in both cases (default or not).
         Test that the answer is nan if target is not binary.
         """
         for output, target in self.data:
             result = signal.corrsig_fit(output, target, True)
-            self.assertEqual(list(result.shape), [])
-            self.assertTrue(result.item() >= -1 and result.item() <= 1)
+            self.assertEqual(list(result.shape), [output.shape[1]])
+            for i in result:
+                self.assertTrue(i.item() >= -1 and i.item() <= 1)
             result = signal.corrsig_fit(output, target, False)
-            self.assertEqual(list(result.shape), [])
-            self.assertTrue(result.item() >= -1 and result.item() <= 1)
+            self.assertEqual(list(result.shape), [output.shape[1]])
+            for i in result:
+                self.assertTrue(i.item() >= -1 and i.item() <= 1)
 
             # make target non-binary
-            corr = signal.corrsig_fit(output, target * 10)
-            self.assertTrue(torch.isnan(corr))
+            result = signal.corrsig_fit(output, target * 10)
+            for i in result:
+                self.assertTrue(torch.isnan(i))
 
     def test_pearsons_correlation(self):
         """
@@ -75,15 +86,19 @@ class SignalTest(unittest.TestCase):
         Check that correlation is nan if one signal is uniform.
         """
         for output, target in self.data:
-            coef1 = np.corrcoef(output[:, 0].numpy(), target[:, 0].numpy())[0,
-                                                                            1]
+            coef1 = TorchUtils.format(torch.zeros(output.shape[1]))
+            for i in range(output.shape[1]):
+                coef1[i] = np.corrcoef(output[:, i].numpy(),
+                                       target[:, i].numpy())[0, 1]
             coef2 = signal.pearsons_correlation(output, target).numpy()
             self.assertTrue(np.allclose(coef1, coef2))
-            self.assertTrue(coef2.item() >= -1 and coef2.item() <= 1)
+            for j in coef2:
+                self.assertTrue(j.item() >= -1 and j.item() <= 1)
 
             # make data uniform
             coef = signal.pearsons_correlation(torch.ones_like(output), target)
-            self.assertTrue(torch.isnan(coef))
+            for k in coef:
+                self.assertTrue(torch.isnan(k))
 
     def test_corrsig(self):
         """
@@ -92,29 +107,41 @@ class SignalTest(unittest.TestCase):
         for output, target in self.data:
             result = signal.corrsig(output, target)
             self.assertIsInstance(result, torch.Tensor)
-            self.assertEqual(list(result.shape), [])
+            self.assertEqual(list(result.shape), [output.shape[1]])
 
     def test_fisher_fit(self):
         """
         Check if result has right shape and value is non-negative in both
-        cases.
+        cases (default or not).
         """
         for output, target in self.data:
             result = signal.fisher_fit(output, target, False)
-            self.assertEqual(list(result.shape), [])
-            self.assertTrue(result.item() >= 0)
+            self.assertEqual(list(result.shape), [output.shape[1]])
+            self.assertTrue(
+                torch.all(
+                    result > TorchUtils.format(torch.zeros_like(result))))
             result = signal.fisher_fit(output, target, True)
-            self.assertEqual(list(result.shape), [])
-            self.assertTrue(result.item() >= 0)
+            self.assertEqual(list(result.shape), [output.shape[1]])
+            self.assertTrue(
+                torch.all(
+                    result >= TorchUtils.format(torch.zeros_like(result))))
 
     def test_fisher(self):
         """
-        Test if Fisher discriminant is one number and nonnegative.
+        Test if result is of right shape and values are nonnegative.
+        Check if result is nan if data is uniform.
         """
         for output, target in self.data:
             result = signal.fisher(output, target)
-            self.assertEqual(list(result.shape), [])
-            self.assertTrue(result.item() >= 0)
+            self.assertEqual(list(result.shape), [output.shape[1]])
+            self.assertTrue(
+                torch.all(
+                    result >= TorchUtils.format(torch.zeros_like(result))))
+
+            # make data uniform
+            result = signal.fisher(torch.ones_like(output), target)
+            for k in result:
+                self.assertTrue(torch.isnan(k))
 
     def test_sigmoid_nn_distance(self):
         """
@@ -124,7 +151,7 @@ class SignalTest(unittest.TestCase):
         for output, target in self.data:
             result = signal.sigmoid_nn_distance(output, target)
             self.assertIsInstance(result, torch.Tensor)
-            self.assertEqual(list(result.shape), [])
+            self.assertEqual(list(result.shape), [output.shape[1]])
 
     def test_get_clamped_intervals(self):
         """
@@ -152,6 +179,7 @@ class SignalTest(unittest.TestCase):
             intervals_result = TorchUtils.format(
                 torch.tensor([2.0, 4.0, 5.0, 4.0, 1.0]).unsqueeze(dim=1))
             result = signal.get_clamped_intervals(output, "single_nn", clamp)
+            print(result)
             self.assertTrue(torch.equal(result, single_result))
             result = signal.get_clamped_intervals(output, "double_nn", clamp)
             self.assertTrue(torch.equal(result, double_result))

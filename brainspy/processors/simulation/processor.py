@@ -19,11 +19,16 @@ from brainspy.processors.simulation.model import NeuralNetworkModel
 
 class SurrogateModel(nn.Module):
     """
-    Consists of nn model with added effects: amplification, output clipping,
-    and noise. The different effects are explained in their respective methods.
+    A class that consists of an instance of
+    brainspy.processors.simulation.model.NeuralNetworkModel which
+    maps the raw input/output relationships of a hardware DNPU. It adds the
+    following effects to the output: amplification correction, output clipping,
+    and noise. The aim of these effects is to obtain a closer output to that
+    of the setup in which the hardware DNPU is being measured.
+    The different effects are explained in their respective methods.
 
     The effects need to be set after creating a SurrogateModel, this is
-    explained in init.
+    explained in __init__.
 
     Attributes
     ----------
@@ -447,8 +452,11 @@ class SurrogateModel(nn.Module):
             If the output clipping values are changed.
         """
         if value is not None and value == "default":
-            self.output_clipping = TorchUtils.format(
-                info["output_electrodes"]["clipping_value"])
+            if info["output_electrodes"]["clipping_value"] is not None:
+                self.output_clipping = TorchUtils.format(
+                    info["output_electrodes"]["clipping_value"])
+            else:
+                self.output_clipping = None
         elif value is not None:
             assert len(value) == 2
             warnings.warn(
