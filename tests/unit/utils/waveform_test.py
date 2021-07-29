@@ -7,7 +7,7 @@ import unittest
 
 import torch
 
-from brainspy.utils.waveform import WaveformManager
+from brainspy.utils.waveform import WaveformManager, process_data
 from brainspy.utils.pytorch import TorchUtils
 
 
@@ -20,6 +20,7 @@ class WaveformTest(unittest.TestCase):
         -does the inverse transform bring us back to the original data?
         -do all waveforms start and end with 0?
     """
+
     def setUp(self):
         """
         Generate some random datasets of different sizes.
@@ -37,7 +38,8 @@ class WaveformTest(unittest.TestCase):
                     size,
                     device=TorchUtils.get_device(),
                     dtype=torch.get_default_dtype(),
-                ))
+                )
+            )
 
     def test_init(self):
         """
@@ -96,9 +98,8 @@ class WaveformTest(unittest.TestCase):
         point_value = points.tolist()[0]
         plateau_values = plateau.tolist()
         self.assertEqual(
-            point_value,
-            plateau_values[random.randint(0,
-                                          len(plateau_values) - 1)])
+            point_value, plateau_values[random.randint(0, len(plateau_values) - 1)]
+        )
         self.assertEqual(point_value, plateau_values[0])
 
     def test_tile(self):
@@ -118,53 +119,78 @@ class WaveformTest(unittest.TestCase):
         """
         Check if a waveform starts and ends with 0.
         """
-        self.assertTrue((waveform[0, :] == 0.0).all(),
-                        "Waveforms do not start with zero.")
-        self.assertTrue((waveform[-1, :] == 0.0).all(),
-                        "Waveforms do not end with zero.")
+        self.assertTrue(
+            (waveform[0, :] == 0.0).all(), "Waveforms do not start with zero."
+        )
+        self.assertTrue(
+            (waveform[-1, :] == 0.0).all(), "Waveforms do not end with zero."
+        )
 
     def test_plateaus_to_waveform(self):
         """
         Test the transform from plateaus to waveform.
         """
         manager = WaveformManager({"plateau_length": 2, "slope_length": 2})
-        data = torch.tensor([[1], [1], [3], [3]],
-                            device=TorchUtils.get_device(),
-                            dtype=torch.get_default_dtype())
+        data = torch.tensor(
+            [[1], [1], [3], [3]],
+            device=TorchUtils.get_device(),
+            dtype=torch.get_default_dtype(),
+        )
         output_data, output_mask = manager.plateaus_to_waveform(data)
         self.assertTrue(
             torch.equal(
                 output_data,
-                torch.tensor([[0.0], [0.5], [1.0], [1.0], [1.6666667461395264], [2.3333334922790527], [3.0], [3.0], [1.5], [0.0]],
-                             device=TorchUtils.get_device(),
-                             dtype=torch.get_default_dtype())),
-            "Plateaus to waveform error")
+                torch.tensor(
+                    [
+                        [0.0],
+                        [0.5],
+                        [1.0],
+                        [1.0],
+                        [1.6666667461395264],
+                        [2.3333334922790527],
+                        [3.0],
+                        [3.0],
+                        [1.5],
+                        [0.0],
+                    ],
+                    device=TorchUtils.get_device(),
+                    dtype=torch.get_default_dtype(),
+                ),
+            ),
+            "Plateaus to waveform error",
+        )
         self.assertTrue(
             torch.equal(
                 output_mask,
-                torch.tensor([
-                    False, False, True, True, False, False, True, True, False,
-                    False
-                ],
-                             device=TorchUtils.get_device(),
-                             dtype=torch.bool)), "Plateaus to waveform error")
+                torch.tensor(
+                    [False, False, True, True, False, False, True, True, False, False],
+                    device=TorchUtils.get_device(),
+                    dtype=torch.bool,
+                ),
+            ),
+            "Plateaus to waveform error",
+        )
         for points in self.test_points:
             plateaus = self.waveform_mgr.points_to_plateaus(points)
             waveform, mask = self.waveform_mgr.plateaus_to_waveform(plateaus)
             self.check_waveform_start_end(waveform)
             self.assertEqual(
                 len(waveform),
-                len(plateaus) + self.waveform_mgr.slope_length *
-                (len(points) + 1),
-                "Plateaus to waveform - wrong length of result")
+                len(plateaus) + self.waveform_mgr.slope_length * (len(points) + 1),
+                "Plateaus to waveform - wrong length of result",
+            )
             plateaus_reverse = self.waveform_mgr.waveform_to_plateaus(waveform)
-            self.assertTrue(torch.equal(plateaus, plateaus_reverse),
-                            "Plateaus to waveform error")
-            self.assertEqual(len(waveform), len(mask),
-                             "Plateaus to waveform - wrong size of mask")
-            self.assertEqual(len(waveform[mask]),
-                             self.waveform_mgr.plateau_length * len(points),
-                             "Plateaus to waveform mask error")
+            self.assertTrue(
+                torch.equal(plateaus, plateaus_reverse), "Plateaus to waveform error"
+            )
+            self.assertEqual(
+                len(waveform), len(mask), "Plateaus to waveform - wrong size of mask"
+            )
+            self.assertEqual(
+                len(waveform[mask]),
+                self.waveform_mgr.plateau_length * len(points),
+                "Plateaus to waveform mask error",
+            )
 
     def test_plateaus_to_points(self):
         """
@@ -174,67 +200,87 @@ class WaveformTest(unittest.TestCase):
         data = torch.tensor(
             [[1], [1], [1], [1], [5], [5], [5], [5], [3], [3], [3], [3]],
             device=TorchUtils.get_device(),
-            dtype=torch.get_default_dtype())
+            dtype=torch.get_default_dtype(),
+        )
         output = manager.plateaus_to_points(data)
         self.assertTrue(
             torch.equal(
                 output,
-                torch.tensor([[1], [5], [3]],
-                             device=TorchUtils.get_device(),
-                             dtype=torch.get_default_dtype())),
-            "Plateaus to points error")
+                torch.tensor(
+                    [[1], [5], [3]],
+                    device=TorchUtils.get_device(),
+                    dtype=torch.get_default_dtype(),
+                ),
+            ),
+            "Plateaus to points error",
+        )
         for points in self.test_points:
             plateaus = self.waveform_mgr.points_to_plateaus(points)
             points_reverse = self.waveform_mgr.plateaus_to_points(plateaus)
-            self.assertTrue(torch.allclose(points, points_reverse),
-                            "Plateaus to points error")
+            self.assertTrue(
+                torch.allclose(points, points_reverse), "Plateaus to points error"
+            )
 
     def test_waveform_to_points(self):
         """
         Test the transform from waveform to points.
         """
         manager = WaveformManager({"plateau_length": 1, "slope_length": 2})
-        data = torch.tensor([[0], [1], [1], [1], [5], [5], [5], [0]],
-                            device=TorchUtils.get_device(),
-                            dtype=torch.get_default_dtype())
+        data = torch.tensor(
+            [[0], [1], [1], [1], [5], [5], [5], [0]],
+            device=TorchUtils.get_device(),
+            dtype=torch.get_default_dtype(),
+        )
         output = manager.waveform_to_points(data)
         self.assertTrue(
             torch.equal(
                 output,
-                torch.tensor([[1], [5]],
-                             device=TorchUtils.get_device(),
-                             dtype=torch.get_default_dtype())),
-            "Plateaus to points error")
+                torch.tensor(
+                    [[1], [5]],
+                    device=TorchUtils.get_device(),
+                    dtype=torch.get_default_dtype(),
+                ),
+            ),
+            "Plateaus to points error",
+        )
         for points in self.test_points:
             waveform = self.waveform_mgr.points_to_waveform(points)
             points_reverse = self.waveform_mgr.waveform_to_points(waveform)
-            self.assertTrue(torch.allclose(points, points_reverse),
-                            "Waveform to points error")
+            self.assertTrue(
+                torch.allclose(points, points_reverse), "Waveform to points error"
+            )
 
     def test_waveform_to_plateaus(self):
         """
         Test the transform from waveform to plateaus.
         """
         manager = WaveformManager({"plateau_length": 2, "slope_length": 2})
-        data = torch.tensor([[0], [1], [1], [1], [1], [5], [5], [5], [5], [0]],
-                            device=TorchUtils.get_device(),
-                            dtype=torch.get_default_dtype())
+        data = torch.tensor(
+            [[0], [1], [1], [1], [1], [5], [5], [5], [5], [0]],
+            device=TorchUtils.get_device(),
+            dtype=torch.get_default_dtype(),
+        )
         output = manager.waveform_to_plateaus(data)
         self.assertTrue(
             torch.equal(
                 output,
-                torch.tensor([[1], [1], [5], [5]],
-                             device=TorchUtils.get_device(),
-                             dtype=torch.get_default_dtype())))
+                torch.tensor(
+                    [[1], [1], [5], [5]],
+                    device=TorchUtils.get_device(),
+                    dtype=torch.get_default_dtype(),
+                ),
+            )
+        )
         for points in self.test_points:
             waveform = self.waveform_mgr.points_to_waveform(points)
             plateaus = self.waveform_mgr.waveform_to_plateaus(waveform)
-            self.assertEqual(len(plateaus),
-                             self.waveform_mgr.plateau_length * len(points))
-            waveform_reverse, _ = self.waveform_mgr.plateaus_to_waveform(
-                plateaus)
-            self.assertTrue(torch.equal(waveform, waveform_reverse),
-                            "Plateaus to waveform error")
+            self.assertEqual(
+                len(plateaus), self.waveform_mgr.plateau_length * len(points)
+            )
+            waveform_reverse, _ = self.waveform_mgr.plateaus_to_waveform(plateaus)
+            self.assertTrue(
+                torch.equal(waveform, waveform_reverse), "Plateaus to waveform error"
+            )
 
     def test_generate_mask(self):
         """
@@ -246,17 +292,30 @@ class WaveformTest(unittest.TestCase):
         self.assertTrue(
             torch.equal(
                 output,
-                torch.tensor([False, True, True, False, True, True, False],
-                             device=TorchUtils.get_device(),
-                             dtype=torch.bool)), "Generate mask error")
+                torch.tensor(
+                    [False, True, True, False, True, True, False],
+                    device=TorchUtils.get_device(),
+                    dtype=torch.bool,
+                ),
+            ),
+            "Generate mask error",
+        )
         for points in self.test_points:
             waveform = self.waveform_mgr.points_to_waveform(points)
             mask = self.waveform_mgr.generate_mask(len(waveform))
-            self.assertEqual(len(mask), len(waveform),
-                             "Generate mask - wrong size.")
-            self.assertEqual(len(waveform[mask]),
-                             self.waveform_mgr.plateau_length * len(points),
-                             "Generate mask error")
+            self.assertEqual(len(mask), len(waveform), "Generate mask - wrong size.")
+            self.assertEqual(
+                len(waveform[mask]),
+                self.waveform_mgr.plateau_length * len(points),
+                "Generate mask error",
+            )
+
+    def test_process_data(self):
+        inputs = torch.rand(5)
+        targets = torch.rand(5)
+        inputs, targets = process_data(inputs, targets)
+        self.assertTrue(TorchUtils.get_device(), inputs.device)
+        self.assertTrue(TorchUtils.get_device(), targets.device)
 
 
 if __name__ == "__main__":

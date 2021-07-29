@@ -8,6 +8,7 @@ import threading
 import numpy as np
 from threading import Thread
 from brainspy.processors.hardware.drivers.ni.tasks import get_tasks_driver
+
 """
 SECURITY FLAGS.
 WARNING - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
@@ -154,21 +155,16 @@ class NationalInstrumentsSetup:
         self.ceil = None
 
         print(f"Sampling frequency: {configs['sampling_frequency']}")
-        print(
-            f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. "
-        )
+        print(f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. ")
         if configs["max_ramping_time_seconds"] == 0:
             input(
                 "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n"
-                +
-                "The security check for the ramping time has been disabled. Steep rampings can"
-                +
-                " damage the device. Proceed only if you are sure that you will not damage the "
-                +
-                "device. If you want to avoid damage simply exit the execution. \n ONLY If you are "
-                +
-                "sure about what you are doing press ENTER to continue. Otherwise STOP the "
-                + "execution of this program.")
+                + "The security check for the ramping time has been disabled. Steep rampings can"
+                + " damage the device. Proceed only if you are sure that you will not damage the "
+                + "device. If you want to avoid damage simply exit the execution. \n ONLY If you are "
+                + "sure about what you are doing press ENTER to continue. Otherwise STOP the "
+                + "execution of this program."
+            )
 
     def init_tasks(self, configs):
         """
@@ -242,10 +238,10 @@ class NationalInstrumentsSetup:
             Output data that has been read from the device when receiving the input y.
         """
         global p
-        p = Thread(target=self._read_data, args=(y, ))
+        p = Thread(target=self._read_data, args=(y,))
         if not event.is_set():
             semaphore.acquire()
-            p = Thread(target=self._read_data, args=(y, ))
+            p = Thread(target=self._read_data, args=(y,))
             p.start()
             p.join()
             if self.data_results is None:
@@ -269,11 +265,10 @@ class NationalInstrumentsSetup:
         """
         if self.last_shape != shape:
             self.last_shape = shape
-            self.tasks_driver.set_shape(self.configs["sampling_frequency"],
-                                        shape)
+            self.tasks_driver.set_shape(self.configs["sampling_frequency"], shape)
             self.offsetted_shape = shape + self.configs["offset"]
             ceil = self.offsetted_shape / self.configs["sampling_frequency"]
-            self.ceil = (math.ceil(ceil) + 1)
+            self.ceil = math.ceil(ceil) + 1
 
     def is_hardware(self):
         """
@@ -331,11 +326,11 @@ class NationalInstrumentsSetup:
             assert all(
                 y_i < INPUT_VOLTAGE_THRESHOLD
             ), f"Voltages in electrode {n} higher ({y_i.max()}) than the max."
-            + " allowed value ({INPUT_VOLTAGE_THRESHOLD} V)"
+            +" allowed value ({INPUT_VOLTAGE_THRESHOLD} V)"
             assert all(
                 y_i > -INPUT_VOLTAGE_THRESHOLD
             ), f"Voltages in electrode {n} lower ({y_i.min()}) than the min."
-            + " allowed value ({-INPUT_VOLTAGE_THRESHOLD} V)"
+            +" allowed value ({-INPUT_VOLTAGE_THRESHOLD} V)"
             assert (
                 y_i[0] == 0.0
             ), f"First value of input stream in electrode {n} is non-zero ({y_i[0]})"
@@ -371,6 +366,10 @@ class NationalInstrumentsSetup:
 
     def os_signal_handler(self, signum, frame=None):
         """
+        This is a python signal hadler which is used to handle the execution of the differnt threads.
+        Signals are used as means of inter-thread communication for execution of diifernt tasks in a thread safe manner.
+        A handler for a particular signal, once set, remains installed until it is explicitly reset.
+
         Used to handle the termination of the read task in such a way that enables the last read
         call to the drivers to finish, and adequately closing the NI tasks afterwards.
 

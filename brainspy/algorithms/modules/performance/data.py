@@ -29,9 +29,38 @@ def get_data(results, configs):
     Parameters
     ----------
     results : torch.Tensor
-        target values required for this perceptron algorithm
+        These contain the input and target values of the perceptron alogorithm.
+        It also contains the normalised input data from which the
+        Pytorch dataloader is created.It has the following keys:
+
+        inputs : torch.Tensor
+            The inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU
+            architectures that you want to evaluate the accuracy against.
+        norm_inputs : torch.Tensor
+            Standard normal distribution of the input data. To calculate this, the
+            zscore_norm function can be used in brainspy.algorithms.modules.performance.accuracy
+        targets : torch.Tensor
+            Binary targets against which the outuut of the perceptron algorithm is compared.
+
     configs : dict
-        configurations of the model
+        Configurations of the model to create the dataloader for the perceptron algorithm.
+        The configs should contain a description of the hyperparameters that can be used
+        to calculate the accuracy of the Perceptron algorithm.
+        It has the following keys:
+
+            epochs: int
+                Number of loops used for training the perceptron.
+            learning_rate: float
+                Learning rate used to train the perceptron.
+            data:
+                batch_size: int
+                    Batch size used to train the perceptron.
+                worker_no: int
+                    How many subprocesses to use for data loading. 0 means that the data will be
+                    loaded in the main process.
+                pin_memory: boolean
+                    If True, the data loader will copy Tensors into CUDA pinned memory before
+                    returning them.
 
     Returns
     -------
