@@ -27,7 +27,8 @@ class Processor(nn.Module):
         Configs dictionary, documented in init method.
     info : dict
         Info dictionary, documented in init method.
-    model_state_dict : collections.OrderedDict, optional. Documented in init method.
+    model_state_dict : collections.OrderedDict, optional. Documented in
+    init method.
     """
     def __init__(
         self,
@@ -59,7 +60,7 @@ class Processor(nn.Module):
                 plateau_length : int
                     Length of the plateaus, see waveform.py.
             driver:
-                Only for hardware, refer to HardwareProcessor for required keys.
+                Only for hardware, refer to HardwareProcessor for keys.
         info : dict
             model_structure : dict
                 Dimensions of the neural network.
@@ -195,9 +196,10 @@ class Processor(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Run a forward pass through the processor. It creates plateaus from data points before
-        sending the data to the simulation or hardware processor. The hardware processor will
-        internally create the slopes to the plateaus. The simulation processor does not need slopes.
+        Run a forward pass through the processor. It creates plateaus from
+        data points before sending the data to the simulation or hardware
+        processor. The hardware processor will internally create the slopes to
+        the plateaus. The simulation processor does not need slopes.
 
         Example
         -------
@@ -210,7 +212,8 @@ class Processor(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-            Input data. It is expected to have a shape of [batch_size, activation_electrode_no].
+            Input data. It is expected to have a shape of
+            [batch_size, activation_electrode_no].
 
         Returns
         -------
