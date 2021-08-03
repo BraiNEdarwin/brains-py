@@ -207,12 +207,13 @@ class DNPU(nn.Module):
         # Define data input electrode indices
         self.data_input_indices = TorchUtils.format(data_input_indices,
                                                     data_type=torch.int64)
-        assert len(
-            self.data_input_indices.shape
-        ) == 2, "Please revise the format in which data input indices has been passed to the DNPU. "
-        + "Data input indices should be represented with two dimensions (number of DNPU nodes, "
-        + "number of data input electrodes) (e.g., [[1,2]] or [[1,2],[1,3]], data input indices"
-        + "CANNOT be represented as just [1,2]. )"
+        assert len(self.data_input_indices.shape) == 2, (
+            "Please revise the format in which data input indices has been passed to the DNPU. "
+            +
+            "Data input indices should be represented with two dimensions (number of DNPU nodes, "
+            +
+            "number of data input electrodes) (e.g., [[1,2]] or [[1,2],[1,3]], data input indices"
+            + "CANNOT be represented as just [1,2]. )")
         self.data_input_ranges = torch.stack(
             [voltage_ranges[i] for i in data_input_indices])
 

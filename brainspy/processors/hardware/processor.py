@@ -26,7 +26,11 @@ class HardwareProcessor(nn.Module):
 
     # TODO: Automatically register the data type according to the configurations of the amplification variable of the  info dictionary
     # Instrument configs can be a dictionary or a driver which has been already initialised
-    def __init__(self, instrument_configs, slope_length, plateau_length, logger=None):
+    def __init__(self,
+                 instrument_configs,
+                 slope_length,
+                 plateau_length,
+                 logger=None):
         """
         To intialise the hardware processor
 
@@ -36,7 +40,8 @@ class HardwareProcessor(nn.Module):
             The key-value pairs required in the configs dictionary to initialise the hardware processor are as follows:
 
             processor_type : str - "simulation_debug" or "cdaq_to_cdaq" or "cdaq_to_nidaq" - Processor type to initialize a hardware processor
-            driver:
+            instrument_configs: dict or SurrogateModel
+                In case of being a dictionary, it should contain the following keys.
                 real_time_rack : boolean - Only to be used when having a rack that works with real-time. True will attempt a connection to a server on the real time rack via Pyro. False will execute the drivers locally.
                 sampling_frequency: int - The average number of samples to be obtained in one second, when transforming the signal from analogue to digital.
                 output_clipping_range: [float,float] - The the setups have a limit in the range they can read. They typically clip at approximately +-4 V.
@@ -102,17 +107,18 @@ class HardwareProcessor(nn.Module):
 
         if not isinstance(instrument_configs, dict):
             self.driver = instrument_configs
+            self.voltage_ranges = self.driver.get_voltage_ranges()
         else:
             self.driver = get_driver(instrument_configs)
             self.voltage_ranges = TorchUtils.format(self.driver.voltage_ranges)
             # TODO: Add message for assertion. Raise an error.
-            assert (
-                slope_length / self.driver.configs["sampling_frequency"]
-            ) >= self.driver.configs["max_ramping_time_seconds"]
+            assert (slope_length / self.driver.configs["sampling_frequency"]
+                    ) >= self.driver.configs["max_ramping_time_seconds"]
 
-        self.waveform_mgr = WaveformManager(
-            {"slope_length": slope_length, "plateau_length": plateau_length}
-        )
+        self.waveform_mgr = WaveformManager({
+            "slope_length": slope_length,
+            "plateau_length": plateau_length
+        })
 
         self.logger = logger
 
@@ -140,7 +146,8 @@ class HardwareProcessor(nn.Module):
 
         """
         with torch.no_grad():
-            x, mask = self.waveform_mgr.plateaus_to_waveform(x, return_pytorch=False)
+            x, mask = self.waveform_mgr.plateaus_to_waveform(
+                x, return_pytorch=False)
             output = self.forward_numpy(x)
             if self.logger is not None:
                 self.logger.log_output(x)
@@ -173,7 +180,9 @@ class HardwareProcessor(nn.Module):
         if "close_tasks" in dir(self.driver):
             self.driver.close_tasks()
         else:
-            warnings.warn("It was not possible to close the NI Tasks from the driver. This should be fine if you are running a simulation. ")
+            warnings.warn(
+                "It was not possible to close the NI Tasks from the driver. This should be fine if you are running a simulation. "
+            )
 
     def is_hardware(self):
         """
@@ -187,3 +196,14 @@ class HardwareProcessor(nn.Module):
             True or False depending on wheather it is a hardware or software driver
         """
         return self.driver.is_hardware()
+
+    def get_voltage_ranges(self):
+        """
+        Gets the voltage ranges declared on the hardware processor. 
+
+        Returns
+        -------
+        voltage_ranges
+            torch.tensor
+        """
+        return self.voltage_ranges
