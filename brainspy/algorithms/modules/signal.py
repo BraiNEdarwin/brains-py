@@ -354,7 +354,7 @@ def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
             warnings.warn("Variance of dataset is 0, correlation is nan.")
         mean_separation = (m1 - m0)**2
         result[i] = mean_separation / (s0 + s1)
-    return result
+    return -result
 
 
 def sigmoid_nn_distance(output: torch.Tensor,
