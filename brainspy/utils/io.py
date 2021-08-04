@@ -125,6 +125,7 @@ class IncludeLoader(yaml.Loader):
 
         Example :
 
+        We consider 2 yaml files with names file1.yaml and file2.yaml
         ----------------------------------------------------------------
 
         file1.yaml -
@@ -138,11 +139,14 @@ class IncludeLoader(yaml.Loader):
 
         ----------------------------------------------------------------
 
-        In this example, if you load file1.yaml, you will get a dictionary with the following result:
+        By loading file1.yaml in the following manner,
+        the contents of file1.yaml and file2.yaml are loaded into a python dictionary :
 
-        file = open(self.path + "file1.yaml", "r")
+        file = open("file1.yaml", "r")
         loader = IncludeLoader(file)
         data = loader.get_data()
+
+        Result: 
 
         data : dict
         Keys and values of data :
@@ -153,7 +157,6 @@ class IncludeLoader(yaml.Loader):
 
 
     """
-
     def __init__(self, *args, **kwargs):
         """
         Constructer to initialize the file root and load the file
