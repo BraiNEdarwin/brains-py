@@ -39,6 +39,7 @@ class TorchUtils:
         TorchUtils.set_force_cpu(True)
 
         """
+        assert (type(force) == bool)
         TorchUtils.force_cpu = force
 
     @staticmethod
