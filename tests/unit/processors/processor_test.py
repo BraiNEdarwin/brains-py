@@ -2,8 +2,9 @@ import unittest
 
 import torch
 
-from brainspy.processors.processor import Processor
+import brainspy
 from brainspy.utils.pytorch import TorchUtils
+from brainspy.processors.processor import Processor
 
 
 class ProcessorTest(unittest.TestCase):
@@ -15,8 +16,6 @@ class ProcessorTest(unittest.TestCase):
         Create different processors to run tests on.
         Tests init and load_processor methods.
         Assume 7 activation electrodes and 1 output electrode.
-        TODO remove muted lines
-        TODO include hardware
         """
         self.clipping = [4.0, 3.0]
         electrode_effects = {
@@ -39,41 +38,13 @@ class ProcessorTest(unittest.TestCase):
             }
         }
         self.plateau = 6
-        waveform = {"slope_length": 5, "plateau_length": self.plateau}
-        # driver = {
-        #     "instruments_setup": {
-        #         "multiple_devices":
-        #         False,
-        #         "activation_instrument":
-        #         "cDAQ1Mod3",
-        #         "activation_channels": [8, 10, 13, 11, 7, 12, 14],
-        #         "activation_voltage_ranges": [[-1.2, 0.6], [-1.2, 0.6],
-        #                                       [-1.2, 0.6], [-1.2, 0.6],
-        #                                       [-1.2, 0.6], [-0.7, 0.3],
-        #                                       [-0.7, 0.3]],
-        #         "readout_instrument":
-        #         "cDAQ1Mod4",
-        #         "readout_channels": [8, 10, 13, 11, 7, 12, 14],
-        #         "trigger_source":
-        #         "cDAQ1/segment1"
-        #     },
-        #     "real_time_rack": False,
-        #     "sampling_frequency": 2,
-        #     "output_clipping_range": [1.0, 2.0],
-        #     "amplification": 3.0
-        # }
+        self.waveform = {"slope_length": 5, "plateau_length": self.plateau}
         self.configs_simulation = {
             "processor_type": "simulation",
             "electrode_effects": electrode_effects,
-            "waveform": waveform,
+            "waveform": self.waveform,
             "driver": {}
         }
-        # self.configs_hardware = {
-        #     "processor_type": "simulation_debug",
-        #     "electrode_effects": {},
-        #     "waveform": waveform,
-        #     "driver": driver
-        # }
 
         model_structure = {
             "D_in": 7,
@@ -89,6 +60,77 @@ class ProcessorTest(unittest.TestCase):
         self.processor_simulation = Processor(self.configs_simulation,
                                               self.info)
         self.processor_debug = Processor(self.configs_simulation, self.info)
+
+    @unittest.skipIf(brainspy.TEST_MODE != "HARDWARE_CDAQ",
+                     "Hardware test is skipped for simulation setup.")
+    def test_cdaq(self):
+        """
+        Test the cdaq to cdaq processor type.
+        """
+        instruments_setup = {
+            "activation_instrument":
+            "cDAQ1Mod4",
+            "activation_channels": [8, 10, 13, 11, 7, 12, 14],
+            "activation_voltage_ranges":
+            [[-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6],
+             [-0.7, 0.3], [-0.7, 0.3]],
+            "readout_instrument":
+            "cDAQ1Mod3",
+            "readout_channels": [2],
+            "trigger_source":
+            "cDAQ1/segment1"
+        }
+        driver = {
+            "instruments_setup": instruments_setup,
+            "real_time_rack": False,
+            "sampling_frequency": 2,
+            "output_clipping_range": [1.0, 2.0],
+            "amplification": 1.0
+        }
+        configs_hardware = {
+            "processor_type": "cdaq_to_cdaq",
+            "electrode_effects": {},
+            "waveform": self.waveform,
+            "driver": driver
+        }
+        processor = Processor(configs_hardware, self.info)
+        for i in range(1, 100):
+            x = TorchUtils.format(torch.rand(i, 7))
+            x = processor.forward(x)
+            self.assertEqual(list(x.shape), [self.plateau * i, 1])
+        self.processor.close()
+
+    @unittest.skipIf(brainspy.TEST_MODE != "HARDWARE_NIDAQ",
+                     "Hardware test is skipped for simulation setup.")
+    def test_nidaq(self):
+        """
+        Test the cdaq to nidaq processor type.
+        """
+        instruments_setup = {
+            "activation_instrument": "dev1",
+            "activation_channels": [0, 1, 2, 3, 4, 5, 6],
+            "readout_instrument": "cDAQ1Mod1",
+            "readout_channels": [0]
+        }
+        driver = {
+            "instruments_setup": instruments_setup,
+            "real_time_rack": False,
+            "sampling_frequency": 2,
+            "output_clipping_range": [1.0, 2.0],
+            "amplification": 1.0
+        }
+        configs_hardware = {
+            "processor_type": "cdaq_to_nidaq",
+            "electrode_effects": {},
+            "waveform": self.waveform,
+            "driver": driver
+        }
+        processor = Processor(configs_hardware, self.info)
+        for i in range(1, 100):
+            x = TorchUtils.format(torch.rand(i, 7))
+            x = processor.forward(x)
+            self.assertEqual(list(x.shape), [self.plateau * i, 1])
+        self.processor.close()
 
     def test_load_processor(self):
         """
@@ -131,7 +173,6 @@ class ProcessorTest(unittest.TestCase):
         """
         Test the method for getting the voltage ranges. Compare to the list
         used to create the processor.
-        TODO add debug
         """
         target = TorchUtils.format([[1.0, 2.0]] * 7)
         ranges = self.processor_simulation.get_voltage_ranges()
@@ -155,8 +196,9 @@ class ProcessorTest(unittest.TestCase):
         self.assertTrue(
             torch.equal(self.processor_simulation.get_clipping_value(),
                         TorchUtils.format(self.clipping)))
-        # print(self.processor_debug.get_clipping_value())
-        # TODO method does not exist for debug
+        self.assertTrue(
+            torch.equal(self.processor_debug.get_clipping_value(),
+                        TorchUtils.format(self.clipping)))
 
     def test_swap(self):
         """
