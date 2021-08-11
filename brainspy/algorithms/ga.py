@@ -5,7 +5,7 @@ from tqdm import trange
 
 from brainspy.algorithms.modules.signal import pearsons_correlation
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.utils.waveform import process_data
+#from brainspy.utils.waveform import process_data
 
 
 def train(model: torch.nn.Module,
@@ -69,7 +69,8 @@ def train(model: torch.nn.Module,
         model.eval()
         for epoch in looper:
             inputs, targets = dataloaders[0].dataset[:]
-            inputs, targets = process_data(inputs, targets)
+            inputs, targets = TorchUtils.format(inputs), TorchUtils.format(
+                targets)
             outputs, criterion_pool = evaluate_population(
                 inputs, targets, pool, model, criterion)
 
@@ -188,7 +189,9 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
         if (torch.any(outputs_pool[j] <= model.get_clipping_value()[0])
                 or torch.any(outputs_pool[j] >= model.get_clipping_value()[1])
                 or (outputs_pool[j] - outputs_pool[j].mean() == 0.0).all()):
-            criterion_pool[j] = criterion(None, None, default_value=True)
+            criterion_pool[j] = criterion(outputs_pool[j],
+                                          model.format_targets(targets),
+                                          default_value=True)
         else:
             criterion_pool[j] = criterion(outputs_pool[j],
                                           model.format_targets(targets))
