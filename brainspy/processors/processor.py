@@ -27,7 +27,8 @@ class Processor(nn.Module):
         Configs dictionary, documented in init method.
     info : dict
         Info dictionary, documented in init method.
-    model_state_dict : collections.OrderedDict, optional. Documented in init method.
+    model_state_dict : collections.OrderedDict, optional. Documented in
+    init method.
     """
     def __init__(
         self,
@@ -59,19 +60,7 @@ class Processor(nn.Module):
                 plateau_length : int
                     Length of the plateaus, see waveform.py.
             driver:
-                (Only for hardware)
-                instrument_type : str
-                    Is set to processor_type.
-                instruments_setup:
-                    activation_voltage_ranges : list[list[float]]
-                        The voltage ranges of the activation electrodes (low-
-                        high for each electrode).
-                        Is either set by user or is taken from
-                        electrode_effects.
-                amplification : list[float]
-                    The amplification applied to the output of the processor.
-                    Is either set by user or is taken from
-                    electrode_effects.
+                Only for hardware, refer to HardwareProcessor for keys.
         info : dict
             model_structure : dict
                 Dimensions of the neural network.
@@ -193,25 +182,38 @@ class Processor(nn.Module):
                                     model_state_dict)
             driver.set_effects_from_dict(self.info["electrode_info"],
                                          configs["electrode_effects"])
-            self.processor = HardwareProcessor(driver_configs=driver)
+            self.processor = HardwareProcessor(
+                instrument_configs=driver,
+                slope_length=configs["waveform"]["slope_length"],
+                plateau_length=configs["waveform"]["plateau_length"])
 
         # processor type not recognized
         else:
             raise NotImplementedError(
-                f"Platform {configs['platform']} is not recognized. The "
+                f"Platform {configs['processor_type']} is not recognized. The "
                 "platform has to be either simulation, simulation_debug, "
                 "cdaq_to_cdaq or cdaq_to_nidaq. ")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Run a forward pass through the processor. It creates plateaus from data points before
-        sending the data to the simulation or hardware processor. The hardware processor will
-        internally create the slopes to the plateaus. The simulation processor does not need slopes.
+        Run a forward pass through the processor. It creates plateaus from
+        data points before sending the data to the simulation or hardware
+        processor. The hardware processor will internally create the slopes to
+        the plateaus. The simulation processor does not need slopes.
+
+        Example
+        -------
+        >>> x = torch.tensor([1, 2, 3, 4])
+        >>> self.forward(x)
+        torch.Tensor([1])
+
+        Forward pass with one data point (4 activation electrodes).
 
         Parameters
         ----------
         x : torch.Tensor
-            Input data. It is expected to have a shape of [batch_size, activation_electrode_no].
+            Input data. It is expected to have a shape of
+            [batch_size, activation_electrode_no].
 
         Returns
         -------
@@ -222,12 +224,28 @@ class Processor(nn.Module):
         return self.processor(x)
 
     def format_targets(self, x: torch.Tensor) -> torch.Tensor:
-        """[summary]
+        """
+        Transform data to plateaus so that target data can be compared to
+        output data.
+
+        Example
+        -------
+        >>> x = torch.tensor([[1], [2]])
+        >>> self.format_targets(x)
+        torch.Tensor([[1], [1], [1], [2], [2], [2]])
+
+        Point data is transformed to plateau data where the plateau length
+        is 3.
 
         Parameters
         ----------
         x : torch.Tensor
-            [description]
+            Data to be transformed.
+
+        Returns
+        -------
+        torch.Tensor
+            Transformed data.
         """
         return self.waveform_mgr.points_to_plateaus(x)
 
@@ -286,6 +304,19 @@ class Processor(nn.Module):
              configs: dict,
              info: dict,
              model_state_dict: collections.OrderedDict = None):
+        """
+        Re-initialize: load the processor again from the given dictionaries.
+
+        Parameters
+        ----------
+        configs : dict
+            Configs dictionary, documented in init method of this class.
+        info : dict
+            Info dictionary, documented in init method of this class.
+        model_state_dict : collections.OrderedDict, optional
+            State dictionary for the simulation model, by default None.
+            Documented in init method of this class.
+        """
         self.load_processor(configs, info, model_state_dict)
         self.waveform_mgr = WaveformManager(configs['waveform'])
 
@@ -302,7 +333,8 @@ class Processor(nn.Module):
 
     def close(self):
         """
-        Closes the driver related to the NI Tasks if the main processor is hardware.
+        Closes the driver related to the NI Tasks if the main processor is
+        hardware.
         If the main processor is a simulation model, this does
         nothing.
         """
