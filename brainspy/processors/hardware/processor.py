@@ -108,9 +108,11 @@ class HardwareProcessor(nn.Module):
         if not isinstance(instrument_configs, dict):
             self.driver = instrument_configs
             self.voltage_ranges = self.driver.get_voltage_ranges()
+            self.clipping_value = self.driver.get_clipping_value()
         else:
             self.driver = get_driver(instrument_configs)
             self.voltage_ranges = TorchUtils.format(self.driver.voltage_ranges)
+            self.clipping_value = None
             # TODO: Add message for assertion. Raise an error.
             assert (slope_length / self.driver.configs["sampling_frequency"]
                     ) >= self.driver.configs["max_ramping_time_seconds"]
@@ -199,7 +201,7 @@ class HardwareProcessor(nn.Module):
 
     def get_voltage_ranges(self):
         """
-        Gets the voltage ranges declared on the hardware processor. 
+        Gets the voltage ranges declared on the hardware processor.
 
         Returns
         -------
@@ -207,3 +209,17 @@ class HardwareProcessor(nn.Module):
             torch.tensor
         """
         return self.voltage_ranges
+
+    def get_clipping_value(self):
+        """
+        Gets the clipping value declared on the hardware processor.
+
+        Only exists if processor is for simulation debug.
+        Will be None if processor is hardware.
+
+        Returns
+        -------
+        torch.Tensor or None
+            Clipping value.
+        """
+        return self.clipping_value
