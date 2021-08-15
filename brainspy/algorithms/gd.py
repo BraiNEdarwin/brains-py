@@ -4,19 +4,90 @@ import numpy as np
 import os
 
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.utils.waveform import process_data
 
 
 def train(
-    model,
-    dataloaders,
+    model: torch.nn.Module,
+    dataloaders: list,
     criterion,
-    optimizer,
-    configs,
+    optimizer: torch.optim.Optimizer,
+    configs: dict,
     logger=None,
-    save_dir=None,
-    return_best_model=True,
+    save_dir: str = None,
+    return_best_model: bool = True,
 ):
+    """ Main loop for off-chip gradient descent training  with early stopping using PyTorch. It is
+    a default training loop used for simple training tasks, but its code can be taken as a
+    reference on how to implement a training loop for more specific or complext tasks.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The model to be trained. It should be an instance of a torch.nn.Module. It can be a
+        Processor, representing a hardware DNPU or a DNPU model, but it also can be a model that
+        contains different more complex architectures using several processors.
+    dataloaders : list
+        A list containing one or two Pytorch dataloaders. The first dataloader corresponds to the
+        training dataset. The second dataloader is optional, and it corresponds to the validation
+        dataset. If no validation dataset is given, the training loop will train the model and
+        return the trained model only after reaching to the latest epoch. If a second dataloader is
+        given, it will be used as a validation dataset. When a validation dataset is present, only
+        models with solutions that achieve the lowest validation score will be saved. It is
+        recommended to have an additional test dataset on the side, to check the model against,
+        after training it with an additional validation datasetz
+
+        More information about dataloaders can be found at:
+        https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
+    criterion : Object
+        Loss function criterion that will be used to optimise the model. More information on
+        several loss functions supported can be found at:
+        https://pytorch.org/docs/stable/nn.html#loss-functions
+    optimizer : torch.optim.Optimizer
+        Optimisation algorithm to be used during the training process. More on Pytorch's optimizer
+        package can be found at:
+        https://pytorch.org/docs/stable/optim.html
+    configs : dict
+        Dictionary containing the following extra configuration keys:
+            epochs : int
+                Number of passes through the entire training dataset.
+            constraint_control_voltages : str
+                When training models, typically it is desired for the control voltages to stay
+                within the ranges in which they where trained, in order to avoid extrapolating, or
+                reaching the clipping values. This str key can have the following values:
+                    'regul' : It applies a penalty to the loss function when control voltages go
+                              outside the  ranges in which they were trained. This method allows a
+                              bit of flexibility, enabling to find solutions that are, in some
+                              cases, slightly outside of the control voltage ranges. In order to be
+                              used, it also requires that the model has a method called
+                              'regularizer' which controls that penalty. An example can be found at:
+                              brainspy.processors.dnpu, inside the class DNPU, method regularizer.
+                    'clip' : It applies clipping after the backward pass and optimiser step. It
+                             enforces that the control voltage ranges will not be outside the
+                             ranges in which the model was trained. In order to use it, the model
+                             should have a method called 'constraint_weights'. An example can be
+                             found at: brainspy.processors.dnpu, inside the class DNPU, method
+                             constraint_weights.
+            regul_factor : float
+                It is the equivalent to the parameter lambda in L1 and L2 regularisation.
+                This key will only be used when constraint_control_voltages is equal to 'regul'.
+                More on L1 and L2 regularisation can be found at:
+                https://towardsdatascience.com/l1-and-l2-regularization-methods-ce25e7fc831c
+        
+    logger : Optional[Object]
+        [description], by default None
+    save_dir : [type], optional
+        [description], by default None
+    return_best_model : bool, optional
+        [description], by default True
+
+    Returns
+    -------
+    model : torch.nn.Module
+        [description]
+
+    performance_history: dict
+
+    """
 
     start_epoch = 0
     train_losses, val_losses = [], []
@@ -33,6 +104,7 @@ def train(
 
         model, running_loss = default_train_step(
             model,
+            epoch,
             dataloaders[0],
             criterion,
             optimizer,
@@ -102,9 +174,12 @@ def train(
     }
 
 
-# Constraint_control_voltages can either be 'regul' to apply the models regularizer, or 'clip'. The first option allows a bit of freedom to go outside the voltage ranges, where the NN model would be extrapolating.
+# Constraint_control_voltages can either be 'regul' to apply the models regularizer, or 'clip'.
+# The first option allows a bit of freedom to go outside the voltage ranges,
+# where the NN model would be extrapolating.
 # The second option forces to remain within the control_voltage_ranges.
 def default_train_step(model,
+                       epoch,
                        dataloader,
                        criterion,
                        optimizer,
@@ -125,8 +200,8 @@ def default_train_step(model,
         elif constraint_control_voltages == 'regul':
             loss = criterion(predictions, targets) + model.regularizer()
         else:
-            #TODO Throw an error adequately
-            assert False, "Constraint_control_voltages variable should be either 'regul',  'clip' or None. "
+            # TODO Throw an error adequately
+            assert False, "Variable constraint_control_voltages should be 'regul', 'clip' or None."
 
         loss.backward()
         optimizer.step()
@@ -149,7 +224,8 @@ def default_val_step(epoch, model, dataloader, criterion, logger=None):
         val_loss = 0
         model.eval()
         for inputs, targets in dataloader:
-            inputs, targets = process_data(inputs, targets)
+            inputs, targets = TorchUtils.format(inputs), model.format_targets(
+                TorchUtils.format(targets))
             targets = model.format_targets(targets)
             predictions = model(inputs)
             loss = criterion(predictions, targets).item()
@@ -159,16 +235,3 @@ def default_val_step(epoch, model, dataloader, criterion, logger=None):
                                     loss, val_loss)
         val_loss /= len(dataloader.dataset)
     return val_loss
-
-
-# def format_data(inputs, targets):
-#     # Data processing required to apply waveforms to the inputs and pass them
-#     # onto the GPU if necessary.
-#     # if waveform_transforms is not None:
-#     #     inputs, targets = waveform_transforms((inputs, targets))
-#     if inputs is not None and inputs.device != TorchUtils.get_device():
-#         inputs = inputs.to(device=TorchUtils.get_device())
-#     if targets is not None and targets.device != TorchUtils.get_device():
-#         targets = targets.to(device=TorchUtils.get_device())
-
-#     return inputs, targets
