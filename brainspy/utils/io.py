@@ -59,7 +59,8 @@ def save_configs(configs: dict, file_name: str):
 
 def create_directory(path: str, overwrite=False):
     """
-    Creates a directory to the input path appending datetime to it.
+    Checks if there exists a directory with - filepath+datetime_name , and if not it will
+    create it and return this path.
 
     Parameters
     -----------
@@ -86,7 +87,7 @@ def create_directory(path: str, overwrite=False):
 
 def create_directory_timestamp(path: str, name: str, overwrite=False):
     """
-    To create a directory with the given name and current timestamp if it does not already exist
+    To create a directory with the given name and current timestamp if it does not already exist.
 
     Parameters
     ----------
@@ -114,41 +115,45 @@ def create_directory_timestamp(path: str, name: str, overwrite=False):
 
 class IncludeLoader(yaml.Loader):
     """
-    yaml.Loader subclass handles "!include path/to/foo.yml" directives in config
-    files.  When constructed with a file object, the root path for includes
+    Class to handle !include directives in config files.
+    This allows you to load the contents of a file from within a file
+    and therefore multiple files can be loaded into a dict by simply using
+    !include "filename/filepath"
+
+    When constructed with a file object, the root path for "include"
     defaults to the directory containing the file, otherwise to the current
     working directory. In either case, the root path can be overridden by the
-    `root` keyword argument.
+    `root` keyword argument. When an included file F contain its own !include
+    directive, the path is relative to F's location.
 
-    When an included file F contain its own !include directive, the path is
-    relative to F's location.
+        Example :
+        ----------------------------------------------------------------
+        file1.yaml -
 
-    Example
-    ---------
-        YAML file /home/frodo/one-ring.yml:
-            ---
-            Name: The One Ring
-            Specials:
-                - resize-to-wearer
-            Effects:
-                - !include path/to/invisibility.yml
+        processor : simulation
+        algorithm : !include file2.yaml
 
-        YAML file /home/frodo/path/to/invisibility.yml:
-            ---
-            Name: invisibility
-            Message: Suddenly you disappear!
+        file2.yaml -
 
-        Loading:
-            data = IncludeLoader(open('/home/frodo/one-ring.yml', 'r')).get_data()
+        optimizer : genetic
 
-        Result:
-            {'Effects': [{'Message': 'Suddenly you disappear!', 'Name':
-                'invisibility'}], 'Name': 'The One Ring', 'Specials':
-                ['resize-to-wearer']}
+        ----------------------------------------------------------------
+        In this example, if you load file1.yaml, you will get a dictionary with the following
+        result:
+
+        file = open(self.path + "file1.yaml", "r") --loading the file
+        loader = IncludeLoader(file)
+        data = loader.get_data()
+
+        data : dict                                --result
+        Keys and values of data :
+            processor : simulation
+            algorithm :
+                    optimizer : genetic
     """
     def __init__(self, *args, **kwargs):
         """
-        Constructor to initialize the file root and load the file.
+        Constructer to initialize the file root and load the file
         """
         super(IncludeLoader, self).__init__(*args, **kwargs)
         self.add_constructor("!include", self._include)
@@ -161,7 +166,10 @@ class IncludeLoader(yaml.Loader):
 
     def _include(self, loader, node):
         """
-        Method to add the load the file along with !include directive
+        The method is used to load a file from within a file.
+        It can be invoked by simply using the !include directive inside a file.
+        Therefore the data of multiple files can be loaded together
+        into a dict by loading just one file with this class.
 
         Parameters
         ----------
