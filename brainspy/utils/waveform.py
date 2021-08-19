@@ -232,7 +232,8 @@ class WaveformManager:
         self,
         data: torch.Tensor,
         return_pytorch=True
-    ) -> Tuple[Union[np.array, torch.Tensor], Union[List[bool], torch.Tensor]]:
+    ) -> Tuple[Union[np.ndarray, torch.Tensor], Union[List[bool],
+                                                      torch.Tensor]]:
         """
         Transform plateau data into full waveform data by adding
         slopes inbetween the plateaus.
