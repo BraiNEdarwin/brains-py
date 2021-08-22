@@ -68,6 +68,10 @@ class WaveformManager:
         waveform_mgr = WaveformManager(configs)
 
         """
+        assert (configs["plateau_length"] is not None
+                and type(configs["plateau_length"] == int))
+        assert (configs["slope_length"] is not None
+                and type(configs["plateau_length"] == int))
         self.plateau_length = configs["plateau_length"]
         self.slope_length = configs["slope_length"]
         self.generate_mask_base()
