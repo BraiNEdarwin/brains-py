@@ -198,8 +198,8 @@ def default_train_step(model,
                        logger=None,
                        constraint_control_voltages=None):
     """
-    Deafult training step for training the model in Gradiet descent. The method calulates the
-    training loss in each training step.The training loss indicates how well the model is fitting
+    Deafult training step for training a torch model in Gradiet descent. The method calulates the
+    training loss in each training step. The training loss indicates how well the model is fitting
     the training data.
 
     More information about training loss can be found at
@@ -312,7 +312,7 @@ def default_train_step(model,
 def default_val_step(epoch, model, dataloader, criterion, logger=None):
     """
     To calulate the validation loss in each training step of the Gradient descent.
-    Validation loss indicates how well the model fits new data.
+    Validation loss indicates how well the model fits unseen data.
     More information about validation loss and training loss can be
     found at https://www.baeldung.com/cs/learning-curve-ml
 
