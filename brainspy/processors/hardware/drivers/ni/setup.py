@@ -311,7 +311,7 @@ class NationalInstrumentsSetup:
         self.read_security_checks(y)
         self.set_shape_vars(y.shape[1])
 
-        self.tasks_driver.start_tasks(y, self.configs["auto_start"])
+        self.tasks_driver.write(y, self.configs["auto_start"])
         read_data = self.tasks_driver.read(self.offsetted_shape, self.ceil)
         self.tasks_driver.stop_tasks()
 
@@ -332,12 +332,10 @@ class NationalInstrumentsSetup:
         for n, y_i in enumerate(y):
             assert all(
                 y_i < INPUT_VOLTAGE_THRESHOLD
-            ), f"Voltages in electrode {n} higher ({y_i.max()}) than the max."
-            + " allowed value ({INPUT_VOLTAGE_THRESHOLD} V)"
+            ), f"Voltages in electrode {n} higher ({y_i.max()}) than the max. allowed value ({INPUT_VOLTAGE_THRESHOLD} V)"
             assert all(
                 y_i > -INPUT_VOLTAGE_THRESHOLD
-            ), f"Voltages in electrode {n} lower ({y_i.min()}) than the min."
-            + " allowed value ({-INPUT_VOLTAGE_THRESHOLD} V)"
+            ), f"Voltages in electrode {n} lower ({y_i.min()}) than the min. allowed value ({-INPUT_VOLTAGE_THRESHOLD} V)"
             assert (
                 y_i[0] == 0.0
             ), f"First value of input stream in electrode {n} is non-zero ({y_i[0]})"
