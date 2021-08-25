@@ -218,7 +218,9 @@ class Processor(nn.Module):
         torch.Tensor
             Output data.
         """
-        x = self.waveform_mgr.points_to_plateaus(x)
+        if not (self.waveform_mgr.plateau_length == 1
+                and self.waveform_mgr.slope_length == 0):
+            x = self.waveform_mgr.points_to_plateaus(x)
         return self.processor(x)
 
     def format_targets(self, x: torch.Tensor) -> torch.Tensor:
@@ -229,7 +231,11 @@ class Processor(nn.Module):
         x : torch.Tensor
             [description]
         """
-        return self.waveform_mgr.points_to_plateaus(x)
+        if not (self.waveform_mgr.plateau_length == 1
+                and self.waveform_mgr.slope_length == 0):
+            return self.waveform_mgr.points_to_plateaus(x)
+        else:
+            return x
 
     def get_voltage_ranges(self) -> torch.Tensor:
         """
