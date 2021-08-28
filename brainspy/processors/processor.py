@@ -196,58 +196,38 @@ class Processor(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Run a forward pass through the processor. It creates plateaus from
-        data points before sending the data to the simulation or hardware
-        processor. The hardware processor will internally create the slopes to
-        the plateaus. The simulation processor does not need slopes.
-
-        Example
-        -------
-        >>> x = torch.tensor([1, 2, 3, 4])
-        >>> self.forward(x)
-        torch.Tensor([1])
-
-        Forward pass with one data point (4 activation electrodes).
+        Run a forward pass through the processor. It creates plateaus from data points before
+        sending the data to the simulation or hardware processor. The hardware processor will
+        internally create the slopes to the plateaus. The simulation processor does not need slopes.
 
         Parameters
         ----------
         x : torch.Tensor
-            Input data. It is expected to have a shape of
-            [batch_size, activation_electrode_no].
+            Input data. It is expected to have a shape of [batch_size, activation_electrode_no].
 
         Returns
         -------
         torch.Tensor
             Output data.
         """
-        x = self.waveform_mgr.points_to_plateaus(x)
+        if not (self.waveform_mgr.plateau_length == 1
+                and self.waveform_mgr.slope_length == 0):
+            x = self.waveform_mgr.points_to_plateaus(x)
         return self.processor(x)
 
     def format_targets(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Transform data to plateaus so that target data can be compared to
-        output data.
-
-        Example
-        -------
-        >>> x = torch.tensor([[1], [2]])
-        >>> self.format_targets(x)
-        torch.Tensor([[1], [1], [1], [2], [2], [2]])
-
-        Point data is transformed to plateau data where the plateau length
-        is 3.
+        """[summary]
 
         Parameters
         ----------
         x : torch.Tensor
-            Data to be transformed.
-
-        Returns
-        -------
-        torch.Tensor
-            Transformed data.
+            [description]
         """
-        return self.waveform_mgr.points_to_plateaus(x)
+        if not (self.waveform_mgr.plateau_length == 1
+                and self.waveform_mgr.slope_length == 0):
+            return self.waveform_mgr.points_to_plateaus(x)
+        else:
+            return x
 
     def get_voltage_ranges(self) -> torch.Tensor:
         """

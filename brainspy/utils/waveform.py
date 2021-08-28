@@ -199,38 +199,7 @@ class WaveformManager:
         plateaus = waveform_mgr.points_to_pleateaus(points)
 
         """
-        return self.tile(data, 0, self.plateau_length)
-
-    def tile(self, t, dim, n_tile):
-        """
-        The function is used to convert a set a points in a torch tensor to a
-        plateau of points in the tensor. It does this by a by repeating the
-        elements of input in the torch tensor.
-
-        Parameters
-        ----------
-        t : torch.Tensor
-            The data points that have to be converted to a plateau
-        dim : int
-            integer value that specifies the number of repetitions in each
-            dimension.
-        n_tile : int
-            required length of the plateau
-
-        Returns
-        -------
-        torch.Tensor
-            plateau generated from the given points in the torch tensor
-        """
-        init_dim = t.size(dim)
-        repeat_idx = [1] * t.dim()
-        repeat_idx[dim] = n_tile
-        t = t.repeat(*(repeat_idx))
-        order_index = torch.cat([
-            init_dim * torch.arange(n_tile, device=t.device, dtype=torch.long)
-            + i for i in range(init_dim)
-        ])
-        return torch.index_select(t, dim, order_index)
+        return data.repeat_interleave(self.plateau_length, dim=0)
 
     def plateaus_to_waveform(
         self,

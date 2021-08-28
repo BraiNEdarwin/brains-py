@@ -214,19 +214,6 @@ class WaveformTest(unittest.TestCase):
                                           len(plateau_values) - 1)])
         self.assertEqual(point_value, plateau_values[0])
 
-    def test_tile(self):
-        """
-        Test to check whether the tile function properly generates a plateau
-        from the data points in a torch tensor.
-        """
-        waveform_mgr = WaveformManager(self.configs)
-        data = (3, 3)
-        points = torch.rand(data)
-        plateau = waveform_mgr.tile(points, 0, waveform_mgr.plateau_length)
-        point_value = points.tolist()[0]
-        plateau_values = plateau.tolist()
-        self.assertEqual(point_value, plateau_values[0])
-
     def check_waveform_start_end(self, waveform):
         """
         Check if a waveform starts and ends with 0.
