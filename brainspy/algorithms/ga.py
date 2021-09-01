@@ -5,7 +5,6 @@ from tqdm import trange
 
 from brainspy.algorithms.modules.signal import pearsons_correlation
 from brainspy.utils.pytorch import TorchUtils
-#from brainspy.utils.waveform import process_data
 
 
 def train(model: torch.nn.Module,
