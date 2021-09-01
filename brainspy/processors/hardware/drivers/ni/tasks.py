@@ -673,7 +673,7 @@ class LocalTasks:
         configs : dict
             configs dictionary for the device model
 
-            The configs shoulh have the following keys:
+            The configs should have the following keys:
 
              processor_type : str
                 "simulation_debug" or "cdaq_to_cdaq" or "cdaq_to_nidaq" - Processor type to

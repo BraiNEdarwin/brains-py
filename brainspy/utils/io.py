@@ -153,7 +153,7 @@ class IncludeLoader(yaml.Loader):
     """
     def __init__(self, *args, **kwargs):
         """
-        Constructer to initialize the file root and load the file
+        Constructor to initialize the file root and load the file
         """
         super(IncludeLoader, self).__init__(*args, **kwargs)
         self.add_constructor("!include", self._include)
