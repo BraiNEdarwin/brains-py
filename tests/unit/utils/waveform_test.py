@@ -47,6 +47,43 @@ class WaveformTest(unittest.TestCase):
         self.assertEqual(waveform.slope_length, 20)
         self.assertEqual(waveform.plateau_length, 80)
 
+    def test_init_fail(self):
+        """
+        NoneType slope length and plateau length raises Assertion error.
+        """
+        configs = {}
+        configs["plateau_length"] = 80
+        configs["slope_length"] = None
+        with self.assertRaises(AssertionError):
+            WaveformManager(configs)
+
+    def test_init_fail2(self):
+        """
+        Missing keys in config file raises KeyError error.
+        """
+        configs = {}
+        configs["plateau_length"] = 80
+        with self.assertRaises(KeyError):
+            WaveformManager(configs)
+
+    def test_init_fail3(self):
+        """
+        NoneType as an argument raises TypeError
+        """
+        configs = {}
+        configs["plateau_length"] = 80
+        with self.assertRaises(TypeError):
+            WaveformManager(None)
+
+    def test_init_fail4(self):
+        """
+        Wrong type as an argument raises TypeError
+        """
+        configs = {}
+        configs["plateau_length"] = 80
+        with self.assertRaises(TypeError):
+            WaveformManager([1, 2, 3, 4])
+
     def test_generate_mask_base(self):
         """
         Test to generate an initial and final mask for the torch tensor based
@@ -59,6 +96,50 @@ class WaveformTest(unittest.TestCase):
         self.assertEqual(initial_mask_list, ([False] * 20) + ([True] * 80))
         self.assertEqual(final_mask_list, [False] * 20)
 
+    def test_generate_mask_base2(self):
+        """
+        If slope length is 0, final mask list is empty
+        """
+        configs = {}
+        configs["plateau_length"] = 10
+        configs["slope_length"] = 0
+        waveform = WaveformManager(configs)
+        waveform.generate_mask_base()
+        final_mask_list = waveform.final_mask.tolist()
+        initial_mask_list = waveform.initial_mask.tolist()
+        self.assertEqual(initial_mask_list, ([True] * 10))
+        self.assertEqual(final_mask_list, [])
+
+    def test_generate_mask_base3(self):
+        """
+        If plateau length is 0,
+        initial and final lists are equal
+        """
+        configs = {}
+        configs["plateau_length"] = 0
+        configs["slope_length"] = 10
+        waveform = WaveformManager(configs)
+        waveform.generate_mask_base()
+        final_mask_list = waveform.final_mask.tolist()
+        initial_mask_list = waveform.initial_mask.tolist()
+        self.assertEqual(initial_mask_list, ([False] * 10))
+        self.assertEqual(final_mask_list, [False] * 10)
+
+    def test_generate_mask_base4(self):
+        """
+        If slope length and plateau length are both 0,
+        initial and final lists are empty
+        """
+        configs = {}
+        configs["plateau_length"] = 0
+        configs["slope_length"] = 0
+        waveform = WaveformManager(configs)
+        waveform.generate_mask_base()
+        final_mask_list = waveform.final_mask.tolist()
+        initial_mask_list = waveform.initial_mask.tolist()
+        self.assertEqual(initial_mask_list, [])
+        self.assertEqual(final_mask_list, [])
+
     def test_expand(self):
         """
         Test to format the amplitudes and slopes to have the same length.
@@ -66,6 +147,38 @@ class WaveformTest(unittest.TestCase):
         waveform = WaveformManager(self.configs)
         plateau_lengths = waveform._expand(waveform.plateau_length, 100)
         self.assertEqual(len(plateau_lengths), 100)
+
+    def test_expand2(self):
+        """
+        Cannot expand with a wrong type length
+        """
+        waveform = WaveformManager(self.configs)
+        with self.assertRaises(TypeError):
+            waveform._expand(waveform.plateau_length, "worng input")
+
+    def test_expand3(self):
+        """
+        Cannot expand with a NoneType length
+        """
+        waveform = WaveformManager(self.configs)
+        with self.assertRaises(TypeError):
+            waveform._expand(waveform.plateau_length, None)
+
+    def test_expand4(self):
+        """
+        NoneType param return None on expanding
+        """
+        waveform = WaveformManager(self.configs)
+        plateau_lengths = waveform._expand(None, 100)
+        self.assertEqual(plateau_lengths, None)
+
+    def test_expand5(self):
+        """
+        Test to format the amplitudes and slopes to have the same length with extreme values.
+        """
+        waveform = WaveformManager(self.configs)
+        plateau_lengths = waveform._expand(10, 0)
+        self.assertEqual(len(plateau_lengths), 0)
 
     def test_points_to_waveform(self):
         """

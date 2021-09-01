@@ -673,6 +673,100 @@ class LocalTasks:
         configs : dict
             configs dictionary for the device model
 
+            The configs should have the following keys:
+
+             processor_type : str
+                "simulation_debug" or "cdaq_to_cdaq" or "cdaq_to_nidaq" - Processor type to
+                initialize a hardware processor
+            driver:
+                real_time_rack : boolean
+                    Only to be used when having a rack that works with real-time.
+                    True will attempt a connection to a server on the real time rack via Pyro.
+                    False will execute the drivers locally.
+                sampling_frequency: int
+                    The average number of samples to be obtained in one second, when transforming
+                    the signal from analogue to digital.
+                output_clipping_range: [float,float]
+                    The the setups have a limit in the range they can read. They typically clip at
+                    approximately +-4 V.
+                    Note that in order to calculate the clipping_range, it needs to be multiplied
+                    by the amplification value of the setup.
+                    (e.g., in the Brains setup the amplification is 28.5, is the clipping_value is
+                    +-4 (V), therefore,
+                    the clipping value should be +-4 * 28.5, which is [-110,110] (nA) ).
+                    The original clipping value of the surrogate models is obtained when running
+                    the preprocessing of the data in
+                    bspysmg.measurement.processing.postprocessing.post_process.
+                amplification: float
+                    The output current (nA) of the device is converted by the readout hardware to
+                    voltage (V), because it is easier to do the readout of the device in voltages.
+                    This output signal in nA is amplified by the hardware when doing this current
+                    to voltage conversion, as larger signals are easier to detect. In order to
+                    obtain the real current (nA) output of the device, the conversion is
+                    automatically corrected in software by multiplying by the amplification value
+                    again.
+                    The amplification value depends on the feedback resistance of each of the
+                    setups.
+
+                    Below, there is a guide of the amplification value needed for each of the
+                    setups:
+
+                                        Darwin: Variable amplification levels:
+                                            A: 1000 Amplification
+                                            Feedback resistance: 1 MOhm
+                                            B: 100 Amplification
+                                            Feedback resistance 10 MOhms
+                                            C: 10 Amplification
+                                            Feedback resistance: 100 MOhms
+                                            D: 1 Amplification
+                                            Feedback resistance 1 GOhm
+                                        Pinky:  - PCB 1 (6 converters with):
+                                                Amplification 10
+                                                Feedback resistance 100 MOhm
+                                                - PCB 2 (6 converters with):
+                                                Amplification 100 tims
+                                                10 mOhm Feedback resistance
+                                        Brains: Amplfication 28.5
+                                                Feedback resistance, 33.3 MOhm
+                                        Switch: (Information to be completed)
+                                        If no correction is desired, the amplification can be set
+                                        to 1.
+                instruments_setup:
+                    multiple_devices: boolean
+                        False will initialise the drivers to read from a single hardware DNPU.
+                        True, will enable to read from more than one DNPU device at the same time.
+                    activation_instrument: str
+                        Name of the activation instrument as observed in the NI Max software.
+                        E.g.,  cDAQ1Mod3
+                    activation_channels: list
+                        Channels through which voltages will be sent for activating the device
+                        (both data inputs and control voltage electrodes). The channels can be
+                        checked in the schematic of the DNPU device.
+                        E.g., [8,10,13,11,7,12,14]
+                    activation_voltage_ranges: list
+                        Minimum and maximum voltage for the activation electrodes.
+                        E.g., [[-1.2, 0.6], [-1.2, 0.6],
+                        [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-0.7, 0.3], [-0.7, 0.3]]
+                    readout_instrument: str
+                        Name of the readout instrument as observed in the NI Max software.
+                        E.g., cDAQ1Mod4
+                    readout_channels: [2] list
+                        Channels for reading the output current values.
+                        The channels can be checked in the schematic of the DNPU device.
+                    trigger_source: str
+                        For synchronisation purposes, sending data for the activation voltages on
+                        one NI Task can trigger the readout device of another NI Task. In these
+                        cases,the trigger source name should be specified in the configs.
+                        This is only applicable for CDAQ to CDAQ setups
+                        (with or without real-time rack).
+                        E.g., cDAQ1/segment1
+                        More information at
+                        https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
+            plateau_length: float - Length of the plateau that is being sent through the forward
+            call of the HardwareProcessor
+            slope_length : float - Length of the slopes in the waveforms sent to the device through
+            the drivers
+
         Returns
         -------
         list
