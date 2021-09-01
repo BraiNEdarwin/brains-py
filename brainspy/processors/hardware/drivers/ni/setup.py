@@ -371,13 +371,9 @@ class NationalInstrumentsSetup:
 
     def os_signal_handler(self, signum, frame=None):
         """
-        This is a python signal handler which is used to handle the execution of the differnt
-        threads.Signals are used as means of inter-thread communication for execution of diifernt
-        tasks in a thread safe manner.
-
-        A handler for a particular signal, once set, remains installed until it is explicitly reset.
         Used to handle the termination of the read task in such a way that enables the last read
         call to the drivers to finish, and adequately closing the NI tasks afterwards.
+        A handler for a particular signal, once set, remains installed until it is explicitly reset.
 
         More information can be found at:
         https://docs.python.org/3/library/signal.html
