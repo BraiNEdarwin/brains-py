@@ -4,9 +4,7 @@ Module for testing waveform transformations.
 
 import random
 import unittest
-
 import torch
-
 from brainspy.utils.waveform import WaveformManager
 from brainspy.utils.pytorch import TorchUtils
 
@@ -182,20 +180,137 @@ class WaveformTest(unittest.TestCase):
 
     def test_points_to_waveform(self):
         """
-        Test to generates a waveform with constant intervals of value and
+        Test to generate a waveform and
         checking first, final and middle values.
         """
         waveform_mgr = WaveformManager(self.configs)
         data = (1, 1)
         points = torch.rand(data)
-        points = points.to(TorchUtils.get_device())
-        waveform = waveform_mgr.points_to_waveform(points)
+        waveform = waveform_mgr.points_to_waveform(
+            points.to(TorchUtils.get_device()))
         point_value = points.tolist()[0]
         waveform_values = waveform.tolist()
         max_wave = max(waveform_values)
         self.assertEqual(max_wave, point_value)
         self.assertEqual(waveform_values[0], [0.0])
         self.assertEqual(waveform_values[len(waveform_values) - 1], [0.0])
+
+    def test_points_to_waveform2(self):
+        """
+        Test to generate a waveform with slope length = 0
+        """
+        configs = {}
+        configs["plateau_length"] = 80
+        configs["slope_length"] = 0
+        waveform_mgr = WaveformManager(configs)
+        points = torch.rand(1)
+        waveform = waveform_mgr.points_to_waveform(
+            points.to(TorchUtils.get_device()))
+        waveform_values = waveform.tolist()
+        result = False
+        if len(waveform_values) > 0:
+            result = all(elem == waveform_values[0]
+                         for elem in waveform_values)
+        self.assertEqual(result, True)
+
+    def test_points_to_waveform3(self):
+        """
+        Test to generate waveform with plateau length = 0 and accurate shape of tensor
+        """
+        configs = {}
+        configs["plateau_length"] = 0
+        configs["slope_length"] = 20
+        waveform_mgr = WaveformManager(configs)
+        points = torch.rand(2, 2)
+        waveform = waveform_mgr.points_to_waveform(
+            points.to(TorchUtils.get_device()))
+        waveform_values = waveform.tolist()
+        for i in range(1, len(waveform_values) - 2):
+            self.assertTrue(waveform_values[i] != [0.0, 0.0])
+        self.assertEqual(waveform_values[0], [0.0, 0.0])
+        self.assertEqual(waveform_values[len(waveform_values) - 1], [0.0, 0.0])
+
+    def test_points_to_waveform4(self):
+        """
+        Test to generate waveform with both slope and plateau length = 0
+        """
+        configs = {}
+        configs["plateau_length"] = 0
+        configs["slope_length"] = 0
+        waveform_mgr = WaveformManager(configs)
+        points = torch.rand(2, 2)
+        waveform = waveform_mgr.points_to_waveform(
+            points.to(TorchUtils.get_device()))
+        waveform_values = waveform.tolist()
+        self.assertEqual(waveform_values, [])
+
+    def test_points_to_waveform5(self):
+        """
+        Test to generate a waveform with negative values raises no errors
+        """
+        configs = {}
+        configs["plateau_length"] = 80
+        configs["slope_length"] = 20
+        waveform_mgr = WaveformManager(configs)
+        points = torch.tensor([[1., -1.], [1., -1.]])
+        waveform_mgr.points_to_waveform(points.to(TorchUtils.get_device()))
+
+    def test_points_to_waveform6(self):
+        """
+        Test to generate a waveform with tensor of a NoneType value which raises RuntimeError
+        """
+        configs = {}
+        configs["plateau_length"] = 1
+        configs["slope_length"] = 10
+        waveform_mgr = WaveformManager(configs)
+        with self.assertRaises(RuntimeError):
+            waveform_mgr.points_to_waveform(
+                torch.tensor(None).to(TorchUtils.get_device()))
+
+    def test_points_to_waveform7(self):
+        """
+        Test to generate a waveform with an empty tensor which raises no errors
+        """
+        configs = {}
+        configs["plateau_length"] = 80
+        configs["slope_length"] = 20
+        waveform_mgr = WaveformManager(configs)
+        points = torch.empty(1, 1)
+        waveform_mgr.points_to_waveform(points.to(TorchUtils.get_device()))
+
+    def test_points_to_waveform8(self):
+        """
+        Test to generate a waveform with a tensor containing a single value which raises no errors
+        """
+        configs = {}
+        configs["plateau_length"] = 80
+        configs["slope_length"] = 20
+        waveform_mgr = WaveformManager(configs)
+        points = torch.tensor([[1]])
+        waveform_mgr.points_to_waveform(points.to(TorchUtils.get_device()))
+
+    def test_points_to_waveform9(self):
+        """
+        Runtime error raised when plateau length is 0 and tensor dimension does not match
+        """
+        configs = {}
+        configs["plateau_length"] = 0
+        configs["slope_length"] = 20
+        waveform_mgr = WaveformManager(configs)
+        points = torch.rand(1)
+        with self.assertRaises(RuntimeError):
+            waveform_mgr.points_to_waveform(points.to(TorchUtils.get_device()))
+
+    def test_points_to_waveform10(self):
+        """
+        Test to generate a waveform with invalid type raises AttributeError
+        """
+        configs = {}
+        configs["plateau_length"] = 1
+        configs["slope_length"] = 10
+        waveform_mgr = WaveformManager(configs)
+        with self.assertRaises(AttributeError):
+            waveform_mgr.points_to_waveform([1, 2, 3, 4])
 
     def test_points_to_plateaus(self):
         """
