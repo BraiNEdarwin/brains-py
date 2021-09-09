@@ -19,16 +19,6 @@ class WaveformTest(unittest.TestCase):
         configs["plateau_length"] = 80
         configs["slope_length"] = 20
         self.configs = configs
-        self.waveform_mgr = WaveformManager(configs)
-        test_sizes = ((1, 1), (10, 1), (100, 1), (10, 2), (100, 7))
-        self.test_points = []
-        for size in test_sizes:
-            self.test_points.append(
-                torch.rand(
-                    size,
-                    device=TorchUtils.get_device(),
-                    dtype=torch.get_default_dtype(),
-                ))
 
     def test_init_pass(self):
         """

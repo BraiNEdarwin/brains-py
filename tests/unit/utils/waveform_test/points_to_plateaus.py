@@ -4,6 +4,7 @@ Module for testing waveform transformations.
 import unittest
 import torch
 import warnings
+import random
 import numpy as np
 from brainspy.utils.waveform import WaveformManager
 from brainspy.utils.pytorch import TorchUtils
@@ -11,12 +12,12 @@ from brainspy.utils.pytorch import TorchUtils
 
 class WaveformTest(unittest.TestCase):
     """
-    Class for testing the method - points_to_waveform() in waveform.py.
+    Class for testing the method - points_to_plateaus() in waveform.py.
     """
-    def test_points_to_waveform_values(self):
+    def test_points_to_plateaus(self):
         """
-        Test to generate a waveform and
-        checking first, final and middle values.
+        Test to generate a plateau for the points inputted and checking with
+        all values forming a plateau.
         """
         configs = {}
         configs["plateau_length"] = 80
@@ -24,16 +25,16 @@ class WaveformTest(unittest.TestCase):
         waveform_mgr = WaveformManager(configs)
         data = (1, 1)
         points = torch.rand(data)
-        waveform = waveform_mgr.points_to_waveform(
-            points.to(TorchUtils.get_device()))
+        plateau = waveform_mgr.points_to_plateaus(points)
         point_value = points.tolist()[0]
-        waveform_values = waveform.tolist()
-        max_wave = max(waveform_values)
-        self.assertEqual(max_wave, point_value)
-        self.assertEqual(waveform_values[0], [0.0])
-        self.assertEqual(waveform_values[len(waveform_values) - 1], [0.0])
+        plateau_values = plateau.tolist()
+        self.assertEqual(
+            point_value,
+            plateau_values[random.randint(0,
+                                          len(plateau_values) - 1)])
+        self.assertEqual(point_value, plateau_values[0])
 
-    def test_points_to_waveform_slope_plateau_0(self):
+    def test_points_to_plateaus_slope_plateau_0(self):
         """
         Test to generate a waveform with slope length = 0
         """
@@ -42,17 +43,16 @@ class WaveformTest(unittest.TestCase):
         configs["slope_length"] = 0
         waveform_mgr = WaveformManager(configs)
         points = torch.randint(3, 5, (1, ))
-        waveform = waveform_mgr.points_to_waveform(
+        plateau = waveform_mgr.points_to_plateaus(
             points.to(TorchUtils.get_device()))
-        waveform_values = waveform.tolist()
+        plateau_values = plateau.tolist()
         result = False
-        if len(waveform_values) > 0:
-            result = all(elem == waveform_values[0]
-                         for elem in waveform_values)
+        if len(plateau_values) > 0:
+            result = all(elem == plateau_values[0] for elem in plateau_values)
         self.assertEqual(result, True)
-        self.assertEqual(len(waveform_values), 80)
+        self.assertEqual(len(plateau_values), 80)
         """
-        Test to generate waveform with plateau length = 0 and accurate shape of tensor
+        Test to generate a plateau with plateau length = 0 and accurate shape of tensor
         """
         configs = {}
         configs["plateau_length"] = 0
@@ -62,15 +62,12 @@ class WaveformTest(unittest.TestCase):
             waveform_mgr = WaveformManager(configs)
             self.assertEqual(len(caught_warnings), 1)
         points = torch.rand(2, 2)
-        waveform = waveform_mgr.points_to_waveform(
+        plateau = waveform_mgr.points_to_plateaus(
             points.to(TorchUtils.get_device()))
-        waveform_values = waveform.tolist()
-        for i in range(1, len(waveform_values) - 2):
-            self.assertTrue(waveform_values[i] != [0.0, 0.0])
-        self.assertEqual(waveform_values[0], [0.0, 0.0])
-        self.assertEqual(waveform_values[len(waveform_values) - 1], [0.0, 0.0])
+        plateau_values = plateau.tolist()
+        self.assertEqual(plateau_values, [])
         """
-        Test to generate waveform with both slope and plateau length = 0
+        Test to generate a plateau with both slope and plateau length = 0
         """
         configs = {}
         configs["plateau_length"] = 0
@@ -80,14 +77,14 @@ class WaveformTest(unittest.TestCase):
             waveform_mgr = WaveformManager(configs)
             self.assertEqual(len(caught_warnings), 2)
         points = torch.rand(2, 2)
-        waveform = waveform_mgr.points_to_waveform(
+        plateau = waveform_mgr.points_to_plateaus(
             points.to(TorchUtils.get_device()))
-        waveform_values = waveform.tolist()
-        self.assertEqual(waveform_values, [])
+        plateau_values = plateau.tolist()
+        self.assertEqual(plateau_values, [])
 
-    def test_points_to_waveform_negative(self):
+    def test_points_to_plateaus_negative(self):
         """
-        Test to generate a waveform with negative values raises no errors
+        Test to generate a plateau with negative values raises no errors
         """
         configs = {}
         configs["plateau_length"] = 80
@@ -95,25 +92,25 @@ class WaveformTest(unittest.TestCase):
         waveform_mgr = WaveformManager(configs)
         points = torch.tensor([[1., -1.], [1., -1.]])
         try:
-            waveform_mgr.points_to_waveform(points.to(TorchUtils.get_device()))
+            waveform_mgr.points_to_plateaus(points.to(TorchUtils.get_device()))
         except Exception:
             self.fail("Exception raised")
 
-    def test_points_to_waveform_nonetype_tensor(self):
+    def test_points_to_plateaus_nonetype_tensor(self):
         """
-        Test to generate a waveform with tensor of a NoneType value which raises RuntimeError
+        Test to generate a plateau with tensor of a NoneType value which raises RuntimeError
         """
         configs = {}
         configs["plateau_length"] = 1
         configs["slope_length"] = 10
         waveform_mgr = WaveformManager(configs)
         with self.assertRaises(RuntimeError):
-            waveform_mgr.points_to_waveform(
+            waveform_mgr.points_to_plateaus(
                 torch.tensor(None).to(TorchUtils.get_device()))
 
-    def test_points_to_waveform_empty_tensor(self):
+    def test_points_to_plateaus_empty_tensor(self):
         """
-        Test to generate a waveform with an empty tensor which raises no errors
+        Test to generate a plateau with an empty tensor which raises no errors
         """
         configs = {}
         configs["plateau_length"] = 80
@@ -121,13 +118,13 @@ class WaveformTest(unittest.TestCase):
         waveform_mgr = WaveformManager(configs)
         points = torch.empty(1, 1)
         try:
-            waveform_mgr.points_to_waveform(points.to(TorchUtils.get_device()))
+            waveform_mgr.points_to_plateaus(points.to(TorchUtils.get_device()))
         except Exception:
             self.fail("Exception raised")
 
-    def test_points_to_waveform_single_val(self):
+    def test_points_to_plateaus_single_val(self):
         """
-        Test to generate a waveform with a tensor containing a single value which raises no errors
+        Test to generate a plateau with a tensor containing a single value which raises no errors
         """
         configs = {}
         configs["plateau_length"] = 80
@@ -135,45 +132,30 @@ class WaveformTest(unittest.TestCase):
         waveform_mgr = WaveformManager(configs)
         points = torch.tensor([[1]])
         try:
-            waveform_mgr.points_to_waveform(points.to(TorchUtils.get_device()))
+            waveform_mgr.points_to_plateaus(points.to(TorchUtils.get_device()))
         except Exception:
             self.fail("Exception raised")
 
-    def test_points_to_waveform_fail(self):
+    def test_points_to_plateaus_invalid_type(self):
         """
-        Runtime error raised when plateau length is 0 and tensor dimension does not match
-        """
-        configs = {}
-        configs["plateau_length"] = 0
-        configs["slope_length"] = 20
-        with warnings.catch_warnings(record=True) as caught_warnings:
-            warnings.simplefilter("always")
-            waveform_mgr = WaveformManager(configs)
-            self.assertEqual(len(caught_warnings), 1)
-        points = torch.rand(1)
-        with self.assertRaises(RuntimeError):
-            waveform_mgr.points_to_waveform(points.to(TorchUtils.get_device()))
-
-    def test_points_to_waveform_invalid_type(self):
-        """
-        Test to generate a waveform with invalid type raises AttributeError or TypeError
+        Test to generate a plateau with invalid type raises AttributeError
         """
         configs = {}
         configs["plateau_length"] = 1
         configs["slope_length"] = 10
         waveform_mgr = WaveformManager(configs)
         with self.assertRaises(AttributeError):
-            waveform_mgr.points_to_waveform([1, 2, 3, 4])
+            waveform_mgr.points_to_plateaus([1, 2, 3, 4])
         with self.assertRaises(AttributeError):
-            waveform_mgr.points_to_waveform(np.array([1, 2, 3, 4]))
+            waveform_mgr.points_to_plateaus(np.array([1, 2, 3, 4]))
         with self.assertRaises(AttributeError):
-            waveform_mgr.points_to_waveform("String type is not accepted")
-        with self.assertRaises(TypeError):
-            waveform_mgr.points_to_waveform(None)
+            waveform_mgr.points_to_plateaus("String type is not accepted")
+        with self.assertRaises(AttributeError):
+            waveform_mgr.points_to_plateaus(None)
 
-    def test_points_to_waveform_varying_data_type(self):
+    def test_points_to_plateau_varying_data_type(self):
         """
-        Test to generate a waveform with varying data types for tensors raises no errors
+        Test to generate a plateau with varying data types for tensors raises no errors
         """
         configs = {}
         configs["plateau_length"] = 1
@@ -181,21 +163,21 @@ class WaveformTest(unittest.TestCase):
         tensor = torch.randn(2, 2)
         waveform_mgr = WaveformManager(configs)
         try:
-            waveform_mgr.points_to_waveform(tensor.to(TorchUtils.get_device()))
+            waveform_mgr.points_to_plateaus(tensor.to(TorchUtils.get_device()))
         except Exception:
             self.fail("Exception raised")
         tensor = TorchUtils.format(data=tensor,
                                    device=TorchUtils.get_device(),
                                    data_type=torch.float64)
         try:
-            waveform_mgr.points_to_waveform(tensor)
+            waveform_mgr.points_to_plateaus(tensor)
         except Exception:
             self.fail("Exception raised")
         tensor = TorchUtils.format(data=tensor,
                                    device=TorchUtils.get_device(),
                                    data_type=torch.float16)
         try:
-            waveform_mgr.points_to_waveform(tensor)
+            waveform_mgr.points_to_plateaus(tensor)
         except Exception:
             self.fail("Exception raised")
 
