@@ -2,9 +2,7 @@
 Module for testing waveform transformations.
 """
 import unittest
-import torch
 from brainspy.utils.waveform import WaveformManager
-from brainspy.utils.pytorch import TorchUtils
 
 
 class WaveformTest(unittest.TestCase):
