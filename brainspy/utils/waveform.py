@@ -18,7 +18,7 @@ from typing import Union, Tuple, List
 
 import torch
 import numpy as np
-
+import warnings
 from brainspy.utils.pytorch import TorchUtils
 
 
@@ -72,6 +72,10 @@ class WaveformManager:
                 and type(configs["plateau_length"] == int))
         assert (configs["slope_length"] is not None
                 and type(configs["plateau_length"] == int))
+        if configs["plateau_length"] == 0:
+            warnings.warn("Plateau length is 0")
+        if configs["slope_length"] == 0:
+            warnings.warn("Slope Length is 0")
         self.plateau_length = configs["plateau_length"]
         self.slope_length = configs["slope_length"]
         self.generate_mask_base()
@@ -126,6 +130,7 @@ class WaveformManager:
 
 
         """
+        assert (parameter is not None and length is not None)
         if isinstance(parameter, int):
             return [parameter] * length
         return parameter
