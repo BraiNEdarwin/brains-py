@@ -4,6 +4,7 @@ Module for testing waveform transformations.
 import unittest
 import torch
 import warnings
+import random
 import numpy as np
 from brainspy.utils.waveform import WaveformManager
 from brainspy.utils.pytorch import TorchUtils
@@ -268,6 +269,54 @@ class WaveformTest(unittest.TestCase):
                                     device=TorchUtils.get_device(),
                                     data_type=torch.float16)
         try:
+            waveform_mgr.plateaus_to_waveform(plateau)
+        except Exception:
+            self.fail("Exception raised")
+
+    def test_plateaus_to_waveform_negative_plateau_slope(self):
+        """
+        Test to generate a waveform from a plateau, with a negative plateau value raises no errors
+        """
+        configs = {}
+        configs["plateau_length"] = -10
+        configs["slope_length"] = 20
+        waveform_mgr = WaveformManager(configs)
+        plateau = torch.tensor(
+            [[0.0], [0.5], [1.0], [1.0], [1.6666667461395264],
+             [2.3333334922790527], [3.0], [3.0], [1.5], [0.0]],
+            device=TorchUtils.get_device(),
+            dtype=torch.get_default_dtype())
+        try:
+            waveform_mgr.plateaus_to_waveform(plateau)
+        except Exception:
+            self.fail("Exception raised")
+        """
+        Test to generate a plateau from a waveform, with a negative slope value raises ValueError
+        """
+        configs = {}
+        configs["plateau_length"] = 10
+        configs["slope_length"] = -20
+        waveform_mgr = WaveformManager(configs)
+        plateau = torch.tensor(
+            [[0.0], [0.5], [1.0], [1.0], [1.6666667461395264],
+             [2.3333334922790527], [3.0], [3.0], [1.5], [0.0]],
+            device=TorchUtils.get_device(),
+            dtype=torch.get_default_dtype())
+        with self.assertRaises(ValueError):
+            waveform_mgr.plateaus_to_waveform(plateau)
+
+    def test_plateaus_to_wavefrom_random(self):
+        """
+        Test to generate a waveform from a plateau with random slope and plateau numbers
+        raises no errors
+        """
+        configs = {}
+        configs["plateau_length"] = random.randint(1, 100000)
+        configs["slope_length"] = random.randint(1, 100000)
+        waveform_mgr = WaveformManager(configs)
+        points = torch.tensor([[1]])
+        try:
+            plateau = waveform_mgr.points_to_plateaus(points)
             waveform_mgr.plateaus_to_waveform(plateau)
         except Exception:
             self.fail("Exception raised")

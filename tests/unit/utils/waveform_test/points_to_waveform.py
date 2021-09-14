@@ -4,6 +4,7 @@ Module for testing waveform transformations.
 import unittest
 import torch
 import warnings
+import random
 import numpy as np
 from brainspy.utils.waveform import WaveformManager
 from brainspy.utils.pytorch import TorchUtils
@@ -196,6 +197,45 @@ class WaveformTest(unittest.TestCase):
                                    data_type=torch.float16)
         try:
             waveform_mgr.points_to_waveform(tensor)
+        except Exception:
+            self.fail("Exception raised")
+
+    def test_points_to_waveform_negative_plateau_slope(self):
+        """
+        Test to generate a waveform with a negative plateau value raises Runtime Error
+        """
+        configs = {}
+        configs["plateau_length"] = -80
+        configs["slope_length"] = 20
+        waveform_mgr = WaveformManager(configs)
+        data = (1, 1)
+        points = torch.rand(data)
+        with self.assertRaises(RuntimeError):
+            waveform_mgr.points_to_waveform(points.to(TorchUtils.get_device()))
+        """
+        Test to generate a waveform with a negative slope value raises ValueError
+        """
+        configs = {}
+        configs["plateau_length"] = 80
+        configs["slope_length"] = -20
+        waveform_mgr = WaveformManager(configs)
+        data = (1, 1)
+        points = torch.rand(data)
+        with self.assertRaises(ValueError):
+            waveform_mgr.points_to_waveform(points.to(TorchUtils.get_device()))
+
+    def test_points_to_waveform_random(self):
+        """
+        Test to generate a waveform with random slope and plateau numbers
+        raises no errors
+        """
+        configs = {}
+        configs["plateau_length"] = random.randint(1, 100000)
+        configs["slope_length"] = random.randint(1, 100000)
+        waveform_mgr = WaveformManager(configs)
+        points = torch.tensor([[1]])
+        try:
+            waveform_mgr.points_to_waveform(points)
         except Exception:
             self.fail("Exception raised")
 

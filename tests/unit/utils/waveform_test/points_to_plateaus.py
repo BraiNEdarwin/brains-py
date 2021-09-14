@@ -181,6 +181,47 @@ class WaveformTest(unittest.TestCase):
         except Exception:
             self.fail("Exception raised")
 
+    def test_points_to_plateaus_negative_plateau_slope(self):
+        """
+        Test to generate a plateau with a negative plateau value raises Runtime Error
+        """
+        configs = {}
+        configs["plateau_length"] = -80
+        configs["slope_length"] = 20
+        waveform_mgr = WaveformManager(configs)
+        data = (1, 1)
+        points = torch.rand(data)
+        with self.assertRaises(RuntimeError):
+            waveform_mgr.points_to_plateaus(points.to(TorchUtils.get_device()))
+        """
+        Test to generate a plateau with a negative slope value raises no errors
+        """
+        configs = {}
+        configs["plateau_length"] = 80
+        configs["slope_length"] = -20
+        waveform_mgr = WaveformManager(configs)
+        data = (1, 1)
+        points = torch.rand(data)
+        try:
+            waveform_mgr.points_to_plateaus(points.to(TorchUtils.get_device()))
+        except Exception:
+            self.fail("Exception raised")
+
+    def test_points_to_plateaus_random(self):
+        """
+        Test to generate a plateau with random slope and plateau numbers
+        raises no errors
+        """
+        configs = {}
+        configs["plateau_length"] = random.randint(1, 100000)
+        configs["slope_length"] = random.randint(1, 100000)
+        waveform_mgr = WaveformManager(configs)
+        points = torch.tensor([[1]])
+        try:
+            waveform_mgr.points_to_plateaus(points)
+        except Exception:
+            self.fail("Exception raised")
+
 
 if __name__ == "__main__":
     unittest.main()
