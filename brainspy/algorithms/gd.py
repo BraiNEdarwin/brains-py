@@ -148,6 +148,7 @@ def train(
                 torch.save(
                     {
                         "epoch": epoch,
+                        "algorithm": 'gradient',
                         "optimizer_state_dict": optimizer.state_dict(),
                         "model_state_dict": model.state_dict(),
                         "train_losses": train_losses,

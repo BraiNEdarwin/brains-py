@@ -57,8 +57,8 @@ def train(model: torch.nn.Module,
     # Evolution loop
     looper = trange(configs["epochs"], desc="Initialising", leave=False)
     pool = optimizer.pool
-    best_fitness = -np.inf
-    best_correlation = -np.inf
+    best_fitness = TorchUtils.format([-np.inf], device=torch.device('cpu'))
+    best_correlation = TorchUtils.format([-np.inf], device=torch.device('cpu'))
     best_result_index = -1
     genome_history = []
     performance_history = []
@@ -103,6 +103,16 @@ def train(model: torch.nn.Module,
                 if save_dir is not None:
                     torch.save(model.state_dict(),
                                os.path.join(save_dir, "model.pt"))
+                    torch.save(
+                        {
+                            "epoch": epoch,
+                            "algorithm": 'genetic',
+                            "model_state_dict": model.state_dict(),
+                            "best_fitness": best_fitness,
+                            "best_correlation": best_correlation
+                        },
+                        os.path.join(save_dir, "training_data.pickle"),
+                    )
                     if not model.is_hardware():
                         torch.save(model, os.path.join(save_dir,
                                                        "model_raw.pt"))
