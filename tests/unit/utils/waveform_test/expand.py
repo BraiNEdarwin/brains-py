@@ -58,6 +58,19 @@ class WaveformTest(unittest.TestCase):
         plateau_lengths = waveform._expand(10, 0)
         self.assertEqual(len(plateau_lengths), 0)
 
+    def test_expand_negative_plateau_slope(self):
+        """
+        Test to expand with negative slopes or plateau raises no errors
+        """
+        configs = {}
+        configs["plateau_length"] = -80
+        configs["slope_length"] = -20
+        waveform = WaveformManager(configs)
+        try:
+            waveform._expand(waveform.plateau_length, 100)
+        except (Exception):
+            self.fail("Exception Raised")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -69,6 +69,21 @@ class WaveformTest(unittest.TestCase):
         self.assertEqual(initial_mask_list, [])
         self.assertEqual(final_mask_list, [])
 
+    def test_generate_mask_base_slope_plateau_negative(self):
+        """
+        If slope length and plateau length are both negative,
+        initial and final lists are empty.
+        """
+        configs = {}
+        configs["plateau_length"] = -20
+        configs["slope_length"] = -80
+        waveform = WaveformManager(configs)
+        waveform.generate_mask_base()
+        final_mask_list = waveform.final_mask.tolist()
+        initial_mask_list = waveform.initial_mask.tolist()
+        self.assertEqual(initial_mask_list, [])
+        self.assertEqual(final_mask_list, [])
+
 
 if __name__ == "__main__":
     unittest.main()
