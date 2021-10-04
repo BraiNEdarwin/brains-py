@@ -86,13 +86,13 @@ class DNPU(nn.Module):
             assert False, "Dnpu type not recognised. It should be either 'single', 'for' or 'vec'"
             # TODO: Change the assestion for raising an exception
 
-    def init_node_no(self, data_input_indices: list):
+    def init_node_no(self, data_input_indices: Sequence[int]):
         """
         Counts how many DNPU nodes are going to be in the layer for time-multiplexing.
 
         Attributes
         ----------
-        data_input_indices: list
+        data_input_indices: Sequence[int]
             Specifies which electrodes are going to be used for inputing data. The reminder of the
             activation electrodes will be automatically selected as control electrodes. The list
             should have the following shape (dnpu_node_no,data_input_electrode_no). The minimum
@@ -120,14 +120,14 @@ class DNPU(nn.Module):
         else:
             return len(aux)
 
-    def init_activation_electrode_no(self, data_input_indices: list):
+    def init_activation_electrode_no(self, data_input_indices: Sequence[int]):
         """
         It counts how many control and data input electrodes are
         going to be declared using the data_input_indices variable.
 
         Attributes
         ----------
-        data_input_indices: list
+        data_input_indices: Sequence[int]
             Specifies which electrodes are going to be used for inputing data. The reminder of the
             activation electrodes will be automatically selected as control electrodes. The list
             should have the following shape (dnpu_node_no,data_input_electrode_no). The minimum
@@ -345,9 +345,9 @@ class DNPU(nn.Module):
         """
         return self.forward_pass(x)
 
-    def forward_single(self, x: torch.tensor, control_voltages: torch.tensor,
-                       data_input_indices: torch.tensor,
-                       control_indices: torch.tensor):
+    def forward_single(self, x: torch.Tensor, control_voltages: torch.Tensor,
+                       data_input_indices: torch.Tensor,
+                       control_indices: torch.Tensor):
         """
         Run a forward pass through the processor for a single DNPU node.
 
@@ -402,9 +402,9 @@ class DNPU(nn.Module):
         # Apply a linear transformation from raw data to the voltage ranges of the dnpu.
         if self.input_transform:
             x = (self.scale.flatten() * x) + self.offset.flatten()
-        assert (x.shape[-1] == self.data_input_indices.numel()
-                ), f"size mismatch: data is {x.shape}, "
-        + f"DNPU_Layer expecting {self.processor.inputs_list.numel()}"
+        assert (x.shape[-1] == self.data_input_indices.numel()), (
+            f"size mismatch: data is {x.shape}," +
+            f"DNPU_Layer expecting {self.data_input_indices.numel()}")
         outputs = [
             self.forward_single(
                 node_x,
@@ -791,7 +791,7 @@ class DNPU(nn.Module):
 def merge_electrode_data(
     input_data,
     control_data,
-    input_data_indices: Sequence[int],
+    input_data_indices: torch.Tensor,
     control_indices,
 ) -> Union[np.array, Tensor]:
     """
@@ -836,8 +836,8 @@ def merge_electrode_data(
     assert (
         input_data.dtype == control_data.dtype
         and input_data.device == control_data.device
-    ), "Input data voltages and control voltages have a different data type or"
-    + " are in a different device (CUDA or CPU). "
+    ), ("Input data voltages and control voltages have a different data type "
+        + "or are in a different device (CUDA or CPU). ")
     result = torch.empty(
         (input_data.shape[0], len(input_data_indices) + len(control_indices)),
         device=TorchUtils.get_device())
