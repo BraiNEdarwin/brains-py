@@ -269,9 +269,9 @@ class NationalInstrumentsSetup:
         """
         if self.last_shape != shape:
             self.last_shape = shape
-            self.tasks_driver.set_shape(self.configs["sampling_frequency"],
-                                        shape)
             self.offsetted_shape = shape + self.configs["offset"]
+            self.tasks_driver.set_shape(self.configs["sampling_frequency"],
+                                        self.offsetted_shape)
             ceil = self.offsetted_shape / self.configs["sampling_frequency"]
             self.ceil = (math.ceil(ceil) + 1)
 
@@ -328,14 +328,12 @@ class NationalInstrumentsSetup:
             inputs to the device" times "input points that you want to input to the device".
         """
         for n, y_i in enumerate(y):
-            assert all(
-                y_i < INPUT_VOLTAGE_THRESHOLD
-            ), f"Voltages in electrode {n} higher ({y_i.max()}) than the max."
-            + " allowed value ({INPUT_VOLTAGE_THRESHOLD} V)"
-            assert all(
-                y_i > -INPUT_VOLTAGE_THRESHOLD
-            ), f"Voltages in electrode {n} lower ({y_i.min()}) than the min."
-            + " allowed value ({-INPUT_VOLTAGE_THRESHOLD} V)"
+            assert all(y_i < INPUT_VOLTAGE_THRESHOLD), (
+                f"Voltages in electrode {n} higher ({y_i.max()}) than the max."
+                + f" allowed value ({INPUT_VOLTAGE_THRESHOLD} V)")
+            assert all(y_i > -INPUT_VOLTAGE_THRESHOLD), (
+                f"Voltages in electrode {n} lower ({y_i.min()}) than the min. "
+                + "allowed value ({-INPUT_VOLTAGE_THRESHOLD} V)")
             assert (
                 y_i[0] == 0.0
             ), f"First value of input stream in electrode {n} is non-zero ({y_i[0]})"
