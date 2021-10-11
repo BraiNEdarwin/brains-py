@@ -5,7 +5,6 @@ from tqdm import trange
 
 from brainspy.algorithms.modules.signal import pearsons_correlation
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.utils.waveform import process_data
 
 
 def train(model: torch.nn.Module,
@@ -58,8 +57,8 @@ def train(model: torch.nn.Module,
     # Evolution loop
     looper = trange(configs["epochs"], desc="Initialising", leave=False)
     pool = optimizer.pool
-    best_fitness = -np.inf
-    best_correlation = -np.inf
+    best_fitness = TorchUtils.format([-np.inf], device=torch.device('cpu'))
+    best_correlation = TorchUtils.format([-np.inf], device=torch.device('cpu'))
     best_result_index = -1
     genome_history = []
     performance_history = []
@@ -69,7 +68,8 @@ def train(model: torch.nn.Module,
         model.eval()
         for epoch in looper:
             inputs, targets = dataloaders[0].dataset[:]
-            inputs, targets = process_data(inputs, targets)
+            inputs, targets = TorchUtils.format(inputs), TorchUtils.format(
+                targets)
             outputs, criterion_pool = evaluate_population(
                 inputs, targets, pool, model, criterion)
 
@@ -103,6 +103,16 @@ def train(model: torch.nn.Module,
                 if save_dir is not None:
                     torch.save(model.state_dict(),
                                os.path.join(save_dir, "model.pt"))
+                    torch.save(
+                        {
+                            "epoch": epoch,
+                            "algorithm": 'genetic',
+                            "model_state_dict": model.state_dict(),
+                            "best_fitness": best_fitness,
+                            "best_correlation": best_correlation
+                        },
+                        os.path.join(save_dir, "training_data.pickle"),
+                    )
                     if not model.is_hardware():
                         torch.save(model, os.path.join(save_dir,
                                                        "model_raw.pt"))
@@ -188,7 +198,9 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
         if (torch.any(outputs_pool[j] <= model.get_clipping_value()[0])
                 or torch.any(outputs_pool[j] >= model.get_clipping_value()[1])
                 or (outputs_pool[j] - outputs_pool[j].mean() == 0.0).all()):
-            criterion_pool[j] = criterion(None, None, default_value=True)
+            criterion_pool[j] = criterion(outputs_pool[j],
+                                          model.format_targets(targets),
+                                          default_value=True)
         else:
             criterion_pool[j] = criterion(outputs_pool[j],
                                           model.format_targets(targets))

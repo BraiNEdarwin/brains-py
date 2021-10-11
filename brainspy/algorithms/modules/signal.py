@@ -149,10 +149,10 @@ def corrsig_fit(output: torch.Tensor,
     AssertionError
         If dimensions of output and target are not the same.
     """
-    assert output.shape == target.shape, "Dimensions of data are different."
     if default_value:
         return -torch.ones(output.shape[1], device=TorchUtils.get_device())
     else:
+        assert output.shape == target.shape, "Dimensions of data are different."
         corr = pearsons_correlation(output, target)
         sig = torch.zeros(output.shape[1], device=TorchUtils.get_device())
         for i in range(output.shape[1]):
@@ -354,7 +354,7 @@ def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
             warnings.warn("Variance of dataset is 0, correlation is nan.")
         mean_separation = (m1 - m0)**2
         result[i] = mean_separation / (s0 + s1)
-    return result
+    return -result
 
 
 def sigmoid_nn_distance(output: torch.Tensor,

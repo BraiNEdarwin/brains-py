@@ -45,12 +45,6 @@ def get_criterion(name: str):
         return criterion.fisher
     elif name == "fisher_fit":
         return criterion.fisher_fit
-    elif name == "sqrt_corrsig":
-        return criterion.sqrt_corrsig
-    elif name == "fisher_added_corr":
-        return criterion.fisher_added_corr
-    elif name == "fisher_multiplied_corr":
-        return criterion.fisher_multiplied_corr
     elif name == "bce":
         return torch.nn.BCEWithLogitsLoss()
     elif name == "sigmoid_nn_distance":
@@ -265,10 +259,51 @@ def get_driver(configs: dict):
     brainspy.processors.hardware.drivers.ni.NationalInstrumentsSetup: Returns and driver object
     which can be CDAQtoCDAQ or CDAQtoNiDAQ.
 
-    Example
+    Example to load a CDAQtoNiDAQ driver
+    (differnt configurations can be provided for differt drivers)
     --------
-    configs = {"processsor_type" : "simulation_debug" }
-    driver = get_driver(configs)
+        configs = {}
+        configs["processor_type"] = "cdaq_to_nidaq"
+        configs["input_indices"] = [2, 3]
+        configs["electrode_effects"] = {}
+        configs["electrode_effects"]["amplification"] = 3
+        configs["electrode_effects"]["clipping_value"] = [-300, 300]
+        configs["electrode_effects"]["noise"] = {}
+        configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
+        configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
+        configs["driver"] = {}
+        configs["driver"]["real_time_rack"] = False
+        configs["driver"]["sampling_frequency"] = 1000
+        configs["driver"]["instruments_setup"] = {}
+        configs["driver"]["instruments_setup"]["multiple_devices"] = False
+        configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
+        configs["driver"]["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"]["activation_channels"] = [
+            0,
+            2,
+            5,
+            3,
+            4,
+            6,
+            1,
+        ]
+        configs["driver"]["instruments_setup"]["activation_voltages"] = [
+            [-1.2, 0.6],
+            [-1.2, 0.6],
+            [-1.2, 0.6],
+            [-1.2, 0.6],
+            [-1.2, 0.6],
+            [-0.7, 0.3],
+            [-0.7, 0.3],
+        ]
+        configs["driver"]["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"]["readout_channels"] = [
+            4
+        ]
+        configs["waveform"] = {}
+        configs["waveform"]["plateau_length"] = 10
+        configs["waveform"]["slope_length"] = 30
+        driver = get_driver(configs)
 
     """
     if configs["instrument_type"] == "cdaq_to_cdaq":
@@ -278,4 +313,6 @@ def get_driver(configs: dict):
     else:
         raise NotImplementedError(
             f"{configs['instrument_type']} 'instrument_type' configuration is not recognised."
-            + " It should be either 'cdaq_to_cdaq' or 'cdaq_to_nidaq'.")
+            +
+            " The simulation type has to be defined as 'cdaq_to_cdaq' or 'cdaq_to_nidaq'."
+        )

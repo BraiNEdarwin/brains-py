@@ -45,14 +45,14 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
         """
         configs["auto_start"] = False
-        configs["offset"] = int(configs["driver"]["sampling_frequency"] *
+        configs["offset"] = int(configs["sampling_frequency"] *
                                 SYNCHRONISATION_VALUE)
         configs[
             "max_ramping_time_seconds"] = CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
-        self.tasks_driver.add_channels(
-            self.configs["driver"]["readout_instrument"],
-            self.configs["driver"]["activation_instrument"],
+        self.tasks_driver.add_synchronisation_channels(
+            self.configs["instruments_setup"]["readout_instrument"],
+            self.configs["instruments_setup"]["activation_instrument"],
         )
 
     def forward_numpy(self, y):
@@ -76,9 +76,11 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         np.array
             Output data that has been read from the device when receiving the input y.
         """
+        self.original_shape = y.shape[0]
         y = y.T
-        assert (self.configs["data"]["shape"] == y.shape[1]
-                ), f"configs value with key 'shape' must be {y.shape[1]}"
+
+        # assert (self.configs["data"]["shape"] == y.shape[1]
+        #         ), f"configs value with key 'shape' must be {y.shape[1]}"
         y = self.synchronise_input_data(y)
         max_attempts = 5
         attempts = 1
@@ -114,7 +116,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         data = self.read_data(y)
         data = self.process_output_data(data)
         data = self.synchronise_output_data(data)
-        finished = data.shape[1] == self.configs["data"]["shape"]
+        finished = data.shape[1] == self.original_shape
         return data, finished
 
     def synchronise_input_data(self, y):
@@ -196,5 +198,4 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             synchronized output data
         """
         cut_value = self.get_output_cut_value(read_data)
-        return read_data[:-1,
-                         cut_value:self.configs["data"]["shape"] + cut_value]
+        return read_data[:-1, cut_value:self.original_shape + cut_value]

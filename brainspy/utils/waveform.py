@@ -18,7 +18,7 @@ from typing import Union, Tuple, List
 
 import torch
 import numpy as np
-
+import warnings
 from brainspy.utils.pytorch import TorchUtils
 
 
@@ -68,6 +68,14 @@ class WaveformManager:
         waveform_mgr = WaveformManager(configs)
 
         """
+        assert (configs["plateau_length"] is not None
+                and type(configs["plateau_length"] == int))
+        assert (configs["slope_length"] is not None
+                and type(configs["plateau_length"] == int))
+        if configs["plateau_length"] == 0:
+            warnings.warn("Plateau length is 0")
+        if configs["slope_length"] == 0:
+            warnings.warn("Slope Length is 0")
         self.plateau_length = configs["plateau_length"]
         self.slope_length = configs["slope_length"]
         self.generate_mask_base()
@@ -122,6 +130,7 @@ class WaveformManager:
 
 
         """
+        assert (parameter is not None and length is not None)
         if isinstance(parameter, int):
             return [parameter] * length
         return parameter
@@ -195,44 +204,14 @@ class WaveformManager:
         plateaus = waveform_mgr.points_to_pleateaus(points)
 
         """
-        return self.tile(data, 0, self.plateau_length)
-
-    def tile(self, t, dim, n_tile):
-        """
-        The function is used to convert a set a points in a torch tensor to a
-        plateau of points in the tensor. It does this by a by repeating the
-        elements of input in the torch tensor.
-
-        Parameters
-        ----------
-        t : torch.Tensor
-            The data points that have to be converted to a plateau
-        dim : int
-            integer value that specifies the number of repetitions in each
-            dimension.
-        n_tile : int
-            required length of the plateau
-
-        Returns
-        -------
-        torch.Tensor
-            plateau generated from the given points in the torch tensor
-        """
-        init_dim = t.size(dim)
-        repeat_idx = [1] * t.dim()
-        repeat_idx[dim] = n_tile
-        t = t.repeat(*(repeat_idx))
-        order_index = torch.cat([
-            init_dim * torch.arange(n_tile, device=t.device, dtype=torch.long)
-            + i for i in range(init_dim)
-        ])
-        return torch.index_select(t, dim, order_index)
+        return data.repeat_interleave(self.plateau_length, dim=0)
 
     def plateaus_to_waveform(
         self,
         data: torch.Tensor,
         return_pytorch=True
-    ) -> Tuple[Union[np.array, torch.Tensor], Union[List[bool], torch.Tensor]]:
+    ) -> Tuple[Union[np.ndarray, torch.Tensor], Union[List[bool],
+                                                      torch.Tensor]]:
         """
         Transform plateau data into full waveform data by adding
         slopes inbetween the plateaus.
@@ -486,15 +465,3 @@ class WaveformManager:
                            (self.slope_length + self.plateau_length)))
         mask = self.initial_mask.clone().repeat(repetitions)
         return torch.cat((mask, self.final_mask))
-
-
-def process_data(inputs, targets):
-    # Data processing required to apply waveforms to the inputs and pass them
-    # onto the GPU if necessary.
-    # if waveform_transforms is not None:
-    # inputs, targets = waveform_transforms((inputs, targets))
-    if inputs is not None and inputs.device != TorchUtils.get_device():
-        inputs = inputs.to(device=TorchUtils.get_device())
-    if targets is not None and targets.device != TorchUtils.get_device():
-        targets = targets.to(device=TorchUtils.get_device())
-    return inputs, targets

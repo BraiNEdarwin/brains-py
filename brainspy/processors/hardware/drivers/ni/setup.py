@@ -274,6 +274,8 @@ class NationalInstrumentsSetup:
                 self.configs['instruments_setup']['trigger_source'],
                 samps_per_chan=shape)
             self.offsetted_shape = shape + self.configs["offset"]
+            self.tasks_driver.set_shape(self.configs["sampling_frequency"],
+                                        self.offsetted_shape)
             ceil = self.offsetted_shape / self.configs["sampling_frequency"]
             self.ceil = (math.ceil(ceil) + 1)
 
@@ -330,12 +332,12 @@ class NationalInstrumentsSetup:
             inputs to the device" times "input points that you want to input to the device".
         """
         for n, y_i in enumerate(y):
-            assert all(
-                y_i < INPUT_VOLTAGE_THRESHOLD
-            ), f"Voltages in electrode {n} higher ({y_i.max()}) than the max. allowed value ({INPUT_VOLTAGE_THRESHOLD} V)"
-            assert all(
-                y_i > -INPUT_VOLTAGE_THRESHOLD
-            ), f"Voltages in electrode {n} lower ({y_i.min()}) than the min. allowed value ({-INPUT_VOLTAGE_THRESHOLD} V)"
+            assert all(y_i < INPUT_VOLTAGE_THRESHOLD), (
+                f"Voltages in electrode {n} higher ({y_i.max()}) than the max."
+                + f" allowed value ({INPUT_VOLTAGE_THRESHOLD} V)")
+            assert all(y_i > -INPUT_VOLTAGE_THRESHOLD), (
+                f"Voltages in electrode {n} lower ({y_i.min()}) than the min. "
+                + "allowed value ({-INPUT_VOLTAGE_THRESHOLD} V)")
             assert (
                 y_i[0] == 0.0
             ), f"First value of input stream in electrode {n} is non-zero ({y_i[0]})"
@@ -373,6 +375,7 @@ class NationalInstrumentsSetup:
         """
         Used to handle the termination of the read task in such a way that enables the last read
         call to the drivers to finish, and adequately closing the NI tasks afterwards.
+        A handler for a particular signal, once set, remains installed until it is explicitly reset.
 
         More information can be found at:
         https://docs.python.org/3/library/signal.html
