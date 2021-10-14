@@ -3,12 +3,10 @@ Module for testing transforms.py.
 """
 
 import unittest
-
 import torch
+import random
 import numpy as np
-
 import brainspy.utils.transforms as transforms
-from brainspy.utils.pytorch import TorchUtils
 
 
 class TransformsTest(unittest.TestCase):
@@ -121,25 +119,264 @@ class TransformsTest(unittest.TestCase):
             x_max=x_max,
         )
 
-    def test_ctv(self):
+    def test_linear_transform(self):
         """
-        Test the CurrentToVoltage class.
-        Largely uses the other methods so it does not need to be tested
-        extensively (extreme cases etc).
+        Testing the function - linear_transform with random values for for all arguments
         """
-        ctv = transforms.CurrentToVoltage([[0, 1], [1, 2]], [[1, 2], [1, 0]])
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = random.randint(-10000, 100000)
+        x_val = random.randint(-10000, 100000)
+        try:
+            transforms.linear_transform(x_val=x_val,
+                                        y_min=y_min,
+                                        y_max=y_max,
+                                        x_min=x_min,
+                                        x_max=x_max)
+        except (Exception):
+            self.fail("Exception was raised")
 
-        # First transform is line y = x + 1, second is y = x - 2.
-        # For the second one input is out of range, so cut needs to work.
-        x_value = torch.tensor([[1, 3]], device=TorchUtils.get_device(), dtype=torch.get_default_dtype())
+        x_min = torch.rand(2, 2)
+        y_min = torch.rand(2, 2)
+        x_max = torch.rand(2, 2)
+        y_max = torch.rand(2, 2)
+        x_val = torch.rand(2, 2)
+        try:
+            transforms.linear_transform(x_val=x_val,
+                                        y_min=y_min,
+                                        y_max=y_max,
+                                        x_min=x_min,
+                                        x_max=x_max)
+        except (Exception):
+            self.fail("Exception was raised")
 
-        result = ctv(x_value)
-        target = torch.tensor([[2, 0]],
-                              device=TorchUtils.get_device(),
-                              dtype=torch.get_default_dtype())
-        for i in range(target.shape[0]):
-            for j in range(target.shape[1]):
-                self.assertEqual(result[i][j], target[i][j])
+    def test_linear_transform_fail(self):
+        """
+        Invalid type for arguments raises TypeError
+        """
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = random.randint(-10000, 100000)
+        x_val = None
+        with self.assertRaises(TypeError):
+            transforms.linear_transform(x_val=x_val,
+                                        y_min=y_min,
+                                        y_max=y_max,
+                                        x_min=x_min,
+                                        x_max=x_max)
+
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = "String value"
+        y_max = random.randint(-10000, 100000)
+        x_val = random.randint(-10000, 100000)
+        with self.assertRaises(TypeError):
+            transforms.linear_transform(x_val=x_val,
+                                        y_min=y_min,
+                                        y_max=y_max,
+                                        x_min=x_min,
+                                        x_max=x_max)
+
+        x_min = [1, 2, 3, 4, 5]
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = random.randint(-10000, 100000)
+        x_val = random.randint(-10000, 100000)
+        with self.assertRaises(TypeError):
+            transforms.linear_transform(x_val=x_val,
+                                        y_min=y_min,
+                                        y_max=y_max,
+                                        x_min=x_min,
+                                        x_max=x_max)
+
+    def test_get_offset(self):
+        """
+        Testing the function - get_offset with random values for for all arguments
+        """
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = random.randint(-10000, 100000)
+        try:
+            transforms.get_offset(y_min=y_min,
+                                  y_max=y_max,
+                                  x_min=x_min,
+                                  x_max=x_max)
+        except ("Exception"):
+            self.fail("Exception was raised")
+
+        x_min = torch.rand(2, 2)
+        y_min = torch.rand(2, 2)
+        x_max = torch.rand(2, 2)
+        y_max = torch.rand(2, 2)
+        try:
+            transforms.get_offset(y_min=y_min,
+                                  y_max=y_max,
+                                  x_min=x_min,
+                                  x_max=x_max)
+        except ("Exception"):
+            self.fail("Exception was raised")
+
+    def test_get_offset_fail(self):
+        """
+        Invalid type for arguments raises TypeError
+        """
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = [1, 2, 3, 4, 5]
+        with self.assertRaises(TypeError):
+            transforms.get_offset(y_min=y_min,
+                                  y_max=y_max,
+                                  x_min=x_min,
+                                  x_max=x_max)
+
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = "String value"
+        y_max = random.randint(-10000, 100000)
+        with self.assertRaises(TypeError):
+            transforms.get_offset(y_min=y_min,
+                                  y_max=y_max,
+                                  x_min=x_min,
+                                  x_max=x_max)
+
+        x_min = None
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = random.randint(-10000, 100000)
+        with self.assertRaises(TypeError):
+            transforms.get_offset(y_min=y_min,
+                                  y_max=y_max,
+                                  x_min=x_min,
+                                  x_max=x_max)
+
+    def test_get_scale(self):
+        """
+        Testing the function - get_scale with random values for for all arguments
+        """
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = random.randint(-10000, 100000)
+        try:
+            transforms.get_scale(y_min=y_min,
+                                 y_max=y_max,
+                                 x_min=x_min,
+                                 x_max=x_max)
+        except ("Exception"):
+            self.fail("Exception was raised")
+
+        x_min = torch.rand(2, 2)
+        y_min = torch.rand(2, 2)
+        x_max = torch.rand(2, 2)
+        y_max = torch.rand(2, 2)
+        try:
+            transforms.get_scale(y_min=y_min,
+                                 y_max=y_max,
+                                 x_min=x_min,
+                                 x_max=x_max)
+        except ("Exception"):
+            self.fail("Exception was raised")
+
+    def test_get_scale_fail(self):
+        """
+        Invalid type for arguments raises TypeError
+        """
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = [1, 2, 3, 4, 5]
+        with self.assertRaises(TypeError):
+            transforms.get_scale(y_min=y_min,
+                                 y_max=y_max,
+                                 x_min=x_min,
+                                 x_max=x_max)
+
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = "String value"
+        y_max = random.randint(-10000, 100000)
+        with self.assertRaises(TypeError):
+            transforms.get_scale(y_min=y_min,
+                                 y_max=y_max,
+                                 x_min=x_min,
+                                 x_max=x_max)
+
+        x_min = None
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = random.randint(-10000, 100000)
+        with self.assertRaises(TypeError):
+            transforms.get_scale(y_min=y_min,
+                                 y_max=y_max,
+                                 x_min=x_min,
+                                 x_max=x_max)
+
+    def test_get_linear_transform_constants(self):
+        """
+        Testing the function - get_linear_transform_constants with random values for for all
+        arguments
+        """
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = random.randint(-10000, 100000)
+        try:
+            transforms.get_linear_transform_constants(y_min=y_min,
+                                                      y_max=y_max,
+                                                      x_min=x_min,
+                                                      x_max=x_max)
+        except ("Exception"):
+            self.fail("Exception was raised")
+
+        x_min = torch.rand(2, 2)
+        y_min = torch.rand(2, 2)
+        x_max = torch.rand(2, 2)
+        y_max = torch.rand(2, 2)
+        try:
+            transforms.get_linear_transform_constants(y_min=y_min,
+                                                      y_max=y_max,
+                                                      x_min=x_min,
+                                                      x_max=x_max)
+        except ("Exception"):
+            self.fail("Exception was raised")
+
+    def test_get_linear_transform_constants_fail(self):
+        """
+        Invalid type for arguments raises TypeError
+        """
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = [1, 2, 3, 4, 5]
+        with self.assertRaises(TypeError):
+            transforms.get_linear_transform_constants(y_min=y_min,
+                                                      y_max=y_max,
+                                                      x_min=x_min,
+                                                      x_max=x_max)
+
+        x_min = random.randint(-10000, 100000)
+        y_min = random.randint(-10000, 100000)
+        x_max = "String value"
+        y_max = random.randint(-10000, 100000)
+        with self.assertRaises(TypeError):
+            transforms.get_linear_transform_constants(y_min=y_min,
+                                                      y_max=y_max,
+                                                      x_min=x_min,
+                                                      x_max=x_max)
+
+        x_min = None
+        y_min = random.randint(-10000, 100000)
+        x_max = random.randint(-10000, 100000)
+        y_max = random.randint(-10000, 100000)
+        with self.assertRaises(TypeError):
+            transforms.get_linear_transform_constants(y_min=y_min,
+                                                      y_max=y_max,
+                                                      x_min=x_min,
+                                                      x_max=x_max)
 
     def test_format_input_ranges(self):
         """
@@ -149,6 +386,39 @@ class TransformsTest(unittest.TestCase):
         result = transforms.format_input_ranges(7, 8, t)
         self.assertTrue(
             torch.equal(result, torch.tensor([[7, 7, 7], [8, 8, 8]])))
+
+    def test_format_input_ranges_random(self):
+        """
+        Test the format_input_ranges method with random values.
+        """
+        tensor = torch.rand(2, 2)
+        try:
+            transforms.format_input_ranges(random.randint(-10000, 100000),
+                                           random.randint(-10000, 100000),
+                                           tensor)
+        except (Exception):
+            self.fail("Exception was raised")
+
+    def test_format_input_ranges_fail(self):
+        """
+        Invalid type raises TypeError
+        """
+        tensor = torch.rand(2, 2)
+        with self.assertRaises(TypeError):
+            transforms.format_input_ranges(random.randint(-10000, 100000),
+                                           random.randint(-10000, 100000),
+                                           [1, 2, 3, 4])
+        with self.assertRaises(TypeError):
+            transforms.format_input_ranges(None,
+                                           random.randint(-10000,
+                                                          100000), tensor)
+        with self.assertRaises(TypeError):
+            transforms.format_input_ranges(random.randint(-10000, 100000),
+                                           None, [1, 2, 3, 4])
+        with self.assertRaises(TypeError):
+            transforms.format_input_ranges("String type",
+                                           random.randint(-10000, 100000),
+                                           [1, 2, 3, 4])
 
 
 if __name__ == "__main__":
