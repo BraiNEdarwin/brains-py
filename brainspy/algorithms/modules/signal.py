@@ -48,11 +48,15 @@ def accuracy_fit(output: torch.Tensor,
         If dimensions of output and target are not the same.
     """
     assert output.shape == target.shape, "Dimensions of data are different."
+
     if default_value:
-        return TorchUtils.format(
-            torch.zeros(output.shape[1], device=TorchUtils.get_device()))
+        return torch.zeros(output.shape[1],
+                           device=output.device,
+                           dtype=output.dtype)
     else:
-        result = torch.zeros(output.shape[1], device=TorchUtils.get_device())
+        result = torch.zeros(output.shape[1],
+                             device=output.device,
+                             dtype=output.dtype)
         for i in range(output.shape[1]):
             result[i] = get_accuracy(output[:, i].unsqueeze(1),
                                      target[:,
@@ -96,7 +100,8 @@ def corr_fit(output: torch.Tensor,
     """
     assert output.shape == target.shape, "Dimensions of data are different."
     if default_value:
-        return -torch.ones(output.shape[1], device=TorchUtils.get_device())
+        return -torch.ones(
+            output.shape[1], device=output.device, dtype=output.dtype)
     else:
         return pearsons_correlation(output, target)
 
@@ -150,11 +155,14 @@ def corrsig_fit(output: torch.Tensor,
         If dimensions of output and target are not the same.
     """
     if default_value:
-        return -torch.ones(output.shape[1], device=TorchUtils.get_device())
+        return -torch.ones(
+            output.shape[1], device=output.device, dtype=output.dtype)
     else:
         assert output.shape == target.shape, "Dimensions of data are different."
         corr = pearsons_correlation(output, target)
-        sig = torch.zeros(output.shape[1], device=TorchUtils.get_device())
+        sig = torch.zeros(output.shape[1],
+                          device=output.device,
+                          dtype=output.dtype)
         for i in range(output.shape[1]):
             sep = output[:, i][target[:, i] == 1].mean() - output[:, i][
                 target[:, i] == 0].mean()
@@ -253,7 +261,9 @@ def corrsig(output: torch.Tensor,
     corr = pearsons_correlation(output, target)
 
     # difference between smallest false negative and largest false positive
-    delta = torch.zeros(output.shape[1], device=TorchUtils.get_device())
+    delta = torch.zeros(output.shape[1],
+                        device=output.device,
+                        dtype=output.dtype)
     for i in range(output.shape[1]):
         x_high_min = torch.min(output[:, i][target[:, i] == 1])
         x_low_max = torch.max(output[:, i][(target[:, i] == 0)])
@@ -302,8 +312,9 @@ def fisher_fit(output: torch.Tensor,
     """
     assert output.shape == target.shape, "Dimensions of data are different."
     if default_value:
-        return TorchUtils.format(
-            torch.zeros(output.shape[1], device=TorchUtils.get_device()))
+        return torch.zeros(output.shape[1],
+                           device=output.device,
+                           dtype=output.dtype)
     else:
         return fisher(output, target)
 
@@ -344,7 +355,9 @@ def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         uniform).
     """
     assert output.shape == target.shape, "Dimensions of data are different."
-    result = torch.zeros(output.shape[1], device=TorchUtils.get_device())
+    result = torch.zeros(output.shape[1],
+                         device=output.device,
+                         dtype=output.dtype)
     for i in range(output.shape[1]):
         x_high = output[:, i][(target[:, i] == 1)]
         x_low = output[:, i][(target[:, i] == 0)]
@@ -456,16 +469,18 @@ def get_clamped_intervals(output: torch.Tensor,
 
     # Then we prepare two tensors which we subtract from each other to
     # calculate nearest neighbour distances.
-    boundaries = TorchUtils.format(boundaries)
-    boundary_low = boundaries[0] * torch.ones([1, output.shape[1]],
-                                              device=TorchUtils.get_device())
-    boundary_high = boundaries[1] * torch.ones([1, output.shape[1]],
-                                               device=TorchUtils.get_device())
+    boundaries = TorchUtils.format(boundaries,
+                                   device=output.device,
+                                   data_type=output.dtype)
+    boundary_low = boundaries[0] * torch.ones(
+        [1, output.shape[1]], device=output.device, dtype=output.dtype)
+    boundary_high = boundaries[1] * torch.ones(
+        [1, output.shape[1]], device=output.device, dtype=output.dtype)
     output_highside = torch.cat((output_clamped, boundary_high), dim=0)
     output_lowside = torch.cat((boundary_low, output_clamped), dim=0)
 
-    multiplier = torch.ones_like(output_highside,
-                                 device=TorchUtils.get_device())
+    multiplier = torch.ones_like(output_highside, device=output.device)
+    multiplier.type_as(output)
     multiplier[0] = 1
     multiplier[-1] = 1
 
