@@ -212,8 +212,9 @@ class DNPU(nn.Module):
             +
             "number of data input electrodes) (e.g., [[1,2]] or [[1,2],[1,3]], data input indices"
             + "CANNOT be represented as just [1,2]. )")
-        self.data_input_ranges = torch.stack(
-            [voltage_ranges[i] for i in data_input_indices])
+        self.register_buffer(
+            "data_input_ranges",
+            torch.stack([voltage_ranges[i] for i in data_input_indices]))
 
         # Define control voltage ranges
         activation_electrode_indices = np.arange(
@@ -295,8 +296,8 @@ class DNPU(nn.Module):
         model.constraint_weights()
         [...]
         """
-        random_voltages = torch.rand_like(self.control_indices.float(),
-                                          device=self.control_ranges.device).T
+        random_voltages = torch.rand(self.control_indices.shape,
+                                     device=self.control_ranges.device).T
         range_size = (self.control_ranges.T[1] - self.control_ranges.T[0])
         range_base = self.control_ranges.T[0]
         return ((range_size * random_voltages) + range_base).T
@@ -491,11 +492,10 @@ class DNPU(nn.Module):
         self.input_transform = True
         self.input_clip = strict
         input_range = torch.tensor(input_range,
-                                   dtype=self.data_input_ranges.dtype,
-                                   device=self.data_input_ranges.device)
+                                   dtype=self.data_input_ranges.dtype)
         if input_range.shape != self.data_input_ranges.shape:
             input_range = input_range.expand_as(self.data_input_ranges)
-        self.raw_input_range = input_range
+        self.register_buffer("raw_input_range", input_range)
         scale, offset = get_linear_transform_constants(
             self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T,
             input_range.T[0].T, input_range.T[1].T)
