@@ -497,8 +497,14 @@ class DNPU(nn.Module):
         scale, offset = get_linear_transform_constants(
             self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T,
             input_range.T[0].T, input_range.T[1].T)
-        self.scale = scale
-        self.offset = offset
+        if scale.unique().shape[0] and offset.unique().shape[0] == 1:
+            self.scale = scale.flatten()[0]
+            self.offset = offset.flatten()[0]
+            self.unique_transform = True
+        else:
+            self.scale = scale
+            self.offset = offset
+            self.unique_transform = False
 
     def remove_input_transform(self):
         """
