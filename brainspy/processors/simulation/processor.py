@@ -368,13 +368,16 @@ class SurrogateModel(nn.Module):
             If the voltage ranges are changed.
         """
         if value is not None and value == "default":
-            self.voltage_ranges = TorchUtils.format(
-                info["activation_electrodes"]["voltage_ranges"])
+            self.register_buffer(
+                "voltage_ranges",
+                torch.tensor(info["activation_electrodes"]["voltage_ranges"]))
         elif value is not None:
             assert len(value) == info["activation_electrodes"]["electrode_no"]
             warnings.warn(
                 "Voltage ranges of surrogate model have been changed.")
-            self.voltage_ranges = TorchUtils.format(value)
+            if isinstance(value, list):
+                value = torch.tensor(value)
+            self.register_buffer("voltage_ranges", value)
         else:
             warnings.warn("Voltage ranges cannot be set to None.")
 
@@ -408,13 +411,15 @@ class SurrogateModel(nn.Module):
         UserWarning
             If the amplification is changed.
         """
+        del self.amplification
         if value is not None and value == "default":
-            self.amplification = TorchUtils.format(
-                info["output_electrodes"]["amplification"])
+            self.register_buffer(
+                "amplification",
+                torch.tensor(info["output_electrodes"]["amplification"]))
         elif value is not None:
             assert len(value) == info["output_electrodes"]["electrode_no"]
             warnings.warn("Amplification of surrogate model has been changed.")
-            self.amplification = TorchUtils.format(value)
+            self.register_buffer("amplification", value)
         else:
             warnings.warn("Amplification of surrogate model set to None")
             self.amplification = None
@@ -451,17 +456,19 @@ class SurrogateModel(nn.Module):
         UserWarning
             If the output clipping values are changed.
         """
+        del self.output_clipping
         if value is not None and value == "default":
             if info["output_electrodes"]["clipping_value"] is not None:
-                self.output_clipping = TorchUtils.format(
-                    info["output_electrodes"]["clipping_value"])
+                self.register_buffer(
+                    "output_clipping",
+                    torch.tensor(info["output_electrodes"]["clipping_value"]))
             else:
                 self.output_clipping = None
         elif value is not None:
             assert len(value) == 2
             warnings.warn(
                 "Output clipping values of surrogate model have been changed.")
-            self.output_clipping = TorchUtils.format(value)
+            self.register_buffer("output_clipping", value)
         else:
             warnings.warn("Output clipping of surrogate model set to None")
             self.output_clipping = None
@@ -470,4 +477,4 @@ class SurrogateModel(nn.Module):
         if self.output_clipping is not None:
             return self.output_clipping
         else:
-            return TorchUtils.format([-np.inf, np.inf])
+            return torch.tensor([-np.inf, np.inf], device=self.device)

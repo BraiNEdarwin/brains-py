@@ -156,7 +156,7 @@ class HardwareProcessor(nn.Module):
             self.clipping_value = self.driver.get_clipping_value()
         else:
             self.driver = get_driver(instrument_configs)
-            self.voltage_ranges = TorchUtils.format(self.driver.voltage_ranges)
+            self.register_buffer("voltage_ranges", self.driver.voltage_ranges)
             self.clipping_value = None
             # TODO: Add message for assertion. Raise an error.
             assert (slope_length / self.driver.configs["sampling_frequency"]
@@ -200,7 +200,9 @@ class HardwareProcessor(nn.Module):
             output = self.forward_numpy(x)
             if self.logger is not None:
                 self.logger.log_output(x)
-        return TorchUtils.format(output[mask])
+        return TorchUtils.format(output[mask],
+                                 device=x.device,
+                                 data_type=x.dtype)
 
     def forward_numpy(self, x):
         """
