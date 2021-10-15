@@ -4,7 +4,6 @@ import numpy as np
 
 from torch import nn, Tensor
 from typing import Sequence, Union
-from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
 
 from brainspy.utils.transforms import get_linear_transform_constants
@@ -86,7 +85,7 @@ class DNPU(nn.Module):
             assert False, "Dnpu type not recognised. It should be either 'single', 'for' or 'vec'"
             # TODO: Change the assestion for raising an exception
 
-    def init_node_no(self, data_input_indices: Sequence[int]):
+    def init_node_no(self):
         """
         Counts how many DNPU nodes are going to be in the layer for time-multiplexing.
 
@@ -114,13 +113,12 @@ class DNPU(nn.Module):
         -------
         int - The number of nodes that are going to be used in the layer for time-multiplexing.
         """
-        aux = TorchUtils.format(data_input_indices)
-        if len(aux.shape) == 1:
+        if len(self.data_input_indices.shape) == 1:
             return 1
         else:
-            return len(aux)
+            return len(self.data_input_indices)
 
-    def init_activation_electrode_no(self, data_input_indices: Sequence[int]):
+    def init_activation_electrode_no(self):
         """
         It counts how many control and data input electrodes are
         going to be declared using the data_input_indices variable.
@@ -153,8 +151,7 @@ class DNPU(nn.Module):
             Number of control electrodes.
 
         """
-        aux = TorchUtils.format(data_input_indices)
-        input_data_electrode_no = len(aux[0])
+        input_data_electrode_no = len(self.data_input_indices[0])
         control_electrode_no = self.processor.get_activation_electrode_no(
         ) - input_data_electrode_no
         return input_data_electrode_no, control_electrode_no
@@ -196,17 +193,18 @@ class DNPU(nn.Module):
         data_input_indices : Sequence[int]
             Indices of the input electrodes.
         """
-        self.node_no = self.init_node_no(data_input_indices)
+        self.register_buffer("data_input_indices",
+                             torch.tensor(data_input_indices))
+        self.node_no = self.init_node_no()
         self.data_input_electrode_no, self.control_electrode_no = self.init_activation_electrode_no(
-            data_input_indices)
+        )
         voltage_ranges = self.processor.processor.get_voltage_ranges()
 
         # Define data input voltage ranges
         # TODO: Add to documentation. data input ranges are defined as follows: (node_no,
         # electrode_no, 2) where last 2 is for min and max
         # Define data input electrode indices
-        self.data_input_indices = TorchUtils.format(data_input_indices,
-                                                    data_type=torch.int64)
+
         assert len(self.data_input_indices.shape) == 2, (
             "Please revise the format in which data input indices has been passed to the DNPU. "
             +
@@ -226,13 +224,15 @@ class DNPU(nn.Module):
         ]
         # TODO: Add to documentation. control ranges are defined as follows: (node_no, electrode_no,
         # 2) where last 2 is for min and max
-        self.control_ranges = TorchUtils.format(
+        self.register_buffer(
+            "control_ranges",
             torch.stack([voltage_ranges[i] for i in control_list]))
 
-        # Define control electrode indices
-        self.control_indices = TorchUtils.format(
-            control_list, data_type=torch.int64
-        )  # IndexError: tensors used as indices must be long, byte or bool tensors
+        self.register_buffer("control_indices", torch.tensor(control_list))
+        # # Define control electrode indices
+        # self.control_indices = TorchUtils.format(
+        #     control_list, data_type=torch.int64
+        # )  # IndexError: tensors used as indices must be long, byte or bool tensors
 
     def get_data_input_electrode_no(self):
         """
@@ -295,8 +295,8 @@ class DNPU(nn.Module):
         model.constraint_weights()
         [...]
         """
-        random_voltages = TorchUtils.format(
-            torch.rand_like(self.control_indices.float())).T
+        random_voltages = torch.rand_like(self.control_indices.float(),
+                                          device=self.control_ranges.device).T
         range_size = (self.control_ranges.T[1] - self.control_ranges.T[0])
         range_base = self.control_ranges.T[0]
         return ((range_size * random_voltages) + range_base).T
@@ -490,7 +490,9 @@ class DNPU(nn.Module):
         """
         self.input_transform = True
         self.input_clip = strict
-        input_range = TorchUtils.format(input_range)
+        input_range = torch.tensor(input_range,
+                                   dtype=self.data_input_ranges.dtype,
+                                   device=self.data_input_ranges.device)
         if input_range.shape != self.data_input_ranges.shape:
             input_range = input_range.expand_as(self.data_input_ranges)
         self.raw_input_range = input_range
@@ -498,12 +500,12 @@ class DNPU(nn.Module):
             self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T,
             input_range.T[0].T, input_range.T[1].T)
         if scale.unique().shape[0] and offset.unique().shape[0] == 1:
-            self.scale = scale.flatten()[0]
-            self.offset = offset.flatten()[0]
+            self.register_buffer("scale", scale.flatten()[0])
+            self.register_buffer("offset", offset.flatten()[0])
             self.unique_transform = True
         else:
-            self.scale = scale
-            self.offset = offset
+            self.register_buffer("scale", scale)
+            self.register_buffer("offset", offset)
             self.unique_transform = False
 
     def remove_input_transform(self):
@@ -701,7 +703,12 @@ class DNPU(nn.Module):
                 self.bias.shape == bias.shape
             ), "Control voltages could not be set due to a shape missmatch "
             "with regard to the ones already in the model."
-            self.bias = torch.nn.Parameter(TorchUtils.format(bias))
+            assert (
+                self.bias.dtpye == bias.dtype
+            ), "Control voltages could not be set due to a shape missmatch "
+            "with regard to the ones already in the model."
+            self.bias = torch.nn.Parameter(
+                bias.type_as(self.bias).to(self.bias.device))
 
     def get_control_voltages(self) -> torch.Tensor:
         """
@@ -846,7 +853,8 @@ def merge_electrode_data(
         + "or are in a different device (CUDA or CPU). ")
     result = torch.empty(
         (input_data.shape[0], len(input_data_indices) + len(control_indices)),
-        device=TorchUtils.get_device())
+        device=input_data.device,
+        dtype=input_data.dtype)
     result[:, input_data_indices] = input_data
     result[:, control_indices] = control_data
     return result
