@@ -23,20 +23,20 @@ def linear_transform(y_min: float, y_max: float, x_min: float, x_max: float,
 
     Parameters
     ----------
-    x_val: float
+    x_val: float,torch.Tensor
         Point at which the line is evaluated.
-    y_min : float
+    y_min : float,torch.Tensor
         Y-coordinate of first point.
-    y_max : float
+    y_max : float,torch.Tensor
         Y-coordinate of second point.
-    x_min : float
+    x_min : float,torch.Tensor
         X-coordinate of first point.
-    x_max : float
+    x_max : float,torch.Tensor
         X-coordinate of second point.
 
     Returns
     -------
-    float
+    float or torch.Tensor (sepending on the parameters)
         The line is defined by w and b and evaluated at x_val.
 
     Raises
@@ -44,6 +44,11 @@ def linear_transform(y_min: float, y_max: float, x_min: float, x_max: float,
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
+    if (type(x_max) == int or type(x_max) == float) and (type(x_min) == int or
+                                                         type(x_min) == float):
+        if x_max < x_min:
+            raise AssertionError("x_min cannot be greater than x_max")
+
     scale, offset = get_linear_transform_constants(y_min, y_max, x_min, x_max)
     return (x_val * scale) + offset
 
@@ -69,24 +74,26 @@ def get_linear_transform_constants(y_min: float, y_max: float, x_min: float,
 
     Parameters
     ----------
-    y_min : float
+    y_min : float,torch.Tensor
         Y-coordinate of first point. In a current to voltage linear transformation,
         the expected minimum value(s) for the voltage.
-    y_max : float
+    y_max : float,torch.Tensor
         Y-coordinate of second point. In a current to voltage linear transformation,
         the expected maximum value(s) for the voltage.
-    x_min : float
+    x_min : float,torch.Tensor
         X-coordinate of first point. In a current to voltage linear transformation,
         the expected minimum value(s) for the current.
-    x_max : float
+    x_max : float,torch.Tensor
         X-coordinate of second point. In a current to voltage linear transformation,
         the expected minimum value(s) for the current.
 
     Returns
     -------
-    scale : double
+    scale : double - if parameters are of type - float
+            torch.Tensor - if parameters are of type - torch.Tensor
         Scale of the line.
-    offset: double
+    offset: double - if parameters are of type - float
+            torch.Tensor - if parameters are of type - torch.Tensor
         Offset of the line.
 
     Raises
@@ -94,6 +101,10 @@ def get_linear_transform_constants(y_min: float, y_max: float, x_min: float,
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
+    if (type(x_max) == int or type(x_max) == float) and (type(x_min) == int or
+                                                         type(x_min) == float):
+        if x_max < x_min:
+            raise AssertionError("x_min cannot be greater than x_max")
     return get_scale(y_min, y_max, x_min,
                      x_max), get_offset(y_min, y_max, x_min, x_max)
 
@@ -117,22 +128,23 @@ def get_scale(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
 
     Parameters
     ----------
-    y_min : float
+    y_min : float,torch.Tensor
         Y-coordinate of first point. In a current to voltage linear transformation,
         the expected minimum value(s) for the voltage.
-    y_max : float
+    y_max : float,torch.Tensor
         Y-coordinate of second point. In a current to voltage linear transformation,
         the expected maximum value(s) for the voltage.
-    x_min : float
+    x_min : float,torch.Tensor
         X-coordinate of first point. In a current to voltage linear transformation,
         the expected minimum value(s) for the current.
-    x_max : float
+    x_max : float,torch.Tensor
         X-coordinate of second point. In a current to voltage linear transformation,
         the expected minimum value(s) for the current.
 
     Returns
     -------
-    float
+    double - if parameters are of type - float
+    torch.Tensor - if parameters are of type - torch.Tensor
         The scale of the line.
 
     Raises
@@ -140,6 +152,10 @@ def get_scale(y_min: float, y_max: float, x_min: float, x_max: float) -> float:
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
+    if (type(x_max) == int or type(x_max) == float) and (type(x_min) == int or
+                                                         type(x_min) == float):
+        if x_max < x_min:
+            raise AssertionError("x_min cannot be greater than x_max")
     return (y_min - y_max) / (x_min - x_max)
 
 
@@ -163,22 +179,23 @@ def get_offset(y_min: float, y_max: float, x_min: float,
 
     Parameters
     ----------
-    y_min : float
+    y_min : float,torch.Tensor
         Y-coordinate of first point. In a current to voltage linear transformation,
         the expected minimum value(s) for the voltage.
-    y_max : float
+    y_max : float,torch.Tensor
         Y-coordinate of second point. In a current to voltage linear transformation,
         the expected maximum value(s) for the voltage.
-    x_min : float
+    x_min : float,torch.Tensor
         X-coordinate of first point. In a current to voltage linear transformation,
         the expected minimum value(s) for the current.
-    x_max : float
+    x_max : float,Torch.Tensor
         X-coordinate of second point. In a current to voltage linear transformation,
         the expected minimum value(s) for the current.
 
     Returns
     -------
-    float
+    double - if parameters are of type - float
+    torch.Tensor - if parameters are of type - torch.Tensor
         The offset of the line.
 
     Raises
@@ -186,11 +203,16 @@ def get_offset(y_min: float, y_max: float, x_min: float,
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
+    if (type(x_max) == int or type(x_max) == float) and (type(x_min) == int or
+                                                         type(x_min) == float):
+        if x_max < x_min:
+            raise AssertionError("x_min cannot be greater than x_max")
     return ((y_max * x_min) - (y_min * x_max)) / (x_min - x_max)
 
 
 # Used in conv.py.
-def format_input_ranges(input_min, input_max, output_ranges):
+def format_input_ranges(input_min: float, input_max: float,
+                        output_ranges: torch.Tensor):
     """
     Generate a tensor of input ranges with the same shape as given output
     ranges. All the input ranges are from input_min to input_max.
