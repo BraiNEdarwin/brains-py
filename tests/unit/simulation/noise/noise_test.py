@@ -2,12 +2,12 @@
 Testing the noise module of the simulation processor.
 """
 
-import unittest
-
 import torch
-
-from brainspy.processors.simulation.noise.noise import GaussianNoise, get_noise
+import random
+import unittest
+import numpy as np
 from brainspy.utils.pytorch import TorchUtils
+from brainspy.processors.simulation.noise.noise import GaussianNoise, get_noise
 
 
 class TransformsTest(unittest.TestCase):
@@ -43,17 +43,100 @@ class TransformsTest(unittest.TestCase):
                            dtype=torch.get_default_dtype())
             self.assertEqual(x.shape, gaussian(x).shape)
 
+    def test_init(self):
+        """
+        Initialize the GaussianNoise object with a random value positive or negative
+        raises no errors
+        """
+        try:
+            GaussianNoise(random.randint(-10000, 10000))
+        except (Exception):
+            self.fail("Exception raised")
+
+    def test_init_fail(self):
+        """
+        Invalid type for variance raises a AssertionError
+        """
+        with self.assertRaises(AssertionError):
+            GaussianNoise(None)
+        with self.assertRaises(AssertionError):
+            GaussianNoise("String type")
+        with self.assertRaises(AssertionError):
+            GaussianNoise(np.array([1, 2, 3]))
+        with self.assertRaises(AssertionError):
+            GaussianNoise([1, 2, 3, 4])
+
+    def test_call(self):
+        """
+        Using the _call_ function on the gaussian noise with a random torch tensor
+        everytime and testing with differnt sizes
+        """
+        gaussian = GaussianNoise(random.randint(-10000, 10000))
+        test_sizes = ((1, 1), (10, 1), (100, 1), (10, 2), (100, 7))
+        for size in test_sizes:
+            for i in range(100):
+                try:
+                    gaussian(
+                        torch.rand(size,
+                                   device=TorchUtils.get_device(),
+                                   dtype=torch.get_default_dtype()))
+                except (Exception):
+                    self.fail("Exception raised")
+
+    def test_call_fail(self):
+        """
+        The __call__ function fails and raises an assertion error if
+        an invalid type is provided
+        """
+        gaussian = GaussianNoise(random.randint(-10000, 10000))
+
+        with self.assertRaises(AssertionError):
+            gaussian(None)
+        with self.assertRaises(AssertionError):
+            gaussian("String type")
+        with self.assertRaises(AssertionError):
+            gaussian([1, 2, 3, 4, 5])
+        with self.assertRaises(AssertionError):
+            gaussian(np.array([1, 2, 3]))
+
     def test_get_noise(self):
         """
-        Check if get_noise method returns a noise object, or None if input is
-        None.
+        Tesing the get_noise method to return the correct object
         """
-        noise = get_noise(noise_type="gaussian", mse=1)
+        configs = {
+            "type": "gaussian",
+            "variance": random.randint(-10000, 10000)
+        }
+        noise = get_noise(configs=configs)
         self.assertIsInstance(noise, GaussianNoise)
-        noise = get_noise(noise_type="test", mse=2)
+
+    def test_get_noise_none(self):
+        """
+        Invalid configurations for the get_noise method
+        returns a none type object
+        """
+        configs = {"type": "test", "variance": 2}
+        noise = get_noise(configs=configs)
         self.assertIsNone(noise)
-        noise = get_noise(noise_type=None)
+
+        configs = {"type": None}
+        noise = get_noise(configs=configs)
         self.assertIsNone(noise)
+
+    def test_get_noise_fail(self):
+        """
+        Invalid argument for the method get_noise raises an AssertionError
+        """
+        with self.assertRaises(AssertionError):
+            get_noise("String")
+        with self.assertRaises(AssertionError):
+            get_noise([1, 2, 3, 4])
+        with self.assertRaises(AssertionError):
+            get_noise(1000)
+        with self.assertRaises(AssertionError):
+            get_noise(np.array([1, 2, 3, 4]))
+        with self.assertRaises(AssertionError):
+            get_noise(None)
 
 
 if __name__ == "__main__":
