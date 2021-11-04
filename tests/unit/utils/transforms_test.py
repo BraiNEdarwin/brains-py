@@ -82,7 +82,8 @@ class TransformsTest(unittest.TestCase):
                                         x_min=x_min,
                                         x_max=x_max)
         except (Exception):
-            self.fail("Exception was raised")
+            self.fail(
+                "Couldn't perform linear transform with the values provided")
 
         x_min = torch.randint(1, 10, (2, 2))
         y_min = torch.randint(1, 10, (2, 2))
@@ -96,7 +97,8 @@ class TransformsTest(unittest.TestCase):
                                         x_min=x_min,
                                         x_max=x_max)
         except (Exception):
-            self.fail("Exception was raised")
+            self.fail(
+                "Couldn't perform linear transform with the values provided")
 
     def test_linear_transform_min_max(self):
         """
@@ -205,7 +207,7 @@ class TransformsTest(unittest.TestCase):
                                   x_min=x_min,
                                   x_max=x_max)
         except ("Exception"):
-            self.fail("Exception was raised")
+            self.fail("Offset cannot be generated with the values provided")
 
         x_min = torch.randint(1, 10, (2, 2))
         y_min = torch.randint(1, 10, (2, 2))
@@ -217,7 +219,7 @@ class TransformsTest(unittest.TestCase):
                                   x_min=x_min,
                                   x_max=x_max)
         except ("Exception"):
-            self.fail("Exception was raised")
+            self.fail("Offset cannot be generated with the values provided")
 
     def test_get_offset_min_max(self):
         """
@@ -312,7 +314,7 @@ class TransformsTest(unittest.TestCase):
                                  x_min=x_min,
                                  x_max=x_max)
         except ("Exception"):
-            self.fail("Exception was raised")
+            self.fail("Cannot get scale with the values provided")
 
         x_min = torch.randint(1, 10, (2, 2))
         y_min = torch.randint(1, 10, (2, 2))
@@ -324,7 +326,7 @@ class TransformsTest(unittest.TestCase):
                                  x_min=x_min,
                                  x_max=x_max)
         except ("Exception"):
-            self.fail("Exception was raised")
+            self.fail("Cannot get scale with the values provided")
 
     def test_get_scale_min_max(self):
         """
@@ -420,7 +422,8 @@ class TransformsTest(unittest.TestCase):
                                                       x_min=x_min,
                                                       x_max=x_max)
         except ("Exception"):
-            self.fail("Exception was raised")
+            self.fail(
+                "Cannot generate scale and offset with the values provided")
 
         x_min = torch.randint(1, 10, (2, 2))
         y_min = torch.randint(1, 10, (2, 2))
@@ -432,7 +435,8 @@ class TransformsTest(unittest.TestCase):
                                                       x_min=x_min,
                                                       x_max=x_max)
         except ("Exception"):
-            self.fail("Exception was raised")
+            self.fail(
+                "Cannot generate scale and offset with the values provided")
 
     def test_get_linear_transform_constants_max_min(self):
         """

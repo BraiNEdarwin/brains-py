@@ -10,10 +10,14 @@ from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.simulation.noise.noise import GaussianNoise, get_noise
 
 
-class TransformsTest(unittest.TestCase):
+class NoiseTest(unittest.TestCase):
     """
     Class for testing 'noise.py'.
     """
+    def __init__(self, test_name):
+        super(NoiseTest, self).__init__()
+        self.threshold = 10000
+
     def test_gaussian_zero(self):
         """
         Check if gaussian noise with 0 standard deviation always returns the
@@ -49,9 +53,11 @@ class TransformsTest(unittest.TestCase):
         raises no errors
         """
         try:
-            GaussianNoise(random.randint(-10000, 10000))
+            GaussianNoise(random.randint(-self.threshold, self.threshold))
         except (Exception):
-            self.fail("Exception raised")
+            self.fail(
+                "Couldn't initialize GaussianNoise class with the values provided"
+            )
 
     def test_init_fail(self):
         """
@@ -71,7 +77,8 @@ class TransformsTest(unittest.TestCase):
         Using the _call_ function on the gaussian noise with a random torch tensor
         everytime and testing with differnt sizes
         """
-        gaussian = GaussianNoise(random.randint(-10000, 10000))
+        gaussian = GaussianNoise(
+            random.randint(-self.threshold, self.threshold))
         test_sizes = ((1, 1), (10, 1), (100, 1), (10, 2), (100, 7))
         for size in test_sizes:
             for i in range(100):
@@ -81,14 +88,17 @@ class TransformsTest(unittest.TestCase):
                                    device=TorchUtils.get_device(),
                                    dtype=torch.get_default_dtype()))
                 except (Exception):
-                    self.fail("Exception raised")
+                    self.fail(
+                        "Couldn't use the call function with this test size and values"
+                    )
 
     def test_call_fail(self):
         """
         The __call__ function fails and raises an assertion error if
         an invalid type is provided
         """
-        gaussian = GaussianNoise(random.randint(-10000, 10000))
+        gaussian = GaussianNoise(
+            random.randint(-self.threshold, self.threshold))
 
         with self.assertRaises(AssertionError):
             gaussian(None)
@@ -105,7 +115,7 @@ class TransformsTest(unittest.TestCase):
         """
         configs = {
             "type": "gaussian",
-            "variance": random.randint(-10000, 10000)
+            "variance": random.randint(-self.threshold, self.threshold)
         }
         noise = get_noise(configs=configs)
         self.assertIsInstance(noise, GaussianNoise)
@@ -137,6 +147,17 @@ class TransformsTest(unittest.TestCase):
             get_noise(np.array([1, 2, 3, 4]))
         with self.assertRaises(AssertionError):
             get_noise(None)
+
+    def runTest(self):
+        self.test_gaussian_zero()
+        self.test_gaussian()
+        self.test_call()
+        self.test_call_fail()
+        self.test_init()
+        self.test_init_fail()
+        self.test_get_noise()
+        self.test_get_noise_none()
+        self.test_get_noise_fail()
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from typing import Tuple
 def linear_transform(y_min, y_max, x_min, x_max, x_val):
     """
     Define a line by two points. Evaluate it at a given point.
-    The points are expressed as float values or a torch tensors.
+    The points are expressed as float values or as torch tensors.
     Used to transform current data to the input voltage ranges of a device:
     Current range would be (x_min, x_max), voltage range would be
     (y_min, y_max).
@@ -101,22 +101,6 @@ def get_linear_transform_constants(
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
-    if (type(x_max) == int or type(x_max) == float) and (type(x_min) == int or
-                                                         type(x_min) == float):
-        if x_max < x_min:
-            raise AssertionError("x_min cannot be greater than x_max")
-    elif (type(y_max) == int or type(y_max)
-          == float) and (type(y_min) == int or type(y_min) == float):
-        if y_max < y_min:
-            raise AssertionError("y_min cannot be greater than y_max")
-    else:
-        check = x_max > x_min
-        check2 = y_max > y_min
-        if torch.all(check) == torch.tensor(False):
-            raise AssertionError("x_min cannot be greater than x_max")
-        if torch.all(check2) == torch.tensor(False):
-            raise AssertionError("y_min cannot be greater than y_max")
-
     return get_scale(y_min, y_max, x_min,
                      x_max), get_offset(y_min, y_max, x_min, x_max)
 
@@ -138,7 +122,7 @@ def get_scale(y_min: torch.Tensor, y_max: torch.Tensor, x_min: torch.Tensor,
     This gives the line defined by the points (1, 1) and (2, 0),
     which is y = 2 - x.
     The function will return the scale, which is -1.
-    
+
     >>> get_scale(x_min=torch.tensor([[1, 4]]),
                   y_min=torch.tensor([[16, 14]]),
                   x_max=torrch.tensor([[7, 4]]),
@@ -170,22 +154,7 @@ def get_scale(y_min: torch.Tensor, y_max: torch.Tensor, x_min: torch.Tensor,
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
-    if (type(x_max) == int or type(x_max) == float) and (type(x_min) == int or
-                                                         type(x_min) == float):
-        if x_max < x_min:
-            raise AssertionError("x_min cannot be greater than x_max")
-    elif (type(y_max) == int or type(y_max)
-          == float) and (type(y_min) == int or type(y_min) == float):
-        if y_max < y_min:
-            raise AssertionError("y_min cannot be greater than y_max")
-    else:
-        check = x_max > x_min
-        check2 = y_max > y_min
-        if torch.all(check) == torch.tensor(False):
-            raise AssertionError("x_min cannot be greater than x_max")
-        if torch.all(check2) == torch.tensor(False):
-            raise AssertionError("y_min cannot be greater than y_max")
-
+    check_values(x_max, x_min, y_max, y_min)
     return (y_min - y_max) / (x_min - x_max)
 
 
@@ -238,6 +207,41 @@ def get_offset(y_min: torch.Tensor, y_max: torch.Tensor, x_min: torch.Tensor,
     ZeroDivisionError
         If x_min equals x_max division by 0 occurs.
     """
+    check_values(x_max, x_min, y_max, y_min)
+    return ((y_max * x_min) - (y_min * x_max)) / (x_min - x_max)
+
+
+def check_values(x_max, x_min, y_max, y_min):
+    """
+    To check wheather the arguments provided to the functions - get_offset and get_scale
+    are valid by raising an Assertion Error if x_max < x_min or y_max < y_min
+
+    Parameters
+    ----------
+    y_min : torch.Tensor
+        Y-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the voltage.
+    y_max : torch.Tensor
+        Y-coordinate of second point. In a current to voltage linear transformation,
+        the expected maximum value(s) for the voltage.
+    x_min : torch.Tensor
+        X-coordinate of first point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
+    x_max : Torch.Tensor
+        X-coordinate of second point. In a current to voltage linear transformation,
+        the expected minimum value(s) for the current.
+
+    Raises
+    ------
+    AssertionError
+        raised if x_max < x_min when the type of the arguments are int or float
+    AssertionError
+        raised if y_max < y_min when the type of the arguments are int or float
+    AssertionError
+        raised if x_max < x_min when the arguments are provided as torch tensors
+    AssertionError
+         raised if y_max < y_min when the arguments are provided as torch tensors
+    """
     if (type(x_max) == int or type(x_max) == float) and (type(x_min) == int or
                                                          type(x_min) == float):
         if x_max < x_min:
@@ -253,5 +257,3 @@ def get_offset(y_min: torch.Tensor, y_max: torch.Tensor, x_min: torch.Tensor,
             raise AssertionError("x_min cannot be greater than x_max")
         if torch.all(check2) == torch.tensor(False):
             raise AssertionError("y_min cannot be greater than y_max")
-
-    return ((y_max * x_min) - (y_min * x_max)) / (x_min - x_max)
