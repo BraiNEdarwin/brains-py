@@ -15,9 +15,11 @@ class ModelTest(unittest.TestCase):
     """
     Class for testing 'model.py'.
     """
+    global threshold
+
     def test_init_default(self):
         """
-        Test to generate a model with default parameters raises 4 four warnings
+        Test to generate a model with default parameters raises 4 warnings
         and is an instance of nn.Sequential
         """
         with warnings.catch_warnings(record=True) as caught_warnings:
@@ -100,7 +102,7 @@ class ModelTest(unittest.TestCase):
 
     def test_init_fail(self):
         """
-        Invalid type for D_in r D_out raises an AssertionError
+        Invalid type for D_in or D_out raises an AssertionError
         """
         model_structure = {
             "D_in": "Invalid type",
@@ -137,14 +139,18 @@ class ModelTest(unittest.TestCase):
         """
         Test to generate a model with random values for D_in,
         D_out and hidden_sizes
-        If the method fails, the cpu can allocate enough bytes
+        If the method fails, the cpu cannot allocate enough bytes
         """
-
+        threshold = 100
         model_structure = {
-            "D_in": random.randint(0, 100),
-            "D_out": random.randint(0, 100),
-            "activation": "relu",
-            "hidden_sizes": [random.randint(0, 100) for i in range(100)]
+            "D_in":
+            random.randint(0, threshold),
+            "D_out":
+            random.randint(0, threshold),
+            "activation":
+            "relu",
+            "hidden_sizes":
+            [random.randint(0, threshold) for i in range(threshold)]
         }
         try:
             NeuralNetworkModel(model_structure)

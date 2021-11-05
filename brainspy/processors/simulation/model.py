@@ -159,21 +159,6 @@ class NeuralNetworkModel(nn.Module):
         UserWarning
             If a parameter is not in the expected format.
         """
-        if 'D_in' in model_structure:
-            D_in = model_structure.get('D_in')
-            assert (type(D_in) == int)
-            if D_in < 0:
-                raise AssertionError("D_in cannot be negative")
-        if 'D_out' in model_structure:
-            D_out = model_structure.get('D_out')
-            assert (type(D_out) == int)
-            if D_out < 0:
-                raise AssertionError("D_in cannot be negative")
-        if 'hidden_sizes' in model_structure:
-            hidden_sizes = model_structure.get('hidden_sizes')
-            assert (type(hidden_sizes) == list)
-            for i in hidden_sizes:
-                assert (type(i) == int)
         default_in_size = 7
         default_out_size = 1
         default_hidden_size = 90
@@ -191,12 +176,24 @@ class NeuralNetworkModel(nn.Module):
             warnings.warn(
                 "The model loaded does not define the input dimension as "
                 f"expected. Changed it to default value: {default_in_size}.")
+        else:
+            D_in = model_structure.get('D_in')
+            assert (type(D_in) == int)
+            if D_in < 0:
+                raise AssertionError("D_in cannot be negative")
+
         if "D_out" not in model_structure:
             # Check output dimension.
             model_structure["D_out"] = default_out_size
             warnings.warn(
                 "The model loaded does not define the output dimension as "
                 f"expected. Changed it to default value: {default_out_size}.")
+        else:
+            D_out = model_structure.get('D_out')
+            assert (type(D_out) == int)
+            if D_out < 0:
+                raise AssertionError("D_in cannot be negative")
+
         if "hidden_sizes" not in model_structure:
             # Check sizes of hidden layers.
             model_structure["hidden_sizes"] = [default_hidden_size
@@ -205,3 +202,8 @@ class NeuralNetworkModel(nn.Module):
                 "The model loaded does not define the hidden layer sizes as "
                 f"expected. Changed it to default value: "
                 f"{default_hidden_number} layers of {default_hidden_size}.")
+        else:
+            hidden_sizes = model_structure.get('hidden_sizes')
+            assert (type(hidden_sizes) == list)
+            for i in hidden_sizes:
+                assert (type(i) == int)
