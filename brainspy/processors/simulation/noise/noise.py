@@ -23,6 +23,7 @@ class GaussianNoise:
             mean squared deviation error obtained during the training of a
             surrogate model.
         """
+        assert (type(variance) == float or type(variance) == int)
         self.std = torch.tensor(
             [variance],
             device=TorchUtils.get_device(),
@@ -43,6 +44,7 @@ class GaussianNoise:
         torch.Tensor
             Output data.
         """
+        assert (type(x) == torch.Tensor)
         return x + (self.std * torch.randn(
             x.shape,
             device=TorchUtils.get_device(),
@@ -86,6 +88,7 @@ def get_noise(configs: dict, **kwargs):
     UserWarning
         If the string given does not correspond to an implemented noise type.
     """
+    assert (type(configs) == dict)
     if configs is not None:
         if configs["type"] == "gaussian":
             return GaussianNoise(configs["variance"])
