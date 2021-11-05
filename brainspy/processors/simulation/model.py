@@ -33,7 +33,8 @@ class NeuralNetworkModel(nn.Module):
             D_out : int
                 Number of outputs (electrodes).
             activation : str
-                Type of activation,  for example "relu".
+                Type of activation. Supported activations are "relu", "elu",
+                "tanh", "hard-tanh", or "sigmoid".
             hidden_sizes : list[int]
                 Sizes of the hidden layers.
         verbose : bool, optional
@@ -53,6 +54,16 @@ class NeuralNetworkModel(nn.Module):
         ----------
         model_structure : dict
             Dictionary containing the weights and activations of the model.
+            The following keys are required :
+                D_in : int
+                    Number of inputs (electrodes).
+                D_out : int
+                    Number of outputs (electrodes).
+                activation : str
+                    Type of activation. Supported activations are "relu", "elu",
+                    "tanh", "hard-tanh", or "sigmoid".
+                hidden_sizes : list[int]
+                    Sizes of the hidden layers.
         """
         self.structure_consistency_check(model_structure)
         hidden_sizes = model_structure["hidden_sizes"]
@@ -148,6 +159,21 @@ class NeuralNetworkModel(nn.Module):
         UserWarning
             If a parameter is not in the expected format.
         """
+        if 'D_in' in model_structure:
+            D_in = model_structure.get('D_in')
+            assert (type(D_in) == int)
+            if D_in < 0:
+                raise AssertionError("D_in cannot be negative")
+        if 'D_out' in model_structure:
+            D_out = model_structure.get('D_out')
+            assert (type(D_out) == int)
+            if D_out < 0:
+                raise AssertionError("D_in cannot be negative")
+        if 'hidden_sizes' in model_structure:
+            hidden_sizes = model_structure.get('hidden_sizes')
+            assert (type(hidden_sizes) == list)
+            for i in hidden_sizes:
+                assert (type(i) == int)
         default_in_size = 7
         default_out_size = 1
         default_hidden_size = 90
