@@ -370,7 +370,8 @@ class SurrogateModel(nn.Module):
         if value is not None and value == "default":
             self.register_buffer(
                 "voltage_ranges",
-                torch.tensor(info["activation_electrodes"]["voltage_ranges"]))
+                torch.tensor(info["activation_electrodes"]["voltage_ranges"],
+                             dtype=torch.get_default_dtype()))
         elif value is not None:
             assert len(value) == info["activation_electrodes"]["electrode_no"]
             warnings.warn(
