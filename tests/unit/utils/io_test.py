@@ -138,6 +138,7 @@ class IOTest(unittest.TestCase):
         !include boolean.yaml
         """
         file = open(self.path + "/test_torch.yaml", "r")
+        # !include
         loader = IncludeLoader(file)
         data = loader.get_data()
         self.assertEqual(
