@@ -8,6 +8,8 @@ from brainspy.processors.processor import Processor
 
 from brainspy.utils.transforms import get_linear_transform_constants
 
+import warnings
+
 
 class DNPU(nn.Module):
     """
@@ -640,11 +642,14 @@ class DNPU(nn.Module):
         self.eval()
         old_ranges = self.processor.get_voltage_ranges().cpu().half().clone()
         self.processor.swap(configs, info, model_state_dict)
+        self.init_electrode_info(configs['input_indices'])
         new_ranges = self.processor.get_voltage_ranges().cpu().half().clone()
-        assert torch.equal(
-            old_ranges,
-            new_ranges), "Voltage ranges for the new processor are different "
-        "than the control voltage ranges for which the DNPU was trained."
+        if not torch.equal(old_ranges, new_ranges):
+            warnings.warn(
+                "Voltage ranges for the new processor are different "
+                "than the control voltage ranges for which the DNPU was trained: \n\n"
+                f"* old voltage ranges: \n {old_ranges.cpu().numpy()} \n\n"
+                f"* new voltage ranges: \n {new_ranges.cpu().numpy()} \n")
         del old_ranges
         del new_ranges
 
