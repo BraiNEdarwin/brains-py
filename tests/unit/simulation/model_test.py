@@ -141,16 +141,20 @@ class ModelTest(unittest.TestCase):
         D_out and hidden_sizes
         If the method fails, the cpu cannot allocate enough bytes
         """
-        threshold = 100
+        threshold_electrodes = 20
+        threshold_hidden_sizes = 90
+        threshold_hidden_layer_no = 10
         model_structure = {
             "D_in":
-            random.randint(0, threshold),
+            random.randint(0, threshold_electrodes),
             "D_out":
-            random.randint(0, threshold),
+            random.randint(0, threshold_electrodes),
             "activation":
             "relu",
-            "hidden_sizes":
-            [random.randint(0, threshold) for i in range(threshold)]
+            "hidden_sizes": [
+                random.randint(0, threshold_hidden_sizes)
+                for i in range(threshold_hidden_layer_no)
+            ]
         }
         try:
             NeuralNetworkModel(model_structure)
