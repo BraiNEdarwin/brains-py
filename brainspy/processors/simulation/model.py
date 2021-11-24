@@ -65,6 +65,8 @@ class NeuralNetworkModel(nn.Module):
                 hidden_sizes : list[int]
                     Sizes of the hidden layers.
         """
+        if model_structure is None:
+            model_structure = {}
         self.structure_consistency_check(model_structure)
         hidden_sizes = model_structure["hidden_sizes"]
         input_layer = nn.Linear(model_structure["D_in"], hidden_sizes[0])

@@ -15,8 +15,6 @@ class ModelTest(unittest.TestCase):
     """
     Class for testing 'model.py'.
     """
-    global threshold
-
     def test_init_default(self):
         """
         Test to generate a model with default parameters raises 4 warnings
@@ -25,6 +23,18 @@ class ModelTest(unittest.TestCase):
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter("always")
             model = NeuralNetworkModel({})
+            self.assertEqual(len(caught_warnings), 4)
+        self.assertFalse(model.verbose)
+        isinstance(model.raw_model, nn.Sequential)
+
+    def test_init_none(self):
+        """
+        Test to generate a model with none as an argument raises 4 warnings
+        and generates a model with default parameters
+        """
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always")
+            model = NeuralNetworkModel(None)
             self.assertEqual(len(caught_warnings), 4)
         self.assertFalse(model.verbose)
         isinstance(model.raw_model, nn.Sequential)
@@ -167,8 +177,6 @@ class ModelTest(unittest.TestCase):
         """
         Invalid type for model_structure dict raises TypeError
         """
-        with self.assertRaises(TypeError):
-            NeuralNetworkModel(None)
         with self.assertRaises(TypeError):
             NeuralNetworkModel("Invalid type")
         with self.assertRaises(TypeError):
