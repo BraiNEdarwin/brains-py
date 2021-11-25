@@ -274,8 +274,8 @@ class NationalInstrumentsSetup:
                 self.configs['instruments_setup']['trigger_source'],
                 samps_per_chan=shape)
             self.offsetted_shape = shape + self.configs["offset"]
-            self.tasks_driver.set_shape(self.configs["sampling_frequency"],
-                                        self.offsetted_shape)
+            #self.tasks_driver.set_shape(self.configs["sampling_frequency"],
+            #                            self.offsetted_shape)
             ceil = self.offsetted_shape / self.configs["sampling_frequency"]
             self.ceil = (math.ceil(ceil) + 1)
 
