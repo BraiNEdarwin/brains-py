@@ -133,6 +133,9 @@ class NoiseTest(unittest.TestCase):
         noise = get_noise(configs=configs)
         self.assertIsNone(noise)
 
+        noise = get_noise(configs=None)
+        self.assertIsNone(noise)
+
     def test_get_noise_fail(self):
         """
         Invalid argument for the method get_noise raises an AssertionError
@@ -145,8 +148,6 @@ class NoiseTest(unittest.TestCase):
             get_noise(1000)
         with self.assertRaises(AssertionError):
             get_noise(np.array([1, 2, 3, 4]))
-        with self.assertRaises(AssertionError):
-            get_noise(None)
 
     def runTest(self):
         self.test_gaussian_zero()
