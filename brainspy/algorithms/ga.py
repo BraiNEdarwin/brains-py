@@ -1,5 +1,6 @@
 import os
 import torch
+import warnings
 import numpy as np
 from tqdm import trange
 
@@ -208,4 +209,13 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
         # output_popul[j] = self.processor.get_output(merge_inputs_and_control_voltages_in_numpy(
         # inputs_without_offset_ and_scale, control_voltage_genes, self.input_indices,
         # self.control_voltage_indices))
+    if (criterion_pool == -1.).all() is True:
+        clipping_value = model.get_clipping_value()
+        warnings.warn(
+            "All criterion values are set to -1. This is caused because all the outputs"
+            +
+            f"are exceeding the clipping values {clipping_value}. This is not a normal "
+            +
+            "behaviour, you are advised to check the default clipping values in the "
+            + "configs, and/or the setup.")
     return outputs_pool, criterion_pool
