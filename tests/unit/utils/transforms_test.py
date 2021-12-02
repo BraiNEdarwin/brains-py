@@ -121,26 +121,6 @@ class TransformsTest(unittest.TestCase):
             x_max=x_max,
         )
 
-    def test_ctv(self):
-        """
-        Test the CurrentToVoltage class.
-        Largely uses the other methods so it does not need to be tested
-        extensively (extreme cases etc).
-        """
-        ctv = transforms.CurrentToVoltage([[0, 1], [1, 2]], [[1, 2], [1, 0]])
-
-        # First transform is line y = x + 1, second is y = x - 2.
-        # For the second one input is out of range, so cut needs to work.
-        x_value = torch.tensor([[1, 3]], device=TorchUtils.get_device(), dtype=torch.get_default_dtype())
-
-        result = ctv(x_value)
-        target = torch.tensor([[2, 0]],
-                              device=TorchUtils.get_device(),
-                              dtype=torch.get_default_dtype())
-        for i in range(target.shape[0]):
-            for j in range(target.shape[1]):
-                self.assertEqual(result[i][j], target[i][j])
-
     def test_format_input_ranges(self):
         """
         Test the format_input_ranges method.
