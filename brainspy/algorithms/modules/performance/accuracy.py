@@ -292,7 +292,7 @@ def train_perceptron(epochs,
         running_loss /= evaluated_sample_no
         looper.set_description(
             f"Training perceptron: Epoch: {epoch}  Accuracy {accuracy}," +
-            " running loss: {running_loss}")
+            f" running loss: {running_loss}")
         if accuracy >= 100.0:
             print("Reached 100/% accuracy. Stopping.")
             break
