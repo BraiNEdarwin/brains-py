@@ -33,7 +33,7 @@ class Processor(nn.Module):
     def __init__(
         self,
         configs: dict,
-        info: dict,
+        info: dict = None,
         model_state_dict: collections.OrderedDict = None,
     ):
         """
@@ -137,6 +137,25 @@ class Processor(nn.Module):
 
             # set instrument type
             configs["driver"]["instrument_type"] = configs["processor_type"]
+            if self.info is None:
+                self.info = {}
+                self.info['electrode_info'] = get_electrode_info(configs)
+            else:
+                # create overwriting warning with electrode info
+                electrode_info = self.info[
+                    "electrode_info"]  # avoid line too long
+                warnings.warn(
+                    "The hardware setup has been initialised with regard to a "
+                    "model trained with the following parameters.\n"
+                    "Please make sure that the configurations of your hardware "
+                    "setup match these values:\n"
+                    "\t * An amplification correction of "
+                    f"{electrode_info['output_electrodes']['amplification']}\n"
+                    "\t * A clipping value range between "
+                    f"{electrode_info['output_electrodes']['clipping_value']}\n"
+                    "\t * Voltage ranges within "
+                    f"{electrode_info['activation_electrodes']['voltage_ranges']}"
+                )
 
             # check if activation voltage ranges is in configs;
             # if not, take it from electrode info
@@ -145,20 +164,6 @@ class Processor(nn.Module):
                 configs["driver"]["instruments_setup"][
                     "activation_voltage_ranges"] = self.info["electrode_info"][
                         "activation_electrodes"]["voltage_ranges"]
-
-            # create warning with electrode info
-            electrode_info = self.info["electrode_info"]  # avoid line too long
-            warnings.warn(
-                "The hardware setup has been initialised with regard to a "
-                "model trained with the following parameters.\n"
-                "Please make sure that the configurations of your hardware "
-                "setup match these values:\n"
-                "\t * An amplification correction of "
-                f"{electrode_info['output_electrodes']['amplification']}\n"
-                "\t * A clipping value range between "
-                f"{electrode_info['output_electrodes']['clipping_value']}\n"
-                "\t * Voltage ranges within "
-                f"{electrode_info['activation_electrodes']['voltage_ranges']}")
 
             # make sure amplification is set and raise warning if it is;
             # otherwise take it from electrode_info
@@ -319,3 +324,62 @@ class Processor(nn.Module):
         nothing.
         """
         self.processor.close()
+
+def get_electrode_info(configs):
+    """
+    Retrieve electrode information from the data sampling configurations.
+
+    Parameters
+    ----------
+    configs: dict
+        driver:
+            amplification: Amplification correction value of the output. Calculated from the op-amp.
+            instruments_setup:
+                multiple_devices:
+                activation_channels
+                activation_voltage_ranges
+                readout_channels
+
+    Returns
+    -------
+    electrode_info : dict
+        Configuration dictionary containing all the keys related to the electrode information:
+            * electrode_no: int
+                Total number of electrodes in the device
+            * activation_electrodes: dict
+                - electrode_no: int
+                    Number of activation electrodes used for gathering the data
+                - voltage_ranges: list
+                    Voltage ranges used for gathering the data. It contains the ranges per
+                    electrode, where the shape is (electrode_no,2). Being 2 the minimum and maximum
+                    of the ranges, respectively.
+            * output_electrodes: dict
+                - electrode_no : int
+                    Number of output electrodes used for gathering the data
+                - clipping_value: list[float,float]
+                    Value used to apply a clipping to the sampling data within the specified values.
+                - amplification: float
+                    Amplification correction factor used in the device to correct the amplification
+                    applied to the output current in order to convert it into voltage before its
+                    readout.
+    """
+    electrode_info = {}
+    if configs['driver']['instruments_setup']['multiple_devices']:
+        print("A single processor does not support multiple DNPUs.")
+        raise
+    else:
+        activation_electrode_no = len(configs['driver']['instruments_setup']['activation_channels'])
+        readout_electrode_no = len(configs['driver']['instruments_setup']['readout_channels'])
+
+        electrode_info["electrode_no"] = (activation_electrode_no + readout_electrode_no)
+        electrode_info["activation_electrodes"] = {}
+        electrode_info["activation_electrodes"][
+            "electrode_no"] = activation_electrode_no
+        electrode_info["activation_electrodes"][
+                "voltage_ranges"] = configs['driver']['instruments_setup']['activation_voltage_ranges']
+        electrode_info["output_electrodes"] = {}
+        electrode_info["output_electrodes"]["electrode_no"] = readout_electrode_no
+        electrode_info["output_electrodes"]["amplification"] = configs["driver"]["amplification"]
+        electrode_info["output_electrodes"]["clipping_value"] = [-float("Inf"), float("Inf")]
+
+    return electrode_info
