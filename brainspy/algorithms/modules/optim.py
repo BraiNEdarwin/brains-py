@@ -45,7 +45,7 @@ class GeneticOptimizer:
         self.epoch = 0
         self.epochs = epochs  # Number of generations
         if isinstance(gene_ranges, list):
-            self.gene_range = TorchUtils.format(gene_ranges)
+            self.gene_range = TorchUtils.format(np.array(gene_ranges))
         else:
             self.gene_range = gene_ranges
         self.partition = partition
