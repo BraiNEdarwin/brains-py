@@ -121,6 +121,7 @@ class Processor(nn.Module):
         self.processor: Union[SurrogateModel, HardwareProcessor]
         self.info = info
         self.configs = configs
+        electrode_info_loaded = False
 
         # create SurrogateModel
         if configs["processor_type"] == "simulation":
@@ -140,6 +141,7 @@ class Processor(nn.Module):
             if self.info is None:
                 self.info = {}
                 self.info['electrode_info'] = get_electrode_info(configs)
+                electrode_info_loaded = True
             else:
                 # create overwriting warning with electrode info
                 electrode_info = self.info[
@@ -167,7 +169,7 @@ class Processor(nn.Module):
 
             # make sure amplification is set and raise warning if it is;
             # otherwise take it from electrode_info
-            if "amplification" in configs["driver"]:
+            if "amplification" in configs["driver"] and not electrode_info_loaded:
                 warnings.warn(
                     "The amplification has been overriden by the user to a "
                     f"value of: {configs['driver']['amplification']}")
