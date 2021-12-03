@@ -66,7 +66,7 @@ We recommend you to use the open source development environment of [Visual Studi
  * Go to the extensions marketplace (Ctrl+Shift+X)
  * Install the following extensions:
 	 * Python (Microsoft)
-	 * Anaconda Extension Pack (Microsoft)
+	 * YAML (Red Hat)
 	 * Python-autopep8 (himanoa)
 	 * cornflakes-linter (kevinglasson)
  * On Visual Studio Code, press Ctrl+Shif+P and write "Open Settings (JSON)". The configuration file should look like this:
