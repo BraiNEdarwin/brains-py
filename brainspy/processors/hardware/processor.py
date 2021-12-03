@@ -197,6 +197,8 @@ class HardwareProcessor(nn.Module):
         with torch.no_grad():
             x, mask = self.waveform_mgr.plateaus_to_waveform(
                 x, return_pytorch=False)
+            if len(x.shape) > 2:
+                x = x.squeeze()
             output = self.forward_numpy(x)
             if self.logger is not None:
                 self.logger.log_output(x)
