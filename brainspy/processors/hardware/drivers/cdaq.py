@@ -43,7 +43,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
                 as it could disable security checks designed to avoid breaking devices.
         """
         configs["auto_start"] = True
-        configs["offset"] = 0
+        configs["offset"] = 2
         configs["max_ramping_time_seconds"] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.tasks_driver.start_trigger(
@@ -70,9 +70,9 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         np.array
             Output data that has been read from the device when receiving the input y.
         """
-
-        y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
+        y = np.concatenate((y, y[-1, :] * np.ones(
+            (1, y.shape[1])), y[-1, :] * np.ones((1, y.shape[1]))))
         y = y.T
         data = self.read_data(y)
-        data = -1 * self.process_output_data(data)[:, 1:]
+        data = -1 * self.process_output_data(data)[:, 2:]
         return data.T
