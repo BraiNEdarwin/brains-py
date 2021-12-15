@@ -269,7 +269,7 @@ class NationalInstrumentsSetup:
         """
         if self.last_shape != shape:
             self.last_shape = shape
-            self.offsetted_shape = shape + self.configs["offset"]
+            self.offsetted_shape = shape * self.configs["offset"]
             self.tasks_driver.set_shape(self.configs["sampling_frequency"],
                                         self.offsetted_shape)
             ceil = self.offsetted_shape / self.configs["sampling_frequency"]

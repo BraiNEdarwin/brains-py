@@ -362,15 +362,16 @@ class LocalTasks:
         samples_per_chan : (int,int)
             Number of expected samples, per channel.
         """
+        readout_freq = 10000
         self.activation_task.timing.cfg_samp_clk_timing(
             sampling_frequency,
             sample_mode=self.acquisition_type,
             samps_per_chan=shape,
         )
         self.readout_task.timing.cfg_samp_clk_timing(
-            sampling_frequency,
+            readout_freq,
             sample_mode=self.acquisition_type,
-            samps_per_chan=shape,  # TODO: Add shape + 1 ?
+            samps_per_chan=int((readout_freq/sampling_frequency)*shape)  # TODO: Add shape + 1 ?
         )
 
     @Pyro4.oneway
