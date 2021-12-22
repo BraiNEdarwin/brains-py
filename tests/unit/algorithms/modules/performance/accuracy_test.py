@@ -20,7 +20,7 @@ class Accuracy_Test(unittest.TestCase):
         """
         Test for the get_accuracy method using valid input and target values
         """
-        size = torch.randint(1, 100, (1, 1)).item()
+        size = torch.randint(11, 200, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         # inputs = torch.tensor([
@@ -278,7 +278,7 @@ class Accuracy_Test(unittest.TestCase):
         ])
         inputs = TorchUtils.format(inputs, device=TorchUtils.get_device())
         targets = TorchUtils.format(targets, device=TorchUtils.get_device())
-        node = torch.nn.Linear(1, 1)
+        node = TorchUtils.format(torch.nn.Linear(1, 1))
         accuracy, labels = evaluate_accuracy(inputs, targets, node)
         self.assertTrue(accuracy > 0)
 
@@ -316,7 +316,7 @@ class Accuracy_Test(unittest.TestCase):
         ])
         configs = get_default_node_configs()
         results, dataloader = init_results(inputs, targets, configs)
-        node = torch.nn.Linear(1, 1)
+        node = TorchUtils.format(torch.nn.Linear(1, 1))
         optimizer = torch.optim.Adam(node.parameters(), lr=0.01)
         accuracy, node = train_perceptron(130,
                                           dataloader,
@@ -331,9 +331,7 @@ class Accuracy_Test(unittest.TestCase):
         configs = get_default_node_configs()
         self.assertEqual(configs["epochs"], 100)
         self.assertEqual(configs["learning_rate"], 0.001)
-        self.assertEqual(configs["data"]["batch_size"], 256)
-        self.assertEqual(configs["data"]["worker_no"], 0)
-        self.assertEqual(configs["data"]["pin_memory"], False)
+        self.assertEqual(configs["batch_size"], 256)
 
     def test_plot_perceptron(self):
         """

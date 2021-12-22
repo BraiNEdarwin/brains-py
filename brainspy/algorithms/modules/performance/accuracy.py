@@ -46,11 +46,11 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     inputs : torch.Tensor
         The inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU
         architectures that you want to evaluate the accuracy against. Only input tensors
-        with a single dimension are supported.
+        with a single dimension are supported with the default node.
 
     targets : torch.Tensor
         Binary targets against which the outuut of the perceptron algorithm is compared.
-        Only target tensors with a single dimension are supported. 
+        Only target tensors with a single dimension are supported with the default node.
 
     configs : dict, optional
         Configurations of the model to get the accuracy using the perceptron algorithm.
@@ -73,7 +73,8 @@ def get_accuracy(inputs, targets, configs=None, node=None):
 
     node : Optional[torch.nn.Module]
         Is the trained linear layer of the perceptron. Leave it as None if you want to train a
-        perceptron from scratch. (default: None)
+        perceptron from scratch. (default: None) The default perceptron only supports one 
+        dimensional outpus.
 
     Returns
     -------
@@ -115,7 +116,7 @@ def get_accuracy(inputs, targets, configs=None, node=None):
 
     if node is None:
         train = True
-        node = torch.nn.Linear(1, 1)
+        node = TorchUtils.format(torch.nn.Linear(1, 1))
     else:
         train = False
 
