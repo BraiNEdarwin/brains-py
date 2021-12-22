@@ -375,16 +375,16 @@ class Accuracy_Test(unittest.TestCase):
 
     def runTest(self):
         self.test_get_accuracy()
-        # self.test_get_accuracy_fail()
-        # self.test_get_accuracy_fail_2()
-        # self.test_get_accuracy_fail_3()
-        # self.test_init_results()
-        # self.test_zscore_norm()
-        # self.test_zscore_norm_fail()
-        # self.test_evaluate_accuracy()
-        # self.test_train_perceptron()
-        # self.test_default_node_configs()
-        # self.test_plot_perceptron()
+        self.test_get_accuracy_fail()
+        self.test_get_accuracy_fail_2()
+        self.test_get_accuracy_fail_3()
+        self.test_init_results()
+        self.test_zscore_norm()
+        self.test_zscore_norm_fail()
+        self.test_evaluate_accuracy()
+        self.test_train_perceptron()
+        self.test_default_node_configs()
+        self.test_plot_perceptron()
 
 
 if __name__ == "__main__":
