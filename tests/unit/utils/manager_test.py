@@ -379,7 +379,6 @@ class ManagerTest(unittest.TestCase):
         Helper function used for testing
         """
         configs = {}
-        configs['track_running_stats'] = False
         configs["processor_type"] = "simulation"
         configs["electrode_effects"] = {}
         configs["electrode_effects"]["clipping_value"] = None

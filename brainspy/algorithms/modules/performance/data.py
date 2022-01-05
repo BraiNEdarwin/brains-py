@@ -61,18 +61,11 @@ def get_data(results, configs):
     torch.utils.data.Dataloader
         Dataloader of the perceptron algorithm
     """
-    if configs["data"]["worker_no"] > 0 or configs["data"]["pin_memory"]:
-        dataset = PerceptronDataset(results["norm_inputs"],
-                                    results["targets"],
-                                    device=torch.device("cpu"))
-    else:
-        dataset = PerceptronDataset(results["norm_inputs"], results["targets"])
+    dataset = PerceptronDataset(results["norm_inputs"], results["targets"])
     dataloaders = torch.utils.data.DataLoader(
         dataset,
-        batch_size=configs["data"]["batch_size"],
+        batch_size=configs["batch_size"],
         shuffle=True,
-        num_workers=configs["data"]["worker_no"],
-        pin_memory=configs["data"]["pin_memory"],
     )
     return dataloaders
 

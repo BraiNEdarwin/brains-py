@@ -45,10 +45,12 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     ----------
     inputs : torch.Tensor
         The inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU
-        architectures that you want to evaluate the accuracy against.
+        architectures that you want to evaluate the accuracy against. Only input tensors
+        with a single dimension are supported with the default node.
 
     targets : torch.Tensor
         Binary targets against which the outuut of the perceptron algorithm is compared.
+        Only target tensors with a single dimension are supported with the default node.
 
     configs : dict, optional
         Configurations of the model to get the accuracy using the perceptron algorithm.
@@ -71,7 +73,8 @@ def get_accuracy(inputs, targets, configs=None, node=None):
 
     node : Optional[torch.nn.Module]
         Is the trained linear layer of the perceptron. Leave it as None if you want to train a
-        perceptron from scratch. (default: None)
+        perceptron from scratch. (default: None) The default perceptron only supports one 
+        dimensional outpus.
 
     Returns
     -------
@@ -113,7 +116,7 @@ def get_accuracy(inputs, targets, configs=None, node=None):
 
     if node is None:
         train = True
-        node = torch.nn.Linear(1, 1)
+        node = TorchUtils.format(torch.nn.Linear(1, 1))
     else:
         train = False
 
@@ -292,7 +295,7 @@ def train_perceptron(epochs,
         running_loss /= evaluated_sample_no
         looper.set_description(
             f"Training perceptron: Epoch: {epoch}  Accuracy {accuracy}," +
-            " running loss: {running_loss}")
+            f" running loss: {running_loss}")
         if accuracy >= 100.0:
             print("Reached 100/% accuracy. Stopping.")
             break
@@ -362,10 +365,7 @@ def get_default_node_configs():
     configs = {}
     configs["epochs"] = 100
     configs["learning_rate"] = 0.001
-    configs["data"] = {}
-    configs["data"]["batch_size"] = 256
-    configs["data"]["worker_no"] = 0
-    configs["data"]["pin_memory"] = False
+    configs["batch_size"] = 256
     return configs
 
 
