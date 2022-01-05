@@ -42,6 +42,60 @@ class SignalTest(unittest.TestCase):
             for i in result:
                 self.assertTrue(i.item() >= 0 and i.item() <= 100)
 
+    def test_accuracy_fit_random(self):
+        """
+        Test for accuracy fit with random values for output and target
+        with tensors of different sizes
+        """
+        test_sizes = ((100, 3), (100, 4), (100, 1), (1000, 2), (100, 7))
+        for size in test_sizes:
+            output = torch.rand(size)
+            target = torch.rand(size)
+            try:
+                signal.accuracy_fit(output, target)
+            except (Exception):
+                self.fail(
+                    "Could not evaluate accuarcy fit for size {}".format(size))
+
+    def test_accuarcy_fit_default_val(self):
+        """
+        Test for accuracy fit with random values for output and target and default value
+        parameter true
+        """
+        size = (100, 3)
+        output = torch.rand(size)
+        target = torch.rand(size)
+        try:
+            signal.accuracy_fit(output, target, default_value=True)
+        except (Exception):
+            self.fail(
+                "Could not evaluate accuarcy fit for size {}".format(size))
+
+    # def test_accuracy_fit_invalid_type(self):
+        """
+        Invalid type for arguments raise an AssertionError
+        """
+
+    #     with self.assertRaises(AssertionError):
+    #         signal.accuracy_fit("Invalid type", 100, default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.accuracy_fit("Invalid type", [1, 2, 3, 4],
+    #                             default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.accuracy_fit(100.5,
+    #                             np.array([1, 2, 3, 4]),
+    #                             default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.accuracy_fit("Invalid type",
+    #                             torch.rand((100, 3)),
+    #                             default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.accuracy_fit(torch.rand((100, 3)), 100, default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.accuracy_fit(torch.rand((100, 3)),
+    #                             torch.rand((100, 3)),
+    #                             default_value="Invalid")
+
     def test_corr_fit(self):
         """
         Check if shape of result is correct and values are between -1 and 1
@@ -57,6 +111,55 @@ class SignalTest(unittest.TestCase):
             self.assertEqual(list(result.shape), [output.shape[1]])
             for i in result:
                 self.assertTrue(i.item() >= -1 and i.item() <= 1)
+
+    def test_corr_fit_random(self):
+        """
+        Test for corr fit with random values for output and target
+        with tensors of different sizes
+        """
+        test_sizes = ((100, 3), (100, 4), (100, 1), (1000, 2), (100, 7))
+        for size in test_sizes:
+            output = torch.rand(size)
+            target = torch.rand(size)
+            try:
+                signal.corr_fit(output, target)
+            except (Exception):
+                self.fail(
+                    "Could not evaluate corr fit for size {}".format(size))
+
+    def test_corr_fit_default_val(self):
+        """
+        Test for corr fit with random values for output and target and default value
+        parameter true
+        """
+        size = (100, 3)
+        output = torch.rand(size)
+        target = torch.rand(size)
+        try:
+            signal.corr_fit(output, target, default_value=True)
+        except (Exception):
+            self.fail("Could not corr accuarcy fit for size {}".format(size))
+
+    # def test_corr_fit_invalid_type(self):
+        """Invalid type for arguments raise an Assertion Error
+        """
+
+    #     with self.assertRaises(AssertionError):
+    #         signal.corr_fit("Invalid type", 100, default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.corr_fit("Invalid type", [1, 2, 3, 4], default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.corr_fit(100.5, np.array([1, 2, 3, 4]), default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.corr_fit("Invalid type",
+    #                         torch.rand((100, 3)),
+    #                         default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.corr_fit(torch.rand((100, 3)), 100, default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.corr_fit(torch.rand((100, 3)),
+    #                         torch.rand((100, 3)),
+    #                         default_value="Invalid")
 
     def test_corrsig_fit(self):
         """
@@ -78,6 +181,60 @@ class SignalTest(unittest.TestCase):
             result = signal.corrsig_fit(output, target * 10)
             for i in result:
                 self.assertTrue(torch.isnan(i))
+
+    def test_corrsig_fit_random(self):
+        """
+        Test for corrsig fit with random values for output and target
+        with tensors of different sizes
+        """
+        test_sizes = ((100, 3), (100, 4), (100, 1), (1000, 2), (100, 7))
+        for size in test_sizes:
+            output = torch.rand(size)
+            target = torch.rand(size)
+            try:
+                signal.corrsig_fit(output, target)
+            except (Exception):
+                self.fail(
+                    "Could not evaluate corrsig fit for size {}".format(size))
+
+    def test_corrsig_fit_default_val(self):
+        """
+        Test for corrsig fit with random values for output and target and default value
+        parameter true
+        """
+        size = (100, 3)
+        output = torch.rand(size)
+        target = torch.rand(size)
+        try:
+            signal.corrsig_fit(output, target, default_value=True)
+        except (Exception):
+            self.fail(
+                "Could not evaluate corrsig fit for size {}".format(size))
+
+    # def test_corrsig_fit_invalid_type(self):
+        """
+        Invalid type for arguments raises an AssertionError
+        """
+
+    #     with self.assertRaises(AssertionError):
+    #         signal.corrsig_fit("Invalid type", 100, default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.corrsig_fit("Invalid type", [1, 2, 3, 4],
+    #                            default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.corrsig_fit(100.5,
+    #                            np.array([1, 2, 3, 4]),
+    #                            default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.corrsig_fit("Invalid type",
+    #                            torch.rand((100, 3)),
+    #                            default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.corrsig_fit(torch.rand((100, 3)), 100, default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.corrsig_fit(torch.rand((100, 3)),
+    #                            torch.rand((100, 3)),
+    #                            default_value="Invalid")
 
     def test_pearsons_correlation(self):
         """
@@ -102,6 +259,38 @@ class SignalTest(unittest.TestCase):
             for k in coef:
                 self.assertTrue(torch.isnan(k))
 
+    def test_pearsons_correlation_random(self):
+        """
+        Test for pearsons_correlation with random values for output and target
+        with tensors of different sizes
+        """
+        test_sizes = ((100, 3), (100, 4), (100, 1), (1000, 2), (100, 7))
+        for size in test_sizes:
+            x = torch.rand(size)
+            y = torch.rand(size)
+            try:
+                signal.pearsons_correlation(x, y)
+            except (Exception):
+                self.fail(
+                    "Could not evaluate pearsons_correlation for size {}".
+                    format(size))
+
+    # def test_pearsons_correlation_invalid_type(self):
+        """
+        Invalid type for arguments raises an Assertion Error
+        """
+
+    #     with self.assertRaises(AssertionError):
+    #         signal.pearsons_correlation("Invalid type", 100)
+    #     with self.assertRaises(AssertionError):
+    #         signal.pearsons_correlation("Invalid type", [1, 2, 3, 4])
+    #     with self.assertRaises(AssertionError):
+    #         signal.pearsons_correlation(100.5, np.array([1, 2, 3, 4]))
+    #     with self.assertRaises(AssertionError):
+    #         signal.pearsons_correlation("Invalid type", torch.rand((100, 3)))
+    #     with self.assertRaises(AssertionError):
+    #         signal.pearsons_correlation(torch.rand((100, 3)), 100)
+
     def test_corrsig(self):
         """
         Test if corrsig method works (type and shape of result).
@@ -110,6 +299,37 @@ class SignalTest(unittest.TestCase):
             result = signal.corrsig(output, target)
             self.assertIsInstance(result, torch.Tensor)
             self.assertEqual(list(result.shape), [output.shape[1]])
+
+    # def test_corrsig_random(self):
+    #     """
+    #     Test for corrsig fit with random values for output and target
+    #     with tensors of different sizes - FAILING - SPECIFY WITH DIM ARGUMENT
+    #     """
+    #     test_sizes = ((100, 1), (100, 4), (100, 1), (1000, 2), (100, 7))
+    #     for size in test_sizes:
+    #         output = torch.rand(size)
+    #         target = torch.rand(size)
+    #         try:
+    #             signal.corrsig(output, target)
+    #         except (Exception):
+    #             self.fail(
+    #                 "Could not evaluate accuarcy fit for size {}".format(size))
+
+    # def test_corrsig_invalid_type(self):
+        """
+        Invalid type for arguments raises an AssertionError
+        """
+
+    #     with self.assertRaises(AssertionError):
+    #         signal.corrsig("Invalid type", 100)
+    #     with self.assertRaises(AssertionError):
+    #         signal.corrsig("Invalid type", [1, 2, 3, 4])
+    #     with self.assertRaises(AssertionError):
+    #         signal.corrsig(100.5, np.array([1, 2, 3, 4]))
+    #     with self.assertRaises(AssertionError):
+    #         signal.corrsig("Invalid type", torch.rand((100, 3)))
+    #     with self.assertRaises(AssertionError):
+    #         signal.corrsig(torch.rand((100, 3)), 100)
 
     def test_fisher_fit(self):
         """
@@ -128,6 +348,58 @@ class SignalTest(unittest.TestCase):
                 torch.all(
                     -result >= TorchUtils.format(torch.zeros_like(result))))
 
+    def test_fisher_fit_random(self):
+        """
+        Test for fisher fit with random values for output and target
+        with tensors of different sizes
+        """
+        test_sizes = ((100, 3), (100, 4), (100, 1), (1000, 2), (100, 7))
+        for size in test_sizes:
+            output = torch.rand(size)
+            target = torch.rand(size)
+            try:
+                signal.fisher_fit(output, target)
+            except (Exception):
+                self.fail(
+                    "Could not evaluate fisher fit for size {}".format(size))
+
+    def test_fisher_fit_default_val(self):
+        """
+        Test for fisher fit with random values for output and target and default value
+        parameter true
+        """
+        size = (100, 3)
+        output = torch.rand(size)
+        target = torch.rand(size)
+        try:
+            signal.fisher_fit(output, target, default_value=True)
+        except (Exception):
+            self.fail("Could not evaluate fisher fit for size {}".format(size))
+
+    # def test_fisher_fit_invalid_type(self):
+        """
+        Invalid type for arguments raises an Assertion Error
+        """
+
+    #     with self.assertRaises(AssertionError):
+    #         signal.fisher_fit("Invalid type", 100, default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.fisher_fit("Invalid type", [1, 2, 3, 4], default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.fisher_fit(100.5,
+    #                           np.array([1, 2, 3, 4]),
+    #                           default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.fisher_fit("Invalid type",
+    #                           torch.rand((100, 3)),
+    #                           default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.fisher_fit(torch.rand((100, 3)), 100, default_value=True)
+    #     with self.assertRaises(AssertionError):
+    #         signal.fisher_fit(torch.rand((100, 3)),
+    #                           torch.rand((100, 3)),
+    #                           default_value="Invalid")
+
     def test_fisher(self):
         """
         Test if result is of right shape and values are negative.
@@ -145,6 +417,37 @@ class SignalTest(unittest.TestCase):
             for k in result:
                 self.assertTrue(torch.isnan(k))
 
+    def test_fisher_random(self):
+        """
+        Test for fisher value with random values for output and target
+        with tensors of different sizes
+        """
+        test_sizes = ((100, 3), (100, 4), (100, 1), (1000, 2), (100, 7))
+        for size in test_sizes:
+            x = torch.rand(size)
+            y = torch.rand(size)
+            try:
+                signal.fisher(output=x, target=y)
+            except (Exception):
+                self.fail(
+                    "Could not evaluate fisher value for size {}".format(size))
+
+    # def test_fisher_invalid_type(self):
+        """
+        Invalid type for arguments raises an Assertion Error
+        """
+
+    #     with self.assertRaises(AssertionError):
+    #         signal.fisher("Invalid type", 100)
+    #     with self.assertRaises(AssertionError):
+    #         signal.fisher("Invalid type", [1, 2, 3, 4])
+    #     with self.assertRaises(AssertionError):
+    #         signal.fisher(100.5, np.array([1, 2, 3, 4]))
+    #     with self.assertRaises(AssertionError):
+    #         signal.fisher("Invalid type", torch.rand((100, 3)))
+    #     with self.assertRaises(AssertionError):
+    #         signal.fisher(torch.rand((100, 3)), 100)
+
     def test_sigmoid_nn_distance(self):
         """
         Check if sigmoid_nn_distance method works (type and shape of
@@ -154,6 +457,37 @@ class SignalTest(unittest.TestCase):
             result = signal.sigmoid_nn_distance(output, target)
             self.assertIsInstance(result, torch.Tensor)
             self.assertEqual(list(result.shape), [output.shape[1]])
+
+    def test_sigmoid_nn_distance_random(self):
+        """
+        Test for sigmoid_nn_distance with random values for output and target
+        with tensors of different sizes
+        """
+        test_sizes = ((100, 3), (100, 4), (100, 1), (1000, 2), (100, 7))
+        for size in test_sizes:
+            x = torch.rand(size)
+            y = torch.rand(size)
+            try:
+                signal.sigmoid_nn_distance(output=x, target=y)
+            except (Exception):
+                self.fail("Could not evaluate sigmoid_nn_distance for size {}".
+                          format(size))
+
+    # def test_sigmoid_nn_distance_invalid_type(self):
+        """
+        Invalid type for arguments raises an Assertion Error
+        """
+
+    #     with self.assertRaises(AssertionError):
+    #         signal.sigmoid_nn_distance("Invalid type", 100)
+    #     with self.assertRaises(AssertionError):
+    #         signal.sigmoid_nn_distance("Invalid type", [1, 2, 3, 4])
+    #     with self.assertRaises(AssertionError):
+    #         signal.sigmoid_nn_distance(100.5, np.array([1, 2, 3, 4]))
+    #     with self.assertRaises(AssertionError):
+    #         signal.sigmoid_nn_distance("Invalid type", torch.rand((100, 3)))
+    #     with self.assertRaises(AssertionError):
+    #         signal.sigmoid_nn_distance(torch.rand((100, 3)), 100)
 
     def test_get_clamped_intervals(self):
         """
@@ -187,6 +521,23 @@ class SignalTest(unittest.TestCase):
             self.assertTrue(torch.equal(result, double_result))
             result = signal.get_clamped_intervals(output, "intervals", clamp)
             self.assertTrue(torch.equal(result, intervals_result))
+
+    # def test_get_clamped_intervals_invalid_type(self):
+    #     """
+    #     Invalid type for arguments raises an AssertionError
+    #     """
+
+    #     with self.assertRaises(AssertionError):
+    #         signal.get_clamped_intervals(torch.rand((100, 3)), 100)
+    #     with self.assertRaises(AssertionError):
+    #         signal.get_clamped_intervals(torch.rand((100, 3)), [1, 2, 3, 4])
+    #     with self.assertRaises(AssertionError):
+    #         signal.get_clamped_intervals("Invalid type", 100)
+    #     with self.assertRaises(AssertionError):
+    #         signal.get_clamped_intervals(100, "mode")
+    #     with self.assertRaises(AssertionError):
+    #         signal.get_clamped_intervals(torch.rand((100, 3)),
+    #                                      np.array([1, 2, 3]))
 
 
 if __name__ == "__main__":
