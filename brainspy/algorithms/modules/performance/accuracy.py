@@ -107,7 +107,9 @@ def get_accuracy(inputs, targets, configs=None, node=None):
                                     memory before returning them.
 
     """
-
+    assert type(inputs) == torch.Tensor and type(targets) == torch.Tensor
+    if configs is not None:
+        assert type(configs) == dict
     assert (len(inputs.shape) != 1
             and len(targets.shape) != 1), "Please unsqueeze inputs and targets"
 
@@ -188,6 +190,9 @@ def init_results(inputs, targets, configs):
     dict - initialized data for evaluation of accuracy
     torch.utils.data.Dataloader : results of the Perceptron dataloader
     """
+    assert type(inputs) == torch.Tensor and type(targets) == torch.Tensor
+    if configs is not None:
+        assert type(configs) == dict
     results = {}
     results["inputs"] = inputs.clone()
     results["targets"] = targets.clone()
@@ -217,6 +222,7 @@ def zscore_norm(inputs, eps=1e-5):
     torch.Tensor
        Normalised inputs.
     """
+    assert type(inputs) == torch.Tensor
     assert (
         inputs.std() != 0
     ), "The standard deviation of the inputs is 0. Please check that the inputs are correct. "
@@ -268,6 +274,7 @@ def train_perceptron(epochs,
     accuracy : int - accuracy of the perceptron
     node : torch.nn -  node of the perceptron
     """
+    assert type(epochs) == int
     looper = trange(epochs, desc="Calculating accuracy")
     node = node.to(device=TorchUtils.get_device(),
                    dtype=torch.get_default_dtype())
@@ -326,7 +333,7 @@ def evaluate_accuracy(inputs, targets, node):
     labels - bool - if the predictions of the noda are greatrer than 0
 
     """
-
+    assert type(inputs) == torch.Tensor and type(targets) == torch.Tensor
     predictions = node(inputs)
     labels = predictions > 0.0
     correctly_labelled = torch.sum(labels == (targets == 1.0))
@@ -399,6 +406,7 @@ def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
     matplotlib.pyplot.figure
         A new figure contaning the results.
     """
+    assert type(results) == dict
     fig = plt.figure()
     plt.title(f"Accuracy: {results['accuracy_value']:.2f} %")
     plt.plot(TorchUtils.to_numpy(results["norm_inputs"]),
