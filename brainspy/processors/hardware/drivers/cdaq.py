@@ -43,7 +43,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
                 as it could disable security checks designed to avoid breaking devices.
         """
         configs["auto_start"] = True
-        configs["offset"] = int(10000/configs['sampling_frequency'])
+        configs["offset"] = int(10000/configs['DAC_update_rate'])
         configs["max_ramping_time_seconds"] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.tasks_driver.start_trigger(
@@ -74,5 +74,5 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         #y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
         y = y.T
         data = self.read_data(y)
-        data = self.process_output_data(data)[:,int((10000/self.configs['sampling_frequency'])):] #-1 * self.process_output_data(data)#[:, 1:]
+        data = -1 * self.process_output_data(data)[:,int((10000/self.configs['DAC_update_rate'])):] #-1 * self.process_output_data(data)#[:, 1:]
         return data.T

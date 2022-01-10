@@ -467,7 +467,7 @@ class LocalTasks:
             method to specify these units.
         """
         return self.readout_task.read(
-            number_of_samples_per_channel=number_of_samples_per_channel,
+            number_of_samples_per_channel= number_of_samples_per_channel,
             timeout=timeout)
 
     # Main difference between read and remote read is in the try/catch

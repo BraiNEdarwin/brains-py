@@ -74,7 +74,7 @@ class NationalInstrumentsSetup:
                     True will attempt a connection to a server on the real time rack via Pyro.
                     False will execute the drivers locally.
 
-                sampling_frequency: int
+                DAC_update_rate: int
                     The average number of samples to be obtained in one second,
                     when transforming the signal from analogue to digital.
 
@@ -153,7 +153,7 @@ class NationalInstrumentsSetup:
         self.offsetted_shape = None
         self.ceil = None
 
-        print(f"Sampling frequency: {configs['sampling_frequency']}")
+        print(f"DAC Update rate (frequ): {configs['DAC_update_rate']}")
         print(
             f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. "
         )
@@ -270,9 +270,9 @@ class NationalInstrumentsSetup:
         if self.last_shape != shape:
             self.last_shape = shape
             self.offsetted_shape = shape * self.configs["offset"]
-            self.tasks_driver.set_shape(self.configs["sampling_frequency"],
+            self.tasks_driver.set_shape(self.configs["DAC_update_rate"],
                                         self.offsetted_shape)
-            ceil = self.offsetted_shape / self.configs["sampling_frequency"]
+            ceil = self.offsetted_shape / self.configs["DAC_update_rate"]
             self.ceil = (math.ceil(ceil) + 1)
 
     def is_hardware(self):
