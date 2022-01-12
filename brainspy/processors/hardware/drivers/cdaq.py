@@ -32,9 +32,9 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
                 start it anyway. This value is set to True for this setup.
 
             offset : int
-                Only for CDAQ TO NIDAQ setup. Value (in milliseconds) that the original
-                activation voltage will be displaced, in order to enable the spiking signal to
-                reach the nidaq setup. The offset value is set to 1 for this setup.
+                Number of points that the original activation voltage signal will be displaced, in
+                order to enable the spiking signal to reach the nidaq setup. The offset value is
+                set to 1 point for this setup.
 
             max_ramping_time_seconds : int
                 To set the ramp time for the setup. It is defined with the flags
@@ -70,7 +70,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         np.array
             Output data that has been read from the device when receiving the input y.
         """
-	# No need to add an extra point, as it is internally handled by the NI drivers
+        # No need to create an additional point, as this is handled by the NI driver.
         # y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
         y = y.T
         data = self.read_data(y)

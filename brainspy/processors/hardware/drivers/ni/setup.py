@@ -150,9 +150,9 @@ class NationalInstrumentsSetup:
 
         """
         self.configs = configs
-        self.last_shape = -1
+        self.last_points_to_write_val = -1
         self.data_results = None
-        self.offsetted_shape = None
+        self.offsetted_points_to_write = None
         self.timeout = None
 
         print(
@@ -261,28 +261,66 @@ class NationalInstrumentsSetup:
             semaphore.release()
         return self.data_results
 
-    def set_shape_vars(self, shape):
+    def set_io_configs(self, points_to_write, timeout=None):
         """
-        One way method to set the shape variables for the data that is being sent to the device.
-        Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the
-        shape of the data that is being sent can to be specified. This function helps to tackle the
-        problem of differnt batches having differnt data shapes (for example - differnt sample size)
-        when dealing with big data.
+        Calculates and sets the I/O configuration variables related to the number of points
+        the signal that is going to be writing and reading. This is only performed if there
+        is a change with respect to the last number of points that were write/read.
+        The calculation includes:
+            - last_points_to_write_val: Number of points that were sent in the previos write attempt.
+            - offsetted_points_to_write: Number of points with to be written with an extra offset
+                                        that depends on the setup type. For cdaq, the default
+                                        offset is 1 point, for nidaq, it is calculated from the
+                                        sampling frequency.
+            - set_sampling_frequencies: Sets the sampling frequencies of the activation and readout
+                                        instruments.
+            - timeout: Specifies the timeout for reading. Read below for more information.
 
         Parameters
         ----------
-        shape : (int,int)
-            required shape of for sampling
+        points_to_write : (int,int)
+            Number of points to be written.
+        timeout: Specifies the amount of time in seconds to wait for samples to become
+                available. If the time elapses, the method returns an error and any samples
+                read before the timeout elapsed. The default timeout is 10 seconds. If you
+                set timeout to nidaqmx.constants.WAIT_INFINITELY, the method waits
+                indefinitely. If you set timeout to 0, the method tries once to read
+                the requested samples and returns an error if it is unable to.
+                By default, None, which calculates the timeout based on the frequency.
+
+
         """
-        if self.last_shape != shape:
-            self.last_shape = shape
-            self.offsetted_shape = shape + self.configs["offset"]
+        if self.last_points_to_write_val != points_to_write:
+            self.last_points_to_write_val = points_to_write
+            self.offsetted_points_to_write = points_to_write + self.configs[
+                "offset"]
             self.tasks_driver.set_sampling_frequencies(
                 self.configs["instruments_setup"]
-                ["activation_sampling_frequency"], self.offsetted_shape)
-            timeout = self.offsetted_shape / self.configs["instruments_setup"][
-                "activation_sampling_frequency"]
-            self.timeout = (math.ceil(timeout) + 1)
+                ["activation_sampling_frequency"],
+                self.offsetted_points_to_write)
+            self.set_timeout(timeout)
+
+    def set_timeout(self, timeout=None):
+        """
+        Updates the internal timeout value that will be used when reading the data.
+
+        Parameters
+        ----------
+        timeout : [type], optional
+            Specifies the amount of time in seconds to wait for samples to become
+            available. If the time elapses, the method returns an error and any samples
+            read before the timeout elapsed. The default timeout is 10 seconds. If you
+            set timeout to nidaqmx.constants.WAIT_INFINITELY, the method waits
+            indefinitely. If you set timeout to 0, the method tries once to read
+            the requested samples and returns an error if it is unable to.
+            By default, None.
+        """
+        if timeout is None:
+            timeout = self.offsetted_points_to_write / self.configs[
+                "instruments_setup"]["readout_sampling_frequency"]
+            self.timeout = (math.ceil(timeout) + 1)  # Adds an extra second
+        else:
+            self.timeout = timeout
 
     def is_hardware(self):
         """
@@ -316,10 +354,11 @@ class NationalInstrumentsSetup:
         """
         self.data_results = None
         self.read_security_checks(y)
-        self.set_shape_vars(y.shape[1])
+        self.set_io_configs(y.shape[1])
 
         self.tasks_driver.write(y, self.configs["auto_start"])
-        read_data = self.tasks_driver.read(self.offsetted_shape, self.timeout)
+        read_data = self.tasks_driver.read(self.offsetted_points_to_write,
+                                           self.timeout)
         self.tasks_driver.stop_tasks()
 
         self.data_results = read_data
