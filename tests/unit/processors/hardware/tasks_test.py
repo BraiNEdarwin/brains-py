@@ -12,7 +12,6 @@ from brainspy.processors.hardware.drivers.ni.tasks import *
 
 
 class Tasks_Test(unittest.TestCase):
-
     """
     Tests for tasks with custom configs and no real time rack.
     """
@@ -31,11 +30,14 @@ class Tasks_Test(unittest.TestCase):
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
         configs["driver"]["real_time_rack"] = False
-        configs["driver"]["sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
-        configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-        configs["driver"]["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "trigger_source"] = "cDAQ1/segment1"
+        configs["driver"]["instruments_setup"][
+            "activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "activation_sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -54,7 +56,10 @@ class Tasks_Test(unittest.TestCase):
             [-0.7, 0.3],
             [-0.7, 0.3],
         ]
-        configs["driver"]["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"]["readout_channels"] = [4]
         configs["waveform"] = {}
         configs["waveform"]["plateau_length"] = 10
@@ -73,7 +78,8 @@ class Tasks_Test(unittest.TestCase):
         """
         Test to check LocalTasks driver is initialized correctly.
         """
-        self.assertEqual(self.local.acquisition_type, constants.AcquisitionType.FINITE)
+        self.assertEqual(self.local.acquisition_type,
+                         constants.AcquisitionType.FINITE)
         self.assertEqual(self.local.activation_task, None)
         self.assertEqual(self.local.readout_task, None)
 

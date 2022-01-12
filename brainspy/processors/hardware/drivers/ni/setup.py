@@ -74,10 +74,6 @@ class NationalInstrumentsSetup:
                     True will attempt a connection to a server on the real time rack via Pyro.
                     False will execute the drivers locally.
 
-                sampling_frequency: int
-                    The average number of samples to be obtained in one second,
-                    when transforming the signal from analogue to digital.
-
                 output_clipping_range: [float,float]
                     The the setups have a limit in the range they can read. They typically clip at
                     approximately +-4 V. Note that in order to calculate the clipping_range, it
@@ -107,6 +103,9 @@ class NationalInstrumentsSetup:
                     activation_instrument: str
                         Name of the activation instrument as observed in the NI Max software.
                         E.g., cDAQ1Mod3
+                    activation_sampling_frequency: int
+                        The number of samples to be obtained in one second,
+                        when transforming the activation signal from digital to analogue.
                     activation_channels: list
                         Channels through which voltages will be sent for activating the device
                         (both data inputs and control voltage electrodes). The channels can be
@@ -119,6 +118,9 @@ class NationalInstrumentsSetup:
                     readout_instrument: str
                         Name of the readout instrument as observed in the NI Max
                         software. E.g., cDAQ1Mod4
+                    readout_sampling_frequency: int
+                        The number of samples to be obtained in one second,
+                        when transforming the readout signal from analogue to digital.
                     readout_channels: [2] list
                         Channels for reading the output current values. The channels can be checked
                         in the schematic of the DNPU device.
@@ -151,9 +153,14 @@ class NationalInstrumentsSetup:
         self.last_shape = -1
         self.data_results = None
         self.offsetted_shape = None
-        self.ceil = None
+        self.timeout = None
 
-        print(f"Sampling frequency: {configs['sampling_frequency']}")
+        print(
+            f"DAC sampling frequency: {configs['instruments_setup']['activation_sampling_frequency']}"
+        )
+        print(
+            f"ADC sampling frequency: {configs['instruments_setup']['readout_sampling_frequency']}"
+        )
         print(
             f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. "
         )
@@ -269,15 +276,13 @@ class NationalInstrumentsSetup:
         """
         if self.last_shape != shape:
             self.last_shape = shape
-            self.tasks_driver.set_sampling_clocks(
-                self.configs["sampling_frequency"],
-                self.configs['instruments_setup']['trigger_source'],
-                samps_per_chan=shape)
             self.offsetted_shape = shape + self.configs["offset"]
-            #self.tasks_driver.set_shape(self.configs["sampling_frequency"],
-            #                            self.offsetted_shape)
-            ceil = self.offsetted_shape / self.configs["sampling_frequency"]
-            self.ceil = (math.ceil(ceil) + 1)
+            self.tasks_driver.set_sampling_frequencies(
+                self.configs["instruments_setup"]
+                ["activation_sampling_frequency"], self.offsetted_shape)
+            timeout = self.offsetted_shape / self.configs["instruments_setup"][
+                "activation_sampling_frequency"]
+            self.timeout = (math.ceil(timeout) + 1)
 
     def is_hardware(self):
         """
@@ -314,7 +319,7 @@ class NationalInstrumentsSetup:
         self.set_shape_vars(y.shape[1])
 
         self.tasks_driver.write(y, self.configs["auto_start"])
-        read_data = self.tasks_driver.read(self.offsetted_shape, self.ceil)
+        read_data = self.tasks_driver.read(self.offsetted_shape, self.timeout)
         self.tasks_driver.stop_tasks()
 
         self.data_results = read_data

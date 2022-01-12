@@ -266,8 +266,8 @@ def fisher_fit(output: torch.Tensor,
                target: torch.Tensor,
                default_value=False) -> torch.Tensor:
     """
-    Fitness function for genetic algorithm using Fisher linear discriminant.
-    For more information see fisher method.
+    Fitness function for genetic algorithm using the negative of the
+    Fisher linear discriminant. For more information see fisher method.
 
     Can return default value (0).
 
@@ -310,8 +310,8 @@ def fisher_fit(output: torch.Tensor,
 
 def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
-    Calculate the Fisher linear discriminant between two datasets.
-    Used as a loss function for gradient descent.
+    Calculate the negative of the Fisher linear discriminant between
+    two datasets. Used as a loss function for gradient descent.
 
     More information here:
     https://sthalles.github.io/fisher-linear-discriminant/

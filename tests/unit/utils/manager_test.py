@@ -241,11 +241,12 @@ class ManagerTest(unittest.TestCase):
         configs = {}
         configs["instrument_type"] = "cdaq_to_cdaq"
         configs["real_time_rack"] = False
-        configs["sampling_frequency"] = 1000
         configs["instruments_setup"] = {}
         configs["instruments_setup"]["multiple_devices"] = False
         configs["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
         configs["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "activation_sampling_frequency"] = 1000
         configs["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -265,6 +266,8 @@ class ManagerTest(unittest.TestCase):
             [-0.7, 0.3],
         ]
         configs["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_sampling_frequency"] = 1000
         configs["instruments_setup"]["readout_channels"] = [4]
         driver = get_driver(configs)
         assert isinstance(driver, CDAQtoCDAQ)
@@ -288,13 +291,14 @@ class ManagerTest(unittest.TestCase):
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
         configs["driver"]["real_time_rack"] = False
-        configs["driver"]["sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
         configs["driver"]["instruments_setup"][
             "trigger_source"] = "cDAQ1/segment1"
         configs["driver"]["instruments_setup"][
             "activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "activation_sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -315,6 +319,8 @@ class ManagerTest(unittest.TestCase):
         ]
         configs["driver"]["instruments_setup"][
             "readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"]["readout_channels"] = [
             4
         ]  # Channels for reading the output current values

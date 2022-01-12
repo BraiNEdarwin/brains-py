@@ -348,10 +348,7 @@ class LocalTasks:
             self.readout_task.ai_channels.add_ai_voltage_chan(channel)
 
     @Pyro4.oneway
-    def set_sampling_clocks(self,
-                            sampling_frequency,
-                            activation_clk_source,
-                            samps_per_chan=1000):
+    def set_shape(self, sampling_frequency, shape):
         """
         One way method to set the shape variables for the data that is being sent to the device.
         Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the
@@ -367,13 +364,14 @@ class LocalTasks:
         """
         self.activation_task.timing.cfg_samp_clk_timing(
             sampling_frequency,
-            source="/" + activation_clk_source + "/ai/SampleClock",
             sample_mode=self.acquisition_type,
-            samps_per_chan=samps_per_chan)
+            samps_per_chan=shape,
+        )
         self.readout_task.timing.cfg_samp_clk_timing(
             sampling_frequency,
             sample_mode=self.acquisition_type,
-            samps_per_chan=samps_per_chan)
+            samps_per_chan=shape,  # TODO: Add shape + 1 ?
+        )
 
     @Pyro4.oneway
     def add_synchronisation_channels(
@@ -789,9 +787,6 @@ class LocalTasks:
         self.init_activation_channels(self.activation_channel_names,
                                       self.voltage_ranges)
         self.init_readout_channels(self.readout_channel_names)
-        self.set_sampling_clocks(
-            self.configs["sampling_frequency"],
-            self.configs['instruments_setup']['trigger_source'])
         return self.voltage_ranges.tolist()
 
     @Pyro4.oneway
@@ -867,6 +862,20 @@ class RemoteTasks:
             List containing all the readout channels of the device.
         """
         self.tasks.init_readout_channels(readout_channels)
+
+    def set_shape(self, sampling_frequency, shape):
+        """
+        Wrapper for LocalTasks.set_shape. More information
+        can be found in that method.
+
+        Parameters
+        ----------
+        sampling_frequency : float
+             The average number of samples to be obtained in one second.
+        samples_per_chan : (int,int)
+            Number of expected samples, per channel.
+        """
+        self.tasks.set_shape(sampling_frequency, shape)
 
     def add_synchronisation_channels(
         self,

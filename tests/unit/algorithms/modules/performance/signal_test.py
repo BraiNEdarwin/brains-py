@@ -86,11 +86,13 @@ class SignalTest(unittest.TestCase):
         Check that correlation is nan if one signal is uniform.
         """
         for output, target in self.data:
-            coef1 = TorchUtils.format(torch.zeros(output.shape[1]))
+            coef1 = np.zeros(output.shape[1])
             for i in range(output.shape[1]):
-                coef1[i] = np.corrcoef(output[:, i].numpy(),
-                                       target[:, i].numpy())[0, 1]
-            coef2 = signal.pearsons_correlation(output, target).numpy()
+                coef1[i] = np.corrcoef(output[:, i].detach().cpu().numpy(),
+                                       target[:, i].detach().cpu().numpy())[0,
+                                                                            1]
+            coef2 = signal.pearsons_correlation(output,
+                                                target).detach().cpu().numpy()
             self.assertTrue(np.allclose(coef1, coef2))
             for j in coef2:
                 self.assertTrue(j.item() >= -1 and j.item() <= 1)
@@ -111,7 +113,7 @@ class SignalTest(unittest.TestCase):
 
     def test_fisher_fit(self):
         """
-        Check if result has right shape and value is non-negative in both
+        Check if result has right shape and value is negative in both
         cases (default or not).
         """
         for output, target in self.data:
@@ -119,16 +121,16 @@ class SignalTest(unittest.TestCase):
             self.assertEqual(list(result.shape), [output.shape[1]])
             self.assertTrue(
                 torch.all(
-                    result > TorchUtils.format(torch.zeros_like(result))))
+                    -result > TorchUtils.format(torch.zeros_like(result))))
             result = signal.fisher_fit(output, target, True)
             self.assertEqual(list(result.shape), [output.shape[1]])
             self.assertTrue(
                 torch.all(
-                    result >= TorchUtils.format(torch.zeros_like(result))))
+                    -result >= TorchUtils.format(torch.zeros_like(result))))
 
     def test_fisher(self):
         """
-        Test if result is of right shape and values are nonnegative.
+        Test if result is of right shape and values are negative.
         Check if result is nan if data is uniform.
         """
         for output, target in self.data:
@@ -136,7 +138,7 @@ class SignalTest(unittest.TestCase):
             self.assertEqual(list(result.shape), [output.shape[1]])
             self.assertTrue(
                 torch.all(
-                    result >= TorchUtils.format(torch.zeros_like(result))))
+                    -result >= TorchUtils.format(torch.zeros_like(result))))
 
             # make data uniform
             result = signal.fisher(torch.ones_like(output), target)

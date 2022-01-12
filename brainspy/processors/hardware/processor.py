@@ -51,9 +51,6 @@ class HardwareProcessor(nn.Module):
                     Only to be used when having a rack that works with real-time.
                     True will attempt a connection to a server on the real time rack via Pyro.
                     False will execute the drivers locally.
-                sampling_frequency: int
-                    The average number of samples to be obtained in one second, when transforming
-                    the signal from analogue to digital.
                 output_clipping_range: [float,float]
                     The the setups have a limit in the range they can read. They typically clip at
                     approximately +-4 V.
@@ -106,6 +103,9 @@ class HardwareProcessor(nn.Module):
                     activation_instrument: str
                         Name of the activation instrument as observed in the NI Max software.
                         E.g.,  cDAQ1Mod3
+                    activation_sampling_frequency: int
+                        The number of samples to be obtained in one second,
+                        when transforming the activation signal from digital to analogue.
                     activation_channels: list
                         Channels through which voltages will be sent for activating the device
                         (both data inputs and control voltage electrodes). The channels can be
@@ -118,6 +118,9 @@ class HardwareProcessor(nn.Module):
                     readout_instrument: str
                         Name of the readout instrument as observed in the NI Max software.
                         E.g., cDAQ1Mod4
+                    readout_sampling_frequency: int
+                        The number of samples to be obtained in one second, when transforming
+                        the readout signal from analogue to digital.
                     readout_channels: [2] list
                         Channels for reading the output current values.
                         The channels can be checked in the schematic of the DNPU device.
@@ -159,7 +162,8 @@ class HardwareProcessor(nn.Module):
             self.voltage_ranges = TorchUtils.format(self.driver.voltage_ranges)
             self.clipping_value = None
             # TODO: Add message for assertion. Raise an error.
-            assert (slope_length / self.driver.configs["sampling_frequency"]
+            assert (slope_length / self.driver.configs["instruments_setup"]
+                    ["activation_sampling_frequency"]
                     ) >= self.driver.configs["max_ramping_time_seconds"]
 
         self.waveform_mgr = WaveformManager({
@@ -197,6 +201,8 @@ class HardwareProcessor(nn.Module):
         with torch.no_grad():
             x, mask = self.waveform_mgr.plateaus_to_waveform(
                 x, return_pytorch=False)
+            if len(x.shape) > 2:
+                x = x.squeeze()
             output = self.forward_numpy(x)
             if self.logger is not None:
                 self.logger.log_output(x)
