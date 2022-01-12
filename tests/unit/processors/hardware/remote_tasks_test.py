@@ -12,11 +12,9 @@ from brainspy.processors.hardware.drivers.ni.tasks import *
 
 
 class RemoteTasks_Test(unittest.TestCase):
-
     """
     Tests for remote tasks setup with custom configs and real time rack.
     """
-
     def __init__(self, test_name):
         super(RemoteTasks_Test, self).__init__()
         configs = {}
@@ -30,11 +28,15 @@ class RemoteTasks_Test(unittest.TestCase):
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
         configs["driver"]["real_time_rack"] = True
-        configs["driver"]["sampling_frequency"] = 1000
+
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
-        configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-        configs["driver"]["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "trigger_source"] = "cDAQ1/segment1"
+        configs["driver"]["instruments_setup"][
+            "activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "activation_sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -53,7 +55,10 @@ class RemoteTasks_Test(unittest.TestCase):
             [-0.7, 0.3],
             [-0.7, 0.3],
         ]
-        configs["driver"]["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"]["readout_channels"] = [4]
         configs["waveform"] = {}
         configs["waveform"]["plateau_length"] = 10

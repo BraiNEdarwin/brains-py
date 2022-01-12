@@ -33,9 +33,10 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
                 start it anyway. This value is set to True for this setup.
 
             offset : int
-                Only for CDAQ TO NIDAQ setup. Value (in milliseconds) that the original
+                Value (in milliseconds) that the original
                 activation voltage will be displaced, in order to enable the spiking signal to
-                reach the nidaq setup. The offset value is set to 1 for this setup.
+                reach the nidaq setup. The default value is the SYNCHRONISATION_VALUE multiplied
+                by the activation instrument sampling frequency.
 
             max_ramping_time_seconds : int
                 To set the ramp time for the setup. It is defined with the flags
@@ -45,8 +46,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
         """
         configs["auto_start"] = False
-        configs["offset"] = int(configs["sampling_frequency"] *
-                                SYNCHRONISATION_VALUE)
+        configs["offset"] = int(
+            configs["instruments_setup"]["activation_sampling_frequency"] *
+            SYNCHRONISATION_VALUE)
         configs[
             "max_ramping_time_seconds"] = CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)

@@ -11,7 +11,6 @@ from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSet
 
 
 class Setup_Test(unittest.TestCase):
-
     """
     Tests for the hardware processor with the CDAQ to CDAQ driver.
 
@@ -31,11 +30,14 @@ class Setup_Test(unittest.TestCase):
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
         configs["driver"]["real_time_rack"] = False
-        configs["driver"]["sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
-        configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-        configs["driver"]["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "trigger_source"] = "cDAQ1/segment1"
+        configs["driver"]["instruments_setup"][
+            "activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "activation_sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -54,7 +56,10 @@ class Setup_Test(unittest.TestCase):
             [-0.7, 0.3],
             [-0.7, 0.3],
         ]
-        configs["driver"]["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"]["readout_channels"] = [
             4
         ]  # Channels for reading the output current values
@@ -71,7 +76,8 @@ class Setup_Test(unittest.TestCase):
             self.model_data["info"]["electrode_info"] = {
                 "electrode_no": 8,
                 "activation_electrodes": {
-                    "electrode_no": 7,
+                    "electrode_no":
+                    7,
                     "voltage_ranges": [
                         [-1.2, 0.6],
                         [-1.2, 0.6],
@@ -127,8 +133,7 @@ class Setup_Test(unittest.TestCase):
         """
         self.assertTrue(
             isinstance(self.model.tasks_driver, RemoteTasks)
-            or isinstance(self.model.tasks_driver, LocalTasks)
-        )
+            or isinstance(self.model.tasks_driver, LocalTasks))
 
     @unittest.skipIf(
         brainspy.TEST_MODE == "HARDWARE_CDAQ",
@@ -160,8 +165,7 @@ class Setup_Test(unittest.TestCase):
         Test to see if the data can be read from the device - can be None
         """
         data_results = self.model.read_data(
-            np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
-        )
+            np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]))
         self.assertTrue(data_results == None or data_results is not None)
 
     @unittest.skipIf(
@@ -173,8 +177,7 @@ class Setup_Test(unittest.TestCase):
         Test to see if the data that is sent to the DNPU hardware is read
         """
         data_results = self.model._read_data(
-            np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
-        )
+            np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]))
         self.assertTrue(data_results is not None)
 
     @unittest.skipIf(

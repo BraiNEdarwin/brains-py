@@ -8,7 +8,6 @@ from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 
 
 class NIDAQ_Processor_Test(unittest.TestCase):
-
     """
     Tests for the hardware processor with the CDAQ to NIDAQ driver.
 
@@ -28,11 +27,14 @@ class NIDAQ_Processor_Test(unittest.TestCase):
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
         configs["driver"]["real_time_rack"] = False
-        configs["driver"]["sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
-        configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-        configs["driver"]["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "trigger_source"] = "cDAQ1/segment1"
+        configs["driver"]["instruments_setup"][
+            "activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "activation_sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -51,7 +53,10 @@ class NIDAQ_Processor_Test(unittest.TestCase):
             [-0.7, 0.3],
             [-0.7, 0.3],
         ]
-        configs["driver"]["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"]["readout_channels"] = [
             4
         ]  # Channels for reading the output current values
@@ -80,12 +85,15 @@ class NIDAQ_Processor_Test(unittest.TestCase):
                     "ramp_time": 0.5,
                 },
                 "processor": {
-                    "auto_start": True,
+                    "auto_start":
+                    True,
                     "data": {
                         "input_electrode_no": 7,
                         "input_indices": [0, 1, 2, 3, 4, 5, 6],
                         "shape": 2550,
-                        "waveform": {"slope_length": 25.0},
+                        "waveform": {
+                            "slope_length": 25.0
+                        },
                     },
                     "driver": {
                         "amplification": 28.5,
@@ -93,8 +101,12 @@ class NIDAQ_Processor_Test(unittest.TestCase):
                         "instruments_setup": {
                             "activation_channel_mask": [1, 1, 1, 1, 1, 1, 1],
                             "activation_channels": [3, 4, 5, 6, 2, 1, 0],
-                            "activation_instrument": "cDAQ1Mod3",
-                            "device_no": "single",
+                            "activation_instrument":
+                            "cDAQ1Mod3",
+                            "activation_sampling_frequency":
+                            1000,
+                            "device_no":
+                            "single",
                             "max_activation_voltages": [
                                 0.6,
                                 0.6,
@@ -114,29 +126,41 @@ class NIDAQ_Processor_Test(unittest.TestCase):
                                 -0.7,
                             ],
                             "readout_channels": [4],
-                            "readout_instrument": "cDAQ1Mod4",
-                            "trigger_source": "cDAQ1/segment1",
+                            "readout_instrument":
+                            "cDAQ1Mod4",
+                            "readout_sampling_frequency":
+                            1000,
+                            "trigger_source":
+                            "cDAQ1/segment1",
                         },
                         "post_gain": 1,
-                        "sampling_frequency": 50,
                         "tasks_driver_type": "local",
                     },
                     "electrode_setup": [
-                        ["ao8", "ao10", "ao13", "ao11", "ao7", "ao12", "ao14", "out"],
+                        [
+                            "ao8", "ao10", "ao13", "ao11", "ao7", "ao12",
+                            "ao14", "out"
+                        ],
                         [8, 10, 13, 11, 7, 12, 14],
                         [0, 1, 2, 3, 4, 5, 6],
                     ],
-                    "max_ramping_time_seconds": 0.03,
-                    "offset": 1,
-                    "platform": "hardware",
-                    "processor_type": "cdaq_to_cdaq",
+                    "max_ramping_time_seconds":
+                    0.03,
+                    "offset":
+                    1,
+                    "platform":
+                    "hardware",
+                    "processor_type":
+                    "cdaq_to_cdaq",
                 },
-                "save_directory": "tmp/data/training/TEST\\Brains_testing_2021_02_15_134514",
+                "save_directory":
+                "tmp/data/training/TEST\\Brains_testing_2021_02_15_134514",
             }
             self.model_data["info"]["electrode_info"] = {
                 "electrode_no": 8,
                 "activation_electrodes": {
-                    "electrode_no": 7,
+                    "electrode_no":
+                    7,
                     "voltage_ranges": [
                         [-1.2, 0.6],
                         [-1.2, 0.6],
