@@ -153,7 +153,7 @@ class NationalInstrumentsSetup:
         self.offsetted_shape = None
         self.ceil = None
 
-        print(f"DAC Update rate (frequ): {configs['DAC_update_rate']}")
+        print(f"DAC Update rate (frequency): {configs['DAC_update_rate']}")
         print(
             f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. "
         )
@@ -269,7 +269,7 @@ class NationalInstrumentsSetup:
         """
         if self.last_shape != shape:
             self.last_shape = shape
-            self.offsetted_shape = shape * self.configs["offset"]
+            self.offsetted_shape = shape + self.configs["offset"]
             self.tasks_driver.set_shape(self.configs["DAC_update_rate"],
                                         self.offsetted_shape)
             ceil = self.offsetted_shape / self.configs["DAC_update_rate"]
@@ -308,9 +308,9 @@ class NationalInstrumentsSetup:
         self.data_results = None
         self.read_security_checks(y)
         self.set_shape_vars(y.shape[1])
-
+        readout_freq = 10000
         self.tasks_driver.write(y, self.configs["auto_start"])
-        read_data = self.tasks_driver.read(self.offsetted_shape, self.ceil)
+        read_data = self.tasks_driver.read(int(self.offsetted_shape * (readout_freq/self.configs["DAC_update_rate"])) , self.ceil)
         self.tasks_driver.stop_tasks()
 
         self.data_results = read_data

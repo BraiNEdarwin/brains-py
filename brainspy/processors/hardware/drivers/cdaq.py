@@ -43,7 +43,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
                 as it could disable security checks designed to avoid breaking devices.
         """
         configs["auto_start"] = True
-        configs["offset"] = int(10000/configs['DAC_update_rate'])
+        configs["offset"] = 1 #int(10000/configs['DAC_update_rate'])
         configs["max_ramping_time_seconds"] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.tasks_driver.start_trigger(

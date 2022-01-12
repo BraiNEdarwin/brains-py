@@ -363,15 +363,15 @@ class LocalTasks:
             Number of expected samples, per channel.
         """
         readout_freq = 10000
-        self.activation_task.timing.cfg_samp_clk_timing(
-            sampling_frequency,
+        self.activation_task.timing.cfg_samp_clk_timing( # for DAC
+            sampling_frequency, #2.5k
             sample_mode=self.acquisition_type,
-            samps_per_chan=shape,
+            samps_per_chan=shape, # shape = 100
         )
-        self.readout_task.timing.cfg_samp_clk_timing(
-            readout_freq,
+        self.readout_task.timing.cfg_samp_clk_timing( # for ADC
+            readout_freq, #10k
             sample_mode=self.acquisition_type,
-            samps_per_chan=int((readout_freq/sampling_frequency)*shape)  # TODO: Add shape + 1 ?
+            samps_per_chan=int((readout_freq/sampling_frequency)*shape)  # TODO: Add shape + 1 ? # 10000
         )
 
     @Pyro4.oneway
@@ -466,8 +466,7 @@ class LocalTasks:
             including any custom scaling you apply to the channels.  Use a DAQmx Create Channel
             method to specify these units.
         """
-        return self.readout_task.read(
-            number_of_samples_per_channel= number_of_samples_per_channel,
+        return self.readout_task.read(number_of_samples_per_channel= number_of_samples_per_channel,
             timeout=timeout)
 
     # Main difference between read and remote read is in the try/catch
@@ -830,7 +829,7 @@ class RemoteTasks:
         uri : str
             uri of the remote server
         """
-        self.acquisition_type = constants.AcquisitionType.FINITE
+        self.acquisition_type =constants.AcquisitionType.CONTINUOUS  #constants.AcquisitionType.FINITE
         self.tasks = Pyro4.Proxy(uri)
 
     def init_activation_channels(self, channel_names, voltage_ranges=None):
