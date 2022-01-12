@@ -154,7 +154,10 @@ class NationalInstrumentsSetup:
         self.data_results = None
         self.offsetted_points_to_write = None
         self.timeout = None
-
+        if configs["inverted_output"]:
+            self.inversion = -1
+        else:
+            self.inversion = 1
         print(
             f"DAC sampling frequency: {configs['instruments_setup']['activation_sampling_frequency']}"
         )
@@ -227,7 +230,7 @@ class NationalInstrumentsSetup:
         data = np.array(data)
         if len(data.shape) == 1:
             data = data[np.newaxis, :]
-        return (data.T * self.configs["amplification"]).T
+        return self.inversion * (data.T * self.configs["amplification"]).T
 
     def read_data(self, y):
         """

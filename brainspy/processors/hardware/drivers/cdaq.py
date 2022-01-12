@@ -74,5 +74,5 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         # y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
         y = y.T
         data = self.read_data(y)
-        data = -1 * self.process_output_data(data)[:, 1:]
+        data = self.process_output_data(data)[:, 1:]
         return data.T
