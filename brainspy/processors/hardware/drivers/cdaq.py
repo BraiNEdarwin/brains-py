@@ -74,5 +74,9 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         # y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
         y = y.T
         data = self.read_data(y)
-        data = self.process_output_data(data)[:, 1:]
+
+        # Calculate extra point based on the readout and activation frequencies
+        starting_point = int((self.configs['instruments_setup']['readout_sampling_frequency'] / self.configs['instruments_setup']['activation_sampling_frequency']))
+        
+        data = self.process_output_data(data)[:, starting_point:]
         return data.T

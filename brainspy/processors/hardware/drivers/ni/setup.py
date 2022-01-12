@@ -322,7 +322,8 @@ class NationalInstrumentsSetup:
             By default, None.
         """
         if timeout is None:
-            timeout = self.offsetted_points_to_write / self.configs[
+            timeout = self.offsetted_points_to_write * self.configs[
+                "instruments_setup"]["activation_sampling_frequency"] / self.configs[
                 "instruments_setup"]["readout_sampling_frequency"]
             self.timeout = (math.ceil(timeout) + 1)  # Adds an extra second
         else:
