@@ -278,6 +278,8 @@ class NationalInstrumentsSetup:
             - set_sampling_frequencies: Sets the sampling frequencies of the activation and readout
                                         instruments.
             - timeout: Specifies the timeout for reading. Read below for more information.
+            - points_to_read: Number of points that will be read given the number of points that
+                              are written and the activation/readout frequency relationship.
 
         Parameters
         ----------
@@ -297,10 +299,11 @@ class NationalInstrumentsSetup:
             self.last_points_to_write_val = points_to_write
             self.offsetted_points_to_write = points_to_write + self.configs[
                 "offset"]
-            self.tasks_driver.set_sampling_frequencies(
+            self.points_to_read = self.tasks_driver.set_sampling_frequencies(
                 self.configs["instruments_setup"]
                 ["activation_sampling_frequency"],
-                self.offsetted_points_to_write)
+                self.configs["instruments_setup"]
+                ["readout_sampling_frequency"], self.offsetted_points_to_write)
             self.set_timeout(timeout)
 
     def set_timeout(self, timeout=None):
@@ -360,8 +363,7 @@ class NationalInstrumentsSetup:
         self.set_io_configs(y.shape[1])
 
         self.tasks_driver.write(y, self.configs["auto_start"])
-        read_data = self.tasks_driver.read(self.offsetted_points_to_write,
-                                           self.timeout)
+        read_data = self.tasks_driver.read(self.points_to_read, self.timeout)
         self.tasks_driver.stop_tasks()
 
         self.data_results = read_data

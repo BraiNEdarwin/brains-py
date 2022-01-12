@@ -347,8 +347,8 @@ class LocalTasks:
             channel = readout_channels[i]
             self.readout_task.ai_channels.add_ai_voltage_chan(channel)
 
-    @Pyro4.oneway
-    def set_shape(self, sampling_frequency, shape):
+    def set_sampling_frequencies(self, activation_sampling_frequency,
+                                 readout_sampling_frequency, points_to_write):
         """
         One way method to set the shape variables for the data that is being sent to the device.
         Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the
@@ -358,20 +358,30 @@ class LocalTasks:
         Parameters
         ----------
         sampling_frequency : float
-             The average number of samples to be obtained in one second.
+            The average number of samples to be obtained in one second.
         samples_per_chan : (int,int)
             Number of expected samples, per channel.
+
+        Returns
+        -------
+        points_to_read: int
+            Number of points that are expected to be read given the number
+            of points to be written, and the activation and readout frequencies.
         """
+        points_to_read = int(
+            (readout_sampling_frequency / activation_sampling_frequency) *
+            points_to_write)
         self.activation_task.timing.cfg_samp_clk_timing(
-            sampling_frequency,
+            activation_sampling_frequency,
             sample_mode=self.acquisition_type,
-            samps_per_chan=shape,
+            samps_per_chan=points_to_write,
         )
         self.readout_task.timing.cfg_samp_clk_timing(
-            sampling_frequency,
+            readout_sampling_frequency,
             sample_mode=self.acquisition_type,
-            samps_per_chan=shape,  # TODO: Add shape + 1 ?
+            samps_per_chan=points_to_read,
         )
+        return points_to_read
 
     @Pyro4.oneway
     def add_synchronisation_channels(
@@ -863,9 +873,10 @@ class RemoteTasks:
         """
         self.tasks.init_readout_channels(readout_channels)
 
-    def set_shape(self, sampling_frequency, shape):
+    def set_sampling_frequencies(self, activation_sampling_frequency,
+                                 readout_sampling_frequency, points_to_write):
         """
-        Wrapper for LocalTasks.set_shape. More information
+        Wrapper for LocalTasks.set_sampling_frequencies. More information
         can be found in that method.
 
         Parameters
@@ -875,7 +886,9 @@ class RemoteTasks:
         samples_per_chan : (int,int)
             Number of expected samples, per channel.
         """
-        self.tasks.set_shape(sampling_frequency, shape)
+        return self.tasks.set_sampling_frequencies(
+            activation_sampling_frequency, readout_sampling_frequency,
+            points_to_write)
 
     def add_synchronisation_channels(
         self,
