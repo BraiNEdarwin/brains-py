@@ -312,7 +312,7 @@ class NationalInstrumentsSetup:
 
         Parameters
         ----------
-        timeout : [type], optional
+        timeout : int, optional
             Specifies the amount of time in seconds to wait for samples to become
             available. If the time elapses, the method returns an error and any samples
             read before the timeout elapsed. The default timeout is 10 seconds. If you
@@ -323,9 +323,9 @@ class NationalInstrumentsSetup:
         """
         if timeout is None:
             timeout = self.offsetted_points_to_write * self.configs[
-                "instruments_setup"]["activation_sampling_frequency"] / self.configs[
-                "instruments_setup"]["readout_sampling_frequency"]
-            self.timeout = (math.ceil(timeout) + 1)  # Adds an extra second
+                "instruments_setup"]["readout_sampling_frequency"] / self.configs[
+                "instruments_setup"]["activation_sampling_frequency"]
+            self.timeout = (math.ceil(timeout) + 10)  # Adds an extra second
         else:
             self.timeout = timeout
 
