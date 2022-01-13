@@ -109,7 +109,7 @@ def init_channel_data(configs):
         readout_channel_list = []
         voltage_ranges_list = []
         for device_name in configs["instruments_setup"]:
-            if device_name != "trigger_source" and device_name != "multiple_devices":
+            if device_name != "trigger_source" and device_name != "multiple_devices" and device_name != "activation_sampling_frequency" and device_name != "readout_sampling_frequency":
                 mask = get_mask(configs["instruments_setup"][device_name])
                 if mask is None or sum(mask) > 0:
                     configs["instruments_setup"][device_name][
