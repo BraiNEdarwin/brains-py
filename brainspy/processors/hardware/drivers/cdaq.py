@@ -34,7 +34,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
             offset : int
                 Number of points that the original activation voltage signal will be displaced, in
                 order to enable the spiking signal to reach the nidaq setup. The offset value is
-                set to 1 point for this setup.
+                set to 0 for this setup.
 
             max_ramping_time_seconds : int
                 To set the ramp time for the setup. It is defined with the flags
@@ -43,7 +43,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
                 as it could disable security checks designed to avoid breaking devices.
         """
         configs["auto_start"] = True
-        configs["offset"] = 1
+        configs["offset"] = 0
         configs["max_ramping_time_seconds"] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.tasks_driver.start_trigger(
@@ -72,11 +72,12 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         """
         # No need to create an additional point, as this is handled by the NI driver.
         # y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
+        # y = np.concatenate((np.zeros((1, y.shape[1])), y))
         y = y.T
         data = self.read_data(y)
 
         # Calculate extra point based on the readout and activation frequencies
-        starting_point = int((self.configs['instruments_setup']['readout_sampling_frequency'] / self.configs['instruments_setup']['activation_sampling_frequency']))
+        # starting_point = int((self.configs['instruments_setup']['readout_sampling_frequency'] / self.configs['instruments_setup']['activation_sampling_frequency']))
         
-        data = self.process_output_data(data)[:, starting_point:]
+        data = self.process_output_data(data)#[:, starting_point:]
         return data.T
