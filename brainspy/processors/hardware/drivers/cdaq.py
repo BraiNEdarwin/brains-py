@@ -79,5 +79,5 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         # Calculate extra point based on the readout and activation frequencies
         # starting_point = int((self.configs['instruments_setup']['readout_sampling_frequency'] / self.configs['instruments_setup']['activation_sampling_frequency']))
         
-        data = self.process_output_data(data)#[:, starting_point:]
+        data = self.inversion * self.process_output_data(data)#[:, starting_point:]
         return data.T

@@ -230,7 +230,7 @@ class NationalInstrumentsSetup:
         data = np.array(data)
         if len(data.shape) == 1:
             data = data[np.newaxis, :]
-        return self.inversion * (data.T * self.configs["amplification"]).T
+        return (data.T * self.configs["amplification"]).T
 
     def read_data(self, y):
         """

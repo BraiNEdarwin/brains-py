@@ -90,7 +90,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         while not finished and (attempts < max_attempts):
             data, finished = self.readout_trial(y)
             attempts += 1
-
+        data *= self.inversion
         assert finished, (
             "Error: unable to synchronise input and output. Output: " +
             str(data.shape[1]) + " points.")
