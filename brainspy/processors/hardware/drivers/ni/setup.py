@@ -166,9 +166,7 @@ class NationalInstrumentsSetup:
         print(
             f"ADC sampling frequency: {configs['instruments_setup']['readout_sampling_frequency']}"
         )
-        print(
-            f"DAC/ADC point difference: {self.io_point_difference}"
-        )
+        print(f"DAC/ADC point difference: {self.io_point_difference}")
         print(
             f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. "
         )
@@ -186,22 +184,39 @@ class NationalInstrumentsSetup:
                 + "execution of this program.")
 
     def init_sampling_configs(self, configs):
-        self.io_point_difference = int(configs['instruments_setup']['readout_sampling_frequency'] / configs['instruments_setup']['activation_sampling_frequency'])
-        assert configs['instruments_setup'][
-            'readout_sampling_frequency'] % configs['instruments_setup'][
-                'activation_sampling_frequency'] == 0, (
-                    "Remainder of the division between readout (" +
-                    f"{configs['instruments_setup']['readout_sampling_frequency']} Hz) "
-                    +
-                    f" and activation ({configs['instruments_setup']['activation_sampling_frequency']} Hz)"
-                    + " frequencies is not zero.")
-        if configs['instruments_setup']['activation_sampling_frequency'] > (configs['instruments_setup']['readout_sampling_frequency'] / 2):
-            warnings.warn("Activation sampling frequency ("
-                         +f"{configs['instruments_setup']['activation_sampling_frequency']} Hz) "
-                         +" is higher than half of the readout frequency ("
-                         +f"{configs['instruments_setup']['readout_sampling_frequency']} Hz). "
-                         "By setting this configuration, you are losing resolution. "
-            )
+        """ Initialises configuration related to sampling.
+            It saves the variable io_point_difference, which is calculated dividing the
+            readout_sampling_frequency by the activation_sampling_frequency.
+            It asserts that the remainder of this division between frequencies is zero.
+            It raises a warning related to resolution loss if the activation_sampling_frequency
+            is higher than half of the readout_sampling_frequency.
+
+        Args:
+            configs (dict):
+                A dictionary containing at least the following keys:
+                - instruments_setup:
+                    readout_sampling_frequency: Frequency at which the ADC will sample.
+                    activation_sampling_frequency: Frequency at which the DAC will sample.
+        """
+        self.io_point_difference = int(
+            configs['instruments_setup']['readout_sampling_frequency'] /
+            configs['instruments_setup']['activation_sampling_frequency'])
+        assert configs['instruments_setup']['readout_sampling_frequency'] % configs[
+            'instruments_setup']['activation_sampling_frequency'] == 0, (
+                "Remainder of the division between readout (" +
+                f"{configs['instruments_setup']['readout_sampling_frequency']} Hz) "
+                +
+                f" and activation ({configs['instruments_setup']['activation_sampling_frequency']} Hz)"
+                + " frequencies is not zero.")
+        if configs['instruments_setup']['activation_sampling_frequency'] > (
+                configs['instruments_setup']['readout_sampling_frequency'] /
+                2):
+            warnings.warn(
+                "Activation sampling frequency (" +
+                f"{configs['instruments_setup']['activation_sampling_frequency']} Hz) "
+                + " is higher than half of the readout frequency (" +
+                f"{configs['instruments_setup']['readout_sampling_frequency']} Hz). "
+                "By setting this configuration, you are losing resolution. ")
 
     def init_tasks(self, configs):
         """
@@ -251,8 +266,19 @@ class NationalInstrumentsSetup:
             processed output data computed from the amplification value
         """
         data = np.array(data)
+
+        # If data has single dimension, create an extra dimension
         if len(data.shape) == 1:
             data = data[np.newaxis, :]
+
+        # If there is a difference in points between read and write due to sampling frequencies, and there
+        # is an average_io_point_difference flag set as True, the data is averaged
+        if self.io_point_difference > 1 and self.configs['instruments_setup'][
+                'average_io_point_difference']:
+            data = np.mean(data.reshape(data.shape[0], -1,
+                                        self.io_point_difference),
+                           axis=2)
+
         return (data.T * self.configs["amplification"]).T
 
     def read_data(self, y):

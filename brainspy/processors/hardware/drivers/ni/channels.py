@@ -109,7 +109,7 @@ def init_channel_data(configs):
         readout_channel_list = []
         voltage_ranges_list = []
         for device_name in configs["instruments_setup"]:
-            if device_name != "trigger_source" and device_name != "multiple_devices" and device_name != "activation_sampling_frequency" and device_name != "readout_sampling_frequency":
+            if is_device_name(device_name):
                 mask = get_mask(configs["instruments_setup"][device_name])
                 if mask is None or sum(mask) > 0:
                     configs["instruments_setup"][device_name][
@@ -143,6 +143,23 @@ def init_channel_data(configs):
                     voltage_ranges_list.append(voltage_ranges)
         voltage_ranges = concatenate_voltage_ranges(voltage_ranges_list)
     return activation_channel_list, readout_channel_list, instruments, voltage_ranges
+
+
+def is_device_name(key):
+    """
+    Checks if a configuration key from the instruments_setup configuration dictionary
+    contains the name of a DNPU device, in the case of having a PCB with multiple
+    DNPU devices (multiple_devices = True).
+
+    Args:
+        key (str): Configuration key to be checked against being a device name.
+    Returns:
+        bool: Whether if the configuration key is a device name
+    """
+    return (key != "trigger_source" and key != "multiple_devices"
+            and key != "activation_sampling_frequency"
+            and key != "readout_sampling_frequency"
+            and key != "average_io_point_difference")
 
 
 def concatenate_voltage_ranges(voltage_ranges: np.array):
