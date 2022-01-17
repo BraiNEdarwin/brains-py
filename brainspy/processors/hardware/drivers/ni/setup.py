@@ -5,6 +5,7 @@ import sys
 import math
 import signal
 import threading
+import warnings
 import numpy as np
 from threading import Thread
 from brainspy.processors.hardware.drivers.ni.tasks import get_tasks_driver
@@ -154,6 +155,7 @@ class NationalInstrumentsSetup:
         self.data_results = None
         self.offsetted_points_to_write = None
         self.timeout = None
+        self.init_sampling_configs(configs)
         if configs["inverted_output"]:
             self.inversion = -1
         else:
@@ -163,6 +165,9 @@ class NationalInstrumentsSetup:
         )
         print(
             f"ADC sampling frequency: {configs['instruments_setup']['readout_sampling_frequency']}"
+        )
+        print(
+            f"DAC/ADC point difference: {self.io_point_difference}"
         )
         print(
             f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. "
@@ -179,6 +184,24 @@ class NationalInstrumentsSetup:
                 +
                 "sure about what you are doing press ENTER to continue. Otherwise STOP the "
                 + "execution of this program.")
+
+    def init_sampling_configs(self, configs):
+        self.io_point_difference = int(configs['instruments_setup']['readout_sampling_frequency'] / configs['instruments_setup']['activation_sampling_frequency'])
+        assert configs['instruments_setup'][
+            'readout_sampling_frequency'] % configs['instruments_setup'][
+                'activation_sampling_frequency'] == 0, (
+                    "Remainder of the division between readout (" +
+                    f"{configs['instruments_setup']['readout_sampling_frequency']} Hz) "
+                    +
+                    f" and activation ({configs['instruments_setup']['activation_sampling_frequency']} Hz)"
+                    + " frequencies is not zero.")
+        if configs['instruments_setup']['activation_sampling_frequency'] > (configs['instruments_setup']['readout_sampling_frequency'] / 2):
+            warnings.warn("Activation sampling frequency ("
+                         +f"{configs['instruments_setup']['activation_sampling_frequency']} Hz) "
+                         +" is higher than half of the readout frequency ("
+                         +f"{configs['instruments_setup']['readout_sampling_frequency']} Hz). "
+                         "By setting this configuration, you are losing resolution. "
+            )
 
     def init_tasks(self, configs):
         """
@@ -322,9 +345,7 @@ class NationalInstrumentsSetup:
             By default, None.
         """
         if timeout is None:
-            timeout = self.offsetted_points_to_write * self.configs[
-                "instruments_setup"]["readout_sampling_frequency"] / self.configs[
-                "instruments_setup"]["activation_sampling_frequency"]
+            timeout = self.offsetted_points_to_write * self.io_point_difference
             self.timeout = (math.ceil(timeout) + 10)  # Adds an extra second
         else:
             self.timeout = timeout
