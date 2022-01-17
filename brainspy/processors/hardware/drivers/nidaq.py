@@ -56,7 +56,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             self.configs["instruments_setup"]["readout_instrument"],
             self.configs["instruments_setup"]["activation_instrument"],
         )
-
+        assert self.configs['instruments_setup']['average_io_point_difference'], (
+            "The average_io_point_difference flag can only be true for cdaq to nidaq setups"
+        )
     def forward_numpy(self, y):
         """
         The forward function computes output numpy values from input numpy array.
