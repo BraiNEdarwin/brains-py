@@ -117,9 +117,13 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         """
         data = self.read_data(y)
         data = self.process_output_data(data)
-        data = self.synchronise_output_data(data)
-        finished = data.shape[1] == self.original_shape
-        return data, finished
+        data, cut_value_is_zero = self.synchronise_output_data(data)
+        # Add check that the cut_value is not 0
+        if self.io_point_difference == 1 or self.configs['instruments_setup']['average_io_point_difference']:
+            finished = data.shape[1] == self.original_shape
+        else:
+            finished = data.shape[1] == self.original_shape * self.io_point_difference
+        return data, finished and not cut_value_is_zero
 
     def synchronise_input_data(self, y):
         """
@@ -198,6 +202,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         -------
         np.array
             synchronized output data
+        bool
+            Whether if the cut value is zero
         """
         cut_value = self.get_output_cut_value(read_data)
-        return read_data[:-1, cut_value:self.original_shape + cut_value]
+        # Add check that the cut_value is not 0
+        return read_data[:-1, cut_value:self.original_shape + cut_value], cut_value == 0
