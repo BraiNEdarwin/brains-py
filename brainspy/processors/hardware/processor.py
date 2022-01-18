@@ -155,7 +155,10 @@ class HardwareProcessor(nn.Module):
 
         if not isinstance(instrument_configs, dict):
             self.driver = instrument_configs
-            self.voltage_ranges = self.driver.get_voltage_ranges()
+            if self.driver.is_hardware():
+                self.voltage_ranges = self.driver.get_voltage_ranges()
+            else:
+                self.voltage_ranges = None
             self.clipping_value = self.driver.get_clipping_value()
         else:
             self.driver = get_driver(instrument_configs)
