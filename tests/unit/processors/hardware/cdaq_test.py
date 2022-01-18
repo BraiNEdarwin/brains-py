@@ -90,6 +90,10 @@ class CDAQ_Processor_Test(unittest.TestCase):
                 self.model_data["info"],
             )
 
+    @unittest.skipUnless(
+        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup"
+    )
     def test_cdaq_setup_fail(self):
         """
         Example - Missing key - slope length raises KeyError
