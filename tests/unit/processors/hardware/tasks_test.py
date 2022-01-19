@@ -12,12 +12,9 @@ from brainspy.processors.hardware.drivers.ni.tasks import *
 
 
 class Tasks_Test(unittest.TestCase):
-
     """
     Tests for tasks with custom configs and no real time rack.
     """
-
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE", "Method deactivated as it is only possible to be tested when connected to hardware - CDAQtoCDAQ or CDAQtoNIDAQ")
     def __init__(self, test_name):
         super(Tasks_Test, self).__init__()
         configs = {}
@@ -34,8 +31,10 @@ class Tasks_Test(unittest.TestCase):
         configs["driver"]["sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
-        configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-        configs["driver"]["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "trigger_source"] = "cDAQ1/segment1"
+        configs["driver"]["instruments_setup"][
+            "activation_instrument"] = "cDAQ1Mod3"
         configs["driver"]["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -54,7 +53,8 @@ class Tasks_Test(unittest.TestCase):
             [-0.7, 0.3],
             [-0.7, 0.3],
         ]
-        configs["driver"]["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_instrument"] = "cDAQ1Mod4"
         configs["driver"]["instruments_setup"]["readout_channels"] = [4]
         configs["waveform"] = {}
         configs["waveform"]["plateau_length"] = 10
@@ -62,6 +62,10 @@ class Tasks_Test(unittest.TestCase):
         self.configs = configs
         self.local = LocalTasks()
 
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "SIMULATION_PC",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
+    )
     def test_get_driver(self):
         """
         Test to get a local task driver with a configuration with no real time rack
@@ -69,14 +73,23 @@ class Tasks_Test(unittest.TestCase):
         tasks_driver = get_tasks_driver(self.configs["driver"])
         isinstance(tasks_driver, LocalTasks)
 
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "SIMULATION_PC",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
+    )
     def test_LocalTasks_init(self):
         """
         Test to check LocalTasks driver is initialized correctly.
         """
-        self.assertEqual(self.local.acquisition_type, constants.AcquisitionType.FINITE)
+        self.assertEqual(self.local.acquisition_type,
+                         constants.AcquisitionType.FINITE)
         self.assertEqual(self.local.activation_task, None)
         self.assertEqual(self.local.readout_task, None)
 
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "SIMULATION_PC",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
+    )
     def test_init_tasks(self):
         """
         Test to initialize the tasks in the LocalTasks driver
@@ -87,7 +100,7 @@ class Tasks_Test(unittest.TestCase):
         self.assertEqual(voltage_ranges.shape, (7, 2))
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_init_activation_channels(self):
@@ -107,7 +120,7 @@ class Tasks_Test(unittest.TestCase):
         self.assertTrue(self.local.activation_task is not None)
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_init_readout_channels(self):
@@ -118,6 +131,10 @@ class Tasks_Test(unittest.TestCase):
         self.local.init_readout_channels(channel_names)
         self.assertTrue(self.local.readout_task is not None)
 
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "SIMULATION_PC",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
+    )
     def test_close_tasks(self):
         """
         Test to close the LocalTasks driver
@@ -126,6 +143,10 @@ class Tasks_Test(unittest.TestCase):
         self.assertEqual(self.local.activation_task, None)
         self.assertEqual(self.readout_task, None)
 
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "SIMULATION_PC",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
+    )
     def test_read(self):
         """
         Test to read data using this driver and checking if any values are read
@@ -133,6 +154,10 @@ class Tasks_Test(unittest.TestCase):
         values = self.local.read((3, 3), 10)
         self.assertTrue(values is not None)
 
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "SIMULATION_PC",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
+    )
     def test_remote_read(self):
         """
         Test to remotely read data using this driver and checking if any values are read
@@ -143,7 +168,7 @@ class Tasks_Test(unittest.TestCase):
     def runTest(self):
         self.test_get_driver()
         self.test_LocalTasks_init()
-        # self.test_init_tasks()
+        self.test_init_tasks()
         self.test_init_activation_channels()
         self.test_init_readout_channels()
         self.test_close_tasks()
