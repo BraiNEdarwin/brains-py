@@ -1,6 +1,5 @@
-import os
-import torch
 import unittest
+import brainspy
 import numpy as np
 import warnings
 from brainspy.utils.pytorch import TorchUtils
@@ -10,12 +9,10 @@ from brainspy.processors.hardware.processor import HardwareProcessor
 
 
 class Hardware_Processor_Test(unittest.TestCase):
-
     """
     Tests for the hardware processor in "simulation_debug" mode.
 
     """
-
     def __init__(self, test_name):
         super(Hardware_Processor_Test, self).__init__()
 
@@ -42,7 +39,8 @@ class Hardware_Processor_Test(unittest.TestCase):
             "activation": "relu",
         }
 
-        self.debug_model = SurrogateModel(self.model_data["info"]["model_structure"])
+        self.debug_model = SurrogateModel(
+            self.model_data["info"]["model_structure"])
         model = HardwareProcessor(
             self.debug_model,
             slope_length=self.configs["waveform"]["slope_length"],
@@ -50,6 +48,10 @@ class Hardware_Processor_Test(unittest.TestCase):
         )
         self.model = TorchUtils.format(model)
 
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "SIMULATION_PC",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup"
+    )
     def test_init(self):
         """
         Test to check correct initialization of the Hardware processor in simulation debug model.
@@ -58,6 +60,10 @@ class Hardware_Processor_Test(unittest.TestCase):
 
         isinstance(self.model.driver, SurrogateModel)
 
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "SIMULATION_PC",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup"
+    )
     def test_forward(self):
         """
         Test if a forward pass through the processor returns a tensor of the
@@ -75,6 +81,10 @@ class Hardware_Processor_Test(unittest.TestCase):
         x = self.model.forward(data_plateaus)
         self.assertEqual(list(x.shape), [40, 1])
 
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "SIMULATION_PC",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup"
+    )
     def test_forward_numpy(self):
         """
         Test if a forward pass through the processor returns a tensor of the
@@ -84,6 +94,10 @@ class Hardware_Processor_Test(unittest.TestCase):
         x = self.model.forward_numpy(x)
         self.assertEqual(list(x.shape), [1])
 
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "SIMULATION_PC",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup"
+    )
     def test_close(self):
         """
         Test if closing the processor raises a warning.
@@ -93,6 +107,10 @@ class Hardware_Processor_Test(unittest.TestCase):
             self.model.close()
             self.assertEqual(len(caught_warnings), 1)
 
+    @unittest.skipIf(
+        brainspy.TEST_MODE == "SIMULATION_PC",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup"
+    )
     def test_is_hardware(self):
         """
         Test if the processor is a hardware,but in this case is an instance of a Surrogate Model.
