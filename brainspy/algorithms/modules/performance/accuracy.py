@@ -297,7 +297,7 @@ def train_perceptron(epochs,
             f"Training perceptron: Epoch: {epoch}  Accuracy {accuracy}," +
             f" running loss: {running_loss}")
         if accuracy >= 100.0:
-            print("Reached 100/% accuracy. Stopping.")
+            print("\nReached 100/% accuracy. Stopping.")
             break
     return accuracy, node
 
