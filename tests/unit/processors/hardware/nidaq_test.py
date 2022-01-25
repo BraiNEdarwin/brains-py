@@ -1,3 +1,5 @@
+import os
+import torch
 import unittest
 import numpy as np
 import brainspy
@@ -22,7 +24,6 @@ class NIDAQ_Processor_Test(unittest.TestCase):
         configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
-        configs["driver"]["real_time_rack"] = False
         configs["driver"]["sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False

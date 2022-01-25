@@ -1,12 +1,9 @@
-import os
-import torch
 import unittest
-import Pyro4
 import numpy as np
 import brainspy
 from brainspy.processors.processor import Processor
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
-from brainspy.processors.hardware.drivers.ni.tasks import LocalTasks, RemoteTasks
+from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 
 
@@ -27,7 +24,6 @@ class Setup_Test(unittest.TestCase):
         configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
-        configs["driver"]["real_time_rack"] = False
         configs["driver"]["sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
@@ -124,11 +120,9 @@ class Setup_Test(unittest.TestCase):
     )
     def test_init_tasks(self):
         """
-        Test to check the correct initilization of the Setup tasks driver as RemoteTasks or LocalTasks
+        Test to check the correct initilization of the Setup tasks driver
         """
-        self.assertTrue(
-            isinstance(self.model.tasks_driver, RemoteTasks)
-            or isinstance(self.model.tasks_driver, LocalTasks))
+        self.assertTrue(isinstance(self.model.tasks_driver, IOTasksManager))
 
     @unittest.skipIf(
         brainspy.TEST_MODE == "SIMULATION_PC",

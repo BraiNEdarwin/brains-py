@@ -32,9 +32,9 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
                 start it anyway. This value is set to True for this setup.
 
             offset : int
-                Only for CDAQ TO NIDAQ setup. Value (in milliseconds) that the original
-                activation voltage will be displaced, in order to enable the spiking signal to
-                reach the nidaq setup. The offset value is set to 1 for this setup.
+                Number of points that the original activation voltage signal will be displaced, in
+                order to enable the spiking signal to reach the nidaq setup. The offset value is
+                set to 0 for this setup.
 
             max_ramping_time_seconds : int
                 To set the ramp time for the setup. It is defined with the flags
@@ -43,7 +43,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
                 as it could disable security checks designed to avoid breaking devices.
         """
         configs["auto_start"] = True
-        configs["offset"] = 1
+        configs["offset"] = 0
         configs["max_ramping_time_seconds"] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.tasks_driver.start_trigger(
@@ -70,9 +70,14 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         np.array
             Output data that has been read from the device when receiving the input y.
         """
-
-        y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
+        # No need to create an additional point, as this is handled by the NI driver.
+        # y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
+        # y = np.concatenate((np.zeros((1, y.shape[1])), y))
         y = y.T
         data = self.read_data(y)
-        data = -1 * self.process_output_data(data)[:, 1:]
+
+        # Calculate extra point based on the readout and activation frequencies
+        # starting_point = int((self.configs['instruments_setup']['readout_sampling_frequency'] / self.configs['instruments_setup']['activation_sampling_frequency']))
+        
+        data = self.inversion * self.process_output_data(data)#[:, starting_point:]
         return data.T

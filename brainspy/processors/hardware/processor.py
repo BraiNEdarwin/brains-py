@@ -47,10 +47,6 @@ class HardwareProcessor(nn.Module):
                 "simulation_debug" or "cdaq_to_cdaq" or "cdaq_to_nidaq" - Processor type to
                 initialize a hardware processor
             driver:
-                real_time_rack : boolean
-                    Only to be used when having a rack that works with real-time.
-                    True will attempt a connection to a server on the real time rack via Pyro.
-                    False will execute the drivers locally.
                 output_clipping_range: [float,float]
                     The the setups have a limit in the range they can read. They typically clip at
                     approximately +-4 V.
