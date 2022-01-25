@@ -240,7 +240,6 @@ class ManagerTest(unittest.TestCase):
         """
         configs = {}
         configs["instrument_type"] = "cdaq_to_cdaq"
-        configs["real_time_rack"] = False
         configs["instruments_setup"] = {}
         configs["instruments_setup"]["multiple_devices"] = False
         configs["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
@@ -290,7 +289,6 @@ class ManagerTest(unittest.TestCase):
         configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
-        configs["driver"]["real_time_rack"] = False
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
         configs["driver"]["instruments_setup"][

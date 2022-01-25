@@ -27,7 +27,6 @@ class CDAQ_Processor_Test(unittest.TestCase):
         configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
-        configs["driver"]["real_time_rack"] = False
 
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
@@ -112,7 +111,6 @@ class CDAQ_Processor_Test(unittest.TestCase):
         configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
-        configs["driver"]["real_time_rack"] = False
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
         configs["driver"]["instruments_setup"][

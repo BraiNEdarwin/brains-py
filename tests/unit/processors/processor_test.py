@@ -93,7 +93,6 @@ class ProcessorTest(unittest.TestCase):
         }
         driver_cdaq = {
             "instruments_setup": instruments_setup_cdaq,
-            "real_time_rack": False,
             "output_clipping_range": self.clipping,
             "amplification": self.amplification[0]
         }
@@ -113,7 +112,6 @@ class ProcessorTest(unittest.TestCase):
         }
         driver_nidaq = {
             "instruments_setup": instruments_setup_nidaq,
-            "real_time_rack": False,
             "output_clipping_range": self.clipping,
             "amplification": self.amplification[0]
         }

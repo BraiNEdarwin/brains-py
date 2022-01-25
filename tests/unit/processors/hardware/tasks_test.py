@@ -27,7 +27,6 @@ class Tasks_Test(unittest.TestCase):
         configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
-        configs["driver"]["real_time_rack"] = False
         configs["driver"]["sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
@@ -60,26 +59,15 @@ class Tasks_Test(unittest.TestCase):
         configs["waveform"]["plateau_length"] = 10
         configs["waveform"]["slope_length"] = 30
         self.configs = configs
-        self.local = LocalTasks()
+        self.local = IOTasksManager()
 
     @unittest.skipIf(
         brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
-    def test_get_driver(self):
+    def test_IOTasksManager_init(self):
         """
-        Test to get a local task driver with a configuration with no real time rack
-        """
-        tasks_driver = get_tasks_driver(self.configs["driver"])
-        isinstance(tasks_driver, LocalTasks)
-
-    @unittest.skipIf(
-        brainspy.TEST_MODE == "SIMULATION_PC",
-        "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
-    )
-    def test_LocalTasks_init(self):
-        """
-        Test to check LocalTasks driver is initialized correctly.
+        Test to check IOTasksManager driver is initialized correctly.
         """
         self.assertEqual(self.local.acquisition_type,
                          constants.AcquisitionType.FINITE)
@@ -92,7 +80,7 @@ class Tasks_Test(unittest.TestCase):
     )
     def test_init_tasks(self):
         """
-        Test to initialize the tasks in the LocalTasks driver
+        Test to initialize the tasks in the IOTasksManager driver
         """
         voltage_ranges = self.local.init_tasks(
             self.configs["driver"]
@@ -137,7 +125,7 @@ class Tasks_Test(unittest.TestCase):
     )
     def test_close_tasks(self):
         """
-        Test to close the LocalTasks driver
+        Test to close the IOTasksManager driver
         """
         self.local.close_tasks()
         self.assertEqual(self.local.activation_task, None)
@@ -167,7 +155,7 @@ class Tasks_Test(unittest.TestCase):
 
     def runTest(self):
         self.test_get_driver()
-        self.test_LocalTasks_init()
+        self.test_IOTasksManager_init()
         self.test_init_tasks()
         self.test_init_activation_channels()
         self.test_init_readout_channels()

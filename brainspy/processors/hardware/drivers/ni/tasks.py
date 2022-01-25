@@ -11,89 +11,6 @@ Both drivers work seamlessly, they declare the following nidaqmx.Task instances:
 Both nidaqmx.Task instances will declare a channel per electrode, and in the case of the cdaq
 to nidaq connection, they will also declare an extra synchronization channel.
 It can alo be used to set the shape variables according to the requiremnets.
-
-The usage of regular National Instrument racks is simple. You only have to handle an instance of
-LocalTasks. The usage of the National Instrument real-time rack requires a different procedure. On
-one hand, an instance of a RemoteTasksServer should be running on the real-time rack. This instance
-internally declares an instance of LocalTasks, and makes them accessible via computer network (in
-this case through Ethernet cable). On the other hand, the setup computer will have an instance of
-RemoteTasks, that will connect to the RemoteTasksServer via ethernet using Pyro. Pyro is a library
-that enables you to build applications in which objects can talk to each other over the network,
-with minimal programming effort. In this way, a RemoteTask and a LocalTasks will behave seamlessly,
-in terms of callable methods.
-
-    0 - Connect the computer with the real-time rack using USB connection. After this, check if you
-    can access the real-time rack via ssh (if you are on Windows you can use Putty). You can use
-    the NI Device Monitor application to check the domain name of the real-time rack. It should
-    look like: NI-cDAQ-9132-01DD36D9. Once inside the real-time rack, make sure you are on the right
-    user account. You can create another one if necessary. Make sure it has adequate permissions.
-    Make sure that the user you select is the same one for the rest of the installation.
-    More information on creating users can be found at:
-    https://linuxize.com/post/how-to-create-users-in-linux-using-the-useradd-command/
-
-    1 - Make sure that the real-time-rack has connection to the internet. You can connect an
-        ethernet cable directly to the internet. Once having it ready, you can install python,
-        and the brains-py package, following the regular installation instructions of the wiki.
-        Once you have finished, disconnect the Ethernet cable.
-
-    2 - The computer needs to be connected to the real-time rack via ethernet cable. In order for
-       them to communicate the connection needs to be established on an IP address that is on the
-       same subnetwork. The subnetwork is defined by the subnet mask. More information on how IP
-       works can be found in https://en.wikipedia.org/wiki/IP_address
-
-       In order to ensure that the IPs are on the same subnetwork, the following procedures can be
-       done:
-        * On the real-time rack:
-            You can communicate with the real time rack via ssh, as explained in step 0. Then, run
-            the command: "ifconfig" and look at the eth0 ip address and check if:
-
-            inet addr: 192.168.1.5
-            mask: 255.255.255.0
-
-            If this is not the case set it using the following command
-            "ifconfig eth0 192.168.1.5 netmask 255.255.255.0 up". Alternatively,
-            you can also run the set_static_ip method from this class.
-
-            Check with ifconfig if the eth0 address has changed.
-        * On the setup computer:
-            If you are on linux, repeat the same procedure as above,
-            but use the command "ifconfig eth0 192.168.1.5 netmask 255.255.255.0 up" instead.
-            If you are using Windows, go to the properties of the ethernet connection. You can
-            specify there the internet protocol version 4 (TCP/IPv4) properties.
-
-            Make use the the use the following IP adress cicle is selected and fill in the following
-            information:
-
-            Ip adress: 	192.168.1.4
-            Subenet mask:	255.255.255.0
-            default gateway:Leave Blank
-
-            Also make sure that the following DNS server adresses circle is filled and fill in:
-            Prefered DNS server: 	8.8.8.8
-            Alternate DNS server	Leave Blank
-
-    3 - Disconnect the USB cable and connect the ethernet cable to the eth0 of the real-time rack,
-        and the configured ethernet port on the computer. Remember that the ethernet cable needs to
-        be a crossover cable and not a direct cable since you are connecting two devices directly.
-
-    4 - Connect again via ssh, in a similar way to that explained in step 0, but using the ethernet
-        cable instead of the USB one. Once inside the real-time rack you can run the method
-        deploy_driver or run_server from tasks.py using python. deploy_driver can be run by
-        simply runnning python tasks.py. This method should be run inside the real time rack,
-        and it will prompt the URI code on the terminal where it is run. Additionally it will
-        create a 'uri.txt' file in the same folder where it is executed.
-
-        An example of the URI that should be copied is as follows:
-        PYRO:obj_86956fef1d784982a9e2f86fec2a4fe7
-
-    5 -  Now the Pyro connection should be ready. To use it, you should change the driver in the
-         config file to remote and fill in the corresponding URL that is returned when running the
-         previous file. If the connection is stil open and the information properly added to the
-         config file you will be able to perform measurements in the same manner as on the other
-         systems. If you do not restart the CDAQ computer it will stay the same allowing all the
-         other steps to be done on the measurement PC if the usb_driver does not work or is not
-         present.
-
 """
 import nidaqmx
 import nidaqmx.constants as constants
@@ -106,20 +23,12 @@ from brainspy.processors.hardware.drivers.ni.channels import init_channel_data
 RANGE_MARGIN = 0.01
 
 
-class LocalTasks:
+class IOTasksManager:
     """
     Class to initialise and handle the "nidaqmx.Task"s required for brains-py drivers.
-    Some methods of this class are declared with Pyro flags to make them available for remote
-    access.
-
-    @Pyro.oneway -
-    For calls to such methods, Pyro will not wait for a response from the remote object.
-    The return value of these calls is always None.
 
     More information about NI tasks can be found at:
     https://nidaqmx-python.readthedocs.io/en/latest/task.html
-    More information about remote objects can be found at:
-    https://pyro4.readthedocs.io/en/stable/
 
     """
     def __init__(self):
@@ -441,10 +350,6 @@ class LocalTasks:
                 "simulation_debug" or "cdaq_to_cdaq" or "cdaq_to_nidaq" - Processor type to
                 initialize a hardware processor
             driver:
-                real_time_rack : boolean
-                    Only to be used when having a rack that works with real-time.
-                    True will attempt a connection to a server on the real time rack via Pyro.
-                    False will execute the drivers locally.
                 sampling_frequency: int
                     The average number of samples to be obtained in one second, when transforming
                     the signal from analogue to digital.

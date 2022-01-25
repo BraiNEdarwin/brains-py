@@ -69,12 +69,6 @@ class NationalInstrumentsSetup:
         configs : dict
             Key-value pairs required in the configs dictionary to initialise the driver are as
             follows:
-
-                real_time_rack : boolean
-                    Only to be used when having a rack that works with real-time.
-                    True will attempt a connection to a server on the real time rack via Pyro.
-                    False will execute the drivers locally.
-
                 output_clipping_range: [float,float]
                     The the setups have a limit in the range they can read. They typically clip at
                     approximately +-4 V. Note that in order to calculate the clipping_range, it
