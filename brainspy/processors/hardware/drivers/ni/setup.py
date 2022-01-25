@@ -221,8 +221,7 @@ class NationalInstrumentsSetup:
         configs : dict
             configurations of the model as a python dictionary
         """
-        self.tasks_driver = IOTasksManager(configs)
-        self.tasks_driver.init_tasks(configs)
+        self.tasks_driver = IOTasksManager()
         self.voltage_ranges = (
             self.tasks_driver.voltage_ranges
         )  # To be improved, it should have the same form to be accessed by both
