@@ -31,7 +31,7 @@ class IOTasksManager:
     https://nidaqmx-python.readthedocs.io/en/latest/task.html
 
     """
-    def __init__(self):
+    def __init__(self, configs):
         """
         It declares the following nidaqmx.Task instances:
             * activation_task: It handles sending signals to the (DNPU) device through electrodes
@@ -48,6 +48,7 @@ class IOTasksManager:
         self.acquisition_type = constants.AcquisitionType.FINITE
         self.activation_task = None
         self.readout_task = None
+        self.init_tasks(configs)
 
     def init_activation_channels(self, channel_names, voltage_ranges=None):
         """
