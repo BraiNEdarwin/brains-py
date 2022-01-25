@@ -8,7 +8,7 @@ import threading
 import warnings
 import numpy as np
 from threading import Thread
-from brainspy.processors.hardware.drivers.ni.tasks import get_tasks_driver
+from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 """
 SECURITY FLAGS.
 WARNING - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
@@ -221,7 +221,7 @@ class NationalInstrumentsSetup:
         configs : dict
             configurations of the model as a python dictionary
         """
-        self.tasks_driver = get_tasks_driver(configs)
+        self.tasks_driver = IOTasksManager(configs)
         self.tasks_driver.init_tasks(configs)
         self.voltage_ranges = (
             self.tasks_driver.voltage_ranges
