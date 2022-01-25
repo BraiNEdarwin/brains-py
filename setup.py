@@ -8,7 +8,6 @@ requires = [
     "tqdm",
     "pyyaml",
     "nidaqmx",
-    "Pyro4",
     "matplotlib==3.4.2",
     # Packages for linting and code formatting
     "mypy==0.910",

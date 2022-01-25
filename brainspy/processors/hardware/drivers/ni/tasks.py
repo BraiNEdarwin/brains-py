@@ -95,152 +95,17 @@ in terms of callable methods.
          present.
 
 """
-import os
-import time
-import Pyro4
-import numpy as np
-
 import nidaqmx
 import nidaqmx.constants as constants
 import nidaqmx.system.device as device
 
+import numpy as np
 from datetime import datetime
 from brainspy.processors.hardware.drivers.ni.channels import init_channel_data
 
-DEFAULT_IP = "192.168.1.5"
-DEFAULT_SUBNET_MASK = "255.255.255.0"
-DEFAULT_PORT = 8081
-
-SWITCH_ETHERNET_OFF_COMMAND = "ifconfig eth0 down"
-SWITCH_ETHERNET_ON_COMMAND = "ifconfig eth0 up"
 RANGE_MARGIN = 0.01
 
 
-def get_tasks_driver(configs):
-    """
-
-    Get a tasks driver. The tasks drivers handle all required nidaqmx.Tasks for brains-py. There
-    are two task driver types. The first is the LocalTasks, that is initialised on the same
-    computer where it is executed. The second is RemoteTasks, this type of driver is used for
-    real-time National Instruments rack. A RemoteTasksServer is initialised on the real-time rack,
-    which handles an instance of a LocalTasks driver. The RemoteTaks driver, running on the setup
-    computer will connect to the RemoteTasksServer. With regard to callable methods from the
-    outside, both LocalServer and RemoteServer behave seamlessly. Internally, the only difference
-    is that the RemoteServer establishes a network connection with RemoteTasksServer.
-
-    Parameters
-    ----------
-    configs : dict
-        Configurations of the device model.
-        The following keys are expected:
-
-            real_time_rack: boolean
-                It specifies whether if the National Instruments rack supports real time or not.
-                A True value will instantiate a remote task driver. A False value will instantiate
-                a local driver.
-
-            uri: str
-                Uniform resource identifier (URI) of the remote pyro object. This URI string can be
-                obtained after runnning the method deploy_driver or run_server from tasks.py. This
-                method should be run inside the real time rack, and it will prompt the URI code on
-                the terminal where it is run. Additionally it will create a 'uri.txt' file in the
-                same folder where it is executed.
-
-                An example of the URI that should be copied is as follows:
-                PYRO:obj_86956fef1d784982a9e2f86fec2a4fe7
-
-                More information about it on the header of this file.
-
-    Returns
-    -------
-    Union[RemoteTasks,LocalTasks] - An instance of a tasks driver.
-    """
-    if configs["real_time_rack"]:
-        return RemoteTasks(configs["uri"])
-    else:
-        return LocalTasks()
-
-
-def run_server(configs):
-    """
-    Starts a RemoteTasksServer object, which is a PYRO server. A RemoteTasksServer is meant to be
-    initialised on the real-time rack, which handles an instance of a LocalTasks driver. The
-    RemoteTaks driver, running on the setup computer will connect to the RemoteTasksServer. With
-    regard to callable methods from the outside, both LocalServer and RemoteServer behave
-    seamlessly. Internally, the only difference is that the RemoteServer establishes a network
-    connection with RemoteTasksServer.
-
-    The method assigns a static Ip addrress to the server which will be used to run Remote Tasks
-    Server. Therefore, once the server is started, all method calls can be made remotely.
-
-    Parameters
-    ----------
-    configs : dict
-        configurations of the device model
-
-    """
-    if configs["force_static_ip"]:
-        set_static_ip(configs["server"])
-    server = RemoteTasksServer(configs)
-    server.start()
-
-
-def set_static_ip(configs):
-    """
-    This method is meant to be run inside the real-time rack. It gives a static IP address to the
-    real-time rack, so that it always has the same address when connecting it to the main setup
-    computer via Ethernet cable.
-
-    Setting an IP can also be done manually. Check the header of this file for more information.
-
-    IP addresses are either configured by a DHCP server or manually configured (static IP
-    addresses). The subnet mask splits the IP address into the host and network addresses,
-    thereby defining which part of the IP address belongs to the device and which part belongs to
-    the network.
-
-    Parameters
-    ----------
-    configs : dict
-        configurations of the device model
-
-    """
-    SET_STATIC_IP_COMMAND = (
-        f"ifconfig eth0 {configs['ip']} netmask {configs['subnet_mask']} up")
-    os.system(SET_STATIC_IP_COMMAND)
-    time.sleep(1)
-    os.system(SWITCH_ETHERNET_OFF_COMMAND)
-    time.sleep(1)
-    os.system(SWITCH_ETHERNET_ON_COMMAND)
-
-
-def deploy_driver(configs):
-    """
-    Deploy the driver based on the default IP addres, port and subnet mask specified in this file
-    flags: DEFAULT_IP, DEFAULT_PORT, DEFAULT_SUBNET_MASK. This method is meant to be run inside the
-    real-time rack. It will initialise an instance of RemoteTasksServer, which will enable to access
-    remotely and instance of LocalTasks that will be running inside the real-time rack. Running this
-    method is required in order to run an instance of RemoteTasks on the setup computer connected
-    to a real-time rack.
-
-    The remote server runs on this default IP address. An IP address is used in order to uniquely
-    identify a device on an IP network. The address is divided into a network portion and host
-    portion with the help of a subnet mask. A port number is always associated with an IP address.
-    There ar multiple ports and we use the 8081 port (can be changed).
-
-    Parameters
-    ----------
-    configs : dict
-        configs of the remote server - ip,port number and subnet mask
-    """
-    configs["ip"] = DEFAULT_IP
-    configs["port"] = DEFAULT_PORT
-    configs["subnet_mask"] = DEFAULT_SUBNET_MASK
-    configs["force_static_ip"] = False
-
-    run_server(configs)
-
-
-@Pyro4.expose
 class LocalTasks:
     """
     Class to initialise and handle the "nidaqmx.Task"s required for brains-py drivers.
@@ -275,7 +140,6 @@ class LocalTasks:
         self.activation_task = None
         self.readout_task = None
 
-    @Pyro4.oneway
     def init_activation_channels(self, channel_names, voltage_ranges=None):
         """
         Initialises the activation channels connected to the activation electrodes of the device.
@@ -330,7 +194,6 @@ class LocalTasks:
                     max_val=2,
                 )
 
-    @Pyro4.oneway
     def init_readout_channels(self, readout_channels):
         """
         Initializes the readout channels corresponding to the readout electrodes of the device.
@@ -383,7 +246,6 @@ class LocalTasks:
         )
         return points_to_read
 
-    @Pyro4.oneway
     def add_synchronisation_channels(
         self,
         readout_instrument,
@@ -479,69 +341,6 @@ class LocalTasks:
             number_of_samples_per_channel=number_of_samples_per_channel,
             timeout=timeout)
 
-    # Main difference between read and remote read is in the try/catch
-    def remote_read(self, number_of_samples_per_channel, timeout):
-        """
-        Reads samples from the task or virtual channels you specify. This read method is dynamic,
-        and is capable of inferring an appropriate return type based on these factors: - The
-        channel type of the task. - The number of channels to read. - The number of samples per
-        channel. The data type of the samples returned is independently determined by the channel
-        type of the task. For digital input measurements, the data type of the samples returned is
-        determined by the line grouping format of the digital lines. If the line grouping format is
-        set to “one channel for all lines”, the data type of the samples returned is int. If the
-        line grouping format is set to “one channel per line”, the data type of the samples
-        returned is boolean. If you do not set the number of samples per channel, this method
-        assumes one sample was requested. This method then returns either a scalar (1 channel to
-        read) or a list (N channels to read).
-
-        If you set the number of samples per channel to ANY value (even 1), this method assumes
-        multiple samples were requested. This method then returns either a list (1 channel to read)
-        or a list of lists (N channels to read).
-
-        Original documentation from: https://nidaqmx-python.readthedocs.io/en/latest/task.html
-
-        This method also handles any DaQError that might arise from reading.
-
-        Parameters
-        ----------
-        number_of_samples_per_channel : Optional[int]
-            Specifies the number of samples to read. If this input is not set, assumes samples to
-            read is 1. Conversely, if this input is set, assumes there are multiple samples to read.
-            If you set this input to nidaqmx.constants. READ_ALL_AVAILABLE, NI-DAQmx determines how
-            many samples to read based on if the task acquires samples continuously or acquires a
-            finite number of samples. If the task acquires samples continuously and you set this
-            input to nidaqmx.constants.READ_ALL_AVAILABLE, this method reads all the samples
-            currently available in the buffer. If the task acquires a finite number of samples and
-            you set this input to nidaqmx.constants.READ_ALL_AVAILABLE, the method waits for the
-            task to acquire all requested samples, then reads those samples. If you set the
-            “read_all_avail_samp” property to True, the method reads the samples currently
-            available in the buffer and does not wait for the task to acquire all requested samples.
-
-        timeout : Optional[float]
-            Specifies the amount of time in seconds to wait for samples to become available.
-            If the time elapses, the method returns an error and any samples read before the
-            timeout elapsed. The default timeout is 10 seconds. If you set timeout to
-            nidaqmx.constants.WAIT_INFINITELY, the method waits indefinitely. If you set timeout to
-            0, the method tries once to read the requested samples and returns an error if it is
-            unable to.
-
-        Returns
-        -------
-        list
-            The samples requested in the form of a scalar, a list, or a list of lists. See method
-            docstring for more info. NI-DAQmx scales the data to the units of the measurement,
-            including any custom scaling you apply to the channels.  Use a DAQmx Create Channel
-            method to specify these units.
-        """
-        try:
-            return self.readout_task.read(
-                number_of_samples_per_channel=number_of_samples_per_channel,
-                timeout=timeout)
-        except nidaqmx.errors.DaqError as e:
-            print("Error reading: " + str(e))
-        return -1
-
-    @Pyro4.oneway
     def start_trigger(self, trigger_source):
         """
         To synchronise cdaq to cdaq modules a start trigger can be set,
@@ -561,52 +360,6 @@ class LocalTasks:
         self.activation_task.triggers.start_trigger.cfg_dig_edge_start_trig(
             "/" + trigger_source + "/ai/StartTrigger")
 
-    # Main difference between write and remote write is in the try/catch
-    @Pyro4.oneway
-    def remote_write(self, y, auto_start):
-        """
-        This method writes samples to the task or virtual channels specified in the tasks of the
-        tasks driver. It supports automatic start of tasks. This write method is dynamic, and is
-        capable of accepting the samples to write in the various forms for most operations:
-
-            Scalar: Single sample for 1 channel.
-            List/1D numpy.ndarray: Multiple samples for 1 channel or 1 sample for multiple channels.
-            List of lists/2D numpy.ndarray: Multiple samples for multiple channels.
-
-        The data type of the samples passed in must be appropriate for the channel type of the task.
-
-        For counter output pulse operations, this write method only accepts samples in these forms:
-
-            Scalar CtrFreq, CtrTime, CtrTick (from nidaqmx.types): Single sample for 1 channel.
-            List of CtrFreq, CtrTime, CtrTick (from nidaqmx.types): Multiple samples for 1 channel
-            or 1 sample for multiple channels.
-
-        If the task uses on-demand timing, this method returns only after the device generates all
-        samples. On-demand is the default timing type if you do not use the timing property on the
-        task to configure a sample timing type. If the task uses any timing type other than on-
-        demand, this method returns immediately and does not wait for the device to generate all
-        samples. Your application must determine if the task is done to ensure that the device
-        generated all samples.
-
-        Both of these tasks occur simulataneously and are synchronized.
-        The tasks will start automatically if the "auto_start" option is set to True in the
-        configuration dictionary used to intialize this device.
-
-        Parameters
-        ----------
-        y : np.array
-            Contains the samples to be written to the activation task. The shape of the samples
-            should be in the shape of (activation_channel_no, sample_no).
-
-        auto_start : Bool
-            True to enable auto-start from nidaqmx drivers. False to
-            start the tasks immediately after writing.        """
-        self.activation_task.write(np.asarray(y), auto_start=auto_start)
-        if not auto_start:
-            self.activation_task.start()
-            self.readout_task.start()
-
-    @Pyro4.oneway
     def write(self, y, auto_start):
         """
         This method writes samples to the task or virtual channels specified in the tasks of the
@@ -663,7 +416,6 @@ class LocalTasks:
             self.activation_task.start()
             self.readout_task.start()
 
-    @Pyro4.oneway
     def stop_tasks(self):
         """
         To stop the all tasks on this device namely - the activation tasks and the readout tasks to
@@ -799,7 +551,6 @@ class LocalTasks:
         self.init_readout_channels(self.readout_channel_names)
         return self.voltage_ranges.tolist()
 
-    @Pyro4.oneway
     def close_tasks(self):
         """
         Close all the task on this device -  both activation and readout tasks by deleting them.
@@ -817,275 +568,3 @@ class LocalTasks:
 
         for dev in self.devices:
             dev.reset_device()
-
-
-class RemoteTasks:
-    """
-    This class is intended to be used only for National Instruments real-time racks. In order
-    to work, it requires to have instantiated a RemoteTasksServer class on the real-time rack.
-    This RemoteTasksServer class will manage an instance of a LocalTasks. The RemoteTasks simply
-    declares a Pyro connection through the network via an URI. The RemoteTasks objects is just
-    a wrapper around the Pyro connection which acts seamlessly in comparison with the LocalTaks,
-    although internally it sends the data to the real-time rack through the network.
-
-    """
-    def __init__(self, uri):
-        """
-        Sets up the proxy server so that remote method calls can be made to the device. This
-        enables calling methods on the Pyro object - LocalTasks.
-
-        Parameters
-        ----------
-        uri : str
-            uri of the remote server
-        """
-        self.acquisition_type = constants.AcquisitionType.FINITE
-        self.tasks = Pyro4.Proxy(uri)
-
-    def init_activation_channels(self, channel_names, voltage_ranges=None):
-        """
-        Wrapper for LocalTasks.init_activation_channels. More information
-        can be found in that method.
-
-        Parameters
-        ----------
-        channel_names : list
-            List of the names of the activation channels
-
-        voltage_ranges : Optional[list]
-            List of maximum and minimum voltage ranges that will be allowed to be sent through each
-            channel. The  dimension of the list should be (channel_no,2) where the second dimension
-            stands for min and max values of the range, respectively. When set to None, there will
-            be no specific limitations on what can be sent through the device. This could
-            potentially cause damages to the device. By default is None.
-        """
-        self.tasks.init_activation_channels(channel_names, voltage_ranges)
-
-    def init_readout_channels(self, readout_channels):
-        """
-        Wrapper for LocalTasks.init_readout_channels. More information
-        can be found in that method.
-
-        Parameters
-        ----------
-        readout_channels : list[str]
-            List containing all the readout channels of the device.
-        """
-        self.tasks.init_readout_channels(readout_channels)
-
-    def set_sampling_frequencies(self, activation_sampling_frequency,
-                                 readout_sampling_frequency, points_to_write):
-        """
-        Wrapper for LocalTasks.set_sampling_frequencies. More information
-        can be found in that method.
-
-        Parameters
-        ----------
-        sampling_frequency : float
-             The average number of samples to be obtained in one second.
-        samples_per_chan : (int,int)
-            Number of expected samples, per channel.
-        """
-        return self.tasks.set_sampling_frequencies(
-            activation_sampling_frequency, readout_sampling_frequency,
-            points_to_write)
-
-    def add_synchronisation_channels(
-        self,
-        readout_instrument,
-        activation_instrument,
-        activation_channel_no=7,
-        readout_channel_no=7,
-    ):
-        """
-        Wrapper for LocalTasks.add_synchronisation_channels. More information
-        can be found in that method.
-
-        Parameters
-        ----------
-        readout_instrument: str
-            Name of the instrument from which the read will be performed on the readout electrodes.
-        activation_instrument : str
-            Name of the instrument writing signals to the activation electrodes.
-        activation_channel_no : int, optional
-            Channel through which voltages will be sent for activating the device (with both data
-            inputs and control voltages), by default 7.
-        readout_channel_no : int, optional
-            Channel for reading the output current values, by default 7.
-        """
-        self.tasks.add_synchronisation_channels(
-            readout_instrument,
-            activation_instrument,
-            activation_channel_no,
-            readout_channel_no,
-        )
-
-    def read(self, number_of_samples_per_channel, timeout):
-        """
-        Wrapper for LocalTasks.remote_read. More information
-        can be found in that method.
-
-        Parameters
-        ----------
-        number_of_samples_per_channel : Optional[int]
-            Specifies the number of samples to read. If this input is not set, assumes samples to
-            read is 1. Conversely, if this input is set, assumes there are multiple samples to read.
-            If you set this input to nidaqmx.constants. READ_ALL_AVAILABLE, NI-DAQmx determines how
-            many samples to read based on if the task acquires samples continuously or acquires a
-            finite number of samples. If the task acquires samples continuously and you set this
-            input to nidaqmx.constants.READ_ALL_AVAILABLE, this method reads all the samples
-            currently available in the buffer. If the task acquires a finite number of samples and
-            you set this input to nidaqmx.constants.READ_ALL_AVAILABLE, the method waits for the
-            task to acquire all requested samples, then reads those samples. If you set the
-            “read_all_avail_samp” property to True, the method reads the samples currently
-            available in the buffer and does not wait for the task to acquire all requested samples.
-
-        timeout : Optional[float]
-            Specifies the amount of time in seconds to wait for samples to become available.
-            If the time elapses, the method returns an error and any samples read before the
-            timeout elapsed. The default timeout is 10 seconds. If you set timeout to
-            nidaqmx.constants.WAIT_INFINITELY, the method waits indefinitely. If you set timeout to
-            0, the method tries once to read the requested samples and returns an error if it is
-            unable to.
-
-        Returns
-        -------
-        list
-            The samples requested in the form of a scalar, a list, or a list of lists. See method
-            docstring for more info. NI-DAQmx scales the data to the units of the measurement,
-            including any custom scaling you apply to the channels.  Use a DAQmx Create Channel
-            method to specify these units.
-        """
-        return self.tasks.remote_read(
-            number_of_samples_per_channel=number_of_samples_per_channel,
-            timeout=timeout)
-
-    def start_trigger(self, trigger_source):
-        """
-        Wrapper for LocalTasks.start_trigger. More information
-        can be found in that method.
-
-        Parameters
-        ----------
-        trigger_source: str
-            Source trigger name. It can be
-            found on the NI max program. Click on the device rack inside devices and interfaces,
-            and then click on the Device Routes tab.
-        """
-        self.tasks.start_trigger(trigger_source)
-
-    def write(self, y, auto_start):
-        """
-        Wrapper for LocalTasks.remote_write. More information
-        can be found in that method.
-
-
-        Parameters
-        ----------
-        y : np.array
-            Contains the samples to be written to the activation task. The shape of the samples
-            should be in the shape of (activation_channel_no, sample_no).
-
-        auto_start : Bool
-            True to enable auto-start from nidaqmx drivers. False to
-            start the tasks immediately after writing.
-        """
-        self.tasks.remote_write(y.tolist(), auto_start)
-
-    def stop_tasks(self):
-        """
-        Wrapper for LocalTasks.stop_tasks. More information
-        can be found in that method.
-        """
-        self.tasks.stop_tasks()
-
-    def init_tasks(self, configs):
-        """
-        Wrapper for LocalTasks.init_tasks. More information
-        can be found in that method.
-
-        Parameters
-        ----------
-        configs : dict
-            Configs dictionary for the device model
-
-        Returns
-        -------
-        list
-            list of voltage ranges
-        """
-        self.voltage_ranges = np.array(self.tasks.init_tasks(configs))
-
-    def close_tasks(self):
-        """
-        Wrapper for LocalTasks.close_tasks. More information
-        can be found in that method.
-        """
-        self.tasks.close_tasks()
-
-
-class RemoteTasksServer:
-    """
-    Server for the Remote Tasks on the device.
-    To be able to call methods on a Pyro object , an appropriate URI is created and given to the
-    server. The class uses the Pyro remote server. It enables objects between LocalTasks and
-    RemoteTasks to talk to each other over the network.
-
-    This class provides the object -  (LocalTasks object) and actually runs the methods.
-
-    """
-    def __init__(self, configs):
-        """
-        Initialize the remote server based on the configurations of the model and initialize the
-        LocalTasks. Remote method calls can be made after the server is initialized.
-
-        Parameters
-        ----------
-        configs : dict
-            configs of the model
-        """
-        self.configs = configs
-        self.tasks = LocalTasks()
-
-    def save_uri(self, uri):
-        """
-        Stores the Uniform resource identifier (URI) of the remote server that hosts the LocalTasks
-        Pyro object to a text file.
-
-        Parameters
-        ----------
-        uri : str
-            Uniform resource identifier (URI) of the remote pyro object. This URI string can be
-            obtained after registering the daemon of the server.
-
-            An example of an URI is as follows:
-            PYRO:obj_86956fef1d784982a9e2f86fec2a4fe7
-
-        """
-        print("Server ready, object URI: " + str(uri))
-        f = open("uri.txt", "w")
-        f.write(str(uri) + " \n")
-        f.close()
-
-    def start(self):
-        """
-        Starts a daemon thread to handle to the remote server and the remote tasks on the device.
-        A thread is a separate flow of execution. It registers an instance of LocalTasks on Pyro.
-        This method starts a daemon thread which will shut down immediately when the program exits.
-
-        """
-        self.daemon = Pyro4.Daemon(host=self.configs["ip"],
-                                   port=self.configs["port"])
-        uri = self.daemon.register(self.tasks)
-        self.save_uri(uri)
-        self.daemon.requestLoop()
-
-    def stop(self):
-        """
-        Method to stop the remote server by closing the daemon thread.
-        """
-        self.daemon.close()
-
-
-if __name__ == "__main__":
-    deploy_driver({})
