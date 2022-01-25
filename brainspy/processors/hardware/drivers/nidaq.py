@@ -33,9 +33,10 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
                 start it anyway. This value is set to True for this setup.
 
             offset : int
-                Only for CDAQ TO NIDAQ setup. Value (in milliseconds) that the original
+                Value (in milliseconds) that the original
                 activation voltage will be displaced, in order to enable the spiking signal to
-                reach the nidaq setup. The offset value is set to 1 for this setup.
+                reach the nidaq setup. The default value is the SYNCHRONISATION_VALUE multiplied
+                by the activation instrument sampling frequency.
 
             max_ramping_time_seconds : int
                 To set the ramp time for the setup. It is defined with the flags
@@ -45,8 +46,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
 
         """
         configs["auto_start"] = False
-        configs["offset"] = int(configs["sampling_frequency"] *
-                                SYNCHRONISATION_VALUE)
+        configs["offset"] = int(
+            configs["instruments_setup"]["activation_sampling_frequency"] *
+            SYNCHRONISATION_VALUE)
         configs[
             "max_ramping_time_seconds"] = CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
@@ -54,7 +56,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             self.configs["instruments_setup"]["readout_instrument"],
             self.configs["instruments_setup"]["activation_instrument"],
         )
-
+        assert self.configs['instruments_setup']['average_io_point_difference'], (
+            "The average_io_point_difference flag can only be true for cdaq to nidaq setups"
+        )
     def forward_numpy(self, y):
         """
         The forward function computes output numpy values from input numpy array.
@@ -88,7 +92,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         while not finished and (attempts < max_attempts):
             data, finished = self.readout_trial(y)
             attempts += 1
-
+        data *= self.inversion
         assert finished, (
             "Error: unable to synchronise input and output. Output: " +
             str(data.shape[1]) + " points.")
@@ -115,9 +119,13 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         """
         data = self.read_data(y)
         data = self.process_output_data(data)
-        data = self.synchronise_output_data(data)
-        finished = data.shape[1] == self.original_shape
-        return data, finished
+        data, cut_value_is_zero = self.synchronise_output_data(data)
+        # Add check that the cut_value is not 0
+        if self.io_point_difference == 1 or self.configs['instruments_setup']['average_io_point_difference']:
+            finished = data.shape[1] == self.original_shape
+        else:
+            finished = data.shape[1] == self.original_shape * self.io_point_difference
+        return data, finished and not cut_value_is_zero
 
     def synchronise_input_data(self, y):
         """
@@ -196,6 +204,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         -------
         np.array
             synchronized output data
+        bool
+            Whether if the cut value is zero
         """
         cut_value = self.get_output_cut_value(read_data)
-        return read_data[:-1, cut_value:self.original_shape + cut_value]
+        # Add check that the cut_value is not 0
+        return read_data[:-1, cut_value:self.original_shape + cut_value], cut_value == 0
