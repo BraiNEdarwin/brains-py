@@ -43,7 +43,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
                 as it could disable security checks designed to avoid breaking devices.
         """
         configs["auto_start"] = True
-        configs["offset"] = 0
+        configs["offset"] = 1
         configs["max_ramping_time_seconds"] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
         super().__init__(configs)
         self.tasks_driver.start_trigger(
@@ -70,14 +70,21 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         np.array
             Output data that has been read from the device when receiving the input y.
         """
-        # No need to create an additional point, as this is handled by the NI driver.
-        # y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
-        # y = np.concatenate((np.zeros((1, y.shape[1])), y))
+
+        # The convention for pytorch and nidaqmx is different. Therefore,
+        # the input to the device needs to be transposed before sending it to the device.
         y = y.T
         data = self.read_data(y)
 
-        # Calculate extra point based on the readout and activation frequencies
-        # starting_point = int((self.configs['instruments_setup']['readout_sampling_frequency'] / self.configs['instruments_setup']['activation_sampling_frequency']))
-        
-        data = self.inversion * self.process_output_data(data)#[:, starting_point:]
+        # Convert list to numpy, ensure it has dimension (channel_no, data)
+        data = self.process_output_data(data)
+
+        # The CDAQ measurements always add an extra point at the beginning of the
+        # measurement. The following line removes it before applying averaging
+        # It also applies an inversion (when applicable) to the averaged output.
+
+        data = self.inversion * self.average_point_difference(data[:, 1:])
+
+        # The convention for pytorch and nidaqmx is different. Therefore,
+        # the output from the device needs to be transposed before sending it back.
         return data.T

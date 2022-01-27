@@ -41,7 +41,7 @@ Flags related to the CDAQ TO CDAQ Setup:
 
 """
 
-INPUT_VOLTAGE_THRESHOLD = 1.5
+INPUT_VOLTAGE_THRESHOLD = 1.6
 CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS = 0.001
 CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS = 0.001
 SYNCHRONISATION_VALUE = 0.04  # do not reduce to less than 0.02
@@ -239,14 +239,13 @@ class NationalInstrumentsSetup:
 
     def process_output_data(self, data):
         """
-        Processes the output data. The convention for pytorch and nidaqmx is different. Therefore,
-        the input to the device needs to be transposed before sending it to the device. Also the
-        hardware does a current to voltage transformation to do the reading. For this,
-        the output gets amplified. An amplification correction factor is applied to obtain the real
-        current value again. This is done using the configs['driver']['amplification'] value. The
-        function creates a numpy array from a list with dimensions (n,1) and multiplies
-        it by the amplification of the device. It is transposed to enable the multiplication of
-        multiple outputs by an array of amplification values.
+        Processes the output data. Also the PCB connected to the DNPU hardware does a
+        uses an operational amplifier to amplify the current, and transforms the current
+        into voltage to do the reading. For this, the output gets amplified. An amplification
+        correction factor is applied in software, in order to obtain the real current value again.
+        This is done using the configs['driver']['amplification'] value. The function creates a
+        numpy array from a list, ensuring it has  dimensions (channel_no, read_point_no) and
+        multiplies it by the amplification of the device.
 
         Parameters
         ----------
@@ -256,14 +255,42 @@ class NationalInstrumentsSetup:
         Returns
         -------
         np.array
-            processed output data computed from the amplification value
+            Processed output data in numpy format, with two dimensions
+            (channel_no, read_point_no), and with the amplification correction factor
+            applied.
         """
         data = np.array(data)
 
         # If data has single dimension, create an extra dimension
+        # for the main channel
         if len(data.shape) == 1:
             data = data[np.newaxis, :]
 
+        return (data.T * self.configs["amplification"]).T
+
+    def average_point_difference(self, data):
+        """
+        A difference between the activation sampling frequency (DAC)
+        and the readout sampling frequency (ADC) can cause the read
+        data to have a longer shape than the data that was written.
+        This method averages all the points that were read per point
+        that was written. The averaging is only applied if there is
+        a difference between write and read data of more than one point,
+        and if configs['instruments_setup']['average_io_point_difference']
+        is set to True.
+
+        Parameters
+        ----------
+        data : np.array
+            Processed output data in numpy format, with two dimensions
+            (channel_no, read_point_no), and with the amplification correction
+            factor applied.
+
+        Returns
+        -------
+        np.array
+            Array with an averaged point difference, when applicable.
+        """
         # If there is a difference in points between read and write due to sampling frequencies, and there
         # is an average_io_point_difference flag set as True, the data is averaged
         if self.io_point_difference > 1 and self.configs['instruments_setup'][
@@ -271,8 +298,7 @@ class NationalInstrumentsSetup:
             data = np.mean(data.reshape(data.shape[0], -1,
                                         self.io_point_difference),
                            axis=2)
-
-        return (data.T * self.configs["amplification"]).T
+        return data
 
     def read_data(self, y):
         """
@@ -306,13 +332,14 @@ class NationalInstrumentsSetup:
             semaphore.release()
         return self.data_results
 
-    def set_io_configs(self, points_to_write, timeout=None):
+    def set_io_configs(self, points_to_write: int, timeout: float = None):
         """
         Calculates and sets the I/O configuration variables related to the number of points
         the signal that is going to be writing and reading. This is only performed if there
         is a change with respect to the last number of points that were write/read.
         The calculation includes:
-            - last_points_to_write_val: Number of points that were sent in the previos write attempt.
+            - last_points_to_write_val: Number of points that were sent in the previos write
+                                        attempt.
             - offsetted_points_to_write: Number of points with to be written with an extra offset
                                         that depends on the setup type. For cdaq, the default
                                         offset is 1 point, for nidaq, it is calculated from the
@@ -338,15 +365,63 @@ class NationalInstrumentsSetup:
 
         """
         if self.last_points_to_write_val != points_to_write:
-            self.last_points_to_write_val = points_to_write
-            self.offsetted_points_to_write = points_to_write + self.configs[
-                "offset"]
-            self.points_to_read = self.tasks_driver.set_sampling_frequencies(
+            self.last_points_to_write_val = self.calculate_io_points(
+                points_to_write)
+            self.tasks_driver.set_sampling_frequencies(
                 self.configs["instruments_setup"]
                 ["activation_sampling_frequency"],
                 self.configs["instruments_setup"]
-                ["readout_sampling_frequency"], self.offsetted_points_to_write)
+                ["readout_sampling_frequency"], self.offsetted_points_to_write,
+                self.offsetted_points_to_read)
             self.set_timeout(timeout)
+
+    def calculate_io_points(self, points_to_write: int):
+        """
+        Calculates the number of points to be written and read depending on which
+        setup (cdaq_to_cdaq or cdaq_to_nidaq) is being used.
+
+        cdaq_to_nidaq setups require an extra offset of zero points, to give some time
+        to the reading instrument. These points are depending on the point difference
+        due to the different sampling frequencies between the reading and writing devices.
+        The offset should be added to both writing and reading instruments.
+        Default offset values are added in the __init__ of the nidaq class.
+
+        cdaq_to_cdaq setups measure an extra point by default. The extra offset should
+        only be added to the reading point number. This is always only a point, regardless
+        of the sampling frequencies of reading and writing devices.
+
+        Parameters
+        ----------
+        points_to_write : int
+            Raw number of points that needs to be written. It is used to calculate the
+            reading point number and the writing point number, depending on the offset
+            required by each setup type.
+
+        Returns
+        -------
+        points_to_write : int
+            The raw number of points that was passed as input of the method.
+
+        Raises
+        ------
+        ValueError
+            If the configurations 'processor_type' is different than 'cdaq_to_cdaq' or
+            'cdaq_to_nidaq', it raises an error stating that is not supported.
+        """
+        self.offsetted_points_to_read = self.io_point_difference * points_to_write
+        if self.configs['processor_type'] == 'cdaq_to_nidaq':
+            self.offsetted_points_to_write += points_to_write + self.configs[
+                "offset"]
+            self.offsetted_points_to_read += self.io_point_difference * self.configs[
+                "offset"]
+        elif self.configs['processor_type'] == 'cdaq_to_cdaq':
+            self.offsetted_points_to_write = points_to_write
+            self.offsetted_points_to_write += self.configs["offset"]
+        else:
+            raise ValueError(
+                f"Unsupported processor_type {self.configs['processor_type']}. It should be"
+                + "cdaq_to_nidaq or cdaq_to_cdaq.")
+        return points_to_write
 
     def set_timeout(self, timeout=None):
         """
@@ -404,7 +479,8 @@ class NationalInstrumentsSetup:
         self.set_io_configs(y.shape[1])
 
         self.tasks_driver.write(y, self.configs["auto_start"])
-        read_data = self.tasks_driver.read(self.points_to_read, self.timeout)
+        read_data = self.tasks_driver.read(self.offsetted_points_to_read,
+                                           self.timeout)
         self.tasks_driver.stop_tasks()
 
         self.data_results = read_data

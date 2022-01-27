@@ -121,7 +121,8 @@ class IOTasksManager:
             self.readout_task.ai_channels.add_ai_voltage_chan(channel)
 
     def set_sampling_frequencies(self, activation_sampling_frequency,
-                                 readout_sampling_frequency, points_to_write):
+                                 readout_sampling_frequency, points_to_write,
+                                 points_to_read):
         """
         One way method to set the shape variables for the data that is being sent to the device.
         Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the
@@ -132,18 +133,14 @@ class IOTasksManager:
         ----------
         sampling_frequency : float
             The average number of samples to be obtained in one second.
+
         samples_per_chan : (int,int)
             Number of expected samples, per channel.
 
-        Returns
-        -------
         points_to_read: int
             Number of points that are expected to be read given the number
             of points to be written, and the activation and readout frequencies.
         """
-        points_to_read = int(
-            (readout_sampling_frequency / activation_sampling_frequency) *
-            points_to_write)
         self.activation_task.timing.cfg_samp_clk_timing(
             activation_sampling_frequency,
             sample_mode=self.acquisition_type,
@@ -154,7 +151,6 @@ class IOTasksManager:
             sample_mode=self.acquisition_type,
             samps_per_chan=points_to_read,
         )
-        return points_to_read
 
     def add_synchronisation_channels(
         self,
