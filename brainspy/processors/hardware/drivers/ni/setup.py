@@ -405,21 +405,21 @@ class NationalInstrumentsSetup:
         Raises
         ------
         ValueError
-            If the configurations 'processor_type' is different than 'cdaq_to_cdaq' or
+            If the configurations 'instrument_type' is different than 'cdaq_to_cdaq' or
             'cdaq_to_nidaq', it raises an error stating that is not supported.
         """
         self.offsetted_points_to_read = self.io_point_difference * points_to_write
-        if self.configs['processor_type'] == 'cdaq_to_nidaq':
+        if self.configs['instrument_type'] == 'cdaq_to_nidaq':
             self.offsetted_points_to_write += points_to_write + self.configs[
                 "offset"]
             self.offsetted_points_to_read += self.io_point_difference * self.configs[
                 "offset"]
-        elif self.configs['processor_type'] == 'cdaq_to_cdaq':
+        elif self.configs['instrument_type'] == 'cdaq_to_cdaq':
             self.offsetted_points_to_write = points_to_write
             self.offsetted_points_to_write += self.configs["offset"]
         else:
             raise ValueError(
-                f"Unsupported processor_type {self.configs['processor_type']}. It should be"
+                f"Unsupported instrument_type {self.configs['instrument_type']}. It should be"
                 + "cdaq_to_nidaq or cdaq_to_cdaq.")
         return points_to_write
 
