@@ -83,7 +83,8 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         # measurement. The following line removes it before applying averaging
         # It also applies an inversion (when applicable) to the averaged output.
 
-        data = self.inversion * self.average_point_difference(data[:, 1:])
+        data = self.inversion * self.average_point_difference(
+            data[:, self.configs['offset']:])
 
         # The convention for pytorch and nidaqmx is different. Therefore,
         # the output from the device needs to be transposed before sending it back.
