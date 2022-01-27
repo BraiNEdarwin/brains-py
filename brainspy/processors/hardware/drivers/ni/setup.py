@@ -416,7 +416,7 @@ class NationalInstrumentsSetup:
                 "offset"]
         elif self.configs['instrument_type'] == 'cdaq_to_cdaq':
             self.offsetted_points_to_write = points_to_write
-            self.offsetted_points_to_write += self.configs["offset"]
+            self.offsetted_points_to_read += self.configs["offset"]
         else:
             raise ValueError(
                 f"Unsupported instrument_type {self.configs['instrument_type']}. It should be"
