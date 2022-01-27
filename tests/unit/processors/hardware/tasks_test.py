@@ -59,7 +59,7 @@ class Tasks_Test(unittest.TestCase):
         configs["waveform"]["plateau_length"] = 10
         configs["waveform"]["slope_length"] = 30
         self.configs = configs
-        self.local = IOTasksManager()
+        self.local = IOTasksManager(configs)
 
     @unittest.skipIf(
         brainspy.TEST_MODE == "SIMULATION_PC",

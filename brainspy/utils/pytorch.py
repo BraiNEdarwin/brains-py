@@ -117,10 +117,12 @@ class TorchUtils:
             device = TorchUtils.get_device()
         if data_type is None:
             data_type = torch.get_default_dtype()
-        if isinstance(data, (list, np.ndarray, np.generic)):
+        if isinstance(data, (np.ndarray, np.generic)):
             return torch.tensor(data, device=device, dtype=data_type)
         elif isinstance(data, torch.Tensor):
             return data.to(device=device, dtype=data_type)
+        elif isinstance(data, list):
+            return torch.tensor(np.array(data), device=device, dtype=data_type)
         elif isinstance(data, torch.nn.Module):
             if torch.cuda.device_count() > 1 and not TorchUtils.force_cpu:
                 data = torch.nn.DataParallel(data)

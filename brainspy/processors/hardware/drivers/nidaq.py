@@ -59,6 +59,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             warnings.warn(" Device maybe damaged, Voltage range below -1.2 or above 1")
         assert configs["instruments_setup"]["average_io_point_difference"] == True, "Äverage IO point average_io_point_difference should be set to True for Nidaq driver"
         configs["auto_start"] = False
+
+        # The offset specifies the number of zero points that will be added to the
+        # beginning of the signal, so that it gives time to the instrument to read
         configs["offset"] = int(
             configs["instruments_setup"]["activation_sampling_frequency"] *
             SYNCHRONISATION_VALUE)
@@ -153,12 +156,18 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         """
         data = self.read_data(y)
         data = self.process_output_data(data)
+        data = self.average_point_difference(data)
         data, cut_value_is_zero = self.synchronise_output_data(data)
-        # Add check that the cut_value is not 0
-        if self.io_point_difference == 1 or self.configs['instruments_setup']['average_io_point_difference']:
+
+        # Perform checks to determine if the measurement trial was successful
+        # or not (finished).
+        if self.io_point_difference == 1 or self.configs['instruments_setup'][
+                'average_io_point_difference']:
             finished = data.shape[1] == self.original_shape
         else:
-            finished = data.shape[1] == self.original_shape * self.io_point_difference
+            finished = data.shape[
+                1] == self.original_shape * self.io_point_difference
+
         return data, finished and not cut_value_is_zero
 
     def synchronise_input_data(self, y):
@@ -184,13 +193,14 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         y = np.asarray(y)
         if len(y.shape) == 1:
             y = y[np.newaxis, :]
+
         # Append some zeros to the initial signal such that no input data is lost
         # This should be handled with proper synchronization
-        y_corr = np.zeros((
-            y.shape[0], y.shape[1] +
-            self.configs["offset"]))  # Add 200ms of reaction in terms of zeros
+        y_corr = np.zeros(
+            (y.shape[0], y.shape[1] + self.configs["offset"]
+             ))  # Add the offset time in ms of reaction in terms of zeros
         y_corr[:, self.configs["offset"]:] = y[:]
-        # TODO: Is this if really necessary?
+
         if len(y_corr.shape) == 1:
             y_corr = np.concatenate(
                 (y_corr[np.newaxis], np.zeros(
@@ -218,6 +228,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         int
             Output cut value
         """
+        assert type(read_data) == np.ndarray
         cut_value = np.argmax(read_data[-1, :])
         if read_data[-1, cut_value] < 0.05:
             warnings.warn("initialize spike not recognised")
@@ -244,4 +255,5 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         """
         cut_value = self.get_output_cut_value(read_data)
         # Add check that the cut_value is not 0
-        return read_data[:-1, cut_value:self.original_shape + cut_value], cut_value == 0
+        return read_data[:-1, cut_value:self.original_shape +
+                         cut_value], cut_value == 0
