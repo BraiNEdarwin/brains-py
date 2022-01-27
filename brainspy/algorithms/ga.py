@@ -118,20 +118,26 @@ def train(model: torch.nn.Module,
                         torch.save(model, os.path.join(save_dir,
                                                        "model_raw.pt"))
 
-            # Check if the best correlation has reached the desired threshold
-            if best_correlation >= configs["stop_threshold"]:
-                looper.set_description(
-                    f"  STOPPED: Correlation {best_correlation} > {configs['stop_threshold']}"
-                    + " stopping threshold. ")
-                looper.close()
-                # Close the model adequately if it is on hardware
-                if model.is_hardware() and "close" in dir(model):
-                    model.close()
-                break
+                # Check if the correlation of the solution with
+                # the best fitness has reached the desired threshold
+                if best_correlation >= configs["stop_threshold"]:
+                    looper.set_description(
+                        f"  STOPPED: Correlation {best_correlation} > {configs['stop_threshold']}"
+                        + " stopping threshold. ")
+                    looper.close()
+                    # Close the model adequately if it is on hardware
+                    if model.is_hardware() and "close" in dir(model):
+                        model.close()
+                    break
 
             pool = optimizer.step(criterion_pool)
 
+        model.load_state_dict(torch.load(os.path.join(save_dir, "model.pt")))
+        print("Best solution in epoch (starting from 0): " +
+              str(best_result_index))
         print("Best fitness: " + str(best_fitness.item()))
+        print("Correlation: " +
+              str(correlation_history[best_result_index].item()))
         return model, {
             "best_result_index":
             best_result_index,
