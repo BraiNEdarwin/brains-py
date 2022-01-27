@@ -104,8 +104,8 @@ def corr_fit(output: torch.Tensor,
 def corrsig_fit(output: torch.Tensor,
                 target: torch.Tensor,
                 default_value=False,
-                param1=-2.0,
-                param2=2.0) -> torch.Tensor:
+                sigmoid_center=0,
+                sigmoid_scale=1) -> torch.Tensor:
     """
     Fitness function for genetic algorithm using correlation and a sigmoid
     function.
@@ -133,10 +133,10 @@ def corrsig_fit(output: torch.Tensor,
         should be binary.
     default_value : bool, optional
         Return the default value or not, by default False.
-    param1 : float
-        Shift of the sigmoid, by default -2.0.
-    param2 : float
-        Scale of the sigmoid, by default 2.0.
+    sigmoid_center : float
+        Shift of the sigmoid, by default 0.
+    sigmoid_scale : float
+        Scale of the sigmoid, by default 1.
 
     Returns
     -------
@@ -158,7 +158,7 @@ def corrsig_fit(output: torch.Tensor,
         for i in range(output.shape[1]):
             sep = output[:, i][target[:, i] == 1].mean() - output[:, i][
                 target[:, i] == 0].mean()
-            sig[i] = torch.sigmoid(param1 * (sep - param2))
+            sig[i] = torch.sigmoid(sigmoid_scale * (sep - sigmoid_center))
         return corr * sig
 
 
@@ -210,9 +210,9 @@ def pearsons_correlation(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
 def corrsig(output: torch.Tensor,
             target: torch.Tensor,
-            center: float = 5.0,
-            scale: float = 3.0,
-            shift: float = 1.1) -> torch.Tensor:
+            sigmoid_center: float = 0,
+            sigmoid_scale: float = 1,
+            corr_shift: float = 1.1) -> torch.Tensor:
     """
     Loss function for gradient descent using a sigmoid function.
 
@@ -231,11 +231,11 @@ def corrsig(output: torch.Tensor,
     target : torch.Tensor
         The target data, shape [n, m] with m signals of n datapoints;
         should be binary.
-    center : float
+    sigmoid_center : float
         Center of the sigmoid.
-    scale : float
+    sigmoid_scale : float
         Scale of the sigmoid, between 0 and 1.
-    shift : float
+    corr_shift : float
         Shifting the correlation value.
 
     Returns
@@ -259,7 +259,8 @@ def corrsig(output: torch.Tensor,
         x_low_max = torch.max(output[:, i][(target[:, i] == 0)])
         delta[i] = x_high_min - x_low_max
 
-    return (shift - corr) / torch.sigmoid((delta - center) / scale)
+    return (corr_shift - corr) / torch.sigmoid(
+        (delta - sigmoid_center) / sigmoid_scale)
 
 
 def fisher_fit(output: torch.Tensor,
@@ -359,8 +360,8 @@ def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
 def sigmoid_nn_distance(output: torch.Tensor,
                         target: torch.Tensor = None,
-                        center: float = 0.5,
-                        scale: float = 2.0) -> torch.Tensor:
+                        sigmoid_center: float = 0.5,
+                        sigmoid_scale: float = 2.0) -> torch.Tensor:
     """
     Sigmoid of nearest neighbour distance: a squashed version of a sum of all
     internal distances between points.
@@ -380,9 +381,9 @@ def sigmoid_nn_distance(output: torch.Tensor,
         The output data, shape [n, m] with m signals of n datapoints.
     target : torch.Tensor
         The target data, will not be used.
-    center : float
+    sigmoid_center : float
         Center of the sigmoid.
-    scale : float
+    sigmoid_scale : float
         Scale of the sigmoid, between 0 and 1.
 
     Returns
@@ -399,7 +400,8 @@ def sigmoid_nn_distance(output: torch.Tensor,
         warnings.warn(
             "This loss function does not use target values. Target ignored.")
     dist_nn = get_clamped_intervals(output, mode="single_nn")
-    return -1 * torch.mean(torch.sigmoid(dist_nn / scale) - center, dim=0)
+    return -1 * torch.mean(
+        torch.sigmoid(dist_nn / sigmoid_scale) - sigmoid_center, dim=0)
 
 
 def get_clamped_intervals(output: torch.Tensor,
