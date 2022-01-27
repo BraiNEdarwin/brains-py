@@ -369,7 +369,7 @@ def get_default_node_configs():
     return configs
 
 
-def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
+def plot_perceptron(results, save_dir=None, show_plots=False, name="train"):
     """
     Plot the results of the perceptron algorithm. You can choose to see how the data has been
     plotted and also save the results to a specified directory.
@@ -388,7 +388,7 @@ def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
     save_dir : str, optional
         Directory in which you want to save the results. (default: None)
 
-    show_plot : bool, optional
+    show_plots: bool, optional
         To see how the perceptron plotted the data, by default False
 
     name : str, optional
@@ -419,7 +419,7 @@ def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
         label="Norm. Threshold",
     )
     plt.legend()
-    if show_plot:
+    if show_plots:
         plt.show()
     if save_dir is not None:
         plt.savefig(os.path.join(save_dir, name + "_accuracy.jpg"))
