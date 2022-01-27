@@ -431,5 +431,5 @@ def plot_perceptron(results, save_dir=None, show_plots=False, name="train"):
         plt.show()
     if save_dir is not None:
         plt.savefig(os.path.join(save_dir, name + "_accuracy.jpg"))
-    plt.close()
+    plt.close(fig)
     return fig

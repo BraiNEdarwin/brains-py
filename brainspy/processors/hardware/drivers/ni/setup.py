@@ -295,9 +295,9 @@ class NationalInstrumentsSetup:
         # is an average_io_point_difference flag set as True, the data is averaged
         if self.io_point_difference > 1 and self.configs['instruments_setup'][
                 'average_io_point_difference']:
-            data = np.mean(data.reshape(data.shape[0], -1,
-                                        self.io_point_difference),
-                           axis=2)
+            data = np.mean(data.T.reshape(-1, self.io_point_difference,
+                                          data.shape[0]),
+                           axis=1).T
         return data
 
     def read_data(self, y):
