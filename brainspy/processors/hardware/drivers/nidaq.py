@@ -14,6 +14,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
     from the CDAQ to the NIDAQ. The data is offsetted to let the NIDAQ read the spike and start
     synchronising after receiving it.
     """
+
     def __init__(self, configs):
         """
         Initialize the hardware processor. No trigger source required for this device.
@@ -45,6 +46,18 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
                 as it could disable security checks designed to avoid breaking devices.
 
         """
+        self.type_check(configs)
+        assert configs['instruments_setup']['average_io_point_difference'], (
+            "The average_io_point_difference flag can only be true for cdaq to nidaq setups"
+        )
+        assert len(configs["instruments_setup"]["activation_channels"]) == len(configs["instruments_setup"]["activation_voltage_ranges"])
+        warn = False
+        for voltage_range in configs["instruments_setup"]["activation_voltage_ranges"]:
+            if(voltage_range[0] < -1.2 or voltage_range[1] > 1):
+                warn = True
+        if warn is True:
+            warnings.warn(" Device maybe damaged, Voltage range below -1.2 or above 1")
+        assert configs["instruments_setup"]["average_io_point_difference"] == True, "Äverage IO point average_io_point_difference should be set to True for Nidaq driver"
         configs["auto_start"] = False
         configs["offset"] = int(
             configs["instruments_setup"]["activation_sampling_frequency"] *
@@ -56,9 +69,30 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             self.configs["instruments_setup"]["readout_instrument"],
             self.configs["instruments_setup"]["activation_instrument"],
         )
-        assert self.configs['instruments_setup']['average_io_point_difference'], (
-            "The average_io_point_difference flag can only be true for cdaq to nidaq setups"
-        )
+
+    def type_check(self, configs):
+        """
+        Checks if the values provided in configs are of the correct type
+        """
+        assert type(configs["instrument_type"]) == str
+        assert type(configs["real_time_rack"]) == bool
+        assert type(configs["inverted_output"]) == bool
+        assert type(configs["amplificatiion"]) == int
+        assert type(configs["instruments_setup"]["multiple_devices"]) == bool
+        assert type(configs["instruments_setup"]["activation_instrument"]) == str
+        assert type(configs["instruments_setup"]["activation_channels"]) == list
+        for channel in configs["instruments_setup"]["activation_channels"]:
+            assert(type(channel) == int)
+        assert type(configs["instruments_setup"]["activation_voltage_ranges"]) == list
+        for voltage_range in configs["instruments_setup"]["activation_voltage_ranges"]:
+            assert len(voltage_range) == 2, "Voltage range should contain 2 values"
+            assert type(voltage_range[0]) == float and type(voltage_range[1]) == float
+        assert type(configs["instruments_setup"][
+            "readout_instrument"]) == str
+        assert type(configs["instruments_setup"]["activation_sampling_frequency"]) == int
+        assert type(configs["instruments_setup"]["readout_sampling_frequency"]) == int
+        assert type(configs["instruments_setup"]["average_io_point_difference"]) == bool
+
     def forward_numpy(self, y):
         """
         The forward function computes output numpy values from input numpy array.
@@ -145,6 +179,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             Synchronised input data based on the offset value, where the synchronisation spike
             should have been received.
         """
+        assert type(y) == list or type(y) == np.ndarray
         # TODO: Are the following three lines really necessary?
         y = np.asarray(y)
         if len(y.shape) == 1:
