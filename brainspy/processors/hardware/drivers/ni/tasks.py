@@ -308,15 +308,10 @@ class IOTasksManager:
         y = np.require(y, dtype=y.dtype, requirements=["C", "W"])
         try:
             self.activation_task.write(y, auto_start=auto_start)
-        except nidaqmx.errors.DaqError:
+        except nidaqmx.errors.DaqError as error:
             print("There was an error writing to the activation task: " +
-                  self.activation_task.name)
-            print("Trying to reset device and do the read again.")
-            for dev in self.devices:
-                dev.reset_device()
-            self.init_activation_channels(self.activation_channel_names,
-                                          self.voltage_ranges)
-            self.activation_task.write(y, auto_start=auto_start)
+                  self.activation_task.name + "\n" + error)
+            self.close_tasks()
 
         if not auto_start:
             self.activation_task.start()
