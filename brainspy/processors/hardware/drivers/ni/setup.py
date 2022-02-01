@@ -410,7 +410,7 @@ class NationalInstrumentsSetup:
         """
         self.offsetted_points_to_read = self.io_point_difference * points_to_write
         if self.configs['instrument_type'] == 'cdaq_to_nidaq':
-            self.offsetted_points_to_write += points_to_write + self.configs[
+            self.offsetted_points_to_write = points_to_write + self.configs[
                 "offset"]
             self.offsetted_points_to_read += self.io_point_difference * self.configs[
                 "offset"]
