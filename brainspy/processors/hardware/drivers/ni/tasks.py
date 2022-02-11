@@ -308,14 +308,13 @@ class IOTasksManager:
         y = np.require(y, dtype=y.dtype, requirements=["C", "W"])
         try:
             self.activation_task.write(y, auto_start=auto_start)
+            if not auto_start:
+                self.activation_task.start()
+                self.readout_task.start()
         except nidaqmx.errors.DaqError as error:
             print("There was an error writing to the activation task: " +
-                  self.activation_task.name + "\n" + error)
+                  self.activation_task.name + "\n" + str(error))
             self.close_tasks()
-
-        if not auto_start:
-            self.activation_task.start()
-            self.readout_task.start()
 
     def stop_tasks(self):
         """
