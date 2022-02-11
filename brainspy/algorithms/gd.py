@@ -144,7 +144,7 @@ def train(
             if save_dir is not None and val_losses[-1] < min_val_loss:
                 min_val_loss = val_losses[-1]
                 description += " Saving model ..."
-                torch.save(model, os.path.join(save_dir, "model.pt"))
+                torch.save(model, os.path.join(save_dir, "best_model_raw.pt"))
                 torch.save(
                     {
                         "epoch": epoch,
@@ -155,7 +155,7 @@ def train(
                         "val_losses": val_losses,
                         "min_val_loss": min_val_loss,
                     },
-                    os.path.join(save_dir, "training_data.pickle"),
+                    os.path.join(save_dir, "best_training_data.pickle"),
                 )
 
         looper.set_description(description)
@@ -172,7 +172,7 @@ def train(
             and dataloaders[1] is not None and len(dataloaders[1]) > 0):
         model = torch.load(os.path.join(save_dir, "model.pt"))
     else:
-        torch.save(model, os.path.join(save_dir, "model.pt"))
+        torch.save(model, os.path.join(save_dir, "raw_model.pt"))
         torch.save(
             {
                 "epoch": epoch,
