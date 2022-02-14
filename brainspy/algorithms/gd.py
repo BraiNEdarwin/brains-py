@@ -165,25 +165,25 @@ def train(
         # TODO: Add a save instruction and a stopping criteria
         # if stopping_criteria(train_losses, val_losses):
         #     break
-
+    torch.save(model, os.path.join(save_dir, "model_raw.pt"))
+    torch.save(
+        {
+            "epoch": epoch,
+            "algorithm": 'gradient',
+            "optimizer_state_dict": optimizer.state_dict(),
+            "model_state_dict": model.state_dict(),
+            "train_losses": train_losses,
+            "val_losses": val_losses,
+            "min_val_loss": min_val_loss,
+        },
+        os.path.join(save_dir, "training_data.pickle"),
+    )
     if logger is not None:
         logger.close()
     if (save_dir is not None and return_best_model
             and dataloaders[1] is not None and len(dataloaders[1]) > 0):
-        model = torch.load(os.path.join(save_dir, "model.pt"))
-    else:
-        torch.save(model, os.path.join(save_dir, "raw_model.pt"))
-        torch.save(
-            {
-                "epoch": epoch,
-                "optimizer_state_dict": optimizer.state_dict(),
-                "model_state_dict": model.state_dict(),
-                "train_losses": train_losses,
-                "val_losses": val_losses,
-                "min_val_loss": min_val_loss,
-            },
-            os.path.join(save_dir, "training_data.pickle"),
-        )
+        model = torch.load(os.path.join(save_dir, "best_model_raw.pt"))
+
     return model, {
         "performance_history":
         [torch.tensor(train_losses),
