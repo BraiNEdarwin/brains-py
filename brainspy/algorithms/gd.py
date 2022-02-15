@@ -104,6 +104,45 @@ def train(
     training_data: dict
         Dictionary returning relevant data produced while training the model.
 
+    configs['return_best_model']: boolean
+        It also adds to the configs dictionary whether the algorithm was returning the best model or not
+        at configs['return_best_model'].
+
+    Saved Data
+    ----------
+    A) After the end of the last epoch, the algorithm saves two main files:
+        model_raw.pt: An exact copy of the model after the end of the training process. It can be loaded directly as an instance of the model using:
+                            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+        training_data.pickle: A pytorch picle which contains the following keys:
+            - epochs: int 
+                Number of epochs used for training the model
+            - algorithm:
+                Algorithm type that was being used. Either 'genetic' or 'gradient'.
+            - optimizer_state_dict: OrderedDict
+                State of the optimizer at the end of last epoch. It can be used to resume model training at that exact point.
+            - model_state_dict: OrderedDict
+                It contains the value of the learnable parameters (weights, or in this case, control voltages) at the point where all the training was finised.
+            - train_losses: list
+                A list of the loss performance over all epochs
+            - val_losses: list
+                A list of the loss performance over all epochs
+    B) If there is a validation dataset present, and return_best_model is set to true. The algorithm will save, each time that the validation loss is better than the previous,
+    the following files:
+        best_model_raw.pt: An exact copy of the model when it got the best validation results. It can be loaded directly as an instance of the model using:
+                            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+        best_training_data.pickle: A pytorch picle which contains the following keys:
+            - epoch: int 
+                Epoch at which the model with best validation loss was found.
+            - algorithm: str
+                Algorithm type that was being used. Either 'genetic' or 'gradient'.
+            - optimizer_state_dict: OrderedDict
+                State of the optimizer at the moment when the best validation loss was achieved. It can be used to resume model training at that exact point.
+            - model_state_dict: OrderedDict
+                It contains the value of the learnable parameters (weights, or in this case, control voltages) at the point where the best validation was achieved.
+            - train_loss: float
+                Training loss at the point where the best validation was achieved. 
+            - validation_loss: float
+                Best validation loss achieved.
     """
 
     start_epoch = 0
@@ -112,6 +151,7 @@ def train(
 
     looper = trange(configs["epochs"], desc=" Initialising")
     looper.update(start_epoch)
+    configs['return_best_model'] = return_best_model
     model.to(device=TorchUtils.get_device())
 
     if "set_regul_factor" in dir(model) and "regul_factor" in configs:
@@ -147,13 +187,12 @@ def train(
                 torch.save(model, os.path.join(save_dir, "best_model_raw.pt"))
                 torch.save(
                     {
-                        "epoch": epoch,
+                        "epochs": epoch,
                         "algorithm": 'gradient',
                         "optimizer_state_dict": optimizer.state_dict(),
                         "model_state_dict": model.state_dict(),
-                        "train_losses": train_losses,
-                        "val_losses": val_losses,
-                        "min_val_loss": min_val_loss,
+                        "train_loss": train_losses[-1],
+                        "val_loss": val_losses[-1],
                     },
                     os.path.join(save_dir, "best_training_data.pickle"),
                 )
@@ -168,7 +207,7 @@ def train(
     torch.save(model, os.path.join(save_dir, "model_raw.pt"))
     torch.save(
         {
-            "epoch": epoch,
+            "epoch": epoch + 1,
             "algorithm": 'gradient',
             "optimizer_state_dict": optimizer.state_dict(),
             "model_state_dict": model.state_dict(),
