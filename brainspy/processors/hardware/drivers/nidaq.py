@@ -14,7 +14,6 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
     from the CDAQ to the NIDAQ. The data is offsetted to let the NIDAQ read the spike and start
     synchronising after receiving it.
     """
-
     def __init__(self, configs):
         """
         Initialize the hardware processor. No trigger source required for this device.
@@ -50,14 +49,20 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         assert configs['instruments_setup']['average_io_point_difference'], (
             "The average_io_point_difference flag can only be true for cdaq to nidaq setups"
         )
-        assert len(configs["instruments_setup"]["activation_channels"]) == len(configs["instruments_setup"]["activation_voltage_ranges"])
+        assert len(configs["instruments_setup"]["activation_channels"]) == len(
+            configs["instruments_setup"]["activation_voltage_ranges"])
         warn = False
-        for voltage_range in configs["instruments_setup"]["activation_voltage_ranges"]:
-            if(voltage_range[0] < -1.2 or voltage_range[1] > 1):
+        for voltage_range in configs["instruments_setup"][
+                "activation_voltage_ranges"]:
+            if (voltage_range[0] < -1.2 or voltage_range[1] > 1):
                 warn = True
         if warn is True:
-            warnings.warn(" Device maybe damaged, Voltage range below -1.2 or above 1")
-        assert configs["instruments_setup"]["average_io_point_difference"] == True, "Äverage IO point average_io_point_difference should be set to True for Nidaq driver"
+            warnings.warn(
+                " Device maybe damaged, Voltage range below -1.2 or above 1")
+        if configs["instruments_setup"]["average_io_point_difference"] is False:
+            raise AssertionError(
+                "average_io_point_difference should be set to True for Nidaq driver"
+            )
         configs["auto_start"] = False
 
         # The offset specifies the number of zero points that will be added to the
@@ -77,24 +82,48 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         """
         Checks if the values provided in configs are of the correct type
         """
-        assert type(configs["instrument_type"]) == str
-        assert type(configs["real_time_rack"]) == bool
-        assert type(configs["inverted_output"]) == bool
-        assert type(configs["amplificatiion"]) == int
-        assert type(configs["instruments_setup"]["multiple_devices"]) == bool
-        assert type(configs["instruments_setup"]["activation_instrument"]) == str
-        assert type(configs["instruments_setup"]["activation_channels"]) == list
+        assert type(configs["instrument_type"]
+                    ) == str, "The instrument type should be of type - str"
+        assert type(configs["real_time_rack"]
+                    ) == bool, "The real_time_rack should be of type - bool"
+        assert type(configs["inverted_output"]
+                    ) == bool, "The inverted_output should be of type - bool"
+        assert type(configs["amplification"]
+                    ) == int, "Amplification value should be of type - int"
+        assert type(
+            configs["instruments_setup"]["multiple_devices"]
+        ) == bool, "The multiple devices option should be of type - bool"
+        assert type(
+            configs["instruments_setup"]["activation_instrument"]
+        ) == str, "The activation instrument name should be of type - str"
+        assert type(
+            configs["instruments_setup"]["activation_channels"]
+        ) == list, "The activation channels should be of type - list"
         for channel in configs["instruments_setup"]["activation_channels"]:
-            assert(type(channel) == int)
-        assert type(configs["instruments_setup"]["activation_voltage_ranges"]) == list
-        for voltage_range in configs["instruments_setup"]["activation_voltage_ranges"]:
-            assert len(voltage_range) == 2, "Voltage range should contain 2 values"
-            assert type(voltage_range[0]) == float and type(voltage_range[1]) == float
-        assert type(configs["instruments_setup"][
-            "readout_instrument"]) == str
-        assert type(configs["instruments_setup"]["activation_sampling_frequency"]) == int
-        assert type(configs["instruments_setup"]["readout_sampling_frequency"]) == int
-        assert type(configs["instruments_setup"]["average_io_point_difference"]) == bool
+            assert (type(channel) == int
+                    ), "Each activation channel should be of type - int"
+        assert type(
+            configs["instruments_setup"]["activation_voltage_ranges"]
+        ) == list, "The activation volatge ranges should be a list of ranges"
+        for voltage_range in configs["instruments_setup"][
+                "activation_voltage_ranges"]:
+            assert len(voltage_range
+                       ) == 2, "Each voltage range should contain 2 values"
+            assert type(voltage_range[0]) == float and type(
+                voltage_range[1]
+            ) == float, "Each voltage range should be of type - float"
+        assert type(
+            configs["instruments_setup"]["readout_instrument"]
+        ) == str, "The readout instrument name should be of type - str"
+        assert type(
+            configs["instruments_setup"]["activation_sampling_frequency"]
+        ) == int, "The activation sampling frequency should be of type - int "
+        assert type(
+            configs["instruments_setup"]["readout_sampling_frequency"]
+        ) == int, "The readout sampling frequency should be of type - int"
+        assert type(
+            configs["instruments_setup"]["average_io_point_difference"]
+        ) == bool, "The average io point differnece should be of type - bool"
 
     def forward_numpy(self, y):
         """
@@ -117,6 +146,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         np.array
             Output data that has been read from the device when receiving the input y.
         """
+
+        assert type(
+            y) == np.ndarray, "Input data should be of type - numpy array"
         self.original_shape = y.shape[0]
         y = y.T
 
@@ -154,6 +186,8 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         np.array,bool
             Synchronised output data from the device and wheather the readout is complete
         """
+        assert type(
+            y) == np.ndarray, "input data should be of type - numpy-array"
         data = self.read_data(y)
         data = self.process_output_data(data)
         data = self.average_point_difference(data)
@@ -188,7 +222,8 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             Synchronised input data based on the offset value, where the synchronisation spike
             should have been received.
         """
-        assert type(y) == list or type(y) == np.ndarray
+        assert type(y) == list or type(
+            y) == np.ndarray, "Input data should be of type - numpy array"
         # TODO: Are the following three lines really necessary?
         y = np.asarray(y)
         if len(y.shape) == 1:
@@ -228,7 +263,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         int
             Output cut value
         """
-        assert type(read_data) == np.ndarray
+        assert type(
+            read_data
+        ) == np.ndarray, "read-data should be of type - numpy array"
         cut_value = np.argmax(read_data[-1, :])
         if read_data[-1, cut_value] < 0.05:
             warnings.warn("initialize spike not recognised")
@@ -253,6 +290,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         bool
             Whether if the cut value is zero
         """
+        assert type(
+            read_data
+        ) == np.ndarray, "read-data should be of type - numpy array"
         cut_value = self.get_output_cut_value(read_data)
         # Add check that the cut_value is not 0
         return read_data[:-1, cut_value:self.original_shape +
