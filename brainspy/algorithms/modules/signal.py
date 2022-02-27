@@ -47,7 +47,7 @@ def accuracy_fit(output: torch.Tensor,
     AssertionError
         If dimensions of output and target are not the same.
     """
-    if type(output) != torch.Tensor and type(target) != torch.Tensor and type(
+    if type(output) != torch.Tensor or type(target) != torch.Tensor or type(
             default_value) != bool:
         raise AssertionError("Invalid type for arguments provided")
     assert output.shape == target.shape, "Dimensions of data are different."
@@ -97,10 +97,10 @@ def corr_fit(output: torch.Tensor,
     AssertionError
         If dimensions of output and target are not the same.
     """
-    assert output.shape == target.shape, "Dimensions of data are different."
-    if type(output) != torch.Tensor and type(target) != torch.Tensor and type(
+    if type(output) != torch.Tensor or type(target) != torch.Tensor or type(
             default_value) != bool:
         raise AssertionError("Invalid type for arguments provided")
+    assert output.shape == target.shape, "Dimensions of data are different."
     if default_value:
         return -torch.ones(output.shape[1], device=TorchUtils.get_device())
     else:
@@ -155,7 +155,7 @@ def corrsig_fit(output: torch.Tensor,
     AssertionError
         If dimensions of output and target are not the same.
     """
-    if type(output) != torch.Tensor and type(target) != torch.Tensor and type(
+    if type(output) != torch.Tensor or type(target) != torch.Tensor or type(
             default_value) != bool:
         raise AssertionError("Invalid type for arguments provided")
     if default_value:
@@ -206,7 +206,7 @@ def pearsons_correlation(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         If result is nan (which happens if a dataset has variance 0, is
         uniform).
     """
-    if type(x) != torch.Tensor and type(y) != torch.Tensor:
+    if type(x) != torch.Tensor or type(y) != torch.Tensor:
         raise AssertionError("Invalid type for arguments provided")
     assert x.shape == y.shape, "Dimensions of data are different."
     vx = x - x.mean(dim=0)
@@ -259,7 +259,7 @@ def corrsig(output: torch.Tensor,
     AssertionError
         If dimensions of x and y are not the same.
     """
-    if type(output) != torch.Tensor and type(target) != torch.Tensor:
+    if type(output) != torch.Tensor or type(target) != torch.Tensor:
         raise AssertionError("Invalid type for arguments provided")
     assert output.shape == target.shape, "Dimensions of data are different."
     corr = pearsons_correlation(output, target)
@@ -312,7 +312,7 @@ def fisher_fit(output: torch.Tensor,
     AssertionError
         If dimensions of x and y are not the same.
     """
-    if type(output) != torch.Tensor and type(target) != torch.Tensor and type(
+    if type(output) != torch.Tensor or type(target) != torch.Tensor or type(
             default_value) != bool:
         raise AssertionError("Invalid type for arguments provided")
     assert output.shape == target.shape, "Dimensions of data are different."
@@ -358,7 +358,7 @@ def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         If result is nan (which happens if a dataset has variance 0, is
         uniform).
     """
-    if type(output) != torch.Tensor and type(target) != torch.Tensor:
+    if type(output) != torch.Tensor or type(target) != torch.Tensor:
         raise AssertionError("Invalid type for arguments provided")
     assert output.shape == target.shape, "Dimensions of data are different."
     result = torch.zeros(output.shape[1], device=TorchUtils.get_device())
@@ -412,7 +412,7 @@ def sigmoid_nn_distance(output: torch.Tensor,
     UserWarning
         If target data is provided to warn that it will not be used.
     """
-    if type(output) != torch.Tensor and type(target) != torch.Tensor:
+    if type(output) != torch.Tensor or type(target) != torch.Tensor:
         raise AssertionError("Invalid type for arguments provided")
     if target is not None:
         warnings.warn(
@@ -470,7 +470,7 @@ def get_clamped_intervals(output: torch.Tensor,
     UserWarning
         If mode not recognized.
     """
-    if type(output) != torch.Tensor and type(mode) != str:
+    if type(output) != torch.Tensor or type(mode) != str:
         raise AssertionError("Invalid type for arguments provided")
     # First we sort the output, and clip the output to a fixed interval.
     output_sorted = output.sort(dim=0)[0]
