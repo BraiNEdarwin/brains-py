@@ -173,15 +173,8 @@ def init_results(inputs, targets, configs):
                 Number of loops used for training the perceptron. (default: 100)
             learning_rate: float
                 Learning rate used to train the perceptron. (default: 1e-3)
-            data:
-                batch_size: int
-                    Batch size used to train the perceptron. (default: 256)
-                worker_no: int
-                    How many subprocesses to use for data loading. 0 means that the data will be
-                    loaded in the main process. (default: 0)
-                pin_memory: boolean (default: False)
-                    If True, the data loader will copy Tensors into CUDA pinned memory before
-                    returning them.
+            batch_size: int
+                Batch size used to train the perceptron. (default: 256)
 
     Returns
     -------
@@ -192,7 +185,7 @@ def init_results(inputs, targets, configs):
     results["inputs"] = inputs.clone()
     results["targets"] = targets.clone()
     results["norm_inputs"] = zscore_norm(inputs.clone())
-    dataloader = get_data(results, configs)
+    dataloader = get_data(results, configs["batch_size"])
     return results, dataloader
 
 
