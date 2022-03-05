@@ -1,5 +1,6 @@
 import torch
 import unittest
+import random
 import numpy as np
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.algorithms.modules.performance.accuracy import zscore_norm
@@ -19,13 +20,8 @@ class Data_Test(unittest.TestCase):
         results["inputs"] = TorchUtils.format(torch.rand(1000))
         results["targets"] = TorchUtils.format(torch.rand(1000))
         results["norm_inputs"] = zscore_norm(results["inputs"])
-
-        configs = {}
-        configs["batch_size"] = 512
-        configs["epochs"] = 130
-        configs["learning_rate"] = 0.01
         try:
-            dataloader = get_data(results, configs)
+            dataloader = get_data(results, batch_size=512)
             self.assertEqual(dataloader.batch_size, 512)
             self.assertEqual(dataloader.drop_last, False)
         except (Exception):
@@ -40,13 +36,8 @@ class Data_Test(unittest.TestCase):
         results["targets"] = TorchUtils.format(torch.rand(5))
         results["norm_inputs"] = zscore_norm(results["inputs"])
 
-        configs = {}
-        configs["batch_size"] = 512
-        configs["epochs"] = 130
-        configs["learning_rate"] = 0.01
-
         with self.assertRaises(AssertionError):
-            get_data(results, configs)
+            get_data(results, batch_size=512)
 
     def test_get_data_nan(self):
         """
@@ -62,13 +53,8 @@ class Data_Test(unittest.TestCase):
         results["targets"] = TorchUtils.format(torch.rand(5))
         results["norm_inputs"] = zscore_norm(results["inputs"])
 
-        configs = {}
-        configs["batch_size"] = 512
-        configs["epochs"] = 130
-        configs["learning_rate"] = 0.01
-
         with self.assertRaises(AssertionError):
-            get_data(results, configs)
+            get_data(results, batch_size=512)
 
     def test_get_data_invalid_dtype(self):
         """
@@ -98,26 +84,16 @@ class Data_Test(unittest.TestCase):
         results["norm_inputs"] = zscore_norm(TorchUtils.format(
             torch.rand(500)))
 
-        configs = {}
-        configs["batch_size"] = 512
-        configs["epochs"] = 130
-        configs["learning_rate"] = 0.01
-
         with self.assertRaises(AssertionError):
-            get_data(results, configs)
+            get_data(results, batch_size=512)
 
         results = {}
         results["inputs"] = TorchUtils.format(torch.rand(500))
         results["targets"] = [1, 2, 3, 4]
         results["norm_inputs"] = zscore_norm(results["inputs"])
 
-        configs = {}
-        configs["batch_size"] = 512
-        configs["epochs"] = "invalid"
-        configs["learning_rate"] = 0.01
-
         with self.assertRaises(AssertionError):
-            get_data(results, configs)
+            get_data(results, batch_size=512)
 
     def test_get_data_key_missing(self):
         """
@@ -127,13 +103,35 @@ class Data_Test(unittest.TestCase):
         results = {}
         results["inputs"] = TorchUtils.format(torch.rand(500))
 
-        configs = {}
-        configs["batch_size"] = 512
-        configs["epochs"] = "invalid"
-        configs["learning_rate"] = 0.01
-
         with self.assertRaises(KeyError):
-            get_data(results, configs)
+            get_data(results, batch_size=512)
+
+    def test_get_data_batch_size(self):
+        """
+        Test to get_data from the Perceptron Dataloader with a batch size
+        of a random value
+        """
+        results = {}
+        results["inputs"] = TorchUtils.format(torch.rand(1000))
+        results["targets"] = TorchUtils.format(torch.rand(1000))
+        results["norm_inputs"] = zscore_norm(results["inputs"])
+        try:
+            get_data(results, batch_size=random.randint(0, 1000))
+        except (Exception):
+            self.fail(
+                "Could not get data from the Perceptron Dataloader with this batch size"
+            )
+
+    def test_get_data_batch_size_negative(self):
+        """
+        AssertionError is raised if a negative value for batch_size is provided
+        """
+        results = {}
+        results["inputs"] = TorchUtils.format(torch.rand(1000))
+        results["targets"] = TorchUtils.format(torch.rand(1000))
+        results["norm_inputs"] = zscore_norm(results["inputs"])
+        with self.assertRaises(AssertionError):
+            get_data(results, batch_size=random.randint(-1000, -1))
 
     def test_PerceptronDatasetclass(self):
         """
@@ -146,7 +144,7 @@ class Data_Test(unittest.TestCase):
         try:
             dataset = PerceptronDataset(results["norm_inputs"],
                                         results["targets"])
-            self.assertEquals(len(results["norm_inputs"]), len(dataset))
+            self.assertEqual(len(results["norm_inputs"]), len(dataset))
         except (Exception):
             self.fail("Could not initialize PerceptronDataset class")
 

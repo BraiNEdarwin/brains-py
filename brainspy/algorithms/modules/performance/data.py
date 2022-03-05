@@ -17,7 +17,7 @@ def get_data(results, batch_size):
 
     Parameters
     ----------
-    results : torch.Tensor
+    results : dict
         These contain the input and target values of the perceptron alogorithm.
         It also contains the normalised input data from which the Pytorch dataloader is created.
 
@@ -40,6 +40,21 @@ def get_data(results, batch_size):
     torch.utils.data.Dataloader
         Dataloader of the perceptron algorithm
     """
+
+    assert type(results) == dict, "Results field should be of type - dict"
+    assert type(batch_size) == int, "Batch size should be of type - int"
+    assert batch_size > 0, "batch_size should be a positive integer value"
+
+    assert type(
+        results["inputs"]
+    ) == torch.Tensor, "Input data should be of type - torch.Tensor"
+    assert type(
+        results["norm_inputs"]
+    ) == torch.Tensor, "Normalized Input data should be of type - torch.Tensor"
+    assert type(
+        results["targets"]
+    ) == torch.Tensor, "Target data should be of type - torch.Tensor"
+
     dataset = PerceptronDataset(results["norm_inputs"], results["targets"])
     dataloaders = torch.utils.data.DataLoader(
         dataset,
