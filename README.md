@@ -20,9 +20,9 @@ You can find detailed instructions for the following topics on the [wiki](https:
 This code is released under the GNU GENERAL PUBLIC LICENSE Version 3. Click [here](https://github.com/BraiNEdarwin/brains-py/blob/master/doc/LICENSE) to see the full license.
 The package relies on the following libraries:
 * General support libraries:
-  * PyTorch, NumPy, tensorboard, and tqdm
+  * PyTorch, NumPy, tensorboard, tqdm and matplotlib
 * Drivers and hardware setups:
-  * nidaqmx, Pyro4, pypiwin32
+  * nidaqmx, pypiwin32
 * Configurations:
   * pyyaml
 * Linting, and testing:

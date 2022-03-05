@@ -128,9 +128,13 @@ class Processor(nn.Module):
             self.processor = SurrogateModel(
                 model_structure=self.info["model_structure"],
                 model_state_dict=model_state_dict)
-            self.processor.set_effects_from_dict(
-                info=self.info["electrode_info"],
-                configs=configs["electrode_effects"])
+            if 'electrode_effects' in configs:
+                self.processor.set_effects_from_dict(
+                    info=self.info["electrode_info"],
+                    configs=configs["electrode_effects"])
+            else:
+                self.processor.set_effects_from_dict(
+                    info=self.info["electrode_info"])
 
         # create hardware processor
         elif (configs["processor_type"] == "cdaq_to_cdaq"
@@ -169,7 +173,8 @@ class Processor(nn.Module):
 
             # make sure amplification is set and raise warning if it is;
             # otherwise take it from electrode_info
-            if "amplification" in configs["driver"] and not electrode_info_loaded:
+            if "amplification" in configs[
+                    "driver"] and not electrode_info_loaded:
                 warnings.warn(
                     "The amplification has been overriden by the user to a "
                     f"value of: {configs['driver']['amplification']}")
@@ -187,8 +192,11 @@ class Processor(nn.Module):
         elif configs["processor_type"] == "simulation_debug":
             driver = SurrogateModel(self.info["model_structure"],
                                     model_state_dict)
-            driver.set_effects_from_dict(self.info["electrode_info"],
-                                         configs["electrode_effects"])
+            if 'electrode_effects' in configs:
+                driver.set_effects_from_dict(self.info["electrode_info"],
+                                             configs["electrode_effects"])
+            else:
+                driver.set_effects_from_dict(self.info["electrode_info"])
             self.processor = HardwareProcessor(
                 instrument_configs=driver,
                 slope_length=configs["waveform"]["slope_length"],
@@ -327,6 +335,7 @@ class Processor(nn.Module):
         """
         self.processor.close()
 
+
 def get_electrode_info(configs):
     """
     Retrieve electrode information from the data sampling configurations.
@@ -370,18 +379,25 @@ def get_electrode_info(configs):
         print("A single processor does not support multiple DNPUs.")
         raise
     else:
-        activation_electrode_no = len(configs['driver']['instruments_setup']['activation_channels'])
-        readout_electrode_no = len(configs['driver']['instruments_setup']['readout_channels'])
+        activation_electrode_no = len(
+            configs['driver']['instruments_setup']['activation_channels'])
+        readout_electrode_no = len(
+            configs['driver']['instruments_setup']['readout_channels'])
 
-        electrode_info["electrode_no"] = (activation_electrode_no + readout_electrode_no)
+        electrode_info["electrode_no"] = (activation_electrode_no +
+                                          readout_electrode_no)
         electrode_info["activation_electrodes"] = {}
         electrode_info["activation_electrodes"][
             "electrode_no"] = activation_electrode_no
-        electrode_info["activation_electrodes"][
-                "voltage_ranges"] = configs['driver']['instruments_setup']['activation_voltage_ranges']
+        electrode_info["activation_electrodes"]["voltage_ranges"] = configs[
+            'driver']['instruments_setup']['activation_voltage_ranges']
         electrode_info["output_electrodes"] = {}
-        electrode_info["output_electrodes"]["electrode_no"] = readout_electrode_no
-        electrode_info["output_electrodes"]["amplification"] = configs["driver"]["amplification"]
-        electrode_info["output_electrodes"]["clipping_value"] = [-float("Inf"), float("Inf")]
+        electrode_info["output_electrodes"][
+            "electrode_no"] = readout_electrode_no
+        electrode_info["output_electrodes"]["amplification"] = configs[
+            "driver"]["amplification"]
+        electrode_info["output_electrodes"]["clipping_value"] = [
+            -float("Inf"), float("Inf")
+        ]
 
     return electrode_info

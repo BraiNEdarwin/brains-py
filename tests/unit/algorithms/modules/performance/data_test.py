@@ -1,10 +1,9 @@
-import os
 import torch
 import unittest
 import numpy as np
-import brainspy
+from brainspy.utils.pytorch import TorchUtils
 from brainspy.algorithms.modules.performance.accuracy import zscore_norm
-from brainspy.algorithms.modules.performance.data import get_data
+from brainspy.algorithms.modules.performance.data import get_data, PerceptronDataset
 
 
 class Data_Test(unittest.TestCase):
@@ -12,104 +11,144 @@ class Data_Test(unittest.TestCase):
     Tests for the Perceptron dataloader - data.py.
 
     """
-    def __init__(self, test_name):
-        super(Data_Test, self).__init__()
-
     def test_get_data(self):
         """
-        Test to get data from the Perceptron dataloader
+        Test to get data from the Perceptron dataloader with some random input and target values
         """
-        inputs = torch.rand(100)
-        targets = torch.rand(100)
         results = {}
-        results["inputs"] = inputs
-        results["targets"] = targets
-        results["norm_inputs"] = zscore_norm(inputs)
+        results["inputs"] = TorchUtils.format(torch.rand(1000))
+        results["targets"] = TorchUtils.format(torch.rand(1000))
+        results["norm_inputs"] = zscore_norm(results["inputs"])
 
         configs = {}
         configs["batch_size"] = 512
         configs["epochs"] = 130
         configs["learning_rate"] = 0.01
-
-        dataloader = get_data(results, configs)
-
-        self.assertEqual(dataloader.batch_size, 512)
-        self.assertEqual(dataloader.drop_last, False)
-
-    def test_get_data1(self):
-        """
-        Test for assertion error if input size is too small
-        """
-        inputs = torch.rand(5)
-        targets = torch.rand(5)
-        results = {}
-        results["inputs"] = inputs
-        results["targets"] = targets
-        results["norm_inputs"] = zscore_norm(inputs)
-
-        configs = {}
-        configs["batch_size"] = 512
-        configs["epochs"] = 130
-        configs["learning_rate"] = 0.01
-
         try:
-            get_data(results, configs)
-        except:
-            AssertionError
+            dataloader = get_data(results, configs)
+            self.assertEqual(dataloader.batch_size, 512)
+            self.assertEqual(dataloader.drop_last, False)
+        except (Exception):
+            self.fail("Could not get data from the Perceptron Dataloader")
 
-    def test_get_data2(self):
+    def test_get_data_small(self):
         """
-        Test for assertion error if NaN values detected in the input data
+        AssertionError should be raised if the dataset is too small
         """
-        inputs = torch.tensor([
+        results = {}
+        results["inputs"] = TorchUtils.format(torch.rand(5))
+        results["targets"] = TorchUtils.format(torch.rand(5))
+        results["norm_inputs"] = zscore_norm(results["inputs"])
+
+        configs = {}
+        configs["batch_size"] = 512
+        configs["epochs"] = 130
+        configs["learning_rate"] = 0.01
+
+        with self.assertRaises(AssertionError):
+            get_data(results, configs)
+
+    def test_get_data_nan(self):
+        """
+        AssertionError is raised if the input dataset contains nan values
+        """
+        results = {}
+        results["inputs"] = torch.tensor([
             1,
             float("nan"),
             2,
             1,
-            float("nan"),
-            2,
-            1,
-            float("nan"),
-            2,
-            1,
-            float("nan"),
-            2,
-            1,
-            float("nan"),
-            2,
-            1,
-            float("nan"),
-            2,
-            1,
-            float("nan"),
-            2,
-            1,
-            float("nan"),
-            2,
-            1,
-            float("nan"),
-            2,
         ])
-        targets = torch.rand(5)
-        results = {}
-        results["inputs"] = inputs
-        results["targets"] = targets
-        results["norm_inputs"] = zscore_norm(inputs)
+        results["targets"] = TorchUtils.format(torch.rand(5))
+        results["norm_inputs"] = zscore_norm(results["inputs"])
 
         configs = {}
         configs["batch_size"] = 512
         configs["epochs"] = 130
         configs["learning_rate"] = 0.01
 
-        try:
+        with self.assertRaises(AssertionError):
             get_data(results, configs)
-        except:
-            AssertionError
 
-    def runTest(self):
-        self.test_get_data()
-        self.test_get_data1()
-        self.test_get_data2()
+    def test_get_data_invalid_dtype(self):
+        """
+        AssertionError should be raised if the input is of incorrect type
+        """
+        with self.assertRaises(AssertionError):
+            get_data("Inavlid type", "Invalid type")
+        with self.assertRaises(AssertionError):
+            get_data({"key": "Inavlid type"}, "Invalid type")
+        with self.assertRaises(AssertionError):
+            get_data(1, {"key": "Invalid type"})
+        with self.assertRaises(AssertionError):
+            get_data(5.6, [1, 2, 3, 4])
+        with self.assertRaises(AssertionError):
+            get_data("Inavlid type", 100)
+        with self.assertRaises(AssertionError):
+            get_data(np.array([1, 2, 3, 4]), "Invalid type")
+
+    def test_get_data_invalid_key_type(self):
+        """
+        AssertionError should be raised if the individual
+        keys are of the wrong type
+        """
+        results = {}
+        results["inputs"] = "invalid type"
+        results["targets"] = TorchUtils.format(torch.rand(500))
+        results["norm_inputs"] = zscore_norm(TorchUtils.format(
+            torch.rand(500)))
+
+        configs = {}
+        configs["batch_size"] = 512
+        configs["epochs"] = 130
+        configs["learning_rate"] = 0.01
+
+        with self.assertRaises(AssertionError):
+            get_data(results, configs)
+
+        results = {}
+        results["inputs"] = TorchUtils.format(torch.rand(500))
+        results["targets"] = [1, 2, 3, 4]
+        results["norm_inputs"] = zscore_norm(results["inputs"])
+
+        configs = {}
+        configs["batch_size"] = 512
+        configs["epochs"] = "invalid"
+        configs["learning_rate"] = 0.01
+
+        with self.assertRaises(AssertionError):
+            get_data(results, configs)
+
+    def test_get_data_key_missing(self):
+        """
+        A KeyError is raised if a key is missing in the input dict
+        Here, missing key - "norm_inputs" in the results dict
+        """
+        results = {}
+        results["inputs"] = TorchUtils.format(torch.rand(500))
+
+        configs = {}
+        configs["batch_size"] = 512
+        configs["epochs"] = "invalid"
+        configs["learning_rate"] = 0.01
+
+        with self.assertRaises(KeyError):
+            get_data(results, configs)
+
+    def test_PerceptronDatasetclass(self):
+        """
+        Test for the PerceptronDataset Class
+        """
+        results = {}
+        results["inputs"] = TorchUtils.format(torch.rand(1000))
+        results["targets"] = TorchUtils.format(torch.rand(1000))
+        results["norm_inputs"] = zscore_norm(results["inputs"])
+        try:
+            dataset = PerceptronDataset(results["norm_inputs"],
+                                        results["targets"])
+            self.assertEquals(len(results["norm_inputs"]), len(dataset))
+        except (Exception):
+            self.fail("Could not initialize PerceptronDataset class")
 
 
 if __name__ == "__main__":

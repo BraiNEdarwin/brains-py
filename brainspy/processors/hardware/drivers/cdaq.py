@@ -32,9 +32,9 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
                 start it anyway. This value is set to True for this setup.
 
             offset : int
-                Only for CDAQ TO NIDAQ setup. Value (in milliseconds) that the original
-                activation voltage will be displaced, in order to enable the spiking signal to
-                reach the nidaq setup. The offset value is set to 1 for this setup.
+                Number of points that the original activation voltage signal will be displaced, in
+                order to enable the spiking signal to reach the nidaq setup. The offset value is
+                set to 0 for this setup.
 
             max_ramping_time_seconds : int
                 To set the ramp time for the setup. It is defined with the flags
@@ -71,8 +71,21 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
             Output data that has been read from the device when receiving the input y.
         """
 
-        y = np.concatenate((y, y[-1, :] * np.ones((1, y.shape[1]))))
+        # The convention for pytorch and nidaqmx is different. Therefore,
+        # the input to the device needs to be transposed before sending it to the device.
         y = y.T
         data = self.read_data(y)
-        data = -1 * self.process_output_data(data)[:, 1:]
+
+        # Convert list to numpy, ensure it has dimension (channel_no, data)
+        data = self.process_output_data(data)
+
+        # The CDAQ measurements always add an extra point at the beginning of the
+        # measurement. The following line removes it before applying averaging
+        # It also applies an inversion (when applicable) to the averaged output.
+
+        data = self.inversion * self.average_point_difference(
+            data[:, self.configs['offset']:])
+
+        # The convention for pytorch and nidaqmx is different. Therefore,
+        # the output from the device needs to be transposed before sending it back.
         return data.T
