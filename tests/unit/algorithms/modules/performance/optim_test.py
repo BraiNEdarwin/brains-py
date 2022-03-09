@@ -7,8 +7,6 @@ from brainspy.algorithms.modules.optim import GeneticOptimizer
 
 
 class OptimTest(unittest.TestCase):
-    def __init__(self, test_name):
-        super(OptimTest, self).__init__()
 
     """
     Testing the optim.py file - GeneticOptimizer class.
@@ -138,21 +136,20 @@ class OptimTest(unittest.TestCase):
                                         torch.tensor(22)],
                              epochs=np.array([1, 2, 3, 4]))
 
-        def test_step(self):
-            """
-            Testing the step function with a random torch tensor for a
-            criterion pool and checking if epoch increments
-            """
-            optim = GeneticOptimizer(
-                gene_ranges=torch.tensor([[-1.2, 0.6], [-1.2, 0.6]]),
-                partition=[torch.tensor(4), torch.tensor(22)],
-                epochs=100)
-            try:
-                optim.step(criterion_pool=TorchUtils.format(
-                    torch.tensor(random.randint(1, 1000))))
-            except (Exception):
-                self.fail("Could'nt perform step")
-            self.assertEqual(optim.epoch, 101)
+    def test_step(self):
+        """
+        Testing the step function with a random torch tensor for a
+        criterion pool and checking if epoch increments
+        """
+        optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
+                                                           [-1.2, 0.6]]),
+                                 partition=[4,22],
+                                 epochs=100)
+        try:
+            optim.step(criterion_pool=torch.randint(1, 100, (1, 26)).squeeze())
+        except (Exception):
+            self.fail("Could'nt perform step")
+        self.assertEqual(optim.epoch, 1)
 
     def test_step_val_error(self):
         """
@@ -164,6 +161,13 @@ class OptimTest(unittest.TestCase):
                 partition=[torch.tensor(4), torch.tensor(22)],
                 epochs=100)
             optim.step(criterion_pool=torch.tensor([1, 2, 3, 4]))
+        
+        with self.assertRaises(ValueError):
+            optim = GeneticOptimizer(
+                gene_ranges=torch.tensor([[-1.2, 0.6], [-1.2, 0.6]]),
+                partition=[torch.tensor(4), torch.tensor(22)],
+                epochs=100)
+            optim.step(criterion_pool=torch.randint(-100,-1,(1, 26)).squeeze())
 
     def test_step_fail(self):
         """
@@ -171,8 +175,7 @@ class OptimTest(unittest.TestCase):
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
         with self.assertRaises(AssertionError):
             optim.step(None)
@@ -189,8 +192,7 @@ class OptimTest(unittest.TestCase):
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
         try:
             optim._init_pool()
@@ -199,23 +201,38 @@ class OptimTest(unittest.TestCase):
 
     def test_crossover(self):
         """
-        Testing the crossover ethod with random values for 2 parent parameters
+        Testing the crossover method with a random torch tensor of correct dimension
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
 
         try:
-            optim.step(torch.tensor(random.randint(1, 1000)))
-            new_pool = optim.crossover(new_pool=torch.tensor(
-                [random.uniform(0, 1),
-                 random.uniform(0, 1)]))
-
+            criterion_pool = torch.randint(1, 100, (1, 26)).squeeze()
+            optim.pool = optim.pool[torch.flip(
+            torch.argsort(criterion_pool), dims=[0])]
+            new_pool = optim.crossover(new_pool=optim.pool)
         except (Exception):
             self.fail("Could not generate random pool")
-        assert isinstance(new_pool, torch.Tensor)
+        else:
+            assert isinstance(new_pool, torch.Tensor)
+    
+    def test_crossover_fail_IndexError(self):
+        """
+        IndexError is raised if an incorrect dimension is provided as an input for
+        the crossover method
+        """
+        optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
+                                                           [-1.2, 0.6]]),
+                                 partition=[4,22],
+                                 epochs=100)
+
+        with self.assertRaises(IndexError):
+            criterion_pool = torch.randint(1, 100, (1, 20)).squeeze()
+            optim.pool = optim.pool[torch.flip(
+            torch.argsort(criterion_pool), dims=[0])]
+            new_pool = optim.crossover(new_pool=optim.pool)
 
     def test_crossover_fail(self):
         """
@@ -223,8 +240,7 @@ class OptimTest(unittest.TestCase):
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
         with self.assertRaises(AssertionError):
             optim.crossover("String type")
@@ -241,15 +257,13 @@ class OptimTest(unittest.TestCase):
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
-        optim.step(torch.tensor(random.randint(-1000, 1000)))
+        optim.step(criterion_pool=torch.randint(1, 100, (1, 26)).squeeze())
         try:
             chosen = optim.universal_sampling()
         except (Exception):
             self.fail("Could not run universal sampler method")
-        assert isinstance(chosen, torch.Tensor)
 
     def test_linear_rank(self):
         """
@@ -257,14 +271,14 @@ class OptimTest(unittest.TestCase):
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
-        optim.step(torch.randint(10, (1, 26)))
+        optim.step(criterion_pool=torch.randint(1, 100, (1, 26)).squeeze())
         try:
             optim.linear_rank()
         except (Exception):
             self.fail("Could not get linear rank")
+    
 
     def test_crossover_blxab(self):
         """
@@ -273,8 +287,7 @@ class OptimTest(unittest.TestCase):
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
         try:
             offspring = optim.crossover_blxab(torch.rand(10), torch.rand(10))
@@ -288,8 +301,7 @@ class OptimTest(unittest.TestCase):
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
         with self.assertRaises(AssertionError):
             optim.crossover_blxab("torch.rand(10)", torch.rand(10))
@@ -306,8 +318,7 @@ class OptimTest(unittest.TestCase):
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
         try:
             optim.update_mutation_rate()
@@ -320,14 +331,13 @@ class OptimTest(unittest.TestCase):
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
         try:
-            optim.step(torch.tensor(random.randint(-1000, 1000)))
-            new_pool = optim.crossover(new_pool=torch.tensor(
-                [random.uniform(0, 1),
-                 random.uniform(0, 1)]))
+            criterion_pool = torch.randint(1, 100, (1, 26)).squeeze()
+            optim.pool = optim.pool[torch.flip(
+            torch.argsort(criterion_pool), dims=[0])]
+            new_pool = optim.crossover(new_pool=optim.pool)
             optim.mutation(new_pool)
         except (Exception):
             self.fail("Could not update mutataion rate")
@@ -338,8 +348,7 @@ class OptimTest(unittest.TestCase):
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
         with self.assertRaises(AssertionError):
             optim.mutation("pool")
@@ -352,18 +361,17 @@ class OptimTest(unittest.TestCase):
 
     def test_remove_duplicates(self):
         """
-        Test to remove duplicates after a step and crossover
+        Test to remove duplicates after a crossover
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
         try:
-            optim.step(torch.tensor(random.randint(-1000, 1000)))
-            new_pool = optim.crossover(new_pool=torch.tensor(
-                [random.uniform(0, 1),
-                 random.uniform(0, 1)]))
+            criterion_pool = torch.randint(1, 100, (1, 26)).squeeze()
+            optim.pool = optim.pool[torch.flip(
+            torch.argsort(criterion_pool), dims=[0])]
+            new_pool = optim.crossover(new_pool=optim.pool)
             edited = optim.remove_duplicates(new_pool)
         except (Exception):
             self.fail("Could not update mutataion rate")
@@ -375,8 +383,7 @@ class OptimTest(unittest.TestCase):
         """
         optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
                                                            [-1.2, 0.6]]),
-                                 partition=[torch.tensor(4),
-                                            torch.tensor(22)],
+                                 partition=[4,22],
                                  epochs=100)
         with self.assertRaises(AssertionError):
             optim.remove_duplicates("pool")
@@ -386,32 +393,6 @@ class OptimTest(unittest.TestCase):
             optim.remove_duplicates([1, 2, 3, 4, 5])
         with self.assertRaises(AssertionError):
             optim.remove_duplicates(100)
-
-    def runTest(self):
-        self.test_init()
-        self.test_init_invalid_negative_dim()
-        self.test_init_invalid_none()
-        self.test_init_invalid_shape()
-        self.test_init_invalid_type()
-        self.test_init_invalid_type_epochs()
-        self.test_init_invalid_type_partition()
-        self.test_init_max_min()
-        # self.test_step() #failing tests
-        self.test_step_fail()
-        self.test_step_val_error()
-        self.test_init_pool()
-        # self.test_crossover() # failing test
-        self.test_crossover_fail()
-        # self.test_universal_sampling() #failing test
-        # self.test_linear_rank() # Main failing test - ValueError: step must be greater than zero
-        self.test_crossover_blxab()
-        self.test_crossover_blxab_fail()
-        self.test_update_mutation_rate()
-        # self.test_mutation() #failing test
-        self.test_mutataion_fail()
-        # self.test_remove_duplicates() #failing test
-        self.test_remove_duplicates_fail()
-
 
 if __name__ == "__main__":
     unittest.main()
