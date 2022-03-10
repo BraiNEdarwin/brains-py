@@ -137,7 +137,7 @@ class IOTasksManager:
         readout_sampling_frequency : int
             The number of samples that the readout task will obtain in one second.
 
-        points_to_write : (int,int)
+        points_to_write : int
             Number of points that will be written.
 
         points_to_read: int
