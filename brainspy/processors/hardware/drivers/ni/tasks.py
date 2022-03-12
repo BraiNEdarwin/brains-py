@@ -120,22 +120,25 @@ class IOTasksManager:
             channel = readout_channels[i]
             self.readout_task.ai_channels.add_ai_voltage_chan(channel)
 
-    def set_sampling_frequencies(self, activation_sampling_frequency,
-                                 readout_sampling_frequency, points_to_write,
-                                 points_to_read):
+    def set_sampling_frequencies(self, activation_sampling_frequency: int,
+                                 readout_sampling_frequency: int,
+                                 points_to_write: int, points_to_read: int):
         """
-        One way method to set the shape variables for the data that is being sent to the device.
-        Depending on which device is being used, CDAQ or NIDAQ, and the sampling frequency, the
-        shape of the data that is being sent can to be specified.
+        Sets the sampling frequency for the activation and readout tasks. The activation 
+        task is in charge to send signals from the  computer to the NI module, and the 
+        readout task is in charge of reading signals from the NI module.
 
 
         Parameters
         ----------
-        sampling_frequency : float
-            The average number of samples to be obtained in one second.
+        activation_sampling_frequency : int
+            The number of samples that the activation task will obtain in one second.
 
-        samples_per_chan : (int,int)
-            Number of expected samples, per channel.
+        readout_sampling_frequency : int
+            The number of samples that the readout task will obtain in one second.
+
+        points_to_write : int
+            Number of points that will be written.
 
         points_to_read: int
             Number of points that are expected to be read given the number
