@@ -2,10 +2,10 @@ import torch
 from torch.utils.data import Dataset
 
 
-def get_data(results, configs):
+def get_data(results, batch_size):
     """
     Initialises the perceptron Dataset and loads the dataset into the Pytorch Dataloader.
-    The dataloader loads the data into the memory according to the configs dictionary.
+    The dataloader loads the data into the memory according to the batch size.
     Refer to https://pytorch.org/tutorials/beginner/basics/data_tutorial.html for DataLoaders
     in PyTorch.
 
@@ -32,47 +32,19 @@ def get_data(results, configs):
         targets : torch.Tensor
             Binary targets against which the outuut of the perceptron algorithm is compared.
 
-    configs : dict
-        Configurations of the model to create the dataloader for the perceptron algorithm.
-        The configs should contain a description of the hyperparameters that can be used
-        to calculate the accuracy of the Perceptron algorithm.
-
-        It has the following keys:
-
-            epochs: int
-                Number of loops used for training the perceptron.
-            learning_rate: float
-                Learning rate used to train the perceptron.
-            data:
-                batch size- The batch size defines the number of samples that will be propagated
+    batch size- The batch size defines the number of samples that will be propagated
                             through the network.
-                pin_memory- boolean value to pin the data to memory or not.
-                            If you load your samples in the Dataset on CPU and would like to push
-                            it during training to the GPU,you can speed up the host to device
-                            transfer by enabling pin_memory.
-                            Refer to https://pytorch.org/docs/stable/data.html for batching of data
-                            and memory pinning in PyTorch.
-                worker_no - number of workers on the pytorch dataset which is by default set to 0.
-                            Refer to https://deeplizard.com/learn/video/kWVgvsejXsE to understand
-                            how the number of workers are used in deep neural network programming.
 
     Returns
     -------
     torch.utils.data.Dataloader
         Dataloader of the perceptron algorithm
     """
-    if configs["data"]["worker_no"] > 0 or configs["data"]["pin_memory"]:
-        dataset = PerceptronDataset(results["norm_inputs"],
-                                    results["targets"],
-                                    device=torch.device("cpu"))
-    else:
-        dataset = PerceptronDataset(results["norm_inputs"], results["targets"])
+    dataset = PerceptronDataset(results["norm_inputs"], results["targets"])
     dataloaders = torch.utils.data.DataLoader(
         dataset,
-        batch_size=configs["data"]["batch_size"],
+        batch_size=batch_size,
         shuffle=True,
-        num_workers=configs["data"]["worker_no"],
-        pin_memory=configs["data"]["pin_memory"],
     )
     return dataloaders
 

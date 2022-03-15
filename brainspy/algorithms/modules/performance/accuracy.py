@@ -45,10 +45,12 @@ def get_accuracy(inputs, targets, configs=None, node=None):
     ----------
     inputs : torch.Tensor
         The inputs to the perceptron algorithm, which are the outputs of the DNPU or DNPU
-        architectures that you want to evaluate the accuracy against.
+        architectures that you want to evaluate the accuracy against. Only input tensors
+        with a single dimension are supported with the default node.
 
     targets : torch.Tensor
         Binary targets against which the outuut of the perceptron algorithm is compared.
+        Only target tensors with a single dimension are supported with the default node.
 
     configs : dict, optional
         Configurations of the model to get the accuracy using the perceptron algorithm.
@@ -71,7 +73,8 @@ def get_accuracy(inputs, targets, configs=None, node=None):
 
     node : Optional[torch.nn.Module]
         Is the trained linear layer of the perceptron. Leave it as None if you want to train a
-        perceptron from scratch. (default: None)
+        perceptron from scratch. (default: None) The default perceptron only supports one 
+        dimensional outpus.
 
     Returns
     -------
@@ -104,7 +107,9 @@ def get_accuracy(inputs, targets, configs=None, node=None):
                                     memory before returning them.
 
     """
-
+    assert type(inputs) == torch.Tensor and type(targets) == torch.Tensor
+    if configs is not None:
+        assert type(configs) == dict
     assert (len(inputs.shape) != 1
             and len(targets.shape) != 1), "Please unsqueeze inputs and targets"
 
@@ -113,7 +118,7 @@ def get_accuracy(inputs, targets, configs=None, node=None):
 
     if node is None:
         train = True
-        node = torch.nn.Linear(1, 1)
+        node = TorchUtils.format(torch.nn.Linear(1, 1))
     else:
         train = False
 
@@ -170,26 +175,22 @@ def init_results(inputs, targets, configs):
                 Number of loops used for training the perceptron. (default: 100)
             learning_rate: float
                 Learning rate used to train the perceptron. (default: 1e-3)
-            data:
-                batch_size: int
-                    Batch size used to train the perceptron. (default: 256)
-                worker_no: int
-                    How many subprocesses to use for data loading. 0 means that the data will be
-                    loaded in the main process. (default: 0)
-                pin_memory: boolean (default: False)
-                    If True, the data loader will copy Tensors into CUDA pinned memory before
-                    returning them.
+            batch_size: int
+                Batch size used to train the perceptron. (default: 256)
 
     Returns
     -------
     dict - initialized data for evaluation of accuracy
     torch.utils.data.Dataloader : results of the Perceptron dataloader
     """
+    assert type(inputs) == torch.Tensor and type(targets) == torch.Tensor
+    if configs is not None:
+        assert type(configs) == dict
     results = {}
     results["inputs"] = inputs.clone()
     results["targets"] = targets.clone()
     results["norm_inputs"] = zscore_norm(inputs.clone())
-    dataloader = get_data(results, configs)
+    dataloader = get_data(results, configs["batch_size"])
     return results, dataloader
 
 
@@ -214,6 +215,7 @@ def zscore_norm(inputs, eps=1e-5):
     torch.Tensor
        Normalised inputs.
     """
+    assert type(inputs) == torch.Tensor
     assert (
         inputs.std() != 0
     ), "The standard deviation of the inputs is 0. Please check that the inputs are correct. "
@@ -265,6 +267,7 @@ def train_perceptron(epochs,
     accuracy : int - accuracy of the perceptron
     node : torch.nn -  node of the perceptron
     """
+    assert type(epochs) == int
     looper = trange(epochs, desc="Calculating accuracy")
     node = node.to(device=TorchUtils.get_device(),
                    dtype=torch.get_default_dtype())
@@ -292,9 +295,9 @@ def train_perceptron(epochs,
         running_loss /= evaluated_sample_no
         looper.set_description(
             f"Training perceptron: Epoch: {epoch}  Accuracy {accuracy}," +
-            " running loss: {running_loss}")
+            f" running loss: {running_loss}")
         if accuracy >= 100.0:
-            print("Reached 100/% accuracy. Stopping.")
+            print("\nReached 100/% accuracy. Stopping.")
             break
     return accuracy, node
 
@@ -323,7 +326,7 @@ def evaluate_accuracy(inputs, targets, node):
     labels - bool - if the predictions of the noda are greatrer than 0
 
     """
-
+    assert type(inputs) == torch.Tensor and type(targets) == torch.Tensor
     predictions = node(inputs)
     labels = predictions > 0.0
     correctly_labelled = torch.sum(labels == (targets == 1.0))
@@ -362,14 +365,11 @@ def get_default_node_configs():
     configs = {}
     configs["epochs"] = 100
     configs["learning_rate"] = 0.001
-    configs["data"] = {}
-    configs["data"]["batch_size"] = 256
-    configs["data"]["worker_no"] = 0
-    configs["data"]["pin_memory"] = False
+    configs["batch_size"] = 256
     return configs
 
 
-def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
+def plot_perceptron(results, save_dir=None, show_plots=False, name="train"):
     """
     Plot the results of the perceptron algorithm. You can choose to see how the data has been
     plotted and also save the results to a specified directory.
@@ -388,7 +388,7 @@ def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
     save_dir : str, optional
         Directory in which you want to save the results. (default: None)
 
-    show_plot : bool, optional
+    show_plots: bool, optional
         To see how the perceptron plotted the data, by default False
 
     name : str, optional
@@ -399,6 +399,7 @@ def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
     matplotlib.pyplot.figure
         A new figure contaning the results.
     """
+    assert type(results) == dict
     fig = plt.figure()
     plt.title(f"Accuracy: {results['accuracy_value']:.2f} %")
     plt.plot(TorchUtils.to_numpy(results["norm_inputs"]),
@@ -419,9 +420,9 @@ def plot_perceptron(results, save_dir=None, show_plot=False, name="train"):
         label="Norm. Threshold",
     )
     plt.legend()
-    if show_plot:
+    if show_plots:
         plt.show()
     if save_dir is not None:
         plt.savefig(os.path.join(save_dir, name + "_accuracy.jpg"))
-    plt.close()
+    plt.close(fig)
     return fig

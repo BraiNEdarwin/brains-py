@@ -193,7 +193,7 @@ class SurrogateModel(nn.Module):
         """
         return False
 
-    def set_effects_from_dict(self, info: dict, configs: dict):
+    def set_effects_from_dict(self, info: dict, configs: dict = None):
         """
         Set the effects of the processor from a dictionary (voltage_ranges,
         amplification, output_clipping, noise). See set_effects for more
@@ -276,11 +276,9 @@ class SurrogateModel(nn.Module):
         str or list[float] or None
             The value of the key or 'default' or None.
         """
-        if effect_key in configs:
+        if configs is not None and effect_key in configs:
             return configs[effect_key]
-        if effect_key != "noise":
-            return "default"
-        return None
+        return "default"
 
     def set_effects(
         self,
@@ -288,7 +286,7 @@ class SurrogateModel(nn.Module):
         voltage_ranges="default",
         amplification="default",
         output_clipping="default",
-        noise_configs=None,
+        noise_configs="default",
     ):
         """
         Set the amplification, output clipping and noise of the processor.

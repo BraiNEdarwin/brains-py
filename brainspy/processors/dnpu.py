@@ -465,7 +465,11 @@ class DNPU(nn.Module):
         data = torch.gather(data, last_dim, indices)
 
         # pass data through the processor
-        return self.processor(data).squeeze(-1)  # * self.node.amplification
+        if self.processor.is_hardware():
+            return self.processor(data)
+        else:
+            return self.processor(data).squeeze(
+                -1)  # * self.node.amplification
 
     def add_input_transform(self, input_range: list, strict: bool = True):
         """

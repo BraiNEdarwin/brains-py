@@ -83,16 +83,16 @@ class ProcessorTest(unittest.TestCase):
         # define hardware configs
         instruments_setup_cdaq = {
             "activation_instrument": "cDAQ1Mod4",
+            "activation_sampling_frequency": 10000,
             "activation_channels": [8, 10, 13, 11, 7, 12, 14],
             "activation_voltage_ranges": self.voltages,
             "readout_instrument": "cDAQ1Mod3",
+            "readout_sampling_frequency": 10000,
             "readout_channels": [2],
             "trigger_source": "cDAQ1/segment1"
         }
         driver_cdaq = {
             "instruments_setup": instruments_setup_cdaq,
-            "real_time_rack": False,
-            "sampling_frequency": 10000,
             "output_clipping_range": self.clipping,
             "amplification": self.amplification[0]
         }
@@ -104,14 +104,14 @@ class ProcessorTest(unittest.TestCase):
         }
         instruments_setup_nidaq = {
             "activation_instrument": "dev1",
+            "activation_sampling_frequency": 10000,
             "activation_channels": [0, 1, 2, 3, 4, 5, 6],
             "readout_instrument": "cDAQ1Mod1",
+            "readout_sampling_frequency": 10000,
             "readout_channels": [0]
         }
         driver_nidaq = {
             "instruments_setup": instruments_setup_nidaq,
-            "real_time_rack": False,
-            "sampling_frequency": 10000,
             "output_clipping_range": self.clipping,
             "amplification": self.amplification[0]
         }

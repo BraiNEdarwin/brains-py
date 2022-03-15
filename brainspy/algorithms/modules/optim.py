@@ -42,10 +42,14 @@ class GeneticOptimizer:
             Beta parameter for the blend crossover BLX-a-b, by default 0.4. More information on
             the method crossover_blxab.
         """
+        assert (type(partition) == torch.Tensor or type(partition) == list)
+        assert (type(epochs) == int)
+        assert (type(alpha) == float or type(alpha) == int)
+        assert (type(beta) == float or type(beta) == int)
         self.epoch = 0
         self.epochs = epochs  # Number of generations
         if isinstance(gene_ranges, list):
-            self.gene_range = TorchUtils.format(gene_ranges)
+            self.gene_range = TorchUtils.format(np.array(gene_ranges))
         else:
             self.gene_range = gene_ranges
         self.partition = partition
@@ -75,6 +79,7 @@ class GeneticOptimizer:
             Genome pool containing the set of all control voltage solutions ordered by fitness
             performance.
         """
+        assert (type(criterion_pool) == torch.Tensor)
         # Sort gene pool based on fitness and copy it
         self.pool = self.pool[torch.flip(
             torch.argsort(criterion_pool), dims=[0]
@@ -139,6 +144,7 @@ class GeneticOptimizer:
 
         # Determine which genomes are chosen to generate offspring
         # Note: twice as much parents are selected as there are genomes to be generated
+        assert (type(new_pool) == torch.Tensor)
         chosen = self.universal_sampling()
         for i in range(0, len(chosen), 2):
             index_newpool = int(i / 2 + sum(self.partition[:1]))
@@ -232,6 +238,8 @@ class GeneticOptimizer:
             New genome (voltage combination) from two parent control voltages.
         """
         # check this in pytorch
+        assert (type(parent1) == torch.Tensor
+                and type(parent2) == torch.Tensor)
         maximum = torch.max(parent1, parent2)
         minimum = torch.min(parent1, parent2)
         diff_maxmin = maximum - minimum
@@ -292,7 +300,7 @@ class GeneticOptimizer:
             Genome pool containing a new mutated set of all control voltage solutions based on the
             best performing solutions.
         """
-
+        assert (type(pool) == torch.Tensor)
         # The mutation rate is updated based on the generation counter
         mutation_rate = self.update_mutation_rate()
 
@@ -347,7 +355,7 @@ class GeneticOptimizer:
             Genome pool containing a new mutated set of all control voltage solutions based on the
             best performing solutions without any repeated solution.
         """
-
+        assert (type(pool) == torch.Tensor)
         if torch.unique(pool, dim=0).shape != pool.shape:
             for i in range(self.genome_no):
                 for j in range(self.genome_no):

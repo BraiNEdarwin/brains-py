@@ -47,6 +47,9 @@ def accuracy_fit(output: torch.Tensor,
     AssertionError
         If dimensions of output and target are not the same.
     """
+    if type(output) != torch.Tensor and type(target) != torch.Tensor and type(
+            default_value) != bool:
+        raise AssertionError("Invalid type for arguments provided")
     assert output.shape == target.shape, "Dimensions of data are different."
 
     if default_value:
@@ -99,6 +102,9 @@ def corr_fit(output: torch.Tensor,
         If dimensions of output and target are not the same.
     """
     assert output.shape == target.shape, "Dimensions of data are different."
+    if type(output) != torch.Tensor and type(target) != torch.Tensor and type(
+            default_value) != bool:
+        raise AssertionError("Invalid type for arguments provided")
     if default_value:
         return -torch.ones(
             output.shape[1], device=output.device, dtype=output.dtype)
@@ -109,8 +115,8 @@ def corr_fit(output: torch.Tensor,
 def corrsig_fit(output: torch.Tensor,
                 target: torch.Tensor,
                 default_value=False,
-                param1=-2.0,
-                param2=2.0) -> torch.Tensor:
+                sigmoid_center=0,
+                sigmoid_scale=1) -> torch.Tensor:
     """
     Fitness function for genetic algorithm using correlation and a sigmoid
     function.
@@ -138,10 +144,10 @@ def corrsig_fit(output: torch.Tensor,
         should be binary.
     default_value : bool, optional
         Return the default value or not, by default False.
-    param1 : float
-        Shift of the sigmoid, by default -2.0.
-    param2 : float
-        Scale of the sigmoid, by default 2.0.
+    sigmoid_center : float
+        Shift of the sigmoid, by default 0.
+    sigmoid_scale : float
+        Scale of the sigmoid, by default 1.
 
     Returns
     -------
@@ -154,6 +160,9 @@ def corrsig_fit(output: torch.Tensor,
     AssertionError
         If dimensions of output and target are not the same.
     """
+    if type(output) != torch.Tensor and type(target) != torch.Tensor and type(
+            default_value) != bool:
+        raise AssertionError("Invalid type for arguments provided")
     if default_value:
         return -torch.ones(
             output.shape[1], device=output.device, dtype=output.dtype)
@@ -166,7 +175,7 @@ def corrsig_fit(output: torch.Tensor,
         for i in range(output.shape[1]):
             sep = output[:, i][target[:, i] == 1].mean() - output[:, i][
                 target[:, i] == 0].mean()
-            sig[i] = torch.sigmoid(param1 * (sep - param2))
+            sig[i] = torch.sigmoid(sigmoid_scale * (sep - sigmoid_center))
         return corr * sig
 
 
@@ -205,6 +214,8 @@ def pearsons_correlation(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         If result is nan (which happens if a dataset has variance 0, is
         uniform).
     """
+    if type(x) != torch.Tensor and type(y) != torch.Tensor:
+        raise AssertionError("Invalid type for arguments provided")
     assert x.shape == y.shape, "Dimensions of data are different."
     vx = x - x.mean(dim=0)
     vy = y - y.mean(dim=0)
@@ -218,9 +229,9 @@ def pearsons_correlation(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
 def corrsig(output: torch.Tensor,
             target: torch.Tensor,
-            center: float = 5.0,
-            scale: float = 3.0,
-            shift: float = 1.1) -> torch.Tensor:
+            sigmoid_center: float = 0,
+            sigmoid_scale: float = 1,
+            corr_shift: float = 1.1) -> torch.Tensor:
     """
     Loss function for gradient descent using a sigmoid function.
 
@@ -239,11 +250,11 @@ def corrsig(output: torch.Tensor,
     target : torch.Tensor
         The target data, shape [n, m] with m signals of n datapoints;
         should be binary.
-    center : float
+    sigmoid_center : float
         Center of the sigmoid.
-    scale : float
+    sigmoid_scale : float
         Scale of the sigmoid, between 0 and 1.
-    shift : float
+    corr_shift : float
         Shifting the correlation value.
 
     Returns
@@ -256,10 +267,10 @@ def corrsig(output: torch.Tensor,
     AssertionError
         If dimensions of x and y are not the same.
     """
+    if type(output) != torch.Tensor and type(target) != torch.Tensor:
+        raise AssertionError("Invalid type for arguments provided")
     assert output.shape == target.shape, "Dimensions of data are different."
-
     corr = pearsons_correlation(output, target)
-
     # difference between smallest false negative and largest false positive
     delta = torch.zeros(output.shape[1],
                         device=output.device,
@@ -269,15 +280,16 @@ def corrsig(output: torch.Tensor,
         x_low_max = torch.max(output[:, i][(target[:, i] == 0)])
         delta[i] = x_high_min - x_low_max
 
-    return (shift - corr) / torch.sigmoid((delta - center) / scale)
+    return (corr_shift - corr) / torch.sigmoid(
+        (delta - sigmoid_center) / sigmoid_scale)
 
 
 def fisher_fit(output: torch.Tensor,
                target: torch.Tensor,
                default_value=False) -> torch.Tensor:
     """
-    Fitness function for genetic algorithm using Fisher linear discriminant.
-    For more information see fisher method.
+    Fitness function for genetic algorithm using the negative of the
+    Fisher linear discriminant. For more information see fisher method.
 
     Can return default value (0).
 
@@ -310,6 +322,9 @@ def fisher_fit(output: torch.Tensor,
     AssertionError
         If dimensions of x and y are not the same.
     """
+    if type(output) != torch.Tensor and type(target) != torch.Tensor and type(
+            default_value) != bool:
+        raise AssertionError("Invalid type for arguments provided")
     assert output.shape == target.shape, "Dimensions of data are different."
     if default_value:
         return torch.zeros(output.shape[1],
@@ -321,8 +336,8 @@ def fisher_fit(output: torch.Tensor,
 
 def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
-    Calculate the Fisher linear discriminant between two datasets.
-    Used as a loss function for gradient descent.
+    Calculate the negative of the Fisher linear discriminant between
+    two datasets. Used as a loss function for gradient descent.
 
     More information here:
     https://sthalles.github.io/fisher-linear-discriminant/
@@ -335,9 +350,9 @@ def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
     Parameters
     ----------
-    x : torch.Tensor
+    output : torch.Tensor
         Dataset, shape [n, m] with m signals of n datapoints.
-    y : torch.Tensor
+    target : torch.Tensor
         Dataset, shape [n, m] with m signals of n datapoints;
         should be binary.
 
@@ -354,6 +369,8 @@ def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         If result is nan (which happens if a dataset has variance 0, is
         uniform).
     """
+    if type(output) != torch.Tensor and type(target) != torch.Tensor:
+        raise AssertionError("Invalid type for arguments provided")
     assert output.shape == target.shape, "Dimensions of data are different."
     result = torch.zeros(output.shape[1],
                          device=output.device,
@@ -372,8 +389,8 @@ def fisher(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
 def sigmoid_nn_distance(output: torch.Tensor,
                         target: torch.Tensor = None,
-                        center: float = 0.5,
-                        scale: float = 2.0) -> torch.Tensor:
+                        sigmoid_center: float = 0.5,
+                        sigmoid_scale: float = 2.0) -> torch.Tensor:
     """
     Sigmoid of nearest neighbour distance: a squashed version of a sum of all
     internal distances between points.
@@ -393,9 +410,9 @@ def sigmoid_nn_distance(output: torch.Tensor,
         The output data, shape [n, m] with m signals of n datapoints.
     target : torch.Tensor
         The target data, will not be used.
-    center : float
+    sigmoid_center : float
         Center of the sigmoid.
-    scale : float
+    sigmoid_scale : float
         Scale of the sigmoid, between 0 and 1.
 
     Returns
@@ -408,11 +425,14 @@ def sigmoid_nn_distance(output: torch.Tensor,
     UserWarning
         If target data is provided to warn that it will not be used.
     """
+    if type(output) != torch.Tensor and type(target) != torch.Tensor:
+        raise AssertionError("Invalid type for arguments provided")
     if target is not None:
         warnings.warn(
             "This loss function does not use target values. Target ignored.")
     dist_nn = get_clamped_intervals(output, mode="single_nn")
-    return -1 * torch.mean(torch.sigmoid(dist_nn / scale) - center, dim=0)
+    return -1 * torch.mean(
+        torch.sigmoid(dist_nn / sigmoid_scale) - sigmoid_center, dim=0)
 
 
 def get_clamped_intervals(output: torch.Tensor,
@@ -463,6 +483,8 @@ def get_clamped_intervals(output: torch.Tensor,
     UserWarning
         If mode not recognized.
     """
+    if type(output) != torch.Tensor and type(mode) != str:
+        raise AssertionError("Invalid type for arguments provided")
     # First we sort the output, and clip the output to a fixed interval.
     output_sorted = output.sort(dim=0)[0]
     output_clamped = output_sorted.clamp(boundaries[0], boundaries[1])

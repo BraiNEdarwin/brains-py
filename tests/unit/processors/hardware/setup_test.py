@@ -1,23 +1,17 @@
-import os
-import torch
 import unittest
-import Pyro4
 import numpy as np
 import brainspy
 from brainspy.processors.processor import Processor
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
-from brainspy.processors.hardware.drivers.ni.tasks import LocalTasks, RemoteTasks
+from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 
 
 class Setup_Test(unittest.TestCase):
-
     """
     Tests for the hardware processor with the CDAQ to CDAQ driver.
 
     """
-
-    # @unittest.skipIf(brainspy.TEST_MODE == "HARDWARE_CDAQ", "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup")
     def __init__(self, test_name):
         super(Setup_Test, self).__init__()
         configs = {}
@@ -30,12 +24,13 @@ class Setup_Test(unittest.TestCase):
         configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
-        configs["driver"]["real_time_rack"] = False
         configs["driver"]["sampling_frequency"] = 1000
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
-        configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-        configs["driver"]["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+        configs["driver"]["instruments_setup"][
+            "trigger_source"] = "cDAQ1/segment1"
+        configs["driver"]["instruments_setup"][
+            "activation_instrument"] = "cDAQ1Mod3"
         configs["driver"]["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -54,7 +49,8 @@ class Setup_Test(unittest.TestCase):
             [-0.7, 0.3],
             [-0.7, 0.3],
         ]
-        configs["driver"]["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+        configs["driver"]["instruments_setup"][
+            "readout_instrument"] = "cDAQ1Mod4"
         configs["driver"]["instruments_setup"]["readout_channels"] = [
             4
         ]  # Channels for reading the output current values
@@ -65,36 +61,37 @@ class Setup_Test(unittest.TestCase):
 
         self.configs = configs
 
-        if brainspy.TEST_MODE == "HARDWARE_CDAQ":
-            self.model_data = {}
-            self.model_data["info"] = {}
-            self.model_data["info"]["electrode_info"] = {
-                "electrode_no": 8,
-                "activation_electrodes": {
-                    "electrode_no": 7,
-                    "voltage_ranges": [
-                        [-1.2, 0.6],
-                        [-1.2, 0.6],
-                        [-1.2, 0.6],
-                        [-1.2, 0.6],
-                        [-1.2, 0.6],
-                        [-0.3, 0.6],
-                        [-0.7, 0.3],
-                    ],
-                },
-                "output_electrodes": {
-                    "electrode_no": 1,
-                    "amplification": 28.5,
-                    "clipping_value": [-114.0, 114.0],
-                },
-            }
-            self.model = Processor(
-                self.configs,
-                self.model_data["info"],
-            )
+        # if brainspy.TEST_MODE == "SIMULATION_PC":
+        #     self.model_data = {}
+        #     self.model_data["info"] = {}
+        #     self.model_data["info"]["electrode_info"] = {
+        #         "electrode_no": 8,
+        #         "activation_electrodes": {
+        #             "electrode_no":
+        #             7,
+        #             "voltage_ranges": [
+        #                 [-1.2, 0.6],
+        #                 [-1.2, 0.6],
+        #                 [-1.2, 0.6],
+        #                 [-1.2, 0.6],
+        #                 [-1.2, 0.6],
+        #                 [-0.3, 0.6],
+        #                 [-0.7, 0.3],
+        #             ],
+        #         },
+        #         "output_electrodes": {
+        #             "electrode_no": 1,
+        #             "amplification": 28.5,
+        #             "clipping_value": [-114.0, 114.0],
+        #         },
+        #     }
+        #     self.model = Processor(
+        #         self.configs,
+        #         self.model_data["info"],
+        #     )
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_init(self):
@@ -105,7 +102,7 @@ class Setup_Test(unittest.TestCase):
         isinstance(self.model.driver, NationalInstrumentsSetup)
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_init_configs(self):
@@ -118,20 +115,17 @@ class Setup_Test(unittest.TestCase):
         self.assertEqual(self.ceil, None)
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_init_tasks(self):
         """
-        Test to check the correct initilization of the Setup tasks driver as RemoteTasks or LocalTasks
+        Test to check the correct initilization of the Setup tasks driver
         """
-        self.assertTrue(
-            isinstance(self.model.tasks_driver, RemoteTasks)
-            or isinstance(self.model.tasks_driver, LocalTasks)
-        )
+        self.assertTrue(isinstance(self.model.tasks_driver, IOTasksManager))
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_init_semaphore(self):
@@ -141,7 +135,7 @@ class Setup_Test(unittest.TestCase):
         self.assertEqual(self.model.event.isSet(), False)
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_process_output(self):
@@ -152,7 +146,7 @@ class Setup_Test(unittest.TestCase):
         self.assertEqual(output, np.array([[3, 3]]))
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_read_data(self):
@@ -160,12 +154,11 @@ class Setup_Test(unittest.TestCase):
         Test to see if the data can be read from the device - can be None
         """
         data_results = self.model.read_data(
-            np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
-        )
+            np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]))
         self.assertTrue(data_results == None or data_results is not None)
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test__read_data(self):
@@ -173,12 +166,11 @@ class Setup_Test(unittest.TestCase):
         Test to see if the data that is sent to the DNPU hardware is read
         """
         data_results = self.model._read_data(
-            np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
-        )
+            np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]))
         self.assertTrue(data_results is not None)
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_set_shape_vars(self):
@@ -189,12 +181,12 @@ class Setup_Test(unittest.TestCase):
         ceil1 = self.model.ceil
         self.model.set_shape_vars((3, 3))
         shape2 = self.model.offseted_shape
-        ceil2 - self.model.ceil
+        ceil2 = self.model.ceil
         self.assertTrue(shape1 != shape2)
         self.assertTrue(ceil1 != ceil2)
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_read_security(self):
@@ -209,7 +201,7 @@ class Setup_Test(unittest.TestCase):
         self.assertFalse(raised, "Exception raised")
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_close(self):
@@ -222,7 +214,7 @@ class Setup_Test(unittest.TestCase):
             self.assertEqual(len(caught_warnings), 1)
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_get_amplification(self):
@@ -232,7 +224,7 @@ class Setup_Test(unittest.TestCase):
         self.assertEqual(self.model.get_amplification_value(), 3)
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_is_hardware(self):
@@ -242,7 +234,7 @@ class Setup_Test(unittest.TestCase):
         self.assertTrue(self.model.is_hardware())
 
     @unittest.skipIf(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.TEST_MODE == "SIMULATION_PC",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_forward_numpy(self):

@@ -1,5 +1,6 @@
 import os
 import torch
+import warnings
 import numpy as np
 from tqdm import trange
 
@@ -53,6 +54,43 @@ def train(model: torch.nn.Module,
 
     training_data: dict
         Dictionary returning relevant data produced while training the model.
+
+
+    Saved Data
+    ----------
+    A) After the end of the last epoch, the algorithm saves two main files:
+        model_raw.pt: This file is only saved when the model is not hardware (simulation). The file is an exact copy of the model after the end of
+                      the training process. It can be loaded directly as an instance of the model using:
+                            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+        training_data.pickle: A pytorch picle which contains the following keys:
+            - epochs: int 
+                Number of epochs used for training the model
+            - algorithm:
+                Algorithm type that was being used. Either 'genetic' or 'gradient'.
+            - model_state_dict: OrderedDict
+                It contains the value of the learnable parameters (weights, or in this case, control voltages) at the point where all the training was finised.
+            - performance: list
+                A list of the fitness function performance over all epochs
+            - correlations: list
+                A list of the correlation over all epochs
+            - genome_history: list
+                A list of the genomes that were used in each epoch
+
+    B) If the fitness performance is better than in previous epochs, the following files are saved:
+        best_model_raw.pt: This file is only saved when the model is not hardware (simulation). The file is an exact copy of the model when it got 
+                           the best validation results. It can be loaded directly as an instance of the model using:
+                                my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+        best_training_data.pickle: A pytorch picle which contains the following keys:
+            - epoch: int 
+                Epoch at which the model with best validation loss was found.
+            - algorithm: str
+                Algorithm type that was being used. Either 'genetic' or 'gradient'.
+            - model_state_dict: OrderedDict
+                It contains the value of the learnable parameters (weights, or in this case, control voltages) at the point where the best validation was achieved.
+            - best_fitness: float
+                Training fitness at the point where the best validation was achieved.
+            - correlation: float
+                Correlation achieved on the best fitness achieved.
     """
     # Evolution loop
     looper = trange(configs["epochs"], desc="Initialising", leave=False)
@@ -101,36 +139,57 @@ def train(model: torch.nn.Module,
                         0))  # Only one device is supported,
                 # therefore it is unesqueezed for the first dimension.
                 if save_dir is not None:
-                    torch.save(model.state_dict(),
-                               os.path.join(save_dir, "model.pt"))
                     torch.save(
                         {
                             "epoch": epoch,
                             "algorithm": 'genetic',
                             "model_state_dict": model.state_dict(),
                             "best_fitness": best_fitness,
-                            "best_correlation": best_correlation
+                            "correlation": best_correlation
                         },
-                        os.path.join(save_dir, "training_data.pickle"),
+                        os.path.join(save_dir, "best_training_data.pickle"),
                     )
                     if not model.is_hardware():
-                        torch.save(model, os.path.join(save_dir,
-                                                       "model_raw.pt"))
+                        torch.save(model,
+                                   os.path.join(save_dir, "best_model_raw.pt"))
 
-            # Check if the best correlation has reached the desired threshold
-            if best_correlation >= configs["stop_threshold"]:
-                looper.set_description(
-                    f"  STOPPED: Correlation {best_correlation} > {configs['stop_threshold']}"
-                    + " stopping threshold. ")
-                looper.close()
-                # Close the model adequately if it is on hardware
-                if model.is_hardware() and "close" in dir(model):
-                    model.close()
-                break
+                # Check if the correlation of the solution with
+                # the best fitness has reached the desired threshold
+                if best_correlation >= configs["stop_threshold"]:
+                    looper.set_description(
+                        f"  STOPPED: Correlation {best_correlation} > {configs['stop_threshold']}"
+                        + " stopping threshold. ")
+                    looper.close()
+                    # Close the model adequately if it is on hardware
+                    if model.is_hardware() and "close" in dir(model):
+                        model.close()
+                    break
 
             pool = optimizer.step(criterion_pool)
 
+        torch.save(
+            {
+                "epoch": epoch,
+                "algorithm": 'genetic',
+                "model_state_dict": model.state_dict(),
+                "performance": performance_history,
+                "correlations": correlation_history,
+                "genome_history": genome_history
+            },
+            os.path.join(save_dir, "training_data.pickle"),
+        )
+        if not model.is_hardware():
+            torch.save(model, os.path.join(save_dir, "model_raw.pt"))
+
+        # Load best solution
+        model.load_state_dict(
+            torch.load(os.path.join(
+                save_dir, "best_training_data.pt"))['model_state_dict'])
+        print("Best solution in epoch (starting from 0): " +
+              str(best_result_index))
         print("Best fitness: " + str(best_fitness.item()))
+        print("Correlation: " +
+              str(correlation_history[best_result_index].item()))
         return model, {
             "best_result_index":
             best_result_index,
@@ -208,4 +267,13 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
         # output_popul[j] = self.processor.get_output(merge_inputs_and_control_voltages_in_numpy(
         # inputs_without_offset_ and_scale, control_voltage_genes, self.input_indices,
         # self.control_voltage_indices))
+    if (criterion_pool == -1.).all() is True:
+        clipping_value = model.get_clipping_value()
+        warnings.warn(
+            "All criterion values are set to -1. This is caused because all the outputs"
+            +
+            f"are exceeding the clipping values {clipping_value}. This is not a normal "
+            +
+            "behaviour, you are advised to check the default clipping values in the "
+            + "configs, and/or the setup.")
     return outputs_pool, criterion_pool
