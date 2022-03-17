@@ -158,7 +158,7 @@ class HardwareProcessor(nn.Module):
             self.clipping_value = self.driver.get_clipping_value()
         else:
             self.driver = get_driver(instrument_configs)
-            self.register_buffer("voltage_ranges", self.driver.voltage_ranges)
+            self.register_buffer("voltage_ranges", torch.tensor(self.driver.voltage_ranges, dtype=torch.get_default_dtype()))
             self.clipping_value = None
             # TODO: Add message for assertion. Raise an error.
             assert (slope_length / self.driver.configs["instruments_setup"]
@@ -198,16 +198,17 @@ class HardwareProcessor(nn.Module):
 
         """
         with torch.no_grad():
+            device, dtype = x.device, x.dtype
             x, mask = self.waveform_mgr.plateaus_to_waveform(
                 x, return_pytorch=False)
             if len(x.shape) > 2:
                 x = x.squeeze()
-            output = self.forward_numpy(x)
+            x = self.forward_numpy(x)
             if self.logger is not None:
                 self.logger.log_output(x)
-        return TorchUtils.format(output[mask],
-                                 device=x.device,
-                                 data_type=x.dtype)
+        return TorchUtils.format(x[mask],
+                                 device=device,
+                                 data_type=dtype)
 
     def forward_numpy(self, x):
         """
