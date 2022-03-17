@@ -713,7 +713,7 @@ class DNPU(nn.Module):
             ), "Control voltages could not be set due to a shape missmatch "
             "with regard to the ones already in the model."
             assert (
-                self.bias.dtpye == bias.dtype
+                self.bias.dtype == bias.dtype
             ), "Control voltages could not be set due to a shape missmatch "
             "with regard to the ones already in the model."
             self.bias = torch.nn.Parameter(
