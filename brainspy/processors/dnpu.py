@@ -500,8 +500,9 @@ class DNPU(nn.Module):
         input_range = torch.tensor(input_range,
                                    dtype=self.data_input_ranges.dtype)
         if input_range.shape != self.data_input_ranges.shape:
-            input_range = input_range.expand_as(self.data_input_ranges)
-        self.register_buffer("raw_input_range", input_range)
+            input_range = input_range.expand_as(
+                self.data_input_ranges).detach().clone()
+        self.register_buffer("raw_input_range", input_range.detach().clone())
         scale, offset = get_linear_transform_constants(
             self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T,
             input_range.T[0].T, input_range.T[1].T)
@@ -519,8 +520,13 @@ class DNPU(nn.Module):
         Removes the usage of a input transfomration before sending the data to the DNPUs.
         """
         self.input_transform = False
-        del self.amplitude
-        del self.offset
+        self.input_clip = False
+        if "raw_input_range" in dir(self):
+            del self.raw_input_range
+        if "scale" in dir(self):
+            del self.scale
+        if "offset" in dir(self):
+            del self.offset
 
     def clip_input_vec(self, x):
         """
@@ -538,6 +544,7 @@ class DNPU(nn.Module):
             Clipped data that is assured to be within the specified minimum and maximum ranges.
         """
         if self.input_clip:
+            self.raw_input_range.to(x.device)
             x = torch.max(torch.min(x, self.raw_input_range[:, :, 1]),
                           self.raw_input_range[:, :, 0])
         return x
@@ -558,6 +565,7 @@ class DNPU(nn.Module):
             Clipped data that is assured to be within the specified minimum and maximum ranges.
         """
         if self.input_clip:
+            self.raw_input_range.to(x.device)
             x = torch.max(torch.min(x, self.raw_input_range[:, :1].flatten()),
                           self.raw_input_range[:, :, 0].flatten())
         return x
