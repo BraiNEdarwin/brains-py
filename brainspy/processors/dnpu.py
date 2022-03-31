@@ -545,7 +545,7 @@ class DNPU(nn.Module):
             Clipped data that is assured to be within the specified minimum and maximum ranges.
         """
         if self.input_clip:
-            self.raw_input_range.to(x.device)
+            self.raw_input_range = self.raw_input_range.to(x.device)
             x = torch.max(torch.min(x, self.raw_input_range[:, :, 1]),
                           self.raw_input_range[:, :, 0])
         return x
