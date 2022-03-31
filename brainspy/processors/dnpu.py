@@ -462,7 +462,7 @@ class DNPU(nn.Module):
         indices = torch.argsort(torch.cat((input_indices, control_indices),
                                           dim=last_dim),
                                 dim=last_dim)
-        data = torch.cat((x, controls), dim=last_dim)
+        data = torch.cat((x, controls.to(x.device)), dim=last_dim)
         data = torch.gather(data, last_dim, indices)
 
         # pass data through the processor
