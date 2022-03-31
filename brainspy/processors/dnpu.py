@@ -231,7 +231,8 @@ class DNPU(nn.Module):
             "control_ranges",
             torch.stack([voltage_ranges[i] for i in control_list]))
 
-        self.register_buffer("control_indices", torch.tensor(control_list))
+        self.register_buffer("control_indices",
+                             torch.tensor(np.array(control_list)))
         # # Define control electrode indices
         # self.control_indices = TorchUtils.format(
         #     control_list, data_type=torch.int64
