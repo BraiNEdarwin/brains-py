@@ -452,7 +452,7 @@ class DNPU(nn.Module):
 
         # Apply a linear transformation from raw data to the voltage ranges of the dnpu.
         if self.input_transform:
-            x = (self.scale * x) + self.offset
+            x = (self.scale.to(x.device) * x) + self.offset.to(x.device)
 
         # Expand indices according to batch size
         input_indices = self.data_input_indices.expand(data_input_shape)
