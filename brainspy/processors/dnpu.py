@@ -463,7 +463,7 @@ class DNPU(nn.Module):
                                           dim=last_dim),
                                 dim=last_dim)
         data = torch.cat((x, controls.to(x.device)), dim=last_dim)
-        data = torch.gather(data, last_dim, indices)
+        data = torch.gather(data, last_dim, indices.to(x.device))
 
         # pass data through the processor
         if self.processor.is_hardware():
