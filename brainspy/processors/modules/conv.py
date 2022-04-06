@@ -108,11 +108,12 @@ class DNPUConv2d(DNPU):
         control_shape.insert(0, self.out_channels)
         control_shape.insert(0, self.in_channels)
 
-        self.control_indices = self.control_indices.expand(control_shape)
+        self.control_indices = self.control_indices.expand(
+            control_shape).clone()
 
         control_shape.append(
             2)  # Extra dimension for minimum and maximum in control ranges
-        self.control_ranges = self.control_ranges.expand(control_shape)
+        self.control_ranges = self.control_ranges.expand(control_shape).clone()
 
         # -- Set everything as torch Tensors and send to DEVICE --
         data_input_shape = list(self.data_input_indices.shape)
@@ -120,7 +121,7 @@ class DNPUConv2d(DNPU):
         data_input_shape.insert(0, self.in_channels)
 
         self.data_input_indices = self.data_input_indices.expand(
-            data_input_shape)
+            data_input_shape).clone()
         # Apply a reset to the bias so that it gets initialised with the new adjustments
         # to control indices.
         self.reset()
@@ -155,13 +156,14 @@ class DNPUConv2d(DNPU):
         Get the expected dimension of the output after the convolution.
         """
         if isinstance(self.stride, tuple):
-            return int((
-                (dim +
-                 (2 * self.padding) - self.kernel_size) / self.stride[0]) + 1)
+            assert self.stride[0] == self.stride[
+                1], "Different sized stride tuple not supported."
+            stride = self.stride[0]
         else:
-            return int((
-                (dim + (2 * self.padding) - self.kernel_size) / self.stride) +
-                       1)
+            stride = self.stride
+
+        return int(((dim + (2 * self.padding) - self.kernel_size) / stride) +
+                   1)
 
     def preprocess(self, x):
         """
