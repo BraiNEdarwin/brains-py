@@ -418,6 +418,8 @@ class SurrogateModel(nn.Module):
         elif value is not None:
             assert len(value) == info["output_electrodes"]["electrode_no"]
             warnings.warn("Amplification of surrogate model has been changed.")
+            if isinstance(value, list):
+                value = torch.tensor(value)
             self.register_buffer("amplification", value)
         else:
             warnings.warn("Amplification of surrogate model set to None")
