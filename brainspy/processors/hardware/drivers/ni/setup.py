@@ -352,7 +352,7 @@ class NationalInstrumentsSetup:
 
         Parameters
         ----------
-        points_to_write : (int,int)
+        points_to_write : int
             Number of points to be written.
         timeout: Specifies the amount of time in seconds to wait for samples to become
                 available. If the time elapses, the method returns an error and any samples
@@ -365,8 +365,8 @@ class NationalInstrumentsSetup:
 
         """
         if self.last_points_to_write_val != points_to_write:
-            self.last_points_to_write_val = self.calculate_io_points(
-                points_to_write)
+            self.last_points_to_write_val = points_to_write
+            self.calculate_io_points(points_to_write)
             self.tasks_driver.set_sampling_frequencies(
                 self.configs["instruments_setup"]
                 ["activation_sampling_frequency"],
@@ -421,7 +421,6 @@ class NationalInstrumentsSetup:
             raise ValueError(
                 f"Unsupported instrument_type {self.configs['instrument_type']}. It should be"
                 + "cdaq_to_nidaq or cdaq_to_cdaq.")
-        return points_to_write
 
     def set_timeout(self, timeout=None):
         """
