@@ -1,68 +1,81 @@
 """
-Library that handles saving data
+Library that handles loading and saving of data to a file.
+It is also used to create a new directory with a timestamp.
 """
 
 import io
 import os
 import time
-import pickle
 import shutil
-import torch
 import yaml
-import numpy as np
 
 
-def save(mode, file_path, **kwargs):
-
-    if mode == "numpy":
-        np.savez(file_path, **kwargs)
-    elif not kwargs["data"]:
-        raise ValueError(f"Value dictionary is missing in kwargs.")
-    else:
-        if mode == "configs":
-            save_configs(kwargs["data"], file_path)
-        elif mode == "pickle":
-            save_pickle(kwargs["data"], file_path)
-        elif mode == "torch":
-            save_torch(kwargs["data"], file_path)
-        else:
-            raise NotImplementedError(
-                f"Mode {mode} is not recognised. Please choose a value between 'numpy', 'torch', 'pickle' and 'configs'."
-            )
-    # return path
-
-
-def save_pickle(pickle_data, file_path):
-    with open(file_path, "wb") as f:
-        pickle.dump(pickle_data, f)
-        f.close()
-
-
-def save_torch(torch_model, file_path):
+def load_configs(file_name: str):
     """
-    Saves the model in given path, all other attributes are saved under
-    the 'info' key as a new dictionary.
+    Loads a yaml file from the given file path.
+
+    Parameters
+    ----------
+    file_name : str
+        File object or path to yaml file.
+
+    Returns
+    -------
+    dict : Python dictionary with formatted yaml data.
+
+    Example
+    --------
+    file = "boolean.yaml"
+    data = load_configs(file)
+
     """
-    torch_model.eval()
-    state_dic = torch_model.state_dict()
-    state_dic["info"] = torch_model.info
-    torch.save(state_dic, file_path)
-
-
-def load_configs(file_name):
     with open(file_name) as f:
         return yaml.load(f, Loader=IncludeLoader)
 
 
-def save_configs(configs, file_name):
+def save_configs(configs: dict, file_name: str):
+    """
+    Formats data from a dictionary and saves it to the given yaml file.
+
+    Parameters
+    ----------
+
+    configs : dict
+        Data to be stored in the yaml file.
+
+    file_name : str
+        File object or path to yaml file.
+
+    Example
+    --------
+    configs = {"data" : "example"}
+    file = "boolean.yaml"
+    save_configs(configs,file)
+
+    """
     with open(file_name, "w") as f:
         yaml.dump(configs, f, default_flow_style=False)
 
 
-def create_directory(path, overwrite=False):
+def create_directory(path: str, overwrite=False):
     """
-    This function checks if there exists a directory filepath+datetime_name.
-    If not it will create it and return this path.
+    Checks if there exists a directory with - filepath+datetime_name , and if not it will
+    create it and return this path.
+
+    Parameters
+    -----------
+
+    path : str
+        File object or path to file
+    overwrite: boolean
+        When True, if the directory exists, it will overwrite it. When False, if the directory
+        exists it will not do anything. By default is False.
+
+    Example
+    -------
+    path = "tests/unit/utils/testfiles"
+    newpath = create_directory(path + "/TestDirectory")
+
     """
     if not os.path.exists(path):
         os.makedirs(path)
@@ -72,7 +85,29 @@ def create_directory(path, overwrite=False):
     return path
 
 
-def create_directory_timestamp(path, name, overwrite=False):
+def create_directory_timestamp(path: str, name: str, overwrite=False):
+    """
+    To create a directory with the given name and current timestamp if it does not already exist.
+
+    Parameters
+    ----------
+
+    path : str
+        File object or path to file
+
+    name : str
+
+    Returns
+    --------
+    str : Path to file created - filepath+datetime_name
+
+    Example
+    --------
+    path = "tests/unit/utils/testfiles"
+    name = "TestDirectory"
+    new_directory = create_directory_timestamp(self.path, name)
+
+    """
     datetime = time.strftime("%Y_%m_%d_%H%M%S")
     path = os.path.join(path, name + "_" + datetime)
     return create_directory(path, overwrite=overwrite)
@@ -80,39 +115,46 @@ def create_directory_timestamp(path, name, overwrite=False):
 
 class IncludeLoader(yaml.Loader):
     """
-    yaml.Loader subclass handles "!include path/to/foo.yml" directives in config
-    files.  When constructed with a file object, the root path for includes
+    Class to handle !include directives in config files.
+    This allows you to load the contents of a file from within a file
+    and therefore multiple files can be loaded into a dict by simply using
+    !include "filename/filepath"
+
+    When constructed with a file object, the root path for "include"
     defaults to the directory containing the file, otherwise to the current
     working directory. In either case, the root path can be overridden by the
-    `root` keyword argument.
+    `root` keyword argument. When an included file F contain its own !include
+    directive, the path is relative to F's location.
 
-    When an included file F contain its own !include directive, the path is
-    relative to F's location.
+        Example :
+        ----------------------------------------------------------------
+        file1.yaml -
 
-    Example:
-        YAML file /home/frodo/one-ring.yml:
-            ---
-            Name: The One Ring
-            Specials:
-                - resize-to-wearer
-            Effects:
-                - !include path/to/invisibility.yml
+        processor : simulation
+        algorithm : !include file2.yaml
 
-        YAML file /home/frodo/path/to/invisibility.yml:
-            ---
-            Name: invisibility
-            Message: Suddenly you disappear!
+        file2.yaml -
 
-        Loading:
-            data = IncludeLoader(open('/home/frodo/one-ring.yml', 'r')).get_data()
+        optimizer : genetic
 
-        Result:
-            {'Effects': [{'Message': 'Suddenly you disappear!', 'Name':
-                'invisibility'}], 'Name': 'The One Ring', 'Specials':
-                ['resize-to-wearer']}
+        ----------------------------------------------------------------
+        In this example, if you load file1.yaml, you will get a dictionary with the following
+        result:
+
+        file = open(self.path + "file1.yaml", "r") --loading the file
+        loader = IncludeLoader(file)
+        data = loader.get_data()
+
+        data : dict                                --result
+        Keys and values of data :
+            processor : simulation
+            algorithm :
+                    optimizer : genetic
     """
-
     def __init__(self, *args, **kwargs):
+        """
+        Constructor to initialize the file root and load the file
+        """
         super(IncludeLoader, self).__init__(*args, **kwargs)
         self.add_constructor("!include", self._include)
         if "root" in kwargs:
@@ -123,6 +165,24 @@ class IncludeLoader(yaml.Loader):
             self.root = os.path.curdir
 
     def _include(self, loader, node):
+        """
+        The method is used to load a file from within a file.
+        It can be invoked by simply using the !include directive inside a file.
+        Therefore the data of multiple files can be loaded together
+        into a dict by loading just one file with this class.
+
+        Parameters
+        ----------
+        loader : IncludeLoader
+            loader object to construct a scalar node to the !include file
+        node : str
+            file path
+
+        Returns
+        -------
+        dict
+            loaded file as a python dictionary
+        """
         oldRoot = self.root
         filename = os.path.join(self.root, loader.construct_scalar(node))
         self.root = os.path.dirname(filename)

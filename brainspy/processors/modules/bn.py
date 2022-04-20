@@ -1,176 +1,122 @@
-"""
-Created on Wed Jan 15 2020
-Here you can find all classes defining the modules of DNPU architectures. All modules are child classes of TorchModel,
-which has nn.Module of PyTorch as parent.
-@author: hruiz
-"""
-
-
-import torch
-
 import torch.nn as nn
 
 from brainspy.processors.dnpu import DNPU
-from brainspy.utils.pytorch import TorchUtils
-from brainspy.utils.transforms import CurrentToVoltage
-
-from brainspy.processors.modules.layer import DNPU_Layer
 from brainspy.processors.processor import Processor
 
-class DNPU_BatchNorm(nn.Module):
+
+class DNPUBatchNorm(DNPU):
     """
-    v_min value is the minimum voltage value of the electrode of the next dnpu to which the output is going to be connected
-    v_max value is the maximum voltage value of the electrode of the next dnpu to which the output is going to be connected
+    A child of brainspy.processors.dnpu.DNPU class that adds a batch normalisation layer after the
+    output. for adding a batch normalisation layer after the output of a DNPU.
+
+    More information about batch normalisation can be found in:
+    https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm1d.html
+
+    Attributes:
+    bn : torch.nn.Module
+        A batch normalisation module that is an instance of a torch.nn.Module.
+    verbose : bool
+        Indicate whether to print certain steps.
+    raw_model : nn.Sequential
+        Torch object containing the layers and activations of the network.
     """
+    def __init__(self,
+                 processor: Processor,
+                 data_input_indices: list,
+                 forward_pass_type: str = 'vec',
+                 affine=False,
+                 track_running_stats=True,
+                 momentum=0.1,
+                 eps=1e-5,
+                 custom_bn=nn.BatchNorm1d):
+        """
+        Initialises the super class and the batch normalisation module, according to the batch norm
+        parameters given (affine, track_running_stats, momentum, eps, custom_bn).
 
-    def __init__(
-        self,
-        processor,  # It is either a dictionary or the reference to a processor or a DNPU_Base module, or any other of the modules channel, layer, lrf
-        inputs_list=None, # It allows to declare a DNPU_Layer from a configs dictionary
-        # Transformation configs
-        input_clip=True, # Whether if the input will be clipped by the 
-        transform_to_voltage=True, # Whether if a transformation to from the data input range to the data input voltages will be applied. 
-        input_range=None, # For example: [-1,1], this variable is required if there is an input clip or a transformation to voltage
-        # Output clipping  configs
-        device_output_clip=True, # Whether the device output will be clipped with the same clipping values as the setup used for gathering the training data with which it was trained 
-        # Batch norm related configs
-        batch_norm=True, # Whether if batch norm is applied
-        affine=False,
-        track_running_stats=True, # Whether the batchnorm will track the running stats.
-        momentum=0.1
-    ):
-        # default current_range = 2  * std, where std is assumed to be 1
-        super(DNPU_BatchNorm, self).__init__()
-        self.input_clip = input_clip
-        self.device_output_clip = device_output_clip
-        self.init_processor(processor, inputs_list)
-        if input_range is None:
-            assert input_clip is False and transform_to_voltage is False
-            self.transform_to_voltage = False
-        else:
-            self.init_input_range(input_range)
-            self.init_transform_to_voltage(transform_to_voltage, self.input_range)
-        self.init_batch_norm(batch_norm, affine, track_running_stats, momentum)
+        More information about batch normalisation can be found in:
+        https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm1d.html
 
-
-    def init_processor(self, processor, inputs_list):
-        if isinstance(processor, Processor) or isinstance(processor, dict):  # It accepts initialising a processor as a dictionary
-            if inputs_list is None:
-                self.processor = DNPU(processor)
-            else:
-                self.processor = DNPU_Layer(processor, inputs_list)
-        elif isinstance(processor, DNPU) or isinstance(processor, DNPU_Layer):
-            self.processor = processor
-        else:
-           assert False, 'The node is not recognised. It needs to be either a model dictionary or an instance of a Processor, a DNPU, or a DNPU_Layer.'
-
-    def init_input_range(self, input_range):
-        self.min_input = input_range[0]
-        self.max_input = input_range[1]
-        self.input_range = torch.ones_like(self.processor.get_input_ranges())
-        self.input_range[:,0] *= self.min_input
-        self.input_range[:,1] *= self.max_input
-
-    def init_batch_norm(self,batch_norm, affine, track_running_stats, momentum):
-        if batch_norm:
-            self.init_output_node_no()
-            self.bn = nn.BatchNorm1d(self.bn_outputs, affine=affine, track_running_stats=track_running_stats, momentum=momentum).to(device=TorchUtils.get_accelerator_type())
-        else:
-            self.bn = batch_norm
-
-    def init_output_node_no(self):
-        if isinstance(self.processor, DNPU):
-            self.bn_outputs=1 # Number of outputs from the DNPU layer
-        elif isinstance(self.processor, DNPU_Layer):
-            self.bn_outputs = len(self.processor.processor.inputs_list)
-        else:
-            print('Warning: self.processor in DNPU_BatchNorm is from a type that is not identified. The outputs of batch norm are not automatically detected.')
-
-    def init_transform_to_voltage(self, transform_to_voltage, input_range):
-            self.transform_to_voltage = CurrentToVoltage(
-                input_range, self.processor.get_input_ranges()
-            )
-            
-    def clamp_input(self,x):
-        if self.input_clip:
-            x = torch.clamp(x,min=self.min_input, max=self.max_input)
-        return x
-
-    def transform_input(self,x):
-        if self.transform_to_voltage:
-            x = self.transform_to_voltage(x)
-        return x
-    
-    def clamp_output(self,x): 
-        if self.device_output_clip:
-            x = torch.clamp(x, min=self.processor.get_clipping_value()[0], max=self.processor.get_clipping_value()[1])
-        return x
-
-    def apply_batch_norm(self, x):
-        if self.bn:
-            x = self.bn(x)
-        return x
+        Attributes:
+        processor : brainspy.processors.processor.Processor
+            An instance of a Processor, which can hold a DNPU model or a driver connection to the
+            DNPU hardware.
+        data_input_indices: list
+            Specifies which electrodes are going to be used for inputing data. The reminder of the
+            activation electrodes will be automatically selected as control electrodes. The list
+            should have the following shape (dnpu_node_no,data_input_electrode_no). The minimum
+            dnpu_node_no should be 1, e.g., data_input_indices = [[1,2]]. When specifying more than
+            one dnpu node in the list, the module will simulate, in time-multiplexing,
+            as if there was a layer of DNPU devices. Fore example, for an 8 electrode DNPU device
+            with a single readout electrode and 7 activation electrodes, when
+            data_input_indices = [[1,2],[1,3],[3,4]], it will be considered that there are 3 DNPU
+            devices, where the first DNPU device will use the data input electrodes
+            1 and 2, the second DNPU device will use data input electrodes 1 and 3 and the third
+            DNPU device will use data input electrodes 3 and 4. Also, the first DNPU device will
+            have electrodes 0, 3, 4, 5, and 6 defined as control electrodes. The second DNPU device
+            will have electrodes 0,2,4,5, and 6 defined as control electrodes. The third DNPU device
+            will have electrodes 0,1,2,5, and 6 defined as control electrodes. More information
+            about what activation, readout, data input and control electrodes are can be found at
+            the wiki: https://github.com/BraiNEdarwin/brains-py/wiki/A.-Introduction
+        forward_pass_type : str
+            It indicates if the forward pass for more than one DNPU devices on time-multiplexing
+            will be executed using vectorisation or a for loop. The available options are 'vec' or
+            'for'. By default it uses the vectorised version.
+        affine : A boolean value that when set to True, this module has learnable affine parameters.
+                 By default is set to False, in order to save using extra parameters.
+        track_running_stats : bool
+            A boolean value that when set to True, this module tracks the running mean and variance,
+            and when set to False, this module does not track such statistics, and initializes
+            statistics buffers running_mean and running_var as None. When these buffers are None,
+            this module always uses batch statistics in both training and eval modes. Default: True
+        momentum : float
+            The value used for the running_mean and running_var computation. Can be set to None for
+            cumulative moving average (i.e. simple average). Default: 0.1
+        eps : float
+            A value added to the denominator for numerical stability. Default: 1e-5
+        custom_bn : torch.nn.Module
+            A batch normalisation module that is an instance of a torch.nn.Module. By default
+            torch.nn.BatchNorm1d
+        """
+        super(DNPUBatchNorm,
+              self).__init__(processor,
+                             data_input_indices,
+                             forward_pass_type=forward_pass_type)
+        self.bn = custom_bn(self.get_node_no(),
+                            affine=affine,
+                            track_running_stats=track_running_stats,
+                            momentum=momentum,
+                            eps=eps)
 
     def forward(self, x):
-        self.clamped_input = self.clamp_input(x)
-        self.transformed_input = self.transform_input(self.clamped_input)
-        self.dnpu_output = self.processor(self.transformed_input)
-        self.clamped_dnpu_output = self.clamp_output(self.dnpu_output)
-        self.batch_norm_output = self.apply_batch_norm(self.clamped_dnpu_output)
-        
+        """  Run a forward pass through the processor, including any time-multiplexing modules that
+        are declared to be measured in the same layer. After getting the output from the processor
+        the output is passed through the batch normalisation layer.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input data.
+
+        Returns
+        -------
+        torch.Tensor
+            Output data.
+        """
+        self.dnpu_output = self.forward_pass(x)
+        self.batch_norm_output = self.bn(self.dnpu_output)
         return self.batch_norm_output
 
-    def regularizer(self):
-        return self.processor.regularizer()
-
-    def hw_eval(self, hw_processor_configs):
-        self.processor.hw_eval(hw_processor_configs)
-
-    def is_hardware(self):
-        return self.processor.is_hardware()
-
-    def get_clipping_value(self):
-        return self.processor.get_clipping_value()
-
-    def get_control_ranges(self):
-        return self.processor.get_control_ranges()
-
-    def get_control_voltages(self):
-        return self.processor.get_control_voltages()
-
-    def set_control_voltages(self, control_voltages):
-        return self.processor.set_control_voltages(control_voltages)
-
     def get_logged_variables(self):
-        return({'a_clamped_input':self.clamped_input.clone().detach(),'b_transformed_input':self.transformed_input.clone().detach(),'c_dnpu_output':self.dnpu_output.clone().detach(),'d_clamped_dnpu_output':self.clamped_dnpu_output.clone().detach(),'e_batch_norm_output':self.batch_norm_output.clone().detach()})
+        """ Get the otuput results from each layer from the last forward pass.
 
-
-if __name__ == "__main__":
-    from brainspy.utils.io import load_configs
-    import matplotlib.pyplot as plt
-    import time
-
-    NODE_CONFIGS = load_configs(
-        "/home/hruiz/Documents/PROJECTS/DARWIN/Code/packages/brainspy/brainspy-processors/configs/configs_nn_model.json"
-    )
-    node = DNPU(NODE_CONFIGS)
-    # linear_layer = nn.Linear(20, 3).to(device=TorchUtils.get_accelerator_type())
-    # dnpu_layer = DNPU_Channels([[0, 3, 4]] * 1000, node)
-    linear_layer = nn.Linear(20, 300).to(device=TorchUtils.get_accelerator_type())
-    dnpu_layer = DNPU_Layer([[0, 3, 4]] * 100, node)
-
-    model = nn.Sequential(linear_layer, dnpu_layer)
-
-    data = torch.rand((200, 20)).to(device=TorchUtils.get_accelerator_type())
-    start = time.time()
-    output = model(data)
-    end = time.time()
-
-    # print([param.shape for param in model.parameters() if param.requires_grad])
-    print(
-        f"(inputs,outputs) = {output.shape} of layer evaluated in {end-start} seconds"
-    )
-    print(f"Output range : [{output.min()},{output.max()}]")
-
-    plt.hist(output.flatten().cpu().detach().numpy(), bins=100)
-    plt.show()
+            Returns
+            -------
+            dict
+                Dictionary containing the output from the last forward pass as a dictionary.
+                    c_dnpu_output: Output of the dnpu / dnpu layer
+                    d_batch_norm_output: Output of the batch norm layer
+            """
+        return {
+            "c_dnpu_output": self.dnpu_output.clone().detach(),
+            "d_batch_norm_output": self.batch_norm_output.clone().detach(),
+        }

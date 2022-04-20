@@ -1,95 +1,403 @@
+"""
+Contains the main processor class. Creates either a simulation processor or a
+hardware processor with given settings.
+Also handles merging the data with control voltages.
+"""
+
+import warnings
+import collections
+from typing import Union
+
 import torch
 import torch.nn as nn
-import numpy as np
 
+from brainspy.utils.waveform import WaveformManager
 from brainspy.processors.simulation.processor import SurrogateModel
 from brainspy.processors.hardware.processor import HardwareProcessor
 
-from brainspy.utils.pytorch import TorchUtils
-from brainspy.utils.electrodes import merge_electrode_data
-
 
 class Processor(nn.Module):
-    # A class for handling the usage and swapping of hardware and software processors
-    # It handles merging the data with control voltages as well as relevant information for the voltage ranges
+    """
+    A class for handling the usage and swapping of hardware and software
+    processors.
 
-    def __init__(self, arg):
+    Attributes
+    ----------
+    configs : dict
+        Configs dictionary, documented in init method.
+    info : dict
+        Info dictionary, documented in init method.
+    model_state_dict : collections.OrderedDict, optional. Documented in
+    init method.
+    """
+    def __init__(
+        self,
+        configs: dict,
+        info: dict = None,
+        model_state_dict: collections.OrderedDict = None,
+    ):
+        """
+        Create a processor and run load_processor, which creates either a
+        simulation processor or a hardware processor from the given
+        dictionaries.
+
+        Parameters
+        ----------
+        configs : dict
+            processor_type : str
+                Type of processor, can be
+                "simulation",
+                "cdaq_to_cdaq" (hardware),
+                "cdaq_to_nidaq" (hardware), or
+                "simulation_debug".
+            electrode_effects : dict
+                (Only for simulation)
+                Electode effects for simulation processors.
+                Documented in SurrogateModel, set effects method.
+            waveform:
+                slope_length : int
+                    Length of the slopes, see waveform.py.
+                plateau_length : int
+                    Length of the plateaus, see waveform.py.
+            driver:
+                Only for hardware, refer to HardwareProcessor for keys.
+        info : dict
+            model_structure : dict
+                Dimensions of the neural network.
+                Documented in SurrogateModel, init method.
+            electrode_info : dict
+                Dictionary containing the default values for the electrodes in
+                the simulation processor.
+                Documented in SurrogateModel, set effects method (see info).
+        model_state_dict : collections.OrderedDict, optional
+            State dictionary of the simulation model,
+            parameters of the pytorch neural network; if not given, will be
+            initialized with random parameters (weights and biases);
+            by default None.
+        """
         super(Processor, self).__init__()
-        self.load_processor(arg)
+        self.load_processor(configs, info, model_state_dict)
+        self.waveform_mgr = WaveformManager(configs['waveform'])
 
-    def load_processor(self, arg):
-        if isinstance(arg, dict):
-            self._load_processor_from_configs(arg)
-            self._init_electrode_info(arg)
+    def load_processor(self,
+                       configs: dict,
+                       info: dict,
+                       model_state_dict: collections.OrderedDict = None):
+        """
+        Create a processor depending on the provided settings.
 
-        elif isinstance(arg, SurrogateModel):
-            self.processor = arg
-            self.electrode_no = len(
-                self.processor.info["data_info"]["input_data"]["offset"]
-            )
-            self._init_electrode_info(self._get_configs)
-        elif isinstance(arg, HardwareProcessor):
-            self.processor = arg
-            self.electrode_no = self.processor.configs['data']['activation_electrode_no']
-            self._init_electrode_info(self._get_configs)
-        else:
-            assert False, "The processor can either be a valid configuration dictionary, or an instance of either HardwareProcessor or SurrogateModel"
+        Info dictionary will override existing one if not None, otherwise
+        existing one will be used.
 
-        self.is_hardware = self.processor.is_hardware()
+        For simulation, simply create the processor and set the effects (as is
+        required).
 
-    def _load_processor_from_configs(self, configs):
-        if not hasattr(self, 'processor') or self._get_configs() != configs:
-            if configs["processor_type"] == "simulation":
-                self.processor = SurrogateModel(configs)
-                self.electrode_no = len(
-                    self.processor.info["data_info"]["input_data"]["offset"]
-                )
-            elif configs["processor_type"] == "simulation_debug" or configs["processor_type"] == "cdaq_to_cdaq" or configs["processor_type"] == "cdaq_to_nidaq":
-                self.processor = HardwareProcessor(configs)
-                self.electrode_no = configs['data']['activation_electrode_no']
+        For hardware, first check if the activation voltage ranges are in
+        configs. If not, take them from electrode_info in the info dictionary.
+        Create a warning with the values of the electrode effects. Make sure
+        the amplification is set.
+
+        Method is called by constructor but can also be called externally.
+
+        Parameters
+        ----------
+        configs : dict
+            Configs dictionary, documented in init method.
+        info : dict, optional
+            Info dictionary, documented in init method, by default None.
+        model_state_dict : collections.OrderedDict, optional
+            State dictionary for the simulation model, by default None.
+            Documented in init method.
+
+        Raises
+        ------
+        NotImplementedError
+            In case the processor type is not recognized.
+        UserWarning
+            When a hardware processor is created; contains the values of the
+            electrode effects.
+        """
+
+        self.processor: Union[SurrogateModel, HardwareProcessor]
+        self.info = info
+        self.configs = configs
+        electrode_info_loaded = False
+
+        # create SurrogateModel
+        if configs["processor_type"] == "simulation":
+            self.processor = SurrogateModel(
+                model_structure=self.info["model_structure"],
+                model_state_dict=model_state_dict)
+            if 'electrode_effects' in configs:
+                self.processor.set_effects_from_dict(
+                    info=self.info["electrode_info"],
+                    configs=configs["electrode_effects"])
             else:
-                raise NotImplementedError(
-                    f"Platform {configs['platform']} is not recognised. The platform has to be either simulation, simulation_debug, cdaq_to_cdaq or cdaq_to_nidaq. "
+                self.processor.set_effects_from_dict(
+                    info=self.info["electrode_info"])
+
+        # create hardware processor
+        elif (configs["processor_type"] == "cdaq_to_cdaq"
+              or configs["processor_type"] == "cdaq_to_nidaq"):
+
+            # set instrument type
+            configs["driver"]["instrument_type"] = configs["processor_type"]
+            if self.info is None:
+                self.info = {}
+                self.info['electrode_info'] = get_electrode_info(configs)
+                electrode_info_loaded = True
+            else:
+                # create overwriting warning with electrode info
+                electrode_info = self.info[
+                    "electrode_info"]  # avoid line too long
+                warnings.warn(
+                    "The hardware setup has been initialised with regard to a "
+                    "model trained with the following parameters.\n"
+                    "Please make sure that the configurations of your hardware "
+                    "setup match these values:\n"
+                    "\t * An amplification correction of "
+                    f"{electrode_info['output_electrodes']['amplification']}\n"
+                    "\t * A clipping value range between "
+                    f"{electrode_info['output_electrodes']['clipping_value']}\n"
+                    "\t * Voltage ranges within "
+                    f"{electrode_info['activation_electrodes']['voltage_ranges']}"
                 )
 
-    def _init_electrode_info(self, configs):
-        # self.input_no = len(configs['data_input_indices'])
-        self.data_input_indices = TorchUtils.get_tensor_from_list(
-            configs["data"]["input_indices"], data_type=torch.int64
-        )
-        self.control_indices = np.delete(
-            np.arange(self.electrode_no), configs["data"]["input_indices"]
-        )
-        self.control_indices = TorchUtils.get_tensor_from_list(
-            self.control_indices, data_type=torch.int64
-        )  # IndexError: tensors used as indices must be long, byte or bool tensors
+            # check if activation voltage ranges is in configs;
+            # if not, take it from electrode info
+            if "activation_voltage_ranges" not in configs["driver"][
+                    "instruments_setup"]:
+                configs["driver"]["instruments_setup"][
+                    "activation_voltage_ranges"] = self.info["electrode_info"][
+                        "activation_electrodes"]["voltage_ranges"]
 
-    def forward(self, data, control_voltages):
-        merged_data = merge_electrode_data(
-            data,
-            control_voltages,
-            self.data_input_indices,
-            self.control_indices,
-        )
-        return self.processor(merged_data)
+            # make sure amplification is set and raise warning if it is;
+            # otherwise take it from electrode_info
+            if "amplification" in configs[
+                    "driver"] and not electrode_info_loaded:
+                warnings.warn(
+                    "The amplification has been overriden by the user to a "
+                    f"value of: {configs['driver']['amplification']}")
+            else:
+                configs["driver"]["amplification"] = self.info[
+                    "electrode_info"]["output_electrodes"]["amplification"]
 
-    def get_input_ranges(self):
-        return self.processor.voltage_ranges[self.data_input_indices]
+            self.processor = HardwareProcessor(
+                configs["driver"],
+                configs["waveform"]["slope_length"],
+                configs["waveform"]["plateau_length"],
+            )
 
-    def get_control_ranges(self):
-        return self.processor.voltage_ranges[self.control_indices]
+        # create simulation processor for debugging
+        elif configs["processor_type"] == "simulation_debug":
+            driver = SurrogateModel(self.info["model_structure"],
+                                    model_state_dict)
+            if 'electrode_effects' in configs:
+                driver.set_effects_from_dict(self.info["electrode_info"],
+                                             configs["electrode_effects"])
+            else:
+                driver.set_effects_from_dict(self.info["electrode_info"])
+            self.processor = HardwareProcessor(
+                instrument_configs=driver,
+                slope_length=configs["waveform"]["slope_length"],
+                plateau_length=configs["waveform"]["plateau_length"])
+
+        # processor type not recognized
+        else:
+            raise NotImplementedError(
+                f"Platform {configs['processor_type']} is not recognized. The "
+                "platform has to be either simulation, simulation_debug, "
+                "cdaq_to_cdaq or cdaq_to_nidaq. ")
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Run a forward pass through the processor. It creates plateaus from data points before
+        sending the data to the simulation or hardware processor. The hardware processor will
+        internally create the slopes to the plateaus. The simulation processor does not need slopes.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input data. It is expected to have a shape of [batch_size, activation_electrode_no].
+
+        Returns
+        -------
+        torch.Tensor
+            Output data.
+        """
+        if not (self.waveform_mgr.plateau_length == 1
+                and self.waveform_mgr.slope_length == 0):
+            x = self.waveform_mgr.points_to_plateaus(x)
+        return self.processor(x)
+
+    def format_targets(self, x: torch.Tensor) -> torch.Tensor:
+        """[summary]
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            [description]
+        """
+        if not (self.waveform_mgr.plateau_length == 1
+                and self.waveform_mgr.slope_length == 0):
+            return self.waveform_mgr.points_to_plateaus(x)
+        else:
+            return x
+
+    def get_voltage_ranges(self) -> torch.Tensor:
+        """
+        Get the voltage ranges of input of the the processor,
+        whether it is hardware or simulation.
+
+        Returns
+        -------
+        torch.Tensor
+            Voltage ranges.
+        """
+        return self.processor.voltage_ranges
+
+    def get_activation_electrode_no(self):
+        """
+        Get the number of activation electrodes of the processor.
+
+        Returns
+        -------
+        int
+            The number of activation electrodes of the processor.
+        """
+        return self.info["electrode_info"]["activation_electrodes"][
+            "electrode_no"]
+
+    def get_readout_electrode_no(self):
+        """
+        Get the number of readout electrodes of the processor.
+
+        Returns
+        -------
+        int
+            The number of readout electrodes of the processor.
+        """
+        return self.info["electrode_info"]["output_electrodes"]["electrode_no"]
 
     def get_clipping_value(self):
-        return self.processor.clipping_value
+        """
+        Get the output clipping. For hardware, take it from the info
+        dictionary. For simulation, use the existing method.
 
-    def _get_configs(self):
-        if isinstance(self.processor, HardwareProcessor):
-            return self.processor.driver.configs
-        elif isinstance(self.processor, SurrogateModel):
-            return self.processor.configs
+        Returns
+        -------
+        torch.Tensor or list
+            The output clipping of the processor.
+        """
+        if self.processor.is_hardware():
+            return self.info['electrode_info']['output_electrodes'][
+                'clipping_value']  # will return list
         else:
-            print('Warning: Instance of processor not recognised.')
-            return None
+            return self.processor.get_clipping_value()  # will return tensor
+
+    def swap(self,
+             configs: dict,
+             info: dict,
+             model_state_dict: collections.OrderedDict = None):
+        """
+        Re-initialize: load the processor again from the given dictionaries.
+
+        Parameters
+        ----------
+        configs : dict
+            Configs dictionary, documented in init method of this class.
+        info : dict
+            Info dictionary, documented in init method of this class.
+        model_state_dict : collections.OrderedDict, optional
+            State dictionary for the simulation model, by default None.
+            Documented in init method of this class.
+        """
+        self.load_processor(configs, info, model_state_dict)
+        self.waveform_mgr = WaveformManager(configs['waveform'])
+
+    def is_hardware(self) -> bool:
+        """
+        Method to indicate whether this is a hardware processor.
+
+        Returns
+        -------
+        bool
+            True if hardware, False if software.
+        """
+        return self.processor.is_hardware()
 
     def close(self):
+        """
+        Closes the driver related to the NI Tasks if the main processor is
+        hardware.
+        If the main processor is a simulation model, this does
+        nothing.
+        """
         self.processor.close()
+
+
+def get_electrode_info(configs):
+    """
+    Retrieve electrode information from the data sampling configurations.
+
+    Parameters
+    ----------
+    configs: dict
+        driver:
+            amplification: Amplification correction value of the output. Calculated from the op-amp.
+            instruments_setup:
+                multiple_devices:
+                activation_channels
+                activation_voltage_ranges
+                readout_channels
+
+    Returns
+    -------
+    electrode_info : dict
+        Configuration dictionary containing all the keys related to the electrode information:
+            * electrode_no: int
+                Total number of electrodes in the device
+            * activation_electrodes: dict
+                - electrode_no: int
+                    Number of activation electrodes used for gathering the data
+                - voltage_ranges: list
+                    Voltage ranges used for gathering the data. It contains the ranges per
+                    electrode, where the shape is (electrode_no,2). Being 2 the minimum and maximum
+                    of the ranges, respectively.
+            * output_electrodes: dict
+                - electrode_no : int
+                    Number of output electrodes used for gathering the data
+                - clipping_value: list[float,float]
+                    Value used to apply a clipping to the sampling data within the specified values.
+                - amplification: float
+                    Amplification correction factor used in the device to correct the amplification
+                    applied to the output current in order to convert it into voltage before its
+                    readout.
+    """
+    electrode_info = {}
+    if configs['driver']['instruments_setup']['multiple_devices']:
+        print("A single processor does not support multiple DNPUs.")
+        raise
+    else:
+        activation_electrode_no = len(
+            configs['driver']['instruments_setup']['activation_channels'])
+        readout_electrode_no = len(
+            configs['driver']['instruments_setup']['readout_channels'])
+
+        electrode_info["electrode_no"] = (activation_electrode_no +
+                                          readout_electrode_no)
+        electrode_info["activation_electrodes"] = {}
+        electrode_info["activation_electrodes"][
+            "electrode_no"] = activation_electrode_no
+        electrode_info["activation_electrodes"]["voltage_ranges"] = configs[
+            'driver']['instruments_setup']['activation_voltage_ranges']
+        electrode_info["output_electrodes"] = {}
+        electrode_info["output_electrodes"][
+            "electrode_no"] = readout_electrode_no
+        electrode_info["output_electrodes"]["amplification"] = configs[
+            "driver"]["amplification"]
+        electrode_info["output_electrodes"]["clipping_value"] = [
+            -float("Inf"), float("Inf")
+        ]
+
+    return electrode_info

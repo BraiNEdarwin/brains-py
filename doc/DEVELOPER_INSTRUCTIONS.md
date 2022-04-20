@@ -56,31 +56,31 @@ It should return "True" if CUDA support is available.
 
 
 ## Development environment
-We recommend you to use the open source development environment of [Visual Studio Code](https://code.visualstudio.com/download) for python, which can be installed following the official [guide](https://code.visualstudio.com/docs/setup/setup-overview). For Ubuntu users, it is recommended to be installed using snap: ````sudo snap install --classic code````. We also recommend you to use an auto-formatter in order to follow PEP8. You can install several extensions that will help you with auto-formatting the code:
+We recommend you to use the open source development environment of [Visual Studio Code](https://code.visualstudio.com/download) for python, which can be installed following the official [guide](https://code.visualstudio.com/docs/setup/setup-overview). For Ubuntu users, it is recommended to be installed using snap: ````sudo snap install --classic code````.
+
+This project follows PEP8 formatting and the NumPy style of documentation. In order to follow these we recommend you to use some packages and extensions. The formatter YAPF makes sure the code follows almost all PEP8 formatting rules. Any problems not fixed by YAPF will be detected by the linter flake8 and can be fixed manually. Flake8 also serves as a good general linter. Additionally mypy can be used to detect typing issues. Finally, a docstring generator helps with putting the documentation in the right format.
+
+Here are the steps for making these packages work:
 
  * Open your conda terminal and activate the environment (if you do not have it activated already):  ````conda activate bspy-instr````
- * Install the auto-formatter packages from pip:
-	 * ````pip install autopep8````
+ * Install the packages from pip:
+	 * ````pip install yapf````
 	 * ````pip install flake8````
+	 * ````pip install mypy````
  * From the same terminal, Open Visual Studio Code with the command: ````code````
  * Go to the extensions marketplace (Ctrl+Shift+X)
  * Install the following extensions:
 	 * Python (Microsoft)
-	 * YAML (Red Hat)
-	 * Python-autopep8 (himanoa)
-	 * cornflakes-linter (kevinglasson)
- * On Visual Studio Code, press Ctrl+Shif+P and write "Open Settings (JSON)". The configuration file should look like this:
-	 * Note: If you are using windows, you should add a line that points to your flake8 installation: ````"cornflakes.linter.executablePath": "C:/Users/Your_user/AppData/Local/Continuum/anaconda3/envs/Scripts/flake8.exe"````
-
+	 * Python Docstring Generator (Nils Werner)
+ * On Visual Studio Code, press Ctrl+Shift+P and write "Open Settings (JSON)". The configuration file should have the following settings:
 ````
 {
-	"[python]": {
-	  "editor.tabSize": 4,
-	  "editor.insertSpaces": true,
-	  "editor.formatOnSave": true
-	},
-	"python.jediEnabled": true,
-	"editor.suggestSelection": "first",
-	"vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue"
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.mypyEnabled": true,
+    "python.linting.flake8Enabled": true,
+    "editor.formatOnSave": true,
+    "python.formatting.provider": "yapf",
+    "autoDocstring.docstringFormat": "numpy"
 }
 ````

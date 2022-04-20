@@ -1,25 +1,20 @@
+"""
+Module for running all tests on brainspy.
+"""
+
 import unittest
-import sys
-
-
-class T1(unittest.TestCase):
-    def test_A(self):
-        pass
-
-    def test_B(self):
-        pass
-
-
-class T2(unittest.TestCase):
-    def test_A(self):
-        pass
-
-    def test_B(self):
-        pass
-
+import brainspy
 
 if __name__ == "__main__":
     from HtmlTestRunner import HTMLTestRunner
+    from datetime import datetime
 
-    modules_to_test = unittest.defaultTestLoader.discover(start_dir='tests/', pattern='*.py', top_level_dir=None)
-    HTMLTestRunner(output='/home/unai/Documents/3-programming/brains-py/brains-py/test-reports').run(modules_to_test)
+    timestamp = datetime.today().strftime('%d-%m-%Y-%H:%M:%S')
+
+    brainspy.TEST_MODE = 'SIMULATION_PC'  # Available test modes: SIMULATION_PC, HARDWARE_CDAQ, HARDWARE_NIDAQ
+    modules_to_test = unittest.defaultTestLoader.discover(start_dir="tests/",
+                                                          pattern="*.py",
+                                                          top_level_dir=None)
+    HTMLTestRunner(output="tmp/test-reports/" +
+                   str(timestamp)).run(modules_to_test)
+    print(brainspy.TEST_MODE)
