@@ -144,5 +144,27 @@ class ProcessorTest(unittest.TestCase):
         except:
             self.fail("Failed Initializing electrode info DNPU")
 
+    def test_sample_control(self):
+        try:
+            control_voltage = self.model.sample_controls()
+        except:
+            self.fail("Failed sampling control voltage")
+ 
+    def test_init(self):
+        try:
+            self.model._init_bias()
+            self.model._init_learnable_parameters()
+        except:
+            self.fail("Failed Initializing bias and parameters")
+
+    def test_forward(self):
+        try:
+            x = torch.randn(size=(10, 2))
+            #y = self.model.forward(x)
+            y = self.model.forward_for(x)
+        except:
+            self.fail("Failed Initializing electrode info DNPU")
+
+
 if __name__ == "__main__":
     unittest.main()
