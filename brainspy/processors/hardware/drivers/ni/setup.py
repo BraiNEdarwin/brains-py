@@ -48,6 +48,7 @@ SYNCHRONISATION_VALUE = 0.04  # do not reduce to less than 0.02
 
 
 class NationalInstrumentsSetup:
+
     def __init__(self, configs):
         """
         This method invokes 4 other methods to :
@@ -66,6 +67,14 @@ class NationalInstrumentsSetup:
 
         Parameters
         ----------
+        #TODO - add key - inverted_output,max_ramping_time,instrument_type
+        signum used uneccacerily in in os_signal_handler
+        test forward numpy which is now not written
+        clacultae_io_points returns this for some reason - points_to_write?
+        check points_to_write in set_io_configs
+        description for pool in ga.py
+        need example model to test ga and gd - because it does not work with pytorch models like torch.nn.Linear
+
         configs : dict
             Key-value pairs required in the configs dictionary to initialise the driver are as
             follows:
@@ -127,10 +136,81 @@ class NationalInstrumentsSetup:
                         E.g., cDAQ1/segment1 - More information at:
                         https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
         """
+        if configs is not None:
+            assert type(
+                configs) == dict, "The configurations should be of type - dict"
+        self.type_check(configs)
         self.init_configs(configs)
         self.init_tasks(configs)
         self.enable_os_signals()
         self.init_semaphore()
+
+    def type_check(self, configs):
+        """
+        Check the type of the configurations provided for the Setup
+        """
+        #Assertions for output clipping range
+        assert type(configs["output_clipping_range"]) == list or type(
+            configs["output_clipping_range"]
+        ) == np.ndarray, "Output clipping range should be a list of 2 values"
+        assert len(
+            configs["output_clipping_range"]
+        ) == 2, "Output clipping range should contain 2 values : max and min"
+        assert isinstance(
+            configs["output_clipping_range"][0], (np.floating, float, int)
+        ), "Output clipping range can contain only int or float type values"
+        assert isinstance(
+            configs["output_clipping_range"][1], (np.floating, float, int)
+        ), "Output clipping range can contain only int or float type values"
+        #Assertion for amplification
+        assert type(configs["amplification"]
+                    ) == float, "Amplification should be of type float"
+        #Assertions for Instrument setup
+        assert type(configs["instruments_setup"]["multiple_devices"]
+                    ) == bool, "Multiple devices key should be of type bool"
+        assert type(configs["instruments_setup"]["activation_instrument"]
+                    ) == str, "activation_instrument key should be of type str"
+        assert type(configs["instruments_setup"]["readout_instrument"]
+                    ) == str, "readout_instrument key should be of type str"
+        assert type(configs["instruments_setup"]["trigger_source"]
+                    ) == str, "trigger_source key should be of type str"
+        assert type(
+            configs["instruments_setup"]["activation_sampling_frequency"]
+        ) == int, "activation_sampling_frequency key should be of type int"
+        assert type(
+            configs["instruments_setup"]["readout_sampling_frequency"]
+        ) == int, "readout_sampling_frequency key should be of type int"
+        assert type(configs["instruments_setup"]["activation_channels"]
+                    ) == list, "activation_channels key should be of type list"
+        assert type(configs["instruments_setup"]["readout_channels"]
+                    ) == list, "readout_channels key should be of type list"
+        #Assertion for instrument setup: activation_voltage ranges
+        assert type(
+            configs["instruments_setup"]["activation_voltage_ranges"]
+        ) == list or type(
+            configs["instruments_setup"]["activation_voltage_ranges"]
+        ) == np.ndarray, "The voltage_ranges should be of type - list or numpy array"
+        assert len(
+            configs["instruments_setup"]["activation_voltage_ranges"]
+        ) == len(
+            configs["instruments_setup"]["activation_channels"]
+        ), "The length of channel_names should be equal to the length of voltage ranges"
+        for voltage_range in configs["instruments_setup"][
+                "activation_voltage_ranges"]:
+            assert type(voltage_range) == list or type(
+                voltage_range
+            ) == np.ndarray, "Each voltage range should be a list of 2 values"
+            assert len(
+                voltage_range
+            ) == 2, "Voltage range should contain 2 values : max and min"
+            assert isinstance(
+                voltage_range[0],
+                (np.floating, float, int
+                 )), "Volatge range can contain only int or float type values"
+            assert isinstance(
+                voltage_range[1],
+                (np.floating, float, int
+                 )), "Volatge range can contain only int or float type values"
 
     def init_configs(self, configs):
         """
@@ -352,7 +432,7 @@ class NationalInstrumentsSetup:
 
         Parameters
         ----------
-        points_to_write : (int,int)
+        points_to_write : (int,int) #check this
             Number of points to be written.
         timeout: Specifies the amount of time in seconds to wait for samples to become
                 available. If the time elapses, the method returns an error and any samples
