@@ -198,7 +198,7 @@ class DNPU(nn.Module):
             Indices of the input electrodes.
         """
         self.register_buffer("data_input_indices",
-                             torch.tensor(data_input_indices))
+                             torch.tensor(data_input_indices, dtype=torch.long))
         self.node_no = self.init_node_no()
         self.data_input_electrode_no, self.control_electrode_no = self.init_activation_electrode_no(
         )
@@ -234,7 +234,7 @@ class DNPU(nn.Module):
             torch.stack([voltage_ranges[i] for i in control_list]))
 
         self.register_buffer("control_indices",
-                             torch.tensor(np.array(control_list)))
+                             torch.tensor(np.array(control_list, dtype=torch.long)))
         # # Define control electrode indices
         # self.control_indices = TorchUtils.format(
         #     control_list, data_type=torch.int64
