@@ -127,7 +127,7 @@ class ModelTest(unittest.TestCase):
         d = {"key1": 1}
         self.assertEquals(self.model.get_key(d, key1), 1)
         self.assertEquals(self.model.get_key(d, key2), "default")
-        self.assertIsNone(self.model.get_key(d, key_noise))
+        self.assertEquals(self.model.get_key(d, key_noise), "default")
 
     def test_set_effects(self):
         """
@@ -137,10 +137,11 @@ class ModelTest(unittest.TestCase):
                                amplification=[3.0],
                                voltage_ranges="default",
                                output_clipping=np.array([4.0, 3.0]))
+        print(self.model.output_clipping)
         self.assertEquals(self.model.amplification, TorchUtils.format([3.0]))
         self.assertTrue(
             torch.equal(self.model.output_clipping,
-                        TorchUtils.format([4.0, 3.0])))
+                        TorchUtils.format([4.0, 3.0]).double()))
         self.assertTrue(
             torch.equal(
                 self.model.get_voltage_ranges(),

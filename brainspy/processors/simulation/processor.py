@@ -469,7 +469,7 @@ class SurrogateModel(nn.Module):
             assert len(value) == 2
             warnings.warn(
                 "Output clipping values of surrogate model have been changed.")
-            self.register_buffer("output_clipping", value)
+            self.register_buffer("output_clipping", torch.tensor(value))
         else:
             warnings.warn("Output clipping of surrogate model set to None")
             self.output_clipping = None
