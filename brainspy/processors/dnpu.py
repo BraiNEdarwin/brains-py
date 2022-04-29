@@ -281,10 +281,23 @@ class DNPU(nn.Module):
         model.constraint_weights()
         [...]
         """
-        self.bias.data = torch.max(
-            torch.min(self.bias,
-                      self.get_control_ranges().T[1].T),
-            self.get_control_ranges().T[0].T)
+        if torch.__version__ >= '1.11.0':
+            max_ranges = self.get_control_ranges().permute(
+                *torch.arange(self.get_control_ranges().ndim - 1, -1, -1))[1]
+            max_ranges = max_ranges.permute(
+                *torch.arange(max_ranges.ndim - 1, -1, -1))
+            min_ranges = self.get_control_ranges().permute(
+                *torch.arange(self.get_control_ranges().ndim - 1, -1, -1))[0]
+            min_ranges = min_ranges.permute(
+                *torch.arange(min_ranges.ndim - 1, -1, -1))
+            self.bias.data = torch.max(torch.min(self.bias, max_ranges),
+                                       min_ranges)
+
+        else:
+            self.bias.data = torch.max(
+                torch.min(self.bias,
+                          self.get_control_ranges().T[1].T),
+                self.get_control_ranges().T[0].T)
 
     # Returns a random single value of a control voltage within a specified range.
     # Control voltage range = [min,max]
@@ -315,13 +328,16 @@ class DNPU(nn.Module):
             range_size = (self.control_ranges.permute(
                 *torch.arange(self.control_ranges.ndim - 1, -1, -1))[1] -
                           range_base)
+            result = range_size.permute(*torch.arange(range_size.ndim -
+                                                      1, -1, -1))
 
         else:
             random_voltages = torch.rand(self.control_indices.shape,
                                          device=self.control_ranges.device).T
             range_base = self.control_ranges.T[0]
             range_size = (self.control_ranges.T[1] - range_base)
-        return ((range_size * random_voltages) + range_base).T
+            result = ((range_size * random_voltages) + range_base).T
+        return result
 
     def _init_learnable_parameters(self):
         """
