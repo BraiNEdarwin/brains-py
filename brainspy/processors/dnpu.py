@@ -1,3 +1,4 @@
+from random import random
 import torch
 import collections
 import numpy as np
@@ -303,9 +304,12 @@ class DNPU(nn.Module):
         model.constraint_weights()
         [...]
         """
-        random_voltages = torch.rand(self.control_indices.shape,
-                                     device=self.control_ranges.device).T
+
         if torch.__version__ >= '1.11.0':
+            random_voltages = torch.rand(self.control_indices.shape,
+                                         device=self.control_ranges.device)
+            random_voltages = random_voltages.permute(
+                *torch.arange(random_voltages.ndim - 1, -1, -1))
             range_base = self.control_ranges.permute(
                 *torch.arange(self.control_ranges.ndim - 1, -1, -1))[0]
             range_size = (self.control_ranges.permute(
@@ -313,6 +317,8 @@ class DNPU(nn.Module):
                           range_base)
 
         else:
+            random_voltages = torch.rand(self.control_indices.shape,
+                                         device=self.control_ranges.device).T
             range_base = self.control_ranges.T[0]
             range_size = (self.control_ranges.T[1] - range_base)
         return ((range_size * random_voltages) + range_base).T
