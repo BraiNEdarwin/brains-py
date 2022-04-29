@@ -677,8 +677,14 @@ class DNPU(nn.Module):
         torch.Tensor
             Penalty term >=0.
         """
-        control_voltages = self.get_control_voltages().T
-        control_ranges = self.get_control_ranges().T
+        if torch.__version__ >= '1.11.0':
+            control_voltages = self.get_control_voltages().permute(
+                *torch.arange(self.get_control_voltages().ndim - 1, -1, -1))
+            control_ranges = self.get_control_ranges().permute(
+                *torch.arange(self.get_control_ranges().ndim - 1, -1, -1))
+        else:
+            control_voltages = self.get_control_voltages().T
+            control_ranges = self.get_control_ranges().T
         return torch.sum(
             torch.relu(control_ranges[0] - control_voltages) +
             torch.relu(control_voltages - control_ranges[1]))
