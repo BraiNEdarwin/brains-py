@@ -124,7 +124,7 @@ class Processor(nn.Module):
         electrode_info_loaded = False
 
         # create SurrogateModel
-        if configs["processor_type"] == "simulation":
+        if configs["processor_type"] == "simulation" or configs["processor_type"] == "simulation_debug":
             self.processor = SurrogateModel(
                 model_structure=self.info["model_structure"],
                 model_state_dict=model_state_dict)

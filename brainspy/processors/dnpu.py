@@ -84,7 +84,9 @@ class DNPU(nn.Module):
             self.forward_pass = self.forward_for
             self.clip_input = self.clip_input_for
         else:
-            assert False, "Dnpu type not recognised. It should be either 'single', 'for' or 'vec'"
+            raise ValueError(
+                "Dnpu type not recognised. It should be either 'single', 'for' or 'vec'"
+            )
             # TODO: Change the assestion for raising an exception
 
     def init_node_no(self):
@@ -179,7 +181,7 @@ class DNPU(nn.Module):
         -------
         >>> dnpu.get_activation_electrode_no()
         7
-        >>> input_indices = [0, 2]
+        >>> input_indices = [[0, 2]]
         >>> dnpu._init_electrode_info(input_indices)
         >>> dnpu.data_input_indices
         torch.Tensor([0, 2])
