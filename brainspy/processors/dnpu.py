@@ -236,7 +236,7 @@ class DNPU(nn.Module):
 
         self.register_buffer(
             "control_indices",
-            torch.tensor(np.array(control_list, dtype=torch.long)))
+            torch.tensor(np.array(control_list), dtype=torch.long))
         # # Define control electrode indices
         # self.control_indices = TorchUtils.format(
         #     control_list, data_type=torch.int64
