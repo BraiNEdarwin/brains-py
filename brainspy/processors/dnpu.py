@@ -328,8 +328,8 @@ class DNPU(nn.Module):
             range_size = (self.control_ranges.permute(
                 *torch.arange(self.control_ranges.ndim - 1, -1, -1))[1] -
                           range_base)
-            result = range_size.permute(*torch.arange(range_size.ndim -
-                                                      1, -1, -1))
+            result = ((range_size * random_voltages) + range_base)
+            result = result.permute(*torch.arange(result.ndim - 1, -1, -1))
 
         else:
             random_voltages = torch.rand(self.control_indices.shape,
