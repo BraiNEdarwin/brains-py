@@ -469,7 +469,14 @@ class DNPU(nn.Module):
 
         # pass data through the processor
         if self.processor.is_hardware():
-            return self.processor(data)
+            original_data_shape = data.shape
+            data = data.reshape(
+                original_data_shape[0] * original_data_shape[1], -1)
+            result = self.processor(data)
+            result = result.reshape(
+                int(self.processor.waveform_mgr.plateau_length *
+                    original_data_shape[0]), original_data_shape[1])
+            return result
         else:
             return self.processor(data).squeeze(
                 -1)  # * self.node.amplification
