@@ -301,8 +301,16 @@ class DNPU(nn.Module):
         """
         random_voltages = torch.rand(self.control_indices.shape,
                                      device=self.control_ranges.device).T
-        range_size = (self.control_ranges.T[1] - self.control_ranges.T[0])
-        range_base = self.control_ranges.T[0]
+        if torch.__version__ >= '1.11.0':
+            range_base = self.control_ranges.permute(
+                *torch.arange(self.control_ranges.ndim - 1, -1, -1))[0]
+            range_size = (self.control_ranges.permute(
+                *torch.arange(self.control_ranges.ndim - 1, -1, -1))[1] -
+                          range_base)
+
+        else:
+            range_base = self.control_ranges.T[0]
+            range_size = (self.control_ranges.T[1] - range_base)
         return ((range_size * random_voltages) + range_base).T
 
     def _init_learnable_parameters(self):
@@ -511,9 +519,22 @@ class DNPU(nn.Module):
             input_range = input_range.expand_as(
                 self.data_input_ranges).detach().clone()
         self.register_buffer("raw_input_range", input_range.detach().clone())
-        scale, offset = get_linear_transform_constants(
-            self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T,
-            input_range.T[0].T, input_range.T[1].T)
+        if torch.__version__ >= '1.11.0':
+            scale, offset = get_linear_transform_constants(
+                self.data_input_ranges.permute(
+                    *torch.arange(self.data_input_ranges.ndim -
+                                  1, -1, -1))[0].T,
+                self.data_input_ranges.permute(
+                    *torch.arange(self.data_input_ranges.ndim -
+                                  1, -1, -1))[1].T,
+                input_range.permute(*torch.arange(input_range.ndim -
+                                                  1, -1, -1))[0].T,
+                input_range.permute(*torch.arange(input_range.ndim -
+                                                  1, -1, -1))[1].T)
+        else:
+            scale, offset = get_linear_transform_constants(
+                self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T,
+                input_range.T[0].T, input_range.T[1].T)
         if scale.unique().shape[0] and offset.unique().shape[0] == 1:
             self.register_buffer("scale", scale.flatten()[0])
             self.register_buffer("offset", offset.flatten()[0])
@@ -597,6 +618,9 @@ class DNPU(nn.Module):
         while i + self.data_input_indices.shape[-1] <= x.shape[-1]:
             yield x[:, i:i + self.data_input_indices.shape[-1]]
             i += self.data_input_indices.shape[-1]
+
+    def refresh_after_processor_swap():
+        pass
 
     def regularizer(self) -> torch.Tensor:
         """
