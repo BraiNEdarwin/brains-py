@@ -1,3 +1,4 @@
+from random import random
 import torch
 import collections
 import numpy as np
@@ -197,8 +198,9 @@ class DNPU(nn.Module):
         data_input_indices : Sequence[int]
             Indices of the input electrodes.
         """
-        self.register_buffer("data_input_indices",
-                             torch.tensor(data_input_indices))
+        self.register_buffer(
+            "data_input_indices",
+            torch.tensor(data_input_indices, dtype=torch.long))
         self.node_no = self.init_node_no()
         self.data_input_electrode_no, self.control_electrode_no = self.init_activation_electrode_no(
         )
@@ -233,8 +235,9 @@ class DNPU(nn.Module):
             "control_ranges",
             torch.stack([voltage_ranges[i] for i in control_list]))
 
-        self.register_buffer("control_indices",
-                             torch.tensor(np.array(control_list)))
+        self.register_buffer(
+            "control_indices",
+            torch.tensor(np.array(control_list), dtype=torch.long))
         # # Define control electrode indices
         # self.control_indices = TorchUtils.format(
         #     control_list, data_type=torch.int64
@@ -278,10 +281,23 @@ class DNPU(nn.Module):
         model.constraint_weights()
         [...]
         """
-        self.bias.data = torch.max(
-            torch.min(self.bias,
-                      self.get_control_ranges().T[1].T),
-            self.get_control_ranges().T[0].T)
+        if torch.__version__ >= '1.11.0':
+            max_ranges = self.get_control_ranges().permute(
+                *torch.arange(self.get_control_ranges().ndim - 1, -1, -1))[1]
+            max_ranges = max_ranges.permute(
+                *torch.arange(max_ranges.ndim - 1, -1, -1))
+            min_ranges = self.get_control_ranges().permute(
+                *torch.arange(self.get_control_ranges().ndim - 1, -1, -1))[0]
+            min_ranges = min_ranges.permute(
+                *torch.arange(min_ranges.ndim - 1, -1, -1))
+            self.bias.data = torch.max(torch.min(self.bias, max_ranges),
+                                       min_ranges)
+
+        else:
+            self.bias.data = torch.max(
+                torch.min(self.bias,
+                          self.get_control_ranges().T[1].T),
+                self.get_control_ranges().T[0].T)
 
     # Returns a random single value of a control voltage within a specified range.
     # Control voltage range = [min,max]
@@ -301,11 +317,27 @@ class DNPU(nn.Module):
         model.constraint_weights()
         [...]
         """
-        random_voltages = torch.rand(self.control_indices.shape,
-                                     device=self.control_ranges.device).T
-        range_size = (self.control_ranges.T[1] - self.control_ranges.T[0])
-        range_base = self.control_ranges.T[0]
-        return ((range_size * random_voltages) + range_base).T
+
+        if torch.__version__ >= '1.11.0':
+            random_voltages = torch.rand(self.control_indices.shape,
+                                         device=self.control_ranges.device)
+            random_voltages = random_voltages.permute(
+                *torch.arange(random_voltages.ndim - 1, -1, -1))
+            range_base = self.control_ranges.permute(
+                *torch.arange(self.control_ranges.ndim - 1, -1, -1))[0]
+            range_size = (self.control_ranges.permute(
+                *torch.arange(self.control_ranges.ndim - 1, -1, -1))[1] -
+                          range_base)
+            result = ((range_size * random_voltages) + range_base)
+            result = result.permute(*torch.arange(result.ndim - 1, -1, -1))
+
+        else:
+            random_voltages = torch.rand(self.control_indices.shape,
+                                         device=self.control_ranges.device).T
+            range_base = self.control_ranges.T[0]
+            range_size = (self.control_ranges.T[1] - range_base)
+            result = ((range_size * random_voltages) + range_base).T
+        return result
 
     def _init_learnable_parameters(self):
         """
@@ -513,9 +545,22 @@ class DNPU(nn.Module):
             input_range = input_range.expand_as(
                 self.data_input_ranges).detach().clone()
         self.register_buffer("raw_input_range", input_range.detach().clone())
-        scale, offset = get_linear_transform_constants(
-            self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T,
-            input_range.T[0].T, input_range.T[1].T)
+        if torch.__version__ >= '1.11.0':
+            scale, offset = get_linear_transform_constants(
+                self.data_input_ranges.permute(
+                    *torch.arange(self.data_input_ranges.ndim -
+                                  1, -1, -1))[0].T,
+                self.data_input_ranges.permute(
+                    *torch.arange(self.data_input_ranges.ndim -
+                                  1, -1, -1))[1].T,
+                input_range.permute(*torch.arange(input_range.ndim -
+                                                  1, -1, -1))[0].T,
+                input_range.permute(*torch.arange(input_range.ndim -
+                                                  1, -1, -1))[1].T)
+        else:
+            scale, offset = get_linear_transform_constants(
+                self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T,
+                input_range.T[0].T, input_range.T[1].T)
         if scale.unique().shape[0] and offset.unique().shape[0] == 1:
             self.register_buffer("scale", scale.flatten()[0])
             self.register_buffer("offset", offset.flatten()[0])
@@ -600,6 +645,9 @@ class DNPU(nn.Module):
             yield x[:, i:i + self.data_input_indices.shape[-1]]
             i += self.data_input_indices.shape[-1]
 
+    def refresh_after_processor_swap():
+        pass
+
     def regularizer(self) -> torch.Tensor:
         """
         Return a penalty term if the value of the bias is outside of the
@@ -629,8 +677,14 @@ class DNPU(nn.Module):
         torch.Tensor
             Penalty term >=0.
         """
-        control_voltages = self.get_control_voltages().T
-        control_ranges = self.get_control_ranges().T
+        if torch.__version__ >= '1.11.0':
+            control_voltages = self.get_control_voltages().permute(
+                *torch.arange(self.get_control_voltages().ndim - 1, -1, -1))
+            control_ranges = self.get_control_ranges().permute(
+                *torch.arange(self.get_control_ranges().ndim - 1, -1, -1))
+        else:
+            control_voltages = self.get_control_voltages().T
+            control_ranges = self.get_control_ranges().T
         return torch.sum(
             torch.relu(control_ranges[0] - control_voltages) +
             torch.relu(control_voltages - control_ranges[1]))
