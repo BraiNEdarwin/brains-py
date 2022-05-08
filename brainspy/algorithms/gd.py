@@ -114,7 +114,7 @@ def train(
         model_raw.pt: An exact copy of the model after the end of the training process. It can be loaded directly as an instance of the model using:
                             my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
         training_data.pickle: A pytorch picle which contains the following keys:
-            - epochs: int 
+            - epochs: int
                 Number of epochs used for training the model
             - algorithm:
                 Algorithm type that was being used. Either 'genetic' or 'gradient'.
@@ -131,7 +131,7 @@ def train(
         best_model_raw.pt: An exact copy of the model when it got the best validation results. It can be loaded directly as an instance of the model using:
                             my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
         best_training_data.pickle: A pytorch picle which contains the following keys:
-            - epoch: int 
+            - epoch: int
                 Epoch at which the model with best validation loss was found.
             - algorithm: str
                 Algorithm type that was being used. Either 'genetic' or 'gradient'.
@@ -140,10 +140,36 @@ def train(
             - model_state_dict: OrderedDict
                 It contains the value of the learnable parameters (weights, or in this case, control voltages) at the point where the best validation was achieved.
             - train_loss: float
-                Training loss at the point where the best validation was achieved. 
+                Training loss at the point where the best validation was achieved.
             - validation_loss: float
                 Best validation loss achieved.
     """
+    assert isinstance(
+        model,
+        torch.nn.Module), "The model should be an instance of torch.nn.Module"
+    assert type(
+        dataloaders) == list, "The dataloaders should be of type - list"
+    assert callable(criterion), "The criterion should be a callable method"
+    assert isinstance(
+        optimizer, torch.optim.Optimizer
+    ), "The optimizer should be an instance of torch.optim.Optimizer"
+    assert type(configs) == dict, "The extra configs should be of type - dict"
+    if configs["epochs"]:
+        assert type(
+            configs["epochs"]) == int, "The epochs key should be of type - int"
+    if configs["constraint_control_voltages"]:
+        assert type(
+            configs["constraint_control_voltages"]
+        ) == str, "The constraint_control_voltages key should be of type str: The options are - regul or clip"
+    if configs["constraint_control_voltages"] == "regul":
+        assert "regul_factor" in configs, "If constraint_control_voltages = 'regul', 'regul_factor' key has to be specified"
+        assert type(
+            configs["regul_factor"]
+        ) == float, "The regul_factor key should be of type - float"
+    if save_dir is not None:
+        assert type(
+            save_dir
+        ) == str, "The name/path of the save_dir should be of type - str"
 
     start_epoch = 0
     train_losses, val_losses = [], []
@@ -256,7 +282,7 @@ def default_train_step(model,
         contains different more complex architectures using several processors.
     epoch : int
         Number of passes through the entire training dataset.
-    dataloaders : list
+    dataloader : list
         A list containing one or two Pytorch dataloaders. The first dataloader corresponds to the
         training dataset. The second dataloader is optional, and it corresponds to the validation
         dataset. If no validation dataset is given, the training loop will train the model and
@@ -316,6 +342,19 @@ def default_train_step(model,
         To assess the training loss: how far the predictions of the model are from the actual
         targets.
     """
+    assert type(
+        model,
+        torch.nn.Module), "The model should be an instance of torch.nn.Module"
+    assert type(epoch) == int, "The epoch param should be of type - int"
+    assert type(dataloader) == list, "The dataloaders should be of type - list"
+    assert callable(criterion), "The criterion should be a callable method"
+    assert isinstance(
+        optimizer, torch.optim.Optimizer
+    ), "The optimizer should be an instance of torch.optim.Optimizer"
+    assert type(
+        constraint_control_voltages
+    ) == str, "The constraint_control_voltages key should be of type str: The options are - regul or clip"
+
     running_loss = 0
     model.train()
     for inputs, targets in dataloader:
@@ -358,7 +397,7 @@ def default_val_step(epoch, model, dataloader, criterion, logger=None):
 
     Parameters
     ----------
-     epoch : int
+    epoch : int
         Number of passes through the entire training dataset.
     model : torch.nn.Module
         The model to be trained. It should be an instance of a torch.nn.Module. It can be a
@@ -399,6 +438,12 @@ def default_val_step(epoch, model, dataloader, criterion, logger=None):
         To assess how well the model fits new data.
         It is the sum of errors made for each example in training or validation sets.
     """
+    assert type(
+        model,
+        torch.nn.Module), "The model should be an instance of torch.nn.Module"
+    assert type(epoch) == int, "The epoch param should be of type - int"
+    assert type(dataloader) == list, "The dataloaders should be of type - list"
+    assert callable(criterion), "The criterion should be a callable method"
     with torch.no_grad():
         val_loss = 0
         model.eval()

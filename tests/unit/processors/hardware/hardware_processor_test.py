@@ -13,6 +13,7 @@ class Hardware_Processor_Test(unittest.TestCase):
     Tests for the hardware processor in "simulation_debug" mode.
 
     """
+
     def __init__(self, test_name):
         super(Hardware_Processor_Test, self).__init__()
 

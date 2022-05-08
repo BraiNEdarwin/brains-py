@@ -311,7 +311,7 @@ class Setup_Test(unittest.TestCase):
     def test_read_security_checks(self):
         try:
             setup = NationalInstrumentsSetup(self.get_configs())
-            y = 0  #TODO get correct val here
+            y = np.random.rand(7, 4)  #TODO get correct val here
             #"number of inputs to the device" times "input points that you want to input to the device"
             setup.read_security_checks(y)
         except (Exception):

@@ -6,6 +6,7 @@ from tqdm import trange
 
 from brainspy.algorithms.modules.signal import pearsons_correlation
 from brainspy.utils.pytorch import TorchUtils
+from brainspy.algorithms.modules.optim import GeneticOptimizer
 
 
 def train(model: torch.nn.Module,
@@ -92,6 +93,28 @@ def train(model: torch.nn.Module,
             - correlation: float
                 Correlation achieved on the best fitness achieved.
     """
+    assert isinstance(
+        model,
+        torch.nn.Module), "The model should be an instance of torch.nn.Module"
+    assert type(
+        dataloaders) == list, "The dataloaders should be of type - list"
+    assert callable(criterion), "The criterion should be a callable method"
+    assert isinstance(
+        optimizer, GeneticOptimizer
+    ), "The optimizer should be an instance of GeneticOptimizer"
+    assert type(configs) == dict, "The extra configs should be of type - dict"
+    if configs["epochs"]:
+        assert type(
+            configs["epochs"]) == int, "The epochs key should be of type - int"
+    if configs["stop_threshold"]:
+        assert type(configs["stop_threshold"]) == float or type(
+            configs["stop_threshold"]
+        ) == int, "The stop_threshhold key should be of type float or int"
+    if save_dir is not None:
+        assert type(
+            save_dir
+        ) == str, "The name/path of the save_dir should be of type - str"
+
     # Evolution loop
     looper = trange(configs["epochs"], desc="Initialising", leave=False)
     pool = optimizer.pool
@@ -235,6 +258,18 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
         Scores of the particular criterion fitness function used in the algorithm. These can be
         used to order the solutions with higher scores.
     """
+    assert type(
+        inputs) == torch.Tensor, "The inputs should be of type torch.Tensor"
+    assert type(
+        targets
+    ) == torch.Tensor, "The target values should be of type torch.Tensor"
+    assert type(
+        pool) == torch.Tensor, "The pool should be of type torch.Tensor"
+    assert isinstance(
+        model,
+        torch.nn.Module), "The model should be an instance of torch.nn.Module"
+    assert callable(criterion), "The criterion should be a callable method"
+
     outputs_pool = torch.zeros(
         (len(pool), ) + (len(model.format_targets(inputs)), 1),
         dtype=torch.get_default_dtype(),
