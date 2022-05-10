@@ -13,6 +13,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
             * With a regular rack
             * With a real time rack
     """
+
     def __init__(self, configs):
         """
         Initialize the hardware processor
@@ -42,6 +43,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
                 brainspy/processors/hardware/drivers/ni/setup.py. Do not tamper with it,
                 as it could disable security checks designed to avoid breaking devices.
         """
+        assert type(configs) == dict, "The configurations should be of type - dict"
         configs["auto_start"] = True
         configs["offset"] = 1
         configs["max_ramping_time_seconds"] = CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS
@@ -70,7 +72,7 @@ class CDAQtoCDAQ(NationalInstrumentsSetup):
         np.array
             Output data that has been read from the device when receiving the input y.
         """
-
+        assert type(y) == np.ndarray, "The input should be of type -numpy array"
         # The convention for pytorch and nidaqmx is different. Therefore,
         # the input to the device needs to be transposed before sending it to the device.
         y = y.T

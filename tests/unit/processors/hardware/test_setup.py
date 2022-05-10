@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-import brainspy
+import nidaqmx
 import math
 from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
@@ -8,7 +8,8 @@ from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSet
 
 class Setup_Test(unittest.TestCase):
     """
-    Tests for the NationalInstrumentsSetup
+    Tests for the NationalInstrumentsSetup for a CDAQ driver.
+    Devices used - cDAQ3Mod2,cDAQ3Mod1
     """
 
     def get_configs(self):
@@ -26,7 +27,7 @@ class Setup_Test(unittest.TestCase):
         configs["instruments_setup"]["readout_sampling_frequency"] = 2000
         configs["instruments_setup"]["multiple_devices"] = False
         configs["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-        configs["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+        configs["instruments_setup"]["activation_instrument"] = "cDAQ3Mod1"
         configs["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -45,7 +46,7 @@ class Setup_Test(unittest.TestCase):
             [-0.7, 0.3],
             [-0.7, 0.3],
         ]
-        configs["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+        configs["instruments_setup"]["readout_instrument"] = "cDAQ3Mod2"
         configs["instruments_setup"]["readout_channels"] = [4]
         return configs
 
@@ -97,7 +98,7 @@ class Setup_Test(unittest.TestCase):
     def test_init_fail_devices(self):
 
         configs = self.get_configs()
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(nidaqmx.errors.DaqError):
             configs["instruments_setup"][
                 "activation_instrument"] = "invalid type"
             NationalInstrumentsSetup(configs)
@@ -259,7 +260,7 @@ class Setup_Test(unittest.TestCase):
         configs["instruments_setup"]["activation_sampling_frequency"] = 3000
         configs["instruments_setup"]["readout_sampling_frequency"] = 2000
         with self.assertRaises(AssertionError):
-            setup = NationalInstrumentsSetup()
+            setup = NationalInstrumentsSetup(self.get_configs)
             setup.init_sampling_configs()
 
     def test_init_tasks(self):
@@ -311,8 +312,8 @@ class Setup_Test(unittest.TestCase):
     def test_read_security_checks(self):
         try:
             setup = NationalInstrumentsSetup(self.get_configs())
-            y = np.random.rand(7, 4)  #TODO get correct val here
-            #"number of inputs to the device" times "input points that you want to input to the device"
+            y = np.random.rand(7, 4)  # TODO get correct val here
+            # "number of inputs to the device" times "input points that you want to input to the device"
             setup.read_security_checks(y)
         except (Exception):
             self.fail("Could not read_security_checks")
@@ -344,7 +345,7 @@ class Setup_Test(unittest.TestCase):
             self.assertTrue(type(val) == bool)
 
     def test_set_timeout(self):
-        #timeout=None
+        # timeout=None
         try:
             setup = NationalInstrumentsSetup(self.get_configs())
             setup.set_timeout()
@@ -354,7 +355,7 @@ class Setup_Test(unittest.TestCase):
             timeout = setup.offsetted_points_to_write * setup.io_point_difference
             test_timeout = (math.ceil(timeout) + 10)
             self.assertEqual(setup.timeout, test_timeout)
-        #timeout=100
+        # timeout=100
         try:
             setup = NationalInstrumentsSetup(self.get_configs())
             setup.set_timeout(100)

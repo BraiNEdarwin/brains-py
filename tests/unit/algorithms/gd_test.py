@@ -8,6 +8,8 @@ from brainspy.algorithms.modules.performance.data import get_data
 from brainspy.algorithms.modules.optim import GeneticOptimizer
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
+from brainspy.processors.simulation.processor import SurrogateModel
+from brainspy.processors.hardware.processor import HardwareProcessor
 
 
 class GD_Test(unittest.TestCase):
@@ -30,8 +32,8 @@ class GD_Test(unittest.TestCase):
         criterion = function.accuracy_fit
         optimizer = GeneticOptimizer(gene_ranges=TorchUtils.format(
             torch.tensor([[-1.2, 0.6], [-1.2, 0.6]])),
-                                     partition=[4, 22],
-                                     epochs=100)
+            partition=[4, 22],
+            epochs=100)
         configs = {}
         configs["epochs"] = 100
         configs["constraint_control_voltages"] = "regul"
@@ -40,7 +42,8 @@ class GD_Test(unittest.TestCase):
 
     def get_configs_NIDAQ(self):
         """
-        Generate configurations to initialize the cdaq driver
+        Generate configurations to initialize the NIDAQ driver
+        Devices - .. (not tested yet)
         """
         configs = {}
         configs["instrument_type"] = "cdaq_to_nidaq"
@@ -49,7 +52,8 @@ class GD_Test(unittest.TestCase):
         configs["amplification"] = 100
         configs["instruments_setup"] = {}
         configs["instruments_setup"]["multiple_devices"] = False
-        configs["instruments_setup"]["activation_instrument"] = "cDAQ2Mod1"
+        configs["instruments_setup"]["trigger_source"] = "cDAQ3/segment1"
+        configs["instruments_setup"]["activation_instrument"] = "cDAQ3Mod1"
         configs["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -68,7 +72,7 @@ class GD_Test(unittest.TestCase):
             [-0.7, 0.3],
             [-0.7, 0.3],
         ]
-        configs["instruments_setup"]["readout_instrument"] = "dev1"
+        configs["instruments_setup"]["readout_instrument"] = "cDAQ3Mod2"
         configs["instruments_setup"]["readout_channels"] = [4]
         configs["instruments_setup"]["activation_sampling_frequency"] = 500
         configs["instruments_setup"]["readout_sampling_frequency"] = 1000
@@ -77,16 +81,19 @@ class GD_Test(unittest.TestCase):
 
     def get_configs_CDAQ(self):
         """
-        Generate configurations to initialize the Nidaq driver
+        Generate configurations to initialize the CDAQ driver
+        Devices used - cDAQ3Mod1,cDAQ3Mod2
         """
         configs = {}
         configs["instrument_type"] = "cdaq_to_cdaq"
         configs["real_time_rack"] = False
         configs["inverted_output"] = True
         configs["amplification"] = 100
+        configs["output_clipping_range"] = [-1, 1]
         configs["instruments_setup"] = {}
         configs["instruments_setup"]["multiple_devices"] = False
-        configs["instruments_setup"]["activation_instrument"] = "cDAQ2Mod1"
+        configs["instruments_setup"]["trigger_source"] = "cDAQ3/segment1"
+        configs["instruments_setup"]["activation_instrument"] = "cDAQ3Mod1"
         configs["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -105,7 +112,7 @@ class GD_Test(unittest.TestCase):
             [-0.7, 0.3],
             [-0.7, 0.3],
         ]
-        configs["instruments_setup"]["readout_instrument"] = "dev1"
+        configs["instruments_setup"]["readout_instrument"] = "cDAQ3Mod2"
         configs["instruments_setup"]["readout_channels"] = [4]
         configs["instruments_setup"]["activation_sampling_frequency"] = 500
         configs["instruments_setup"]["readout_sampling_frequency"] = 1000
@@ -161,6 +168,38 @@ class GD_Test(unittest.TestCase):
                                    configs)
         except (Exception):
             self.fail("Could not run Gradient Descent")
+        else:
+            self.assertTrue("performance_history" in results)
+
+    def test_train_surrogate_model_processor(self):
+
+        configs = {}
+        configs["waveform"] = {}
+        configs["waveform"]["plateau_length"] = 10
+        configs["waveform"]["slope_length"] = 30
+
+        model_data = {}
+        model_data["info"] = {}
+        model_data["info"]["model_structure"] = {
+            "hidden_sizes": [90, 90, 90],
+            "D_in": 7,
+            "D_out": 1,
+            "activation": "relu",
+        }
+        surrogate_model = SurrogateModel(
+            model_data["info"]["model_structure"])
+        model = HardwareProcessor(
+            surrogate_model,
+            slope_length=configs["waveform"]["slope_length"],
+            plateau_length=configs["waveform"]["plateau_length"],
+        )
+        dataloaders, criterion, optimizer, configs = self.get_train_parameters(
+        )
+        try:
+            model, results = train(model, dataloaders, criterion, optimizer,
+                                   configs)
+        except (Exception):
+            self.fail("Could not run Genetic Algorithm")
         else:
             self.assertTrue("performance_history" in results)
 
@@ -248,8 +287,8 @@ class GD_Test(unittest.TestCase):
         criterion = function.accuracy_fit
         optimizer = GeneticOptimizer(gene_ranges=TorchUtils.format(
             torch.tensor([[-1.2, 0.6], [-1.2, 0.6]])),
-                                     partition=[4, 22],
-                                     epochs=100)
+            partition=[4, 22],
+            epochs=100)
         configs = {}
         configs["epochs"] = 100
         configs["constraint_control_voltages"] = "regul"

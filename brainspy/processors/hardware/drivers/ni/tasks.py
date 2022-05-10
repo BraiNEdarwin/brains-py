@@ -245,7 +245,7 @@ class IOTasksManager:
             max_val=5,
         )
 
-    def read(self, number_of_samples_per_channel, timeout):
+    def read(self, number_of_samples_per_channel=None, timeout=None):
         """
         Reads samples from the task or virtual channels you specify. This read method is dynamic,
         and is capable of inferring an appropriate return type based on these factors: - The

@@ -139,10 +139,10 @@ class NationalInstrumentsSetup:
         """
         Check the type of the configurations provided for the Setup
         """
-        
+
         assert type(
             configs) == dict, "The configurations should be of type - dict"
-        #Assertions for output clipping range
+        # Assertions for output clipping range
         assert type(configs["output_clipping_range"]) == list or type(
             configs["output_clipping_range"]
         ) == np.ndarray, "Output clipping range should be a list of 2 values"
@@ -155,15 +155,15 @@ class NationalInstrumentsSetup:
         assert isinstance(
             configs["output_clipping_range"][1], (np.floating, float, int)
         ), "Output clipping range can contain only int or float type values"
-        #Assertion for amplification
+        # Assertion for amplification
         assert type(configs["amplification"]
-                    ) == float, "Amplification should be of type float"
-        #Assertions for Instrument setup
+                    ) == float or type(configs["amplification"]) == int, "Amplification should be of type float or int"
+        # Assertions for Instrument setup
         assert type(configs["instruments_setup"]["multiple_devices"]
                     ) == bool, "Multiple devices key should be of type bool"
         assert type(configs["instruments_setup"]["trigger_source"]
                     ) == str, "trigger_source key should be of type str"
-        #Assertions for single device
+        # Assertions for single device
         if not configs["instruments_setup"]["multiple_devices"]:
             assert type(
                 configs["instruments_setup"]["activation_instrument"]
@@ -183,7 +183,7 @@ class NationalInstrumentsSetup:
             assert type(
                 configs["instruments_setup"]["readout_channels"]
             ) == list, "readout_channels key should be of type list"
-            #Assertion for instrument setup: activation_voltage ranges
+            # Assertion for instrument setup: activation_voltage ranges
             assert type(
                 configs["instruments_setup"]["activation_voltage_ranges"]
             ) == list or type(
@@ -208,7 +208,7 @@ class NationalInstrumentsSetup:
                 assert isinstance(
                     voltage_range[1], (np.floating, float, int)
                 ), "Volatge range can contain only int or float type values"
-        else:  #Assertions for multiple devices
+        else:  # Assertions for multiple devices
             for device_name in configs["instruments_setup"][
                     "multiple_devices"]:
                 assert type(
@@ -235,7 +235,7 @@ class NationalInstrumentsSetup:
                     configs["instruments_setup"][device_name]
                     ["readout_channels"]
                 ) == list, "readout_channels key should be of type list"
-                #Assertion for instrument setup: activation_voltage ranges
+                # Assertion for instrument setup: activation_voltage ranges
                 assert type(
                     configs["instruments_setup"][device_name]
                     ["activation_voltage_ranges"]

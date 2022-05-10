@@ -1,6 +1,7 @@
 import torch
 import warnings
 from torch import nn
+import numpy as np
 from brainspy.utils.manager import get_driver
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager
@@ -41,9 +42,9 @@ class HardwareProcessor(nn.Module):
         configs : dict
             configs dictionary for the device model
 
-            The configs shoulh have the following keys:
+            The configs should have the following keys:
 
-             processor_type : str
+            processor_type : str
                 "simulation_debug" or "cdaq_to_cdaq" or "cdaq_to_nidaq" - Processor type to
                 initialize a hardware processor
             driver:
@@ -148,7 +149,8 @@ class HardwareProcessor(nn.Module):
 
         """
         super(HardwareProcessor, self).__init__()
-
+        assert type(plateau_length) == int or type(plateau_length) == float, "The plateau length should be of type -int or float"
+        assert type(slope_length) == int or type(slope_length) == float, "The slope length should be of type - int or float"
         if not isinstance(instrument_configs, dict):
             self.driver = instrument_configs
             if self.driver.is_hardware():
@@ -197,6 +199,7 @@ class HardwareProcessor(nn.Module):
             output data
 
         """
+        assert type(x) == torch.Tensor, "The input should be of type - torch.Tensor"
         with torch.no_grad():
             x, mask = self.waveform_mgr.plateaus_to_waveform(
                 x, return_pytorch=False)
@@ -226,6 +229,7 @@ class HardwareProcessor(nn.Module):
             output data
 
         """
+        assert type(x) == np.ndarray, "The input data should be of type - numpy array"
         return self.driver.forward_numpy(x)
 
     def close(self):

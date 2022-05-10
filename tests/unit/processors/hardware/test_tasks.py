@@ -10,7 +10,8 @@ from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 
 class Tasks_Test(unittest.TestCase):
     """
-    Tests for tasks with custom configs and no real time rack.
+    Tests for tasks on the CDAQ driver with custom configs and no real time rack.
+    Devices used - cDAQ3Mod2,cDAQ3Mod1
     """
 
     def get_configs(self):
@@ -18,15 +19,19 @@ class Tasks_Test(unittest.TestCase):
         Generate the sample configs for the Task Manager
         """
         configs = {}
-        configs["processor_type"] = "cdaq_to_nidaq"
+        configs["processor_type"] = "cdaq_to_cdaq"
+        configs["real_time_rack"] = False
+        configs["inverted_output"] = True
+        configs["amplification"] = 100
         configs["driver"] = {}
         configs["driver"]["sampling_frequency"] = 1000
         configs["driver"]["output_clipping_range"] = [-1, 1]
         configs["driver"]["amplification"] = 50.5
         configs["instruments_setup"] = {}
-        configs["instruments_setup"]["multiple_devices"] = False
+        configs["instrument_type"] = "cdaq_to_cdaq"
         configs["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-        configs["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+        configs["instruments_setup"]["multiple_devices"] = False
+        configs["instruments_setup"]["activation_instrument"] = "cDAQ3Mod2"
         configs["instruments_setup"]["activation_channels"] = [
             0,
             2,
@@ -45,8 +50,11 @@ class Tasks_Test(unittest.TestCase):
             [-0.7, 0.3],
             [-0.7, 0.3],
         ]
-        configs["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+        configs["instruments_setup"]["readout_instrument"] = "cDAQ3Mod1"
         configs["instruments_setup"]["readout_channels"] = [4]
+        configs["instruments_setup"]["activation_sampling_frequency"] = 500
+        configs["instruments_setup"]["readout_sampling_frequency"] = 1000
+        configs["instruments_setup"]["average_io_point_difference"] = True
         configs["plateau_length"] = 10
         configs["slope_length"] = 30
         return configs
@@ -60,10 +68,12 @@ class Tasks_Test(unittest.TestCase):
         except (Exception):
             self.fail("Could not initialize the Tasks Manager")
         else:
-            self.assertEqual(tasks.local.acquisition_type,
+            print(tasks.activation_task)
+            self.assertEqual(tasks.acquisition_type,
                              constants.AcquisitionType.FINITE)
-            self.assertEqual(tasks.local.activation_task, None)
-            self.assertEqual(tasks.local.readout_task, None)
+            self.assertEqual(tasks.activation_task, None)
+            self.assertEqual(tasks.readout_task, None)
+            tasks.close_tasks()
 
     def test_init_configs_keyerror(self):
         """
@@ -116,6 +126,7 @@ class Tasks_Test(unittest.TestCase):
             self.assertIsNotNone(tasks.devices)
             for d in tasks.devices:
                 assert isinstance(d, device.Device)
+            tasks.close_tasks()
 
     def test_init_tasks_invalid_input(self):
         """
@@ -136,7 +147,7 @@ class Tasks_Test(unittest.TestCase):
             tasks = IOTasksManager(self.get_configs())
             tasks.init_tasks(configs)
 
-    def test_init_activation_channels(self):  #assertions here can be improved
+    def test_init_activation_channels(self):  # assertions here can be improved
         """
         Test to initialize the activation channels
         """
@@ -148,6 +159,7 @@ class Tasks_Test(unittest.TestCase):
             self.fail("Could not initialize the activation channels")
         else:
             self.assertIsNotNone(tasks.activation_task.ao_channels)
+            tasks.close_tasks()
 
     def test_init_activation_channels_error_1(self):
         """
@@ -266,7 +278,7 @@ class Tasks_Test(unittest.TestCase):
             tasks = IOTasksManager(self.get_configs())
             tasks.init_activation_channels(channel_names, voltage_ranges)
 
-    def test_init_readout_channels(self):  #assertions here can be improved
+    def test_init_readout_channels(self):  # assertions here can be improved
         """
         Test to initialize the readout channels
         """
@@ -277,6 +289,7 @@ class Tasks_Test(unittest.TestCase):
             self.fail("Could not initialize the readout channels")
         else:
             self.assertIsNotNone(tasks.readout_task.ai_channels)
+            tasks.close_tasks()
 
     def test_init_readout_channels_error_1(self):
         """
@@ -315,6 +328,7 @@ class Tasks_Test(unittest.TestCase):
                                            random.randint(1, 1000))
         except (Exception):
             self.fail("Could not set the sampling frequency for these values")
+            tasks.close_tasks()
 
     def test_set_sampling_frequencies_fail(self):
         """
@@ -351,13 +365,14 @@ class Tasks_Test(unittest.TestCase):
         try:
             tasks = IOTasksManager(self.get_configs())
             tasks.add_synchronisation_channels(
-                "cDAQ1Mod3", "cDAQ1Mod4"
-            )  #device name maybe different, also addd another test when device name is wrong
+                "cDAQ3Mod1", "cDAQ3Mod2"
+            )
         except (Exception):
             self.fail("Could not add a synchronization channel")
         else:
             self.assertIsNotNone(tasks.activation_task.ao_channels)
             self.assertIsNotNone(tasks.activation_task.ai_channels)
+            tasks.close_tasks()
 
     def test_add_synchronisation_channels_invalid_type(self):
         """
@@ -369,18 +384,6 @@ class Tasks_Test(unittest.TestCase):
         with self.assertRaises(AssertionError):
             tasks = IOTasksManager(self.get_configs())
             tasks.add_synchronisation_channels("cDAQ1Mod3", {})
-
-    def test_read(self):
-        """
-        Test to read from the device without any params
-        """
-        try:
-            tasks = IOTasksManager(self.get_configs())
-            read_data = tasks.read()
-        except (Exception):
-            self.fail("Could not read any data")
-        else:
-            self.assertIsNotNone(read_data)
 
     def test_read_random(self):
         """
@@ -394,6 +397,20 @@ class Tasks_Test(unittest.TestCase):
             self.fail("Could not read any data")
         else:
             self.assertIsNotNone(read_data)
+            tasks.close_tasks()
+
+    def test_read_no_params(self):
+        """
+        Test to read from the device without any params
+        """
+        try:
+            tasks = IOTasksManager(self.get_configs())
+            read_data = tasks.read()
+        except (Exception):
+            self.fail("Could not read any data")
+        else:
+            self.assertIsNotNone(read_data)
+            tasks.close_tasks()
 
     def test_read_fail(self):
         """
@@ -415,11 +432,12 @@ class Tasks_Test(unittest.TestCase):
             tasks = IOTasksManager(self.get_configs())
             tasks.start_trigger(
                 "cDAQ1/segment1"
-            )  #device name maybe different, also addd another test when device name is wrong
+            )  # device name maybe different, also addd another test when device name is wrong
         except (Exception):
             self.fail("Could not start trigger")
         else:
             self.assertIsNotNone(tasks.activation_task.triggers)
+            tasks.close_tasks()
 
     def start_trigger_fail_invalid_type(self):
         """
@@ -453,8 +471,8 @@ class Tasks_Test(unittest.TestCase):
         except (Exception):
             self.fail("Could not close activation and readout tasks")
         else:
-            self.assertIsNotNone(tasks.readout_task)
-            self.assertIsNotNone(tasks.activation_task)
+            self.assertIsNone(tasks.readout_task)
+            self.assertIsNone(tasks.activation_task)
 
     def test_write(self):
         """

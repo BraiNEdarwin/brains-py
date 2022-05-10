@@ -154,9 +154,8 @@ def type_check(configs):
     assert type(configs["instruments_setup"]["multiple_devices"]
                 ) == bool, "Multiple devices key should be of type bool"
     assert type(
-        configs["instruments_setup"]
-        ["trigger_source"]) == str, "trigger_source key should be of type str"
-    #Assertions for single device
+        configs["instruments_setup"]["trigger_source"]) == str, "trigger_source key should be of type str"
+    # Assertions for single device
     if not configs["instruments_setup"]["multiple_devices"]:
         assert type(configs["instruments_setup"]["activation_instrument"]
                     ) == str, "activation_instrument key should be of type str"
@@ -192,50 +191,51 @@ def type_check(configs):
                 voltage_range[1],
                 (np.floating, float, int
                  )), "Volatge range can contain only int or float type values"
-    else:  #Assertions for multiple devices
-        for device_name in configs["instruments_setup"]["multiple_devices"]:
-            assert type(
-                configs["instruments_setup"][device_name]
-                ["activation_instrument"]
-            ) == str, "activation_instrument key should be of type str"
-            assert type(
-                configs["instruments_setup"][device_name]["readout_instrument"]
-            ) == str, "readout_instrument key should be of type str"
-            assert type(
-                configs["instruments_setup"][device_name]
-                ["activation_channels"]
-            ) == list, "activation_channels key should be of type list"
-            assert type(
-                configs["instruments_setup"][device_name]["readout_channels"]
-            ) == list, "readout_channels key should be of type list"
-            assert type(
-                configs["instruments_setup"][device_name]
-                ["activation_voltage_ranges"]
-            ) == list or type(
-                configs["instruments_setup"][device_name]
-                ["activation_voltage_ranges"]
-            ) == np.ndarray, "The voltage_ranges should be of type - list or numpy array"
-            assert len(
-                configs["instruments_setup"][device_name]
-                ["activation_voltage_ranges"]
-            ) == len(
-                configs["instruments_setup"][device_name]
-                ["activation_channels"]
-            ), "The length of channel_names should be equal to the length of voltage ranges"
-            for voltage_range in configs["instruments_setup"][device_name][
-                    "activation_voltage_ranges"]:
-                assert type(voltage_range) == list or type(
-                    voltage_range
-                ) == np.ndarray, "Each voltage range should be a list of 2 values"
+    else:  # Assertions for multiple devices
+        for device_name in configs["instruments_setup"]:
+            if is_device_name(device_name):
+                assert type(
+                    configs["instruments_setup"][device_name]
+                    ["activation_instrument"]
+                ) == str, "activation_instrument key should be of type str"
+                assert type(
+                    configs["instruments_setup"][device_name]["readout_instrument"]
+                ) == str, "readout_instrument key should be of type str"
+                assert type(
+                    configs["instruments_setup"][device_name]
+                    ["activation_channels"]
+                ) == list, "activation_channels key should be of type list"
+                assert type(
+                    configs["instruments_setup"][device_name]["readout_channels"]
+                ) == list, "readout_channels key should be of type list"
+                assert type(
+                    configs["instruments_setup"][device_name]
+                    ["activation_voltage_ranges"]
+                ) == list or type(
+                    configs["instruments_setup"][device_name]
+                    ["activation_voltage_ranges"]
+                ) == np.ndarray, "The voltage_ranges should be of type - list or numpy array"
                 assert len(
-                    voltage_range
-                ) == 2, "Voltage range should contain 2 values : max and min"
-                assert isinstance(
-                    voltage_range[0], (np.floating, float, int)
-                ), "Volatge range can contain only int or float type values"
-                assert isinstance(
-                    voltage_range[1], (np.floating, float, int)
-                ), "Volatge range can contain only int or float type values"
+                    configs["instruments_setup"][device_name]
+                    ["activation_voltage_ranges"]
+                ) == len(
+                    configs["instruments_setup"][device_name]
+                    ["activation_channels"]
+                ), "The length of channel_names should be equal to the length of voltage ranges"
+                for voltage_range in configs["instruments_setup"][device_name][
+                        "activation_voltage_ranges"]:
+                    assert type(voltage_range) == list or type(
+                        voltage_range
+                    ) == np.ndarray, "Each voltage range should be a list of 2 values"
+                    assert len(
+                        voltage_range
+                    ) == 2, "Voltage range should contain 2 values : max and min"
+                    assert isinstance(
+                        voltage_range[0], (np.floating, float, int)
+                    ), "Volatge range can contain only int or float type values"
+                    assert isinstance(
+                        voltage_range[1], (np.floating, float, int)
+                    ), "Volatge range can contain only int or float type values"
 
 
 def is_device_name(key):
@@ -249,6 +249,7 @@ def is_device_name(key):
     Returns:
         bool: Whether if the configuration key is a device name
     """
+    assert type(key) == str, "The key should be of type - str"
     return (key != "trigger_source" and key != "multiple_devices"
             and key != "activation_sampling_frequency"
             and key != "readout_sampling_frequency"
@@ -276,7 +277,7 @@ def concatenate_voltage_ranges(voltage_ranges: np.array):
         device simultaneously.
     """
     assert type(voltage_ranges
-                ) == np.ndarray, "Voltage ranges should be of type - list"
+                ) == np.ndarray or type(voltage_ranges) == list, "Voltage ranges should be of type - list or numpy array"
     result = voltage_ranges[0]
     for i in range(1, len(voltage_ranges)):
         result = np.concatenate((result, voltage_ranges[i]), axis=0)
