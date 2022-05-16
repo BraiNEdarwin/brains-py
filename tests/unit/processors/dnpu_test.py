@@ -43,7 +43,11 @@ class ProcessorTest(unittest.TestCase):
 
         self.node = Processor(self.configs, self.info)
         self.model = dnpu.DNPU(self.node, data_input_indices=[[3, 4]])
-        self.multi_model = dnpu.DNPU(self.node, data_input_indices=[[3, 4], [3, 4]])
+        self.dim1 =  torch.randint(1, 4, (1,1)).squeeze().item()
+        self.dim2 =  torch.randint(1, 7, (1,1)).squeeze().item()
+        random_data_indices = [np.random.choice(np.arange(0, 7), size=self.dim2, replace=False).tolist() for _ in range(self.dim1)]
+        # Test extreme cases (where (input) dimension are zero, when (input)dimensions are more than electrodes available, when(input) dimensions are equal to electrode number)
+        self.multi_model = dnpu.DNPU(self.node, data_input_indices=random_data_indices)
 
     # def test_merge_numpy(self):
     #     """
@@ -175,9 +179,10 @@ class ProcessorTest(unittest.TestCase):
 
     def test_forward(self):
         try:
-            x = torch.randn(size=(10, 2))
-            y = self.model.forward_for(x)
-            y2 = self.multi_model.forward_for(torch.cat((x, x), dim=1))
+            x1 = torch.randn(size=(10, 2))
+            x2 = torch.randn(size=(10, self.dim1*self.dim2))
+            y = self.model.forward_for(x1)
+            y2 = self.multi_model.forward_for(x2)
         except:
             self.fail("Failed Initializing electrode info DNPU")
 
