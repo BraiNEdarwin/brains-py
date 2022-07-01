@@ -48,7 +48,7 @@ With the contribution of:
 -  **Srikumar Sastry**, [Vishu26](https://github.com/Vishu26) ([s.s.sastry@student.utwente.nl](mailto:s.s.sastry@student.utwente.nl)) : Testing and identification of bugs.
 -  **Marcus Boon**: [@Mark-Boon](https://github.com/Mark-Boon): The on-chip gradient descent. The initial structure for the CDAQ to NiDAQ drivers in the legacy [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt) repository.
 -  **Dr. ir. Michel P. de Jong** [@xX-Michel-Xx](https://github.com/xX-Michel-Xx) ([m.p.dejong@utwente.nl](mailto:m.p.dejong@utwente.nl)): Testing and identification of bugs, especially on the installation procedure.
--  **Mohamadreza Zolfagharinejad** [@mamrez](https://github.com/mamrez) ([m.zolfagharinejad@utwente.nl](mailto:m.zolfagharinejad@utwente.nl)): Writing of examples in Jupyter notebooks.
+-  **Mohamadreza Zolfagharinejad** [@mamrez](https://github.com/mamrez) ([m.zolfagharinejad@utwente.nl](mailto:m.zolfagharinejad@utwente.nl)): Writing of some of the examples in Jupyter notebooks (IV curves and surrogate model generation).
 -  **Annefleur Uitzetter**: The genetic algorithm as shown in the legacy [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt) repository.
 -  **Michelangelo Barocci** [@micbar-21](https://github.com/micbar-21/).  The usage of multiple DNPUs simultaneously on hardware and the creation of an improved PCB for measuring DNPUs.
 -  **Bram van de Ven**, [@bbroo1](https://github.com/bbroo1) ([b.vandeven@utwente.nl](mailto:b.vandeven@utwente.nl)) : General improvements and testing of the different hardware drivers and devices and documentation.
