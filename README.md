@@ -38,7 +38,7 @@ The package relies on the following libraries:
 
 ## 4. Acknowledgements
 This package has been created and it is maintained by the [Brains](https://www.utwente.nl/en/brains/) team of the [NanoElectronics](https://www.utwente.nl/en/eemcs/ne/) research group at the University of Twente. It has been designed by:
--   **Dr. Unai Alegre-Ibarra**, [@ualegre](https://github.com/ualegre) ([u.alegre@utwente.nl](mailto:u.alegre@utwente.nl)): Project lead, including requirements, design, implementation, maintenance, linting tools, testing and documentation.
+-   **Dr. Unai Alegre-Ibarra**, [@ualegre](https://github.com/ualegre) ([u.alegre@utwente.nl](mailto:u.alegre@utwente.nl)): Project lead, including requirements, design, implementation, maintenance, linting tools, testing and documentation (Jupyter notebooks, Wiki and supervision of file by file documentation).
 -   **Dr. Hans Christian Ruiz-Euler**, [@hcruiz](https://github.com/hcruiz) ([h.ruiz@utwente.nl](mailto:h.ruiz@utwente.nl)): Initial design and implementation of major features both in this repository and in the legacy [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt) repository and in this one.
 
 With the contribution of:
