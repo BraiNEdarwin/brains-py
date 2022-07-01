@@ -43,7 +43,7 @@ This package has been created and it is maintained by the [Brains](https://www.u
 
 With the contribution of:
 
--  **Humaid A. Mollah**, [@hnm27](https://github.com/hnm27) ([h.a.mollah@student.utwente.nl](mailto:h.a.mollah@student.utwente.nl)) : Testing, identification of bugs, linting tools, and documentation.
+-  **Humaid A. Mollah**, [@hnm27](https://github.com/hnm27) ([h.a.mollah@student.utwente.nl](mailto:h.a.mollah@student.utwente.nl)) : Testing, identification of bugs, linting tools, continuous integration and documentation.
 -  **Bozhidar P. Petrov**, [@bozhidar-petrov](https://github.com/bozhidar-petrov) ([b.p.petrov@student.utwente.nl](mailto:b.p.petrov@student.utwente.nl)) : Testing, identification of bugs, linting tools and documentation.
 -  **Srikumar Sastry**, [Vishu26](https://github.com/Vishu26) ([s.s.sastry@student.utwente.nl](mailto:s.s.sastry@student.utwente.nl)) : Testing and identification of bugs.
 -  **Marcus Boon**: [@Mark-Boon](https://github.com/Mark-Boon): The on-chip gradient descent. The initial structure for the CDAQ to NiDAQ drivers in the legacy [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt) repository.
