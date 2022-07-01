@@ -42,14 +42,17 @@ This package has been created and it is maintained by the [Brains](https://www.u
 -   **Dr. Hans Christian Ruiz-Euler**, [@hcruiz](https://github.com/hcruiz) ([h.ruiz@utwente.nl](mailto:h.ruiz@utwente.nl)): Design and implementation of major features both in the legacy [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt) repository and in this one.
 
 With the contribution of:
+
 -  **Humaid A. Mollah**, [@hnm27](https://github.com/hnm27) ([h.a.mollah@student.utwente.nl](mailto:h.a.mollah@student.utwente.nl)) : Testing, identification of bugs, linting tools, and documentation.
 -  **Bozhidar P. Petrov**, [@bozhidar-petrov](https://github.com/bozhidar-petrov) ([b.p.petrov@student.utwente.nl](mailto:b.p.petrov@student.utwente.nl)) : Testing, identification of bugs, linting tools and documentation.
+-  **Srikumar Sastry**, [Vishu26](https://github.com/Vishu26) ([s.s.sastry@student.utwente.nl](mailto:s.s.sastry@student.utwente.nl)) : Testing and identification of bugs.
 -  **Marcus Boon**: [@Mark-Boon](https://github.com/Mark-Boon): The on-chip gradient descent. The initial structure for the CDAQ to NiDAQ drivers in the legacy [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt) repository.
- -  **Annefleur Uitzetter**: The genetic algorithm as shown in the legacy [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt) repository.
- -  **Michelangelo Barocci** [@micbar-21](https://github.com/micbar-21/).  The usage of multiple DNPUs simultaneously on hardware and the creation of an improved PCB for measuring DNPUs.
--  **Bram van de Ven**, [@bbroo1](https://github.com/bbroo1) ([b.vandeven@utwente.nl](mailto:b.vandeven@utwente.nl)) : General improvements and testing of the different hardware drivers and devices and documentation.
 -  **Dr. ir. Michel P. de Jong** [@xX-Michel-Xx](https://github.com/xX-Michel-Xx) ([m.p.dejong@utwente.nl](mailto:m.p.dejong@utwente.nl)): Testing and identification of bugs, especially on the installation procedure.
- -  **Jochem Wildeboer** [@jtwild](https://github.com/jtwild/)  Nearest neighbour loss functions.
+-  **Mohamadreza Zolfagharinejad** [@mamrez](https://github.com/mamrez) ([m.zolfagharinejad@utwente.nl](mailto:m.zolfagharinejad@utwente.nl)): Writing of examples in Jupyter notebooks.
+-  **Annefleur Uitzetter**: The genetic algorithm as shown in the legacy [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt) repository.
+-  **Michelangelo Barocci** [@micbar-21](https://github.com/micbar-21/).  The usage of multiple DNPUs simultaneously on hardware and the creation of an improved PCB for measuring DNPUs.
+-  **Bram van de Ven**, [@bbroo1](https://github.com/bbroo1) ([b.vandeven@utwente.nl](mailto:b.vandeven@utwente.nl)) : General improvements and testing of the different hardware drivers and devices and documentation.
+-  **Jochem Wildeboer** [@jtwild](https://github.com/jtwild/)  Nearest neighbour loss functions.
 
 Other minor contributions might have been added, in form of previous scripts that have been improved and restructured from [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt), and the authorship remains of those people who collaborated in it. 
 
