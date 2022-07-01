@@ -221,7 +221,6 @@ class DNPU(nn.Module):
         self.register_buffer(
             "data_input_ranges",
             torch.stack([voltage_ranges[i] for i in data_input_indices]))
-
         # Define control voltage ranges
         activation_electrode_indices = np.arange(
             self.processor.get_activation_electrode_no())
@@ -231,6 +230,7 @@ class DNPU(nn.Module):
         ]
         # TODO: Add to documentation. control ranges are defined as follows: (node_no, electrode_no,
         # 2) where last 2 is for min and max
+        # self.control_ranges = XX
         self.register_buffer(
             "control_ranges",
             torch.stack([voltage_ranges[i] for i in control_list]))
