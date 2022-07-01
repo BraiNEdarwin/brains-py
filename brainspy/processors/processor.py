@@ -81,7 +81,7 @@ class Processor(nn.Module):
 
     def load_processor(self,
                        configs: dict,
-                       info: dict,
+                       info: dict = None,
                        model_state_dict: collections.OrderedDict = None):
         """
         Create a processor depending on the provided settings.
