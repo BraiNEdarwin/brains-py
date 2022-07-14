@@ -53,7 +53,7 @@ With the contribution of:
 - **Mohamadreza Zolfagharinejad** [@mamrez](https://github.com/mamrez) ([m.zolfagharinejad@utwente.nl](mailto:m.zolfagharinejad@utwente.nl)): Writing of some of the examples in Jupyter notebooks (IV curves and surrogate model generation).
 - **Annefleur Uitzetter**: The genetic algorithm as shown in the legacy [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt) repository.
 - **Michelangelo Barocci** [@micbar-21](https://github.com/micbar-21/).  The usage of multiple DNPUs simultaneously on hardware and the creation of an improved PCB for measuring DNPUs.
-- ****Antonio J. Sousa de Almeida** [@ajsousal](https://github.com/ajsousal) ([a.j.sousadealmeida@utwente.nl](mailto:a.j.sousadealmeida@utwente.nl)): Checking and upgrading drivers and National Instruments equipment from the labs.
+- **Antonio J. Sousa de Almeida** [@ajsousal](https://github.com/ajsousal) ([a.j.sousadealmeida@utwente.nl](mailto:a.j.sousadealmeida@utwente.nl)): Checking and upgrading drivers and National Instruments equipment from the labs.
 - **Bram van de Ven**, [@bbroo1](https://github.com/bbroo1) ([b.vandeven@utwente.nl](mailto:b.vandeven@utwente.nl)) : General improvements and testing of the different hardware drivers and devices and documentation.
 - **Jochem Wildeboer** [@jtwild](https://github.com/jtwild/)  Nearest neighbour loss functions.
 
