@@ -46,9 +46,11 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
                 as it could disable security checks designed to avoid breaking devices.
 
         """
-        assert configs['instruments_setup']['average_io_point_difference'], (
-            "The average_io_point_difference flag can only be true for cdaq to nidaq setups"
-        )
+        if configs['instruments_setup'][
+                'average_io_point_difference'] is not True:
+            raise AssertionError(
+                "The average_io_point_difference flag can only be true for cdaq to nidaq setups"
+            )
         assert len(configs["instruments_setup"]["activation_channels"]) == len(
             configs["instruments_setup"]["activation_voltage_ranges"])
         warn = False
