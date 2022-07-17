@@ -14,6 +14,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
     from the CDAQ to the NIDAQ. The data is offsetted to let the NIDAQ read the spike and start
     synchronising after receiving it.
     """
+
     def __init__(self, configs):
         """
         Initialize the hardware processor. No trigger source required for this device.
@@ -45,7 +46,6 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
                 as it could disable security checks designed to avoid breaking devices.
 
         """
-        self.type_check(configs)
         assert configs['instruments_setup']['average_io_point_difference'], (
             "The average_io_point_difference flag can only be true for cdaq to nidaq setups"
         )
@@ -77,53 +77,6 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             self.configs["instruments_setup"]["readout_instrument"],
             self.configs["instruments_setup"]["activation_instrument"],
         )
-
-    def type_check(self, configs):
-        """
-        Checks if the values provided in configs are of the correct type
-        """
-        assert type(configs["instrument_type"]
-                    ) == str, "The instrument type should be of type - str"
-        assert type(configs["real_time_rack"]
-                    ) == bool, "The real_time_rack should be of type - bool"
-        assert type(configs["inverted_output"]
-                    ) == bool, "The inverted_output should be of type - bool"
-        assert type(configs["amplification"]
-                    ) == int, "Amplification value should be of type - int"
-        assert type(
-            configs["instruments_setup"]["multiple_devices"]
-        ) == bool, "The multiple devices option should be of type - bool"
-        assert type(
-            configs["instruments_setup"]["activation_instrument"]
-        ) == str, "The activation instrument name should be of type - str"
-        assert type(
-            configs["instruments_setup"]["activation_channels"]
-        ) == list, "The activation channels should be of type - list"
-        for channel in configs["instruments_setup"]["activation_channels"]:
-            assert (type(channel) == int
-                    ), "Each activation channel should be of type - int"
-        assert type(
-            configs["instruments_setup"]["activation_voltage_ranges"]
-        ) == list, "The activation volatge ranges should be a list of ranges"
-        for voltage_range in configs["instruments_setup"][
-                "activation_voltage_ranges"]:
-            assert len(voltage_range
-                       ) == 2, "Each voltage range should contain 2 values"
-            assert type(voltage_range[0]) == float and type(
-                voltage_range[1]
-            ) == float, "Each voltage range should be of type - float"
-        assert type(
-            configs["instruments_setup"]["readout_instrument"]
-        ) == str, "The readout instrument name should be of type - str"
-        assert type(
-            configs["instruments_setup"]["activation_sampling_frequency"]
-        ) == int, "The activation sampling frequency should be of type - int "
-        assert type(
-            configs["instruments_setup"]["readout_sampling_frequency"]
-        ) == int, "The readout sampling frequency should be of type - int"
-        assert type(
-            configs["instruments_setup"]["average_io_point_difference"]
-        ) == bool, "The average io point differnece should be of type - bool"
 
     def forward_numpy(self, y):
         """
