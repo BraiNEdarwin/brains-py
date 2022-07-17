@@ -14,6 +14,7 @@ class SignalTest(unittest.TestCase):
     """
     Testing each method in signal.py.
     """
+
     def setUp(self):
         """
         Create two datasets to use for the tests.

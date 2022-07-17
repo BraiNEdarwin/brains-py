@@ -12,6 +12,7 @@ class Data_Test(unittest.TestCase):
     Tests for the Perceptron dataloader - data.py.
 
     """
+
     def test_get_data(self):
         """
         Test to get data from the Perceptron dataloader with some random input and target values

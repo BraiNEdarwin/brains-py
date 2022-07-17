@@ -10,6 +10,7 @@ class Accuracy_Test(unittest.TestCase):
     """
     Tests to train the perceptron and calculate the accuracy
     """
+
     def test_get_accuracy(self):
         """
         Test for the get_accuracy method using valid input and target values
