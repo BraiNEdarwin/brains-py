@@ -111,9 +111,10 @@ def get_optimizer(model: object, configs: dict):
                                               configs["epochs"])
         else:
             # Only a single device is supported, therefore model.get_control_ranges()[0]
-            return bspyoptim.GeneticOptimizer(model.get_control_ranges()[0],
-                                              configs["partition"],
-                                              configs["epochs"])
+            return bspyoptim.GeneticOptimizer(
+                model.get_control_ranges()[0],  # type: ignore[attr-defined]
+                configs["partition"],
+                configs["epochs"])
     elif configs["optimizer"] == "adam":
         return get_adam(model, configs)
     else:
@@ -153,7 +154,8 @@ def get_adam(model: object, configs: dict = {}):
 
     """
     # Initialise parameters
-    parameters = filter(lambda p: p.requires_grad, model.parameters())
+    parameters = filter(lambda p: p.requires_grad,
+                        model.parameters())  # type: ignore[attr-defined]
 
     # Initialise dictionary configs
     if 'learning_rate' in configs:
@@ -272,7 +274,7 @@ def get_driver(configs: dict):
         configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
         configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
         configs["driver"] = {}
-        
+
         configs["driver"]["instruments_setup"] = {}
         configs["driver"]["instruments_setup"]["multiple_devices"] = False
         configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
