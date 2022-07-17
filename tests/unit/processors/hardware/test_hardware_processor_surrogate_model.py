@@ -1,15 +1,15 @@
 import unittest
-import brainspy
 import numpy as np
 import warnings
 import random
+import torch
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.simulation.processor import SurrogateModel
 from brainspy.utils.waveform import WaveformManager
 from brainspy.processors.hardware.processor import HardwareProcessor
 
 
-class Hardware_Processor_Test(unittest.TestCase):
+class Hardware_Processor_SM_Test(unittest.TestCase):
     """
     Tests for the hardware processor in with a surrogate model
     """
@@ -31,8 +31,7 @@ class Hardware_Processor_Test(unittest.TestCase):
             "D_out": 1,
             "activation": "relu",
         }
-        surrogate_model = SurrogateModel(
-            model_data["info"]["model_structure"])
+        surrogate_model = SurrogateModel(model_data["info"]["model_structure"])
         return configs, surrogate_model
 
     def test_init(self):
@@ -40,7 +39,8 @@ class Hardware_Processor_Test(unittest.TestCase):
         Test to check correct initialization of the Hardware processor in simulation debug model.
         Hardware processor is initialized as an instance of the Surrogate Model.
         """
-        configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+        configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+        )
         try:
             model = HardwareProcessor(
                 surrogate_model,
@@ -48,24 +48,30 @@ class Hardware_Processor_Test(unittest.TestCase):
                 plateau_length=configs["waveform"]["plateau_length"],
             )
             model = TorchUtils.format(model)
-        except(Exception):
+        except (Exception):
             self.fail("Could not initialize processor")
         else:
             isinstance(model.driver, SurrogateModel)
 
     def test_init_fail(self):
-
+        """
+        Invalid type for arguments raises an AssertionError
+        """
         with self.assertRaises(AssertionError):
-            configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+            configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+            )
             HardwareProcessor(surrogate_model, [1, 2, 3, 4], 100)
         with self.assertRaises(AssertionError):
-            configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+            configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+            )
             HardwareProcessor(surrogate_model, "invalid_type", 100)
         with self.assertRaises(AssertionError):
-            configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+            configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+            )
             HardwareProcessor(surrogate_model, 50.5, {})
         with self.assertRaises(AssertionError):
-            configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+            configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+            )
             HardwareProcessor(surrogate_model, None, 100)
 
     def test_forward(self):
@@ -81,7 +87,8 @@ class Hardware_Processor_Test(unittest.TestCase):
             randomlist.append(newlist)
         data = TorchUtils.format(randomlist)
         try:
-            configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+            configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+            )
             model = HardwareProcessor(
                 surrogate_model,
                 slope_length=configs["waveform"]["slope_length"],
@@ -90,18 +97,22 @@ class Hardware_Processor_Test(unittest.TestCase):
             mgr = WaveformManager(configs["waveform"])
             data_plateaus = mgr.points_to_plateaus(data)
             x = model.forward(data_plateaus)
-        except(Exception):
+        except (Exception):
             self.fail("Could not do a forward pass")
         else:
             self.assertEqual(list(x.shape), [30, 1])
 
     def test_forward_fail(self):
-        # invalid shape - RuntimeError: mat1 and mat2 shapes cannot be multiplied
+        """
+        RunTimeError is raised if an invalid shape combination is provided.
+        Error : invalid shape - RuntimeError: mat1 and mat2 shapes cannot be multiplied
+        """
 
         with self.assertRaises(RuntimeError):
             randomlist = [1, 2, 3, 4, 5]
             data = TorchUtils.format(randomlist)
-            configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+            configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+            )
             model = HardwareProcessor(
                 surrogate_model,
                 slope_length=configs["waveform"]["slope_length"],
@@ -112,7 +123,11 @@ class Hardware_Processor_Test(unittest.TestCase):
             model.forward(data_plateaus)
 
     def test_forward_invalid_type(self):
-        configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+        """
+        AssertionError is raised if an invalid type is provided to the forward function
+        """
+        configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+        )
         model = HardwareProcessor(
             surrogate_model,
             slope_length=configs["waveform"]["slope_length"],
@@ -133,7 +148,8 @@ class Hardware_Processor_Test(unittest.TestCase):
         right shape (the numpy version).
         """
         try:
-            configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+            configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+            )
             model = HardwareProcessor(
                 surrogate_model,
                 slope_length=configs["waveform"]["slope_length"],
@@ -144,14 +160,17 @@ class Hardware_Processor_Test(unittest.TestCase):
                 randomlist.append(random.randint(0, 100))
             x = np.array(randomlist)
             x = model.forward_numpy(x)
-        except(Exception):
+        except (Exception):
             self.fail("Could not do forward pass on this numpy data")
         else:
             self.assertEqual(list(x.shape), [1])
 
     def test_forward_numpy_invalid_type(self):
-
-        configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+        """
+        AssertionError is raised if an invalid type is provided to the forward_numpy function
+        """
+        configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+        )
         model = HardwareProcessor(
             surrogate_model,
             slope_length=configs["waveform"]["slope_length"],
@@ -170,7 +189,8 @@ class Hardware_Processor_Test(unittest.TestCase):
         """
         Test if closing the processor raises a warning.
         """
-        configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+        configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+        )
         model = HardwareProcessor(
             surrogate_model,
             slope_length=configs["waveform"]["slope_length"],
@@ -185,7 +205,8 @@ class Hardware_Processor_Test(unittest.TestCase):
         """
         Test if the processor is a hardware,but in this case is an instance of a Surrogate Model.
         """
-        configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+        configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+        )
         model = HardwareProcessor(
             surrogate_model,
             slope_length=configs["waveform"]["slope_length"],
@@ -194,24 +215,32 @@ class Hardware_Processor_Test(unittest.TestCase):
         self.assertFalse(model.is_hardware())
 
     def test_get_voltage_ranges(self):
-
-        configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+        """
+        Test to get voltage ranges which returns a nonetype incase of a SurrogateModel
+        """
+        configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+        )
         model = HardwareProcessor(
             surrogate_model,
             slope_length=configs["waveform"]["slope_length"],
             plateau_length=configs["waveform"]["plateau_length"],
         )
-        self.assertIsNone(model.get_voltage_ranges())  # why is this None?? is this correct?
+        self.assertIsNone(
+            model.get_voltage_ranges())  # none only for surrogate model
 
     def test_get_clipping_value(self):
-
-        configs, surrogate_model = self.get_processor_configs_and_surrogate_model()
+        """
+        Test to get the clipping value and assert it is an instance of a torch Tensor
+        """
+        configs, surrogate_model = self.get_processor_configs_and_surrogate_model(
+        )
         model = HardwareProcessor(
             surrogate_model,
             slope_length=configs["waveform"]["slope_length"],
             plateau_length=configs["waveform"]["plateau_length"],
         )
         self.assertIsNotNone(model.get_clipping_value())
+        self.assertIsInstance(model.get_clipping_value(), torch.Tensor)
 
 
 if __name__ == "__main__":
