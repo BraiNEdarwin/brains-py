@@ -73,7 +73,7 @@ def get_accuracy(inputs, targets, configs=None, node=None):
 
     node : Optional[torch.nn.Module]
         Is the trained linear layer of the perceptron. Leave it as None if you want to train a
-        perceptron from scratch. (default: None) The default perceptron only supports one 
+        perceptron from scratch. (default: None) The default perceptron only supports one
         dimensional outpus.
 
     Returns

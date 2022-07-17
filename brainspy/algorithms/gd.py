@@ -2,7 +2,9 @@ import os
 import torch
 import numpy as np
 from tqdm import trange
+from brainspy.algorithms.modules.optim import GeneticOptimizer
 from brainspy.utils.pytorch import TorchUtils
+from torch.utils.data import DataLoader
 
 
 def train(
@@ -26,6 +28,45 @@ def train(
         The model to be trained. It should be an instance of a torch.nn.Module. It can be a
         Processor, representing a hardware DNPU or a DNPU model, but it also can be a model that
         contains different more complex architectures using several processors.
+
+        - The model can have multiple DNPU instances.
+        - The model cannot be an instance of SurrogateModel or HardwareProcessor.
+        - The model should have the following methods implemented :
+
+        1. format_targets : The hardware processor uses a waveform to represent points
+                            (see 5.1 in Introduction of the Wiki). Each point is represented with some
+                            slope and some plateau points. When passing through the hardware, there will
+                            be a difference between the output from the device and the input (in points).
+                            This function is used for the targets to have the same length in shape as the
+                            outputs. It simply repeats each point in the input as many times as there are
+                            points in the plateau. In this way, targets can then be compared against hardware
+                            outputs in the loss function.
+
+                                    Parameters
+                                    ----------
+                                    x : torch.Tensor
+                                    Targets of the supervised learning problem, that will be extended to have the same
+                                    length shape as the outputs from the processor.
+
+        2. set_regul_factor : This method only needs to be implemented if
+                              constraint_control_voltages = "regul" in the configs (see description below)
+
+                              Parameters
+                              ----------
+                              regul_factor : int
+                                            See description below
+
+        3. regularizer : This method only needs to be implemented if
+                         constraint_control_voltages = "regul" in the configs (see description below)
+                         An example can be found at: brainspy.processors.dnpu, inside the class DNPU
+
+                         Parameters : None
+
+        4. constraint_weights : This method only needs to be implemented if
+                         constraint_control_voltages = "clip" in the configs (see description below)
+
+                         Parameters : None
+
 
     dataloaders : list
         A list containing one or two Pytorch dataloaders. The first dataloader corresponds to the
@@ -87,6 +128,7 @@ def train(
 
         Logger directory info :
             log_train_step: to log each step in the training process
+            log_val_step: to log each step in the validation process
 
     save_dir : Optional[str]
         Folder where the trained model is going to be saved.
@@ -111,24 +153,28 @@ def train(
     Saved Data
     ----------
     A) After the end of the last epoch, the algorithm saves two main files:
-        model_raw.pt: An exact copy of the model after the end of the training process. It can be loaded directly as an instance of the model using:
-                            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+        model_raw.pt: An exact copy of the model after the end of the training process. It can be loaded directly as
+        an instance of the model using:
+            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
         training_data.pickle: A pytorch picle which contains the following keys:
             - epochs: int
                 Number of epochs used for training the model
             - algorithm:
                 Algorithm type that was being used. Either 'genetic' or 'gradient'.
             - optimizer_state_dict: OrderedDict
-                State of the optimizer at the end of last epoch. It can be used to resume model training at that exact point.
+                State of the optimizer at the end of last epoch. It can be used to resume model training at that
+                exact point.
             - model_state_dict: OrderedDict
-                It contains the value of the learnable parameters (weights, or in this case, control voltages) at the point where all the training was finised.
+                It contains the value of the learnable parameters (weights, or in this case, control voltages) at
+                the point where all the training was finised.
             - train_losses: list
                 A list of the loss performance over all epochs
             - val_losses: list
                 A list of the loss performance over all epochs
-    B) If there is a validation dataset present, and return_best_model is set to true. The algorithm will save, each time that the validation loss is better than the previous,
-    the following files:
-        best_model_raw.pt: An exact copy of the model when it got the best validation results. It can be loaded directly as an instance of the model using:
+    B) If there is a validation dataset present, and return_best_model is set to true. The algorithm will
+    save, each time that the validation loss is better than the previous, the following files:
+        best_model_raw.pt: An exact copy of the model when it got the best validation results. It can be
+        loaded directly as an instance of the model using:
                             my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
         best_training_data.pickle: A pytorch picle which contains the following keys:
             - epoch: int
@@ -136,9 +182,11 @@ def train(
             - algorithm: str
                 Algorithm type that was being used. Either 'genetic' or 'gradient'.
             - optimizer_state_dict: OrderedDict
-                State of the optimizer at the moment when the best validation loss was achieved. It can be used to resume model training at that exact point.
+                State of the optimizer at the moment when the best validation loss was achieved. It can be used
+                to resume model training at that exact point.
             - model_state_dict: OrderedDict
-                It contains the value of the learnable parameters (weights, or in this case, control voltages) at the point where the best validation was achieved.
+                It contains the value of the learnable parameters (weights, or in this case, control voltages) at
+                the point where the best validation was achieved.
             - train_loss: float
                 Training loss at the point where the best validation was achieved.
             - validation_loss: float
@@ -147,25 +195,48 @@ def train(
     assert isinstance(
         model,
         torch.nn.Module), "The model should be an instance of torch.nn.Module"
+    assert "format_targets" in dir(
+        model), "The format_targets function should be implemeted in the model"
     assert type(
         dataloaders) == list, "The dataloaders should be of type - list"
+    for dataloader in dataloaders:
+        assert isinstance(
+            dataloader, DataLoader
+        ), "The dataloader should be an instance of torch.utils.data.DataLoader"
     assert callable(criterion), "The criterion should be a callable method"
     assert isinstance(
         optimizer, torch.optim.Optimizer
-    ), "The optimizer should be an instance of torch.optim.Optimizer"
+    ), "The optimizer object should be an instance of torch.optim.Optimizer"
+    assert not isinstance(
+        optimizer, GeneticOptimizer
+    ), "The optimizer object cannot be an instance of a GeneticOptimizer incase of Gradient Descent"
     assert type(configs) == dict, "The extra configs should be of type - dict"
     if configs["epochs"]:
         assert type(
             configs["epochs"]) == int, "The epochs key should be of type - int"
-    if configs["constraint_control_voltages"]:
-        assert type(
-            configs["constraint_control_voltages"]
-        ) == str, "The constraint_control_voltages key should be of type str: The options are - regul or clip"
+    assert type(
+        configs["constraint_control_voltages"]
+    ) == str, "The constraint_control_voltages key should be of type str"
+    assert configs["constraint_control_voltages"] == "clip" or configs[
+        "constraint_control_voltages"] == "regul", "The constraint_control_voltages should be either clip or regul"
     if configs["constraint_control_voltages"] == "regul":
-        assert "regul_factor" in configs, "If constraint_control_voltages = 'regul', 'regul_factor' key has to be specified"
+        if "regul_factor" not in configs:
+            raise AssertionError(
+                "If constraint_control_voltages = 'regul', 'regul_factor' key has to be specified"
+            )
         assert type(
             configs["regul_factor"]
         ) == float, "The regul_factor key should be of type - float"
+        assert "regularizer" in dir(
+            model
+        ), "The model should implement the regularizer function for this option"
+        assert "set_regul_factor" in dir(
+            model
+        ), "The model should implement the set_regul_factor function for this option"
+    else:
+        assert "constraint_weights" in dir(
+            model
+        ), "The model should implement the constraint_weights function for this option"
     if save_dir is not None:
         assert type(
             save_dir
@@ -181,7 +252,8 @@ def train(
     model.to(device=TorchUtils.get_device())
 
     if "set_regul_factor" in dir(model) and "regul_factor" in configs:
-        model.set_regul_factor(configs["regul_factor"])
+        model.set_regul_factor(
+            configs["regul_factor"])  # type: ignore[operator]
 
     for epoch in looper:
 
@@ -230,7 +302,11 @@ def train(
         # TODO: Add a save instruction and a stopping criteria
         # if stopping_criteria(train_losses, val_losses):
         #     break
-    torch.save(model, os.path.join(save_dir, "model_raw.pt"))
+    torch.save(
+        model,
+        os.path.join(
+            save_dir,  # type: ignore[arg-type]
+            "model_raw.pt"))
     torch.save(
         {
             "epoch": epoch + 1,
@@ -241,7 +317,9 @@ def train(
             "val_losses": val_losses,
             "min_val_loss": min_val_loss,
         },
-        os.path.join(save_dir, "training_data.pickle"),
+        os.path.join(
+            save_dir,  # type: ignore[arg-type]
+            "training_data.pickle"),
     )
     if logger is not None:
         logger.close()
@@ -279,19 +357,12 @@ def default_train_step(model,
     model : torch.nn.Module
         The model to be trained. It should be an instance of a torch.nn.Module. It can be a
         Processor, representing a hardware DNPU or a DNPU model, but it also can be a model that
-        contains different more complex architectures using several processors.
+        contains different more complex architectures using several processors. Refer to the
+        documentation of the train function above for more inforamtion about defining a model.
     epoch : int
         Number of passes through the entire training dataset.
-    dataloader : list
-        A list containing one or two Pytorch dataloaders. The first dataloader corresponds to the
-        training dataset. The second dataloader is optional, and it corresponds to the validation
-        dataset. If no validation dataset is given, the training loop will train the model and
-        return the trained model only after reaching to the latest epoch. If a second dataloader is
-        given, it will be used as a validation dataset. When a validation dataset is present, only
-        models with solutions that achieve the lowest validation score will be saved. It is
-        recommended to have an additional test dataset on the side, to check the model against,
-        after training it with an additional validation datasetz
-
+    dataloader : torch.utils.data.Dataloader
+        A Pytorch dataloaders that corresponds to the training dataset.
         More information about dataloaders can be found at:
         https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 
@@ -342,18 +413,42 @@ def default_train_step(model,
         To assess the training loss: how far the predictions of the model are from the actual
         targets.
     """
-    assert type(
+    assert isinstance(
         model,
         torch.nn.Module), "The model should be an instance of torch.nn.Module"
+    assert "format_targets" in dir(
+        model), "The format_targets function should be implemeted in the model"
     assert type(epoch) == int, "The epoch param should be of type - int"
-    assert type(dataloader) == list, "The dataloaders should be of type - list"
+    assert isinstance(
+        dataloader, DataLoader
+    ), "The dataloader should be an instance of torch.utils.data.DataLoader"
     assert callable(criterion), "The criterion should be a callable method"
+    assert not isinstance(
+        optimizer, GeneticOptimizer
+    ), "The optimizer object cannot be an instance of a GeneticOptimizer incase of Gradient Descent"
     assert isinstance(
         optimizer, torch.optim.Optimizer
     ), "The optimizer should be an instance of torch.optim.Optimizer"
-    assert type(
-        constraint_control_voltages
-    ) == str, "The constraint_control_voltages key should be of type str: The options are - regul or clip"
+    if constraint_control_voltages is not None:
+        assert type(
+            constraint_control_voltages
+        ) == str, "The constraint_control_voltages should be of type str"
+    if constraint_control_voltages is not None:
+        if constraint_control_voltages != "clip" and constraint_control_voltages != "regul":
+            raise AssertionError(
+                "The constraint_control_voltages should be either clip or regul"
+            )
+    if constraint_control_voltages == "regul":
+        assert "regularizer" in dir(
+            model
+        ), "The model should implement the regularizer function for this option"
+        assert "set_regul_factor" in dir(
+            model
+        ), "The model should implement the set_regul_factor function for this option"
+    else:
+        assert "constraint_weights" in dir(
+            model
+        ), "The model should implement the constraint_weights function for this option"
 
     running_loss = 0
     model.train()
@@ -402,17 +497,10 @@ def default_val_step(epoch, model, dataloader, criterion, logger=None):
     model : torch.nn.Module
         The model to be trained. It should be an instance of a torch.nn.Module. It can be a
         Processor, representing a hardware DNPU or a DNPU model, but it also can be a model that
-        contains different more complex architectures using several processors.
-    dataloader : list
-        A list containing one or two Pytorch dataloaders. The first dataloader corresponds to the
-        training dataset. The second dataloader is optional, and it corresponds to the validation
-        dataset. If no validation dataset is given, the training loop will train the model and
-        return the trained model only after reaching to the latest epoch. If a second dataloader is
-        given, it will be used as a validation dataset. When a validation dataset is present, only
-        models with solutions that achieve the lowest validation score will be saved. It is
-        recommended to have an additional test dataset on the side, to check the model against,
-        after training it with an additional validation datasetz
-
+        contains different more complex architectures using several processors.Refer to the
+        documentation of the train function above for more inforamtion about defining a model.
+    dataloader : torch.utils.data.Dataloader
+        A Pytorch dataloaders that corresponds to the validation dataset.
         More information about dataloaders can be found at:
         https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 
@@ -438,11 +526,15 @@ def default_val_step(epoch, model, dataloader, criterion, logger=None):
         To assess how well the model fits new data.
         It is the sum of errors made for each example in training or validation sets.
     """
-    assert type(
+    assert isinstance(
         model,
         torch.nn.Module), "The model should be an instance of torch.nn.Module"
+    assert "format_targets" in dir(
+        model), "The format_targets function should be implemeted in the model"
     assert type(epoch) == int, "The epoch param should be of type - int"
-    assert type(dataloader) == list, "The dataloaders should be of type - list"
+    assert isinstance(
+        dataloader, DataLoader
+    ), "The dataloader should be an instance of torch.utils.data.DataLoader"
     assert callable(criterion), "The criterion should be a callable method"
     with torch.no_grad():
         val_loss = 0

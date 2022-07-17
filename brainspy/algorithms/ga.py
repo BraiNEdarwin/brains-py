@@ -3,10 +3,10 @@ import torch
 import warnings
 import numpy as np
 from tqdm import trange
-
 from brainspy.algorithms.modules.signal import pearsons_correlation
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.algorithms.modules.optim import GeneticOptimizer
+from torch.utils.data import DataLoader
 
 
 def train(model: torch.nn.Module,
@@ -27,6 +27,40 @@ def train(model: torch.nn.Module,
     ----------
     model : torch.nn.Module
         Model to be trained.
+
+        - The model cannot be an instance of SurrogateModel, HardwareProcessor or Processor.
+        - The model can only consist of 1 DNPU instance.
+        - The model should have the following methods implemented :
+
+        1. set_control_voltages : To change the control voltages/bias of the network.
+
+                                    Parameters
+                                    ----------
+                                    bias : torch.Tensor
+                                        New value of the bias/control voltage.
+                                        One dimensional tensor.
+
+        2. format_targets : The hardware processor uses a waveform to represent points
+                            (see 5.1 in Introduction of the Wiki). Each point is represented with some
+                            slope and some plateau points. When passing through the hardware, there will
+                            be a difference between the output from the device and the input (in points).
+                            This function is used for the targets to have the same length in shape as the
+                            outputs. It simply repeats each point in the input as many times as there are
+                            points in the plateau. In this way, targets can then be compared against hardware
+                            outputs in the loss function.
+
+                                    Parameters
+                                    ----------
+                                    x : torch.Tensor
+                                    Targets of the supervised learning problem, that will be extended to have the same
+                                    length shape as the outputs from the processor.
+
+
+        3. is_hardware : Return True if the device is connected to hardware and
+                         False if a simulation device is being used
+
+                                    Parameters : None
+
     dataloaders : list
                   A list containing a single PyTorch Dataloader containing the training dataset.
                   More information about dataloaders can be found at:
@@ -60,16 +94,18 @@ def train(model: torch.nn.Module,
     Saved Data
     ----------
     A) After the end of the last epoch, the algorithm saves two main files:
-        model_raw.pt: This file is only saved when the model is not hardware (simulation). The file is an exact copy of the model after the end of
-                      the training process. It can be loaded directly as an instance of the model using:
-                            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+        model_raw.pt: This file is only saved when the model is not hardware (simulation).
+        The file is an exact copy of the model after the end of the training process.
+        It can be loaded directly as an instance of the model using:
+            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
         training_data.pickle: A pytorch picle which contains the following keys:
-            - epochs: int 
+            - epochs: int
                 Number of epochs used for training the model
             - algorithm:
                 Algorithm type that was being used. Either 'genetic' or 'gradient'.
             - model_state_dict: OrderedDict
-                It contains the value of the learnable parameters (weights, or in this case, control voltages) at the point where all the training was finised.
+                It contains the value of the learnable parameters (weights, or in this case, control voltages) at
+                the point where all the training was finised.
             - performance: list
                 A list of the fitness function performance over all epochs
             - correlations: list
@@ -78,16 +114,18 @@ def train(model: torch.nn.Module,
                 A list of the genomes that were used in each epoch
 
     B) If the fitness performance is better than in previous epochs, the following files are saved:
-        best_model_raw.pt: This file is only saved when the model is not hardware (simulation). The file is an exact copy of the model when it got 
-                           the best validation results. It can be loaded directly as an instance of the model using:
-                                my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+        best_model_raw.pt: This file is only saved when the model is not hardware (simulation). The file is an exact
+        copy of the model when it got the best validation results. It can be loaded directly as an instance of the
+        model using:
+            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
         best_training_data.pickle: A pytorch picle which contains the following keys:
-            - epoch: int 
+            - epoch: int
                 Epoch at which the model with best validation loss was found.
             - algorithm: str
                 Algorithm type that was being used. Either 'genetic' or 'gradient'.
             - model_state_dict: OrderedDict
-                It contains the value of the learnable parameters (weights, or in this case, control voltages) at the point where the best validation was achieved.
+                It contains the value of the learnable parameters (weights, or in this case, control voltages)
+                at the point where the best validation was achieved.
             - best_fitness: float
                 Training fitness at the point where the best validation was achieved.
             - correlation: float
@@ -96,12 +134,28 @@ def train(model: torch.nn.Module,
     assert isinstance(
         model,
         torch.nn.Module), "The model should be an instance of torch.nn.Module"
+    assert "set_control_voltages" in dir(
+        model
+    ), "The set_control_voltages function should be implemeted in the model"
+    assert "is_hardware" in dir(
+        model), "The is_hardware function should be implemeted in the model"
+    assert "format_targets" in dir(
+        model), "The format_targets function should be implemeted in the model"
     assert type(
         dataloaders) == list, "The dataloaders should be of type - list"
+    assert len(
+        dataloaders
+    ) == 1, "The dataloaders list should contain a single PyTorch Dataloader"
+    assert isinstance(
+        dataloaders[0], DataLoader
+    ), "The dataloader should be an instance of torch.utils.data.DataLoader"
     assert callable(criterion), "The criterion should be a callable method"
     assert isinstance(
-        optimizer, GeneticOptimizer
-    ), "The optimizer should be an instance of GeneticOptimizer"
+        optimizer, torch.optim.Optimizer
+    ), "The optimizer object should be an instance of torch.optim.Optimizer"
+    if isinstance(optimizer, GeneticOptimizer):
+        warnings.warn(
+            "A custom optimizer can be used instead of the GeneticOptimizer.")
     assert type(configs) == dict, "The extra configs should be of type - dict"
     if configs["epochs"]:
         assert type(
@@ -145,8 +199,8 @@ def train(model: torch.nn.Module,
             genome_history.append(pool[current_best_index].detach().cpu())
             correlation_history.append(
                 pearsons_correlation(
-                    best_current_output,
-                    model.format_targets(targets)).detach().cpu())
+                    best_current_output, model.format_targets(
+                        targets)).detach().cpu())  # type: ignore[operator]
             looper.set_description("  Gen: " + str(epoch + 1) +
                                    ". Max fitness: " +
                                    str(performance_history[-1].item()) +
@@ -157,9 +211,9 @@ def train(model: torch.nn.Module,
                 best_result_index = epoch
                 best_correlation = correlation_history[-1].detach().cpu()
                 best_output = best_current_output.detach().cpu()
-                model.set_control_voltages(
-                    genome_history[best_result_index].unsqueeze(
-                        0))  # Only one device is supported,
+                model.set_control_voltages(  # type: ignore[operator]
+                    genome_history[best_result_index].unsqueeze(0))
+                # Only one device is supported,
                 # therefore it is unesqueezed for the first dimension.
                 if save_dir is not None:
                     torch.save(
@@ -172,7 +226,7 @@ def train(model: torch.nn.Module,
                         },
                         os.path.join(save_dir, "best_training_data.pickle"),
                     )
-                    if not model.is_hardware():
+                    if not model.is_hardware():  # type: ignore[operator]
                         torch.save(model,
                                    os.path.join(save_dir, "best_model_raw.pt"))
 
@@ -184,8 +238,10 @@ def train(model: torch.nn.Module,
                         + " stopping threshold. ")
                     looper.close()
                     # Close the model adequately if it is on hardware
-                    if model.is_hardware() and "close" in dir(model):
-                        model.close()
+                    if model.is_hardware(
+                    ) and "close" in dir(  # type: ignore[operator]
+                            model):  # type: ignore[operator]
+                        model.close()  # type: ignore[operator]
                     break
 
             pool = optimizer.step(criterion_pool)
@@ -199,15 +255,22 @@ def train(model: torch.nn.Module,
                 "correlations": correlation_history,
                 "genome_history": genome_history
             },
-            os.path.join(save_dir, "training_data.pickle"),
+            os.path.join(
+                save_dir,  # type: ignore[arg-type]
+                "training_data.pickle"),
         )
-        if not model.is_hardware():
-            torch.save(model, os.path.join(save_dir, "model_raw.pt"))
+        if not model.is_hardware():  # type: ignore[operator]
+            torch.save(
+                model,
+                os.path.join(
+                    save_dir,  # type: ignore[arg-type]
+                    "model_raw.pt"))  # type: ignore[operator]
 
         # Load best solution
         model.load_state_dict(
             torch.load(os.path.join(
-                save_dir, "best_training_data.pt"))['model_state_dict'])
+                save_dir, "best_training_data.pt"))  # type: ignore[arg-type]
+            ['model_state_dict'])
         print("Best solution in epoch (starting from 0): " +
               str(best_result_index))
         print("Best fitness: " + str(best_fitness.item()))
@@ -245,7 +308,8 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
         [description]
     model : torch.nn.Module
         Model against which all the solutions will be measured. It can be a Processor, representing
-        either a hardware DNPU or a DNPU surrogate model.
+        either a hardware DNPU or a DNPU surrogate model. Refer to the documentation of the train
+        function (above) to see how a model can be defined.
     criterion : <method>
                 Fitness function that will be used to train the model.
 
@@ -268,10 +332,18 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
     assert isinstance(
         model,
         torch.nn.Module), "The model should be an instance of torch.nn.Module"
+    assert "set_control_voltages" in dir(
+        model
+    ), "The set_control_voltages function should be implemeted in the model"
+    assert "is_hardware" in dir(
+        model), "The is_hardware function should be implemeted in the model"
+    assert "format_targets" in dir(
+        model), "The format_targets function should be implemeted in the model"
     assert callable(criterion), "The criterion should be a callable method"
 
     outputs_pool = torch.zeros(
-        (len(pool), ) + (len(model.format_targets(inputs)), 1),
+        (len(pool), ) +
+        (len(model.format_targets(inputs)), 1),  # type: ignore[operator]
         dtype=torch.get_default_dtype(),
         device=TorchUtils.get_device(),
     )
@@ -286,24 +358,31 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
         # gene_pool[j, self.gene_trafo_index])
         # assert False, 'Check the case for inputing voltages with plateaus to check if
         # it works when merging control voltages and inputs'
-        model.set_control_voltages(pool[j].unsqueeze(0))
+        model.set_control_voltages(
+            pool[j].unsqueeze(0))  # type: ignore[operator]
         outputs_pool[j] = model(inputs)
 
-        if (torch.any(outputs_pool[j] <= model.get_clipping_value()[0])
-                or torch.any(outputs_pool[j] >= model.get_clipping_value()[1])
-                or (outputs_pool[j] - outputs_pool[j].mean() == 0.0).all()):
-            criterion_pool[j] = criterion(outputs_pool[j],
-                                          model.format_targets(targets),
-                                          default_value=True)
+        if (torch.any(outputs_pool[j] <=
+                      model.get_clipping_value()[0])  # type: ignore[operator]
+                or torch.any(
+                    outputs_pool[j] >=
+                    model.get_clipping_value()[1])  # type: ignore[operator]
+                or (outputs_pool[j] - outputs_pool[j].mean()
+                    == 0.0).all()):  # type: ignore[operator]
+            criterion_pool[j] = criterion(
+                outputs_pool[j],
+                model.format_targets(targets),  # type: ignore[operator]
+                default_value=True)
         else:
-            criterion_pool[j] = criterion(outputs_pool[j],
-                                          model.format_targets(targets))
+            criterion_pool[j] = criterion(
+                outputs_pool[j],
+                model.format_targets(targets))  # type: ignore[operator]
 
         # output_popul[j] = self.processor.get_output(merge_inputs_and_control_voltages_in_numpy(
         # inputs_without_offset_ and_scale, control_voltage_genes, self.input_indices,
         # self.control_voltage_indices))
     if (criterion_pool == -1.).all() is True:
-        clipping_value = model.get_clipping_value()
+        clipping_value = model.get_clipping_value()  # type: ignore[operator]
         warnings.warn(
             "All criterion values are set to -1. This is caused because all the outputs"
             +
