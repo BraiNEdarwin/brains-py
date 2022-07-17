@@ -74,7 +74,7 @@ class NationalInstrumentsSetup:
             follows:
 
                 inverted_output : bool
-                    description
+                    True if inversion should be applied to the output of the DNPU, else False.
 
                 output_clipping_range: [float,float]
                     The the setups have a limit in the range they can read. They typically clip at
