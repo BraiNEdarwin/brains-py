@@ -245,7 +245,7 @@ class IOTasksManager:
             max_val=5,
         )
 
-    def read(self, number_of_samples_per_channel=None, timeout=None):
+    def read(self, number_of_samples_per_channel, timeout=None):
         """
         Reads samples from the task or virtual channels you specify. This read method is dynamic,
         and is capable of inferring an appropriate return type based on these factors: - The
@@ -267,7 +267,7 @@ class IOTasksManager:
 
         Parameters
         ----------
-        number_of_samples_per_channel : Optional[int]
+        number_of_samples_per_channel : int
             Specifies the number of samples to read. If this input is not set, assumes samples to
             read is 1. Conversely, if this input is set, assumes there are multiple samples to read.
             If you set this input to nidaqmx.constants. READ_ALL_AVAILABLE, NI-DAQmx determines how

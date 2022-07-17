@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Union
 """
 This file contains a set of functions that are used to initialise the channels used to
 specify the connection between the National Instrument devices and the electrodes of
@@ -21,17 +22,18 @@ def init_channel_data(configs):
         the following keys:
             instruments_setup:
                 multiple_devices: boolean
-                    Whether if the configurations contain the configurations of reading from a single
-                    DNPU hardware device or multiple DNPU hardware devices.
+                    Whether if the configurations contain the configurations of reading from a
+                    single DNPU hardware device or multiple DNPU hardware devices.
                 trigger_source: str
                     For synchronisation purposes, sending data for the activation voltages on one NI
-                    Task can trigger the readout device of another NI Task. In these cases, the trigger
-                    source name should be specified in the configs. This is only applicable for CDAQ to
+                    Task can trigger the readout device of another NI Task. In these cases, the
+                    trigger source name should be specified in the configs. This is only applicable
+                    for CDAQ to
                     CDAQ setups (with or without real-time rack).
                     E.g., cDAQ1/segment1 - More information at:
                     https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
-                The reminder of the keys work as follows. If the attribute multiple_devices is set to
-                False, the following configurations apply:
+                The reminder of the keys work as follows. If the attribute multiple_devices is set
+                to False, the following configurations apply:
                     activation_instrument: str
                         The name of the National Instument device used for writing the data into the
                         activation electrodes of the hardware DNPU device.
@@ -41,30 +43,31 @@ def init_channel_data(configs):
                         that will be used for writing the data into the activation electrodes of the
                         hardware DNPU device. (e.g., [6,0,7,5,2,4,3])
                     activation_voltage_ranges: list
-                        The maximum and minimum voltage values that the National Instrument device will
-                        be allowed to sent through the activation electrodes of a particular DNPU
-                        hardware device. The shape is (activation_electrode_no,2) where the second
-                        dimension stands for minimum and maximum of the range, respectively.
+                        The maximum and minimum voltage values that the National Instrument device
+                        will be allowed to sent through the activation electrodes of a particular
+                        DNPU hardware device. The shape is (activation_electrode_no,2) where the
+                        second dimension stands for minimum and maximum of the range, respectively.
                         E.g,:
                         [[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7]]
                     activation_channel_mask: list
                         A list of zeroes and ones, representing each of the channels that go to the
                         activationelectrodes of a particular DNPU. The list should have a length of
-                        (activation_electrode_no). Each zero in the list will be a deactivated channel,
-                        each one in the list will be an activated channel. E.g., [0,0,0,0,0,0,0]
+                        (activation_electrode_no). Each zero in the list will be a deactivated
+                        channel, each one in the list will be an activated channel.
+                        E.g., [0,0,0,0,0,0,0]
                     readout_instrument: str
-                        Name of the instrument that is used for reading the output of a hardware DNPU.
-                        E.g., cDAQ1Mod4
+                        Name of the instrument that is used for reading the output of a hardware
+                        DNPU. E.g., cDAQ1Mod4
                     readout_channels: list
                         List of physical channels of the National Instruments device from which the
-                        output of a hardware DNPU will be read. The length of the list is the same as
-                        the number of readout electrodes.
+                        output of a hardware DNPU will be read. The length of the list is the same
+                        as the number of readout electrodes.
 
                 If the attribute multiple_devices is set to True, the same keys as above need to be
                 encapsulated on a previous dictionary level.
-                This can be repeated for more than one device, as follows. E.g., in a .yaml format, the
-                configurations for two different DNPU hardware devices (A and B) can be declared as
-                follows:
+                This can be repeated for more than one device, as follows. E.g., in a .yaml format,
+                the configurations for two different DNPU hardware devices (A and B) can be
+                declared as follows:
                     "
                     multiple_devices: True
                     trigger_source: cDAQ1/segment1
@@ -110,10 +113,12 @@ def init_channel_data(configs):
         activation_channel_list = []
         readout_channel_list = []
         voltage_ranges_list = []
+        has_at_least_one_val = False
         for device_name in configs["instruments_setup"]:
             if is_device_name(device_name):
                 mask = get_mask(configs["instruments_setup"][device_name])
                 if mask is None or sum(mask) > 0:
+                    has_at_least_one_val = True
                     configs["instruments_setup"][device_name][
                         "activation_channels"] = list(
                             np.array(configs["instruments_setup"][device_name]
@@ -143,6 +148,10 @@ def init_channel_data(configs):
                     if mask is not None:
                         voltage_ranges = voltage_ranges[mask == 1]
                     voltage_ranges_list.append(voltage_ranges)
+        if not has_at_least_one_val:
+            raise AssertionError(
+                "If multiple devices are used, at least 1 mask value of 1 device should be 1"
+            )
         voltage_ranges = concatenate_voltage_ranges(voltage_ranges_list)
     return activation_channel_list, readout_channel_list, instruments, voltage_ranges
 
@@ -154,8 +163,11 @@ def type_check(configs):
     assert type(configs["instruments_setup"]["multiple_devices"]
                 ) == bool, "Multiple devices key should be of type bool"
     assert type(
-        configs["instruments_setup"]["trigger_source"]) == str, "trigger_source key should be of type str"
-    # Assertions for single device
+        configs["instruments_setup"]
+        ["trigger_source"]) == str, "trigger_source key should be of type str"
+
+    # Assertions for a Single Device
+
     if not configs["instruments_setup"]["multiple_devices"]:
         assert type(configs["instruments_setup"]["activation_instrument"]
                     ) == str, "activation_instrument key should be of type str"
@@ -191,7 +203,10 @@ def type_check(configs):
                 voltage_range[1],
                 (np.floating, float, int
                  )), "Volatge range can contain only int or float type values"
-    else:  # Assertions for multiple devices
+
+    # Assertions for Multiple Devices
+
+    else:
         for device_name in configs["instruments_setup"]:
             if is_device_name(device_name):
                 assert type(
@@ -199,14 +214,16 @@ def type_check(configs):
                     ["activation_instrument"]
                 ) == str, "activation_instrument key should be of type str"
                 assert type(
-                    configs["instruments_setup"][device_name]["readout_instrument"]
+                    configs["instruments_setup"][device_name]
+                    ["readout_instrument"]
                 ) == str, "readout_instrument key should be of type str"
                 assert type(
                     configs["instruments_setup"][device_name]
                     ["activation_channels"]
                 ) == list, "activation_channels key should be of type list"
                 assert type(
-                    configs["instruments_setup"][device_name]["readout_channels"]
+                    configs["instruments_setup"][device_name]
+                    ["readout_channels"]
                 ) == list, "readout_channels key should be of type list"
                 assert type(
                     configs["instruments_setup"][device_name]
@@ -256,7 +273,7 @@ def is_device_name(key):
             and key != "average_io_point_difference")
 
 
-def concatenate_voltage_ranges(voltage_ranges: np.array):
+def concatenate_voltage_ranges(voltage_ranges: Union[list, np.ndarray]):
     """
     It creates a single array of voltage ranges, as defined in the activation_voltage_ranges
     flag of the driver's configs files. It is meant for cases where the PCB supports writing
@@ -265,23 +282,26 @@ def concatenate_voltage_ranges(voltage_ranges: np.array):
 
     Parameters
     ----------
-    voltage_ranges: np.array
+    voltage_ranges: np.array or list
         The maximum and minimum voltage values that the National Instrument device will be allowed
         to send through the activation electrodes of a particular DNPU hardware device.
 
     Returns
     -------
-    result: np.array
+    result: np.array # or list
         A numpy array with the concatenation of several voltage ranges from more than one DNPU
         hardware device, in cases where the PCB supports writing to more than one DNPU hardware
         device simultaneously.
     """
-    assert type(voltage_ranges
-                ) == np.ndarray or type(voltage_ranges) == list, "Voltage ranges should be of type - list or numpy array"
-    result = voltage_ranges[0]
-    for i in range(1, len(voltage_ranges)):
-        result = np.concatenate((result, voltage_ranges[i]), axis=0)
-    return result
+    assert type(voltage_ranges) == np.ndarray or type(
+        voltage_ranges
+    ) == list, "Voltage ranges should be of type - list or numpy array"
+    # assert voltage ranges >0
+    if len(voltage_ranges) > 0:
+        result = voltage_ranges[0]
+        for i in range(1, len(voltage_ranges)):
+            result = np.concatenate((result, voltage_ranges[i]), axis=0)
+        return result
 
 
 def init_activation_channels(configs, activation_channel_list=[]):
