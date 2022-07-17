@@ -5,6 +5,7 @@ import numpy as np
 from brainspy.utils.manager import get_driver
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager
+from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 
 
 class HardwareProcessor(nn.Module):
@@ -27,7 +28,7 @@ class HardwareProcessor(nn.Module):
     """
 
     # TODO: Automatically register the data type according to the configurations of the
-    #  amplification variable of the  info dictionary
+    #  amplification variable of the info dictionary
     # Instrument configs can be a dictionary or a driver which has been already initialised
     def __init__(self,
                  instrument_configs,
@@ -39,15 +40,17 @@ class HardwareProcessor(nn.Module):
 
         Parameters
         ----------
-        configs : dict
-            configs dictionary for the device model
+        instruments_configs : dict or SurrogateModel
 
-            The configs should have the following keys:
+            - If a SurrogateModel instance is provided, it will simulate a hardware processor
+            for debugging purposes, without connecting to real hardware.
+            Refer to brainspy.simulation.processor to see how a SurrogateModel can be defined.
 
-            processor_type : str
-                "simulation_debug" or "cdaq_to_cdaq" or "cdaq_to_nidaq" - Processor type to
-                initialize a hardware processor
-            driver:
+            - If the instruments configs are provided as a dict, the configs should have the following keys:
+
+                inverted_output : bool
+                    True if inversion should be applied to the output of the DNPU, else False.
+
                 output_clipping_range: [float,float]
                     The the setups have a limit in the range they can read. They typically clip at
                     approximately +-4 V.
@@ -70,87 +73,91 @@ class HardwareProcessor(nn.Module):
                     The amplification value depends on the feedback resistance of each of the
                     setups.
 
-                    Below, there is a guide of the amplification value needed for each of the
-                    setups:
+                        Below, there is a guide of the amplification value needed for each of the
+                        setups:
 
-                                        Darwin: Variable amplification levels:
-                                            A: 1000 Amplification
-                                            Feedback resistance: 1 MOhm
-                                            B: 100 Amplification
-                                            Feedback resistance 10 MOhms
-                                            C: 10 Amplification
-                                            Feedback resistance: 100 MOhms
-                                            D: 1 Amplification
-                                            Feedback resistance 1 GOhm
-                                        Pinky:  - PCB 1 (6 converters with):
-                                                Amplification 10
-                                                Feedback resistance 100 MOhm
-                                                - PCB 2 (6 converters with):
-                                                Amplification 100 tims
-                                                10 mOhm Feedback resistance
-                                        Brains: Amplfication 28.5
-                                                Feedback resistance, 33.3 MOhm
-                                        Switch: (Information to be completed)
-                                        If no correction is desired, the amplification can be set
-                                        to 1.
-                instruments_setup:
-                    multiple_devices: boolean
-                        False will initialise the drivers to read from a single hardware DNPU.
-                        True, will enable to read from more than one DNPU device at the same time.
-                    activation_instrument: str
-                        Name of the activation instrument as observed in the NI Max software.
-                        E.g.,  cDAQ1Mod3
-                    activation_sampling_frequency: int
-                        The number of samples to be obtained in one second,
-                        when transforming the activation signal from digital to analogue.
-                    activation_channels: list
-                        Channels through which voltages will be sent for activating the device
-                        (both data inputs and control voltage electrodes). The channels can be
-                        checked in the schematic of the DNPU device.
-                        E.g., [8,10,13,11,7,12,14]
-                    activation_voltage_ranges: list
-                        Minimum and maximum voltage for the activation electrodes.
-                        E.g., [[-1.2, 0.6], [-1.2, 0.6],
-                        [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-0.7, 0.3], [-0.7, 0.3]]
-                    readout_instrument: str
-                        Name of the readout instrument as observed in the NI Max software.
-                        E.g., cDAQ1Mod4
-                    readout_sampling_frequency: int
-                        The number of samples to be obtained in one second, when transforming
-                        the readout signal from analogue to digital.
-                    readout_channels: [2] list
-                        Channels for reading the output current values.
-                        The channels can be checked in the schematic of the DNPU device.
-                    trigger_source: str
-                        For synchronisation purposes, sending data for the activation voltages on
-                        one NI Task can trigger the readout device of another NI Task. In these
-                        cases,the trigger source name should be specified in the configs.
-                        This is only applicable for CDAQ to CDAQ setups
-                        (with or without real-time rack).
-                        E.g., cDAQ1/segment1
-                        More information at
-                        https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
+                                            Darwin: Variable amplification levels:
+                                                A: 1000 Amplification
+                                                Feedback resistance: 1 MOhm
+                                                B: 100 Amplification
+                                                Feedback resistance 10 MOhms
+                                                C: 10 Amplification
+                                                Feedback resistance: 100 MOhms
+                                                D: 1 Amplification
+                                                Feedback resistance 1 GOhm
+                                            Pinky:  - PCB 1 (6 converters with):
+                                                    Amplification 10
+                                                    Feedback resistance 100 MOhm
+                                                    - PCB 2 (6 converters with):
+                                                    Amplification 100 tims
+                                                    10 mOhm Feedback resistance
+                                            Brains: Amplfication 28.5
+                                                    Feedback resistance, 33.3 MOhm
+                                            Switch: (Information to be completed)
+                                            If no correction is desired, the amplification can be set
+                                            to 1.
+                    instruments_setup:
+                        multiple_devices: boolean
+                            False will initialise the drivers to read from a single hardware DNPU.
+                            True, will enable to read from more than one DNPU device at the same time.
+                        activation_instrument: str
+                            Name of the activation instrument as observed in the NI Max software.
+                            E.g.,  cDAQ1Mod3
+                        activation_sampling_frequency: int
+                            The number of samples to be obtained in one second,
+                            when transforming the activation signal from digital to analogue.
+                        activation_channels: list
+                            Channels through which voltages will be sent for activating the device
+                            (both data inputs and control voltage electrodes). The channels can be
+                            checked in the schematic of the DNPU device.
+                            E.g., [8,10,13,11,7,12,14]
+                        activation_voltage_ranges: list
+                            Minimum and maximum voltage for the activation electrodes.
+                            E.g., [[-1.2, 0.6], [-1.2, 0.6],
+                            [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-0.7, 0.3], [-0.7, 0.3]]
+                        readout_instrument: str
+                            Name of the readout instrument as observed in the NI Max software.
+                            E.g., cDAQ1Mod4
+                        readout_sampling_frequency: int
+                            The number of samples to be obtained in one second, when transforming
+                            the readout signal from analogue to digital.
+                        readout_channels: [2] list
+                            Channels for reading the output current values.
+                            The channels can be checked in the schematic of the DNPU device.
+                        trigger_source: str
+                            For synchronisation purposes, sending data for the activation voltages on
+                            one NI Task can trigger the readout device of another NI Task. In these
+                            cases,the trigger source name should be specified in the configs.
+                            This is only applicable for CDAQ to CDAQ setups
+                            (with or without real-time rack).
+                            E.g., cDAQ1/segment1
+                            More information at
+                            https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
+
             plateau_length: float - Length of the plateau that is being sent through the forward
             call of the HardwareProcessor
             slope_length : float - Length of the slopes in the waveforms sent to the device through
             the drivers
 
-        The input data to the hardware drivers has to be given with a waveform. The waveform is
-        composed of slopes and plateaus.
-        Please check https://github.com/BraiNEdarwin/brains-py/wiki/A.-Introduction for more
-        information about hardware setups and how the waveform works.
+            The input data to the hardware drivers has to be given with a waveform. The waveform is
+            composed of slopes and plateaus.
+            Please check https://github.com/BraiNEdarwin/brains-py/wiki/A.-Introduction for more
+            information about hardware setups and how the waveform works.
 
-        logger: logging (optional) - It provides a way for applications to configure different
-            log handlers , by default None. The logger should be an already initialised class that
-            contains a method called 'log_output', where the input is a single numpy array variable.
-            It can be any class, and the data can be treated in the way the user wants.
-            You can get more information about loggers at
-            https://pytorch.org/docs/stable/tensorboard.html
-
+            logger: logging (optional) - It provides a way for applications to configure different
+                log handlers , by default None. The logger should be an already initialised class that
+                contains a method called 'log_output', where the input is a single numpy array variable.
+                It can be any class, and the data can be treated in the way the user wants.
+                You can get more information about loggers at
+                https://pytorch.org/docs/stable/tensorboard.html
         """
         super(HardwareProcessor, self).__init__()
-        assert type(plateau_length) == int or type(plateau_length) == float, "The plateau length should be of type -int or float"
-        assert type(slope_length) == int or type(slope_length) == float, "The slope length should be of type - int or float"
+        assert type(plateau_length) == int or type(
+            plateau_length
+        ) == float, "The plateau length should be of type -int or float"
+        assert type(slope_length) == int or type(
+            slope_length
+        ) == float, "The slope length should be of type - int or float"
         if not isinstance(instrument_configs, dict):
             self.driver = instrument_configs
             if self.driver.is_hardware():
@@ -159,13 +166,16 @@ class HardwareProcessor(nn.Module):
                 self.voltage_ranges = None
             self.clipping_value = self.driver.get_clipping_value()
         else:
+            NationalInstrumentsSetup.type_check(instrument_configs)
             self.driver = get_driver(instrument_configs)
             self.voltage_ranges = TorchUtils.format(self.driver.voltage_ranges)
             self.clipping_value = None
-            # TODO: Add message for assertion. Raise an error.
-            assert (slope_length / self.driver.configs["instruments_setup"]
-                    ["activation_sampling_frequency"]
-                    ) >= self.driver.configs["max_ramping_time_seconds"]
+            if slope_length / self.driver.configs["instruments_setup"][
+                    "activation_sampling_frequency"] >= self.driver.configs[
+                        "max_ramping_time_seconds"]:
+                raise AssertionError(
+                    "The ratio of the slope length and the activation sampling frequency cannot be less than the"
+                    + "max ramping time")
 
         self.waveform_mgr = WaveformManager({
             "slope_length": slope_length,
@@ -199,7 +209,8 @@ class HardwareProcessor(nn.Module):
             output data
 
         """
-        assert type(x) == torch.Tensor, "The input should be of type - torch.Tensor"
+        assert type(
+            x) == torch.Tensor, "The input should be of type - torch.Tensor"
         with torch.no_grad():
             x, mask = self.waveform_mgr.plateaus_to_waveform(
                 x, return_pytorch=False)
@@ -229,7 +240,8 @@ class HardwareProcessor(nn.Module):
             output data
 
         """
-        assert type(x) == np.ndarray, "The input data should be of type - numpy array"
+        assert type(
+            x) == np.ndarray, "The input data should be of type - numpy array"
         return self.driver.forward_numpy(x)
 
     def close(self):
