@@ -518,7 +518,7 @@ def default_val_step(epoch, model, dataloader, criterion, logger=None):
         loggers at https://pytorch.org/docs/stable/tensorboard.html
 
         Logger directory info :
-            log_train_step: to log each step in the training process
+            log_val_step: to log each step in the validation process
 
     Returns
     -------
