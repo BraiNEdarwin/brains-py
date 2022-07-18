@@ -112,11 +112,6 @@ def train(
                              should have a method called 'constraint_weights'. An example can be
                              found at: brainspy.processors.dnpu, inside the class DNPU, method
                              constraint_weights.
-            regul_factor : float
-                It is the equivalent to the parameter lambda in L1 and L2 regularisation.
-                This key will only be used when constraint_control_voltages is equal to 'regul'.
-                More on L1 and L2 regularisation can be found at:
-                https://towardsdatascience.com/l1-and-l2-regularization-methods-ce25e7fc831c
 
     logger: logging (optional)
         It provides a way for applications to configure different log handlers.
@@ -220,13 +215,6 @@ def train(
     assert configs["constraint_control_voltages"] == "clip" or configs[
         "constraint_control_voltages"] == "regul", "The constraint_control_voltages should be either clip or regul"
     if configs["constraint_control_voltages"] == "regul":
-        if "regul_factor" not in configs:
-            raise AssertionError(
-                "If constraint_control_voltages = 'regul', 'regul_factor' key has to be specified"
-            )
-        assert type(
-            configs["regul_factor"]
-        ) == float, "The regul_factor key should be of type - float"
         assert "regularizer" in dir(
             model
         ), "The model should implement the regularizer function for this option"
@@ -250,10 +238,6 @@ def train(
     looper.update(start_epoch)
     configs['return_best_model'] = return_best_model
     model.to(device=TorchUtils.get_device())
-
-    if "set_regul_factor" in dir(model) and "regul_factor" in configs:
-        model.set_regul_factor(
-            configs["regul_factor"])  # type: ignore[operator]
 
     for epoch in looper:
 

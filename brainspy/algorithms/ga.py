@@ -72,9 +72,6 @@ def train(model: torch.nn.Module,
                 offspring based on the best resulting genomes.
     configs : dict
         A dictionary containing extra configurations for the algorithm.
-            * epochs : int
-                Number of steps (generations) that the algorithm will take in order to train the
-                model.
             * stop_threshold: float
                 When the criterion fitness function reaches the specified threshold, or a higher
                 value, the algorithm will stop.
@@ -170,7 +167,7 @@ def train(model: torch.nn.Module,
         ) == str, "The name/path of the save_dir should be of type - str"
 
     # Evolution loop
-    looper = trange(configs["epochs"], desc="Initialising", leave=False)
+    looper = trange(optimizer.epochs, desc="Initialising", leave=False)
     pool = optimizer.pool
     best_fitness = TorchUtils.format([-np.inf], device=torch.device('cpu'))
     best_correlation = TorchUtils.format([-np.inf], device=torch.device('cpu'))
