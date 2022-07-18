@@ -1,10 +1,10 @@
+from random import random
 import torch
 import collections
 import numpy as np
 
 from torch import nn, Tensor
 from typing import Sequence, Union
-from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
 
 from brainspy.utils.transforms import get_linear_transform_constants
@@ -85,10 +85,12 @@ class DNPU(nn.Module):
             self.forward_pass = self.forward_for
             self.clip_input = self.clip_input_for
         else:
-            assert False, "Dnpu type not recognised. It should be either 'single', 'for' or 'vec'"
+            raise ValueError(
+                "Dnpu type not recognised. It should be either 'single', 'for' or 'vec'"
+            )
             # TODO: Change the assestion for raising an exception
 
-    def init_node_no(self, data_input_indices: Sequence[int]):
+    def init_node_no(self):
         """
         Counts how many DNPU nodes are going to be in the layer for time-multiplexing.
 
@@ -116,13 +118,12 @@ class DNPU(nn.Module):
         -------
         int - The number of nodes that are going to be used in the layer for time-multiplexing.
         """
-        aux = TorchUtils.format(data_input_indices)
-        if len(aux.shape) == 1:
+        if len(self.data_input_indices.shape) == 1:
             return 1
         else:
-            return len(aux)
+            return len(self.data_input_indices)
 
-    def init_activation_electrode_no(self, data_input_indices: Sequence[int]):
+    def init_activation_electrode_no(self):
         """
         It counts how many control and data input electrodes are
         going to be declared using the data_input_indices variable.
@@ -155,8 +156,7 @@ class DNPU(nn.Module):
             Number of control electrodes.
 
         """
-        aux = TorchUtils.format(data_input_indices)
-        input_data_electrode_no = len(aux[0])
+        input_data_electrode_no = len(self.data_input_indices[0])
         control_electrode_no = self.processor.get_activation_electrode_no(
         ) - input_data_electrode_no
         return input_data_electrode_no, control_electrode_no
@@ -182,7 +182,7 @@ class DNPU(nn.Module):
         -------
         >>> dnpu.get_activation_electrode_no()
         7
-        >>> input_indices = [0, 2]
+        >>> input_indices = [[0, 2]]
         >>> dnpu._init_electrode_info(input_indices)
         >>> dnpu.data_input_indices
         torch.Tensor([0, 2])
@@ -198,17 +198,19 @@ class DNPU(nn.Module):
         data_input_indices : Sequence[int]
             Indices of the input electrodes.
         """
-        self.node_no = self.init_node_no(data_input_indices)
+        self.register_buffer(
+            "data_input_indices",
+            torch.tensor(data_input_indices, dtype=torch.long))
+        self.node_no = self.init_node_no()
         self.data_input_electrode_no, self.control_electrode_no = self.init_activation_electrode_no(
-            data_input_indices)
+        )
         voltage_ranges = self.processor.processor.get_voltage_ranges()
 
         # Define data input voltage ranges
         # TODO: Add to documentation. data input ranges are defined as follows: (node_no,
         # electrode_no, 2) where last 2 is for min and max
         # Define data input electrode indices
-        self.data_input_indices = TorchUtils.format(data_input_indices,
-                                                    data_type=torch.int64)
+
         assert len(self.data_input_indices.shape) == 2, (
             "Please revise the format in which data input indices has been passed to the DNPU. "
             +
@@ -216,9 +218,9 @@ class DNPU(nn.Module):
             +
             "number of data input electrodes) (e.g., [[1,2]] or [[1,2],[1,3]], data input indices"
             + "CANNOT be represented as just [1,2]. )")
-        self.data_input_ranges = torch.stack(
-            [voltage_ranges[i] for i in data_input_indices])
-
+        self.register_buffer(
+            "data_input_ranges",
+            torch.stack([voltage_ranges[i] for i in data_input_indices]))
         # Define control voltage ranges
         activation_electrode_indices = np.arange(
             self.processor.get_activation_electrode_no())
@@ -228,13 +230,18 @@ class DNPU(nn.Module):
         ]
         # TODO: Add to documentation. control ranges are defined as follows: (node_no, electrode_no,
         # 2) where last 2 is for min and max
-        self.control_ranges = TorchUtils.format(
+        # self.control_ranges = XX
+        self.register_buffer(
+            "control_ranges",
             torch.stack([voltage_ranges[i] for i in control_list]))
 
-        # Define control electrode indices
-        self.control_indices = TorchUtils.format(
-            control_list, data_type=torch.int64
-        )  # IndexError: tensors used as indices must be long, byte or bool tensors
+        self.register_buffer(
+            "control_indices",
+            torch.tensor(np.array(control_list), dtype=torch.long))
+        # # Define control electrode indices
+        # self.control_indices = TorchUtils.format(
+        #     control_list, data_type=torch.int64
+        # )  # IndexError: tensors used as indices must be long, byte or bool tensors
 
     def get_data_input_electrode_no(self):
         """
@@ -274,10 +281,23 @@ class DNPU(nn.Module):
         model.constraint_weights()
         [...]
         """
-        self.bias.data = torch.max(
-            torch.min(self.bias,
-                      self.get_control_ranges().T[1].T),
-            self.get_control_ranges().T[0].T)
+        if torch.__version__ >= '1.11.0':
+            max_ranges = self.get_control_ranges().permute(
+                *torch.arange(self.get_control_ranges().ndim - 1, -1, -1))[1]
+            max_ranges = max_ranges.permute(
+                *torch.arange(max_ranges.ndim - 1, -1, -1))
+            min_ranges = self.get_control_ranges().permute(
+                *torch.arange(self.get_control_ranges().ndim - 1, -1, -1))[0]
+            min_ranges = min_ranges.permute(
+                *torch.arange(min_ranges.ndim - 1, -1, -1))
+            self.bias.data = torch.max(torch.min(self.bias, max_ranges),
+                                       min_ranges)
+
+        else:
+            self.bias.data = torch.max(
+                torch.min(self.bias,
+                          self.get_control_ranges().T[1].T),
+                self.get_control_ranges().T[0].T)
 
     # Returns a random single value of a control voltage within a specified range.
     # Control voltage range = [min,max]
@@ -297,11 +317,27 @@ class DNPU(nn.Module):
         model.constraint_weights()
         [...]
         """
-        random_voltages = TorchUtils.format(
-            torch.rand_like(self.control_indices.float())).T
-        range_size = (self.control_ranges.T[1] - self.control_ranges.T[0])
-        range_base = self.control_ranges.T[0]
-        return ((range_size * random_voltages) + range_base).T
+
+        if torch.__version__ >= '1.11.0':
+            random_voltages = torch.rand(self.control_indices.shape,
+                                         device=self.control_ranges.device)
+            random_voltages = random_voltages.permute(
+                *torch.arange(random_voltages.ndim - 1, -1, -1))
+            range_base = self.control_ranges.permute(
+                *torch.arange(self.control_ranges.ndim - 1, -1, -1))[0]
+            range_size = (self.control_ranges.permute(
+                *torch.arange(self.control_ranges.ndim - 1, -1, -1))[1] -
+                          range_base)
+            result = ((range_size * random_voltages) + range_base)
+            result = result.permute(*torch.arange(result.ndim - 1, -1, -1))
+
+        else:
+            random_voltages = torch.rand(self.control_indices.shape,
+                                         device=self.control_ranges.device).T
+            range_base = self.control_ranges.T[0]
+            range_size = (self.control_ranges.T[1] - range_base)
+            result = ((range_size * random_voltages) + range_base).T
+        return result
 
     def _init_learnable_parameters(self):
         """
@@ -450,7 +486,7 @@ class DNPU(nn.Module):
 
         # Apply a linear transformation from raw data to the voltage ranges of the dnpu.
         if self.input_transform:
-            x = (self.scale * x) + self.offset
+            x = (self.scale.to(x.device) * x) + self.offset.to(x.device)
 
         # Expand indices according to batch size
         input_indices = self.data_input_indices.expand(data_input_shape)
@@ -460,12 +496,19 @@ class DNPU(nn.Module):
         indices = torch.argsort(torch.cat((input_indices, control_indices),
                                           dim=last_dim),
                                 dim=last_dim)
-        data = torch.cat((x, controls), dim=last_dim)
-        data = torch.gather(data, last_dim, indices)
+        data = torch.cat((x, controls.to(x.device)), dim=last_dim)
+        data = torch.gather(data, last_dim, indices.to(x.device))
 
         # pass data through the processor
         if self.processor.is_hardware():
-            return self.processor(data)
+            original_data_shape = data.shape
+            data = data.reshape(
+                original_data_shape[0] * original_data_shape[1], -1)
+            result = self.processor(data)
+            result = result.reshape(
+                int(self.processor.waveform_mgr.plateau_length *
+                    original_data_shape[0]), original_data_shape[1])
+            return result
         else:
             return self.processor(data).squeeze(
                 -1)  # * self.node.amplification
@@ -496,23 +539,49 @@ class DNPU(nn.Module):
         """
         self.input_transform = True
         self.input_clip = strict
-        input_range = TorchUtils.format(input_range)
+        input_range = torch.tensor(input_range,
+                                   dtype=self.data_input_ranges.dtype)
         if input_range.shape != self.data_input_ranges.shape:
-            input_range = input_range.expand_as(self.data_input_ranges)
-        self.raw_input_range = input_range
-        scale, offset = get_linear_transform_constants(
-            self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T,
-            input_range.T[0].T, input_range.T[1].T)
-        self.scale = scale
-        self.offset = offset
+            input_range = input_range.expand_as(
+                self.data_input_ranges).detach().clone()
+        self.register_buffer("raw_input_range", input_range.detach().clone())
+        if torch.__version__ >= '1.11.0':
+            scale, offset = get_linear_transform_constants(
+                self.data_input_ranges.permute(
+                    *torch.arange(self.data_input_ranges.ndim -
+                                  1, -1, -1))[0].T,
+                self.data_input_ranges.permute(
+                    *torch.arange(self.data_input_ranges.ndim -
+                                  1, -1, -1))[1].T,
+                input_range.permute(*torch.arange(input_range.ndim -
+                                                  1, -1, -1))[0].T,
+                input_range.permute(*torch.arange(input_range.ndim -
+                                                  1, -1, -1))[1].T)
+        else:
+            scale, offset = get_linear_transform_constants(
+                self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T,
+                input_range.T[0].T, input_range.T[1].T)
+        if scale.unique().shape[0] and offset.unique().shape[0] == 1:
+            self.register_buffer("scale", scale.flatten()[0])
+            self.register_buffer("offset", offset.flatten()[0])
+            self.unique_transform = True
+        else:
+            self.register_buffer("scale", scale)
+            self.register_buffer("offset", offset)
+            self.unique_transform = False
 
     def remove_input_transform(self):
         """
         Removes the usage of a input transfomration before sending the data to the DNPUs.
         """
         self.input_transform = False
-        del self.amplitude
-        del self.offset
+        self.input_clip = False
+        if "raw_input_range" in dir(self):
+            del self.raw_input_range
+        if "scale" in dir(self):
+            del self.scale
+        if "offset" in dir(self):
+            del self.offset
 
     def clip_input_vec(self, x):
         """
@@ -530,6 +599,7 @@ class DNPU(nn.Module):
             Clipped data that is assured to be within the specified minimum and maximum ranges.
         """
         if self.input_clip:
+            self.raw_input_range = self.raw_input_range.to(x.device)
             x = torch.max(torch.min(x, self.raw_input_range[:, :, 1]),
                           self.raw_input_range[:, :, 0])
         return x
@@ -550,6 +620,7 @@ class DNPU(nn.Module):
             Clipped data that is assured to be within the specified minimum and maximum ranges.
         """
         if self.input_clip:
+            self.raw_input_range.to(x.device)
             x = torch.max(torch.min(x, self.raw_input_range[:, :1].flatten()),
                           self.raw_input_range[:, :, 0].flatten())
         return x
@@ -573,6 +644,9 @@ class DNPU(nn.Module):
         while i + self.data_input_indices.shape[-1] <= x.shape[-1]:
             yield x[:, i:i + self.data_input_indices.shape[-1]]
             i += self.data_input_indices.shape[-1]
+
+    def refresh_after_processor_swap():
+        pass
 
     def regularizer(self) -> torch.Tensor:
         """
@@ -603,8 +677,14 @@ class DNPU(nn.Module):
         torch.Tensor
             Penalty term >=0.
         """
-        control_voltages = self.get_control_voltages().T
-        control_ranges = self.get_control_ranges().T
+        if torch.__version__ >= '1.11.0':
+            control_voltages = self.get_control_voltages().permute(
+                *torch.arange(self.get_control_voltages().ndim - 1, -1, -1))
+            control_ranges = self.get_control_ranges().permute(
+                *torch.arange(self.get_control_ranges().ndim - 1, -1, -1))
+        else:
+            control_voltages = self.get_control_voltages().T
+            control_ranges = self.get_control_ranges().T
         return torch.sum(
             torch.relu(control_ranges[0] - control_voltages) +
             torch.relu(control_voltages - control_ranges[1]))
@@ -704,7 +784,12 @@ class DNPU(nn.Module):
                 self.bias.shape == bias.shape
             ), "Control voltages could not be set due to a shape missmatch "
             "with regard to the ones already in the model."
-            self.bias = torch.nn.Parameter(TorchUtils.format(bias))
+            assert (
+                self.bias.dtype == bias.dtype
+            ), "Control voltages could not be set due to a shape missmatch "
+            "with regard to the ones already in the model."
+            self.bias = torch.nn.Parameter(
+                bias.type_as(self.bias).to(self.bias.device))
 
     def get_control_voltages(self) -> torch.Tensor:
         """
@@ -849,7 +934,8 @@ def merge_electrode_data(
         + "or are in a different device (CUDA or CPU). ")
     result = torch.empty(
         (input_data.shape[0], len(input_data_indices) + len(control_indices)),
-        device=TorchUtils.get_device())
+        device=input_data.device,
+        dtype=input_data.dtype)
     result[:, input_data_indices] = input_data
     result[:, control_indices] = control_data
     return result

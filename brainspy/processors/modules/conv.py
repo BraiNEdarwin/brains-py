@@ -22,15 +22,10 @@ class DNPUConv2d(DNPU):
         stride=1,
         padding=0,
         dilation=1,
-        postprocess_type="sum",
         forward_pass_type: str = 'vec',
     ):
         """
-        Initialises the super class and the batch normalisation module, according to the batch norm
-        parameters given (affine, track_running_stats, momentum, eps, custom_bn).
-
-        More information about batch normalisation can be found in:
-        https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm1d.html
+        Applies a conv2d operation with time multiplexing on a core DNPU processor.
 
         Attributes:
         processor : brainspy.processors.processor.Processor
@@ -73,14 +68,6 @@ class DNPUConv2d(DNPU):
         dilation : Optional[int or tuple]
             Spacing between kernel elements. Default: 1
 
-        postprocess_type: It determines what it is done to the output of the DNPU layers. There are
-                          two main options 'sum' or 'linear'. The sum option directly sums all of
-                          the outputs from the DNPU layers. The linear option applies a linear
-                          layer without bias to the output of the DNPU layers.
-        forward_pass_type : str
-            It indicates if the forward pass for more than one DNPU devices on time-multiplexing
-            will be executed using vectorisation or a for loop. The available options are 'vec' or
-            'for'. By default it uses the vectorised version.
         """
         super(DNPUConv2d, self).__init__(processor,
                                          data_input_indices,
@@ -99,7 +86,6 @@ class DNPUConv2d(DNPU):
 
         # @TODO: Are kernel size and stride needed as self parameters?
         self.input_transform = False
-        self.batch_norm = False
 
         if isinstance(processor, Processor):
             self.processor = processor
@@ -108,13 +94,6 @@ class DNPUConv2d(DNPU):
                 processor
             )  # It accepts initialising a processor as a dictionary
 
-        # IndexError: tensors used as indices must be long, byte or bool tensors
-        self.postprocess_type = postprocess_type
-        if postprocess_type == "linear":
-            self.linear_nodes = torch.nn.Linear(self.get_node_no(),
-                                                1,
-                                                bias=False)
-            # self.linear_kernels = torch.nn.Linear(self.out_channels, 1)
         self.init_params()
 
     def init_params(self):
@@ -129,11 +108,12 @@ class DNPUConv2d(DNPU):
         control_shape.insert(0, self.out_channels)
         control_shape.insert(0, self.in_channels)
 
-        self.control_indices = self.control_indices.expand(control_shape)
+        self.control_indices = self.control_indices.expand(
+            control_shape).clone()
 
         control_shape.append(
             2)  # Extra dimension for minimum and maximum in control ranges
-        self.control_ranges = self.control_ranges.expand(control_shape)
+        self.control_ranges = self.control_ranges.expand(control_shape).clone()
 
         # -- Set everything as torch Tensors and send to DEVICE --
         data_input_shape = list(self.data_input_indices.shape)
@@ -141,7 +121,7 @@ class DNPUConv2d(DNPU):
         data_input_shape.insert(0, self.in_channels)
 
         self.data_input_indices = self.data_input_indices.expand(
-            data_input_shape)
+            data_input_shape).clone()
         # Apply a reset to the bias so that it gets initialised with the new adjustments
         # to control indices.
         self.reset()
@@ -171,70 +151,26 @@ class DNPUConv2d(DNPU):
         # Possible improvement, calculate the expected window size and expand it before
         # the forward pass to have it pre-computed
 
-    def add_batch_norm(
-        self,
-        eps=1e-05,
-        momentum=0.1,
-        affine=False,
-        track_running_stats=True,
-        clamp_at=None,
-    ):
-        """
-        Adds a batch normalisation layer before passing the data into the convolution.
-        The batch normalisation application occurs when the data has been reshaped into
-        [Batch_size, window_no, in_chanels, node_no, input_electrode_no]. This function
-        has to be called from outside the module, after its initialisation.
-
-        Attributes:
-        eps : float
-            A value added to the denominator for numerical stability. Default: 1e-5
-        momentum : float
-            The value used for the running_mean and running_var computation. Can be set to None for
-            cumulative moving average (i.e. simple average). Default: 0.1
-        affine : A boolean value that when set to True, this module has learnable affine parameters.
-                 By default is set to False, in order to save using extra parameters.
-        track_running_stats : bool
-            A boolean value that when set to True, this module tracks the running mean and variance,
-            and when set to False, this module does not track such statistics, and initializes
-            statistics buffers running_mean and running_var as None. When these buffers are None,
-            this module always uses batch statistics in both training and eval modes. Default: True
-        clamp_at : Optional[float, int or None]
-            Value at which the output after batch normalisation will be clamped. The value
-            represents both the maximum and minimum value of the range at which the output will be
-            cipped. When None, no clipping is applied after the convolution layer.
-            By default is None.
-        """
-        self.batch_norm = True
-        self.bn = torch.nn.BatchNorm3d(
-            self.in_channels,
-            eps=eps,
-            momentum=momentum,
-            affine=affine,
-            track_running_stats=track_running_stats,
-        )
-        self.clamp_at = clamp_at
-
-    def remove_batch_norm(self):
-        """
-        Removes the usage of a batch normalisation layer after the output of the convolution.
-        """
-        self.batch_norm = False
-        del self.bn
-        del self.clamp_at
-
     def get_output_dim(self, dim):
         """
         Get the expected dimension of the output after the convolution.
         """
-        return int(((dim +
-                     (2 * self.padding) - self.kernel_size) / self.stride) + 1)
+        if isinstance(self.stride, tuple):
+            assert self.stride[0] == self.stride[
+                1], "Different sized stride tuple not supported."
+            stride = self.stride[0]
+        else:
+            stride = self.stride
+
+        return int(((dim + (2 * self.padding) - self.kernel_size) / stride) +
+                   1)
 
     def preprocess(self, x):
         """
         It extracts sliding local blocks from a batched input tensor. Then, it reshapes the
         input in a vectorised way, so that the input has the following a shape of
         (batch_size, dnpu_electrode_no). It applies batch norm and/or a linear transformation
-        if these are added by calling add_batch_norm or add_input_transform after the
+        if these are added by calling add_input_transform after the
         initialisation of this module. These call only needs to happen once.
 
         Attributes:
@@ -258,9 +194,6 @@ class DNPUConv2d(DNPU):
         x = x.reshape(x.shape[0], x.shape[1], self.in_channels,
                       self.get_node_no(), self.get_data_input_electrode_no())
 
-        if self.batch_norm:
-            x = self._apply_batch_norm(x)
-
         if self.input_transform:
             x = self._apply_input_transform(x)
 
@@ -272,31 +205,12 @@ class DNPUConv2d(DNPU):
 
         return x
 
-    def _apply_batch_norm(self, x):
-        """
-        Applies the batch normalisation before sending the data into the DNPU convolution,
-        after the data has been reshaped into
-        [Batch_size, window_no, in_chanels, node_no, input_electrode_no].
-        It is only applied if an external call to add_batch_norm has been done after
-        the initialisation of the module. It also applies clipping after batch normalisation
-        if it has been configured to do so in the call to add_batch_norm.
-
-        Attributes:
-            x : torch.Tensor
-            Input data, reshaped as [Batch_size, window_no, in_chanels, node_no, input_electrode_no]
-        """
-        x = self.bn(x)
-        if self.clamp_at is not None:
-            x = x.clamp(-self.clamp_at, self.clamp_at)
-        return x
-
     def _apply_input_transform(self, x):
         """
         Applies the input transformation before sending the data into the DNPU convolution.
         It is only applied if an external call to add_input_transform has been done after
         the initialisation of the module. It is applied after the data has been reshaped into
         [Batch_size, window_no, in_chanels, node_no, input_electrode_no].
-        A batch norm operation migh have been applied before, if the user configured to do so.
 
         Attributes:
             x : torch.Tensor
@@ -311,9 +225,12 @@ class DNPUConv2d(DNPU):
             method of the module. The maximumn and minimum voltage ranges are defined by the
             training data of the surrogate model.
         """
-        scale = self.scale.expand_as(x)
-        offset = self.offset.expand_as(x)
-        x = (x * scale) + offset
+        if self.unique_transform:
+            x = (x * self.scale) + self.offset
+        else:
+            scale = self.scale.expand_as(x)
+            offset = self.offset.expand_as(x)
+            x = (x * scale) + offset
         return x
 
     def merge_electrode_data(self, x):
@@ -400,13 +317,8 @@ class DNPUConv2d(DNPU):
         result = result.reshape(data_dim[:-1])
         result = result.sum(dim=2)  # Sum values from the input kernels
 
-        if self.postprocess_type == "linear":
-            # Pass the output from the DNPUs through a linear layer to combine them
-            result = self.linear_nodes(result).squeeze(-1)
-        elif self.postprocess_type == "sum":
-            result = result.sum(
-                dim=3
-            )  # Sum the output from the devices used for the convolution
+        result = result.sum(
+            dim=3)  # Sum the output from the devices used for the convolution
 
         result = result.transpose(
             1, 2)  # Return the output_kernel_no dimension to dimension 1.

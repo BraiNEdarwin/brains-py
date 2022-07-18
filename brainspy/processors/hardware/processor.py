@@ -168,7 +168,7 @@ class HardwareProcessor(nn.Module):
         else:
             NationalInstrumentsSetup.type_check(instrument_configs)
             self.driver = get_driver(instrument_configs)
-            self.voltage_ranges = TorchUtils.format(self.driver.voltage_ranges)
+            self.register_buffer("voltage_ranges", torch.tensor(self.driver.voltage_ranges, dtype=torch.get_default_dtype()))
             self.clipping_value = None
             if slope_length / self.driver.configs["instruments_setup"][
                     "activation_sampling_frequency"] >= self.driver.configs[
@@ -212,14 +212,17 @@ class HardwareProcessor(nn.Module):
         assert type(
             x) == torch.Tensor, "The input should be of type - torch.Tensor"
         with torch.no_grad():
+            device, dtype = x.device, x.dtype
             x, mask = self.waveform_mgr.plateaus_to_waveform(
                 x, return_pytorch=False)
             if len(x.shape) > 2:
                 x = x.squeeze()
-            output = self.forward_numpy(x)
+            x = self.forward_numpy(x)
             if self.logger is not None:
                 self.logger.log_output(x)
-        return TorchUtils.format(output[mask])
+        return TorchUtils.format(x[mask],
+                                 device=device,
+                                 data_type=dtype)
 
     def forward_numpy(self, x):
         """

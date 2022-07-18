@@ -269,7 +269,8 @@ def train(model: torch.nn.Module,
         # Load best solution
         model.load_state_dict(
             torch.load(os.path.join(
-                save_dir, "best_training_data.pt"))  # type: ignore[arg-type]
+                save_dir,
+                "best_training_data.pickle"))  # type: ignore[arg-type]
             ['model_state_dict'])
         print("Best solution in epoch (starting from 0): " +
               str(best_result_index))
@@ -305,7 +306,8 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
     targets : torch.Tensor
         The whole dataset of target values in a single batch.
     pool : torch.Tensor
-        [description]
+        Array of different control voltage values that are going to be evaluated. The array has a 
+        shape of (pool_size, control_electrode_no).
     model : torch.nn.Module
         Model against which all the solutions will be measured. It can be a Processor, representing
         either a hardware DNPU or a DNPU surrogate model. Refer to the documentation of the train

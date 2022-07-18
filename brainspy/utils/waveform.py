@@ -98,9 +98,8 @@ class WaveformManager:
         final_mask = [False] * self.slope_length
         mask += final_mask
         mask += [True] * self.plateau_length
-        self.initial_mask = torch.tensor(mask, device=TorchUtils.get_device())
-        self.final_mask = torch.tensor(final_mask,
-                                       device=TorchUtils.get_device())
+        self.initial_mask = torch.tensor(mask)
+        self.final_mask = torch.tensor(final_mask)
 
     def _expand(self, parameter, length):
         """
@@ -160,25 +159,32 @@ class WaveformManager:
         """
         data_size = len(data) - 1
         tmp = TorchUtils.to_numpy(data)
-        output = TorchUtils.format(
-            np.linspace(0, tmp[0], num=self.slope_length, endpoint=False))
+        output = TorchUtils.format(np.linspace(0,
+                                               tmp[0],
+                                               num=self.slope_length,
+                                               endpoint=False),
+                                   device=data.device,
+                                   data_type=data.dtype)
         for i in range(data_size):
             output = torch.cat((output, data[i].repeat(self.plateau_length,
                                                        1)))
             output = torch.cat((
                 output,
-                TorchUtils.format(
-                    np.linspace(tmp[i],
-                                tmp[i + 1],
-                                num=self.slope_length + 1,
-                                endpoint=False)[1:]),
+                TorchUtils.format(np.linspace(tmp[i],
+                                              tmp[i + 1],
+                                              num=self.slope_length + 1,
+                                              endpoint=False)[1:],
+                                  device=data.device,
+                                  data_type=data.dtype),
             ))
         output = torch.cat((output, data[-1].repeat(self.plateau_length, 1)))
-        output = torch.cat((output,
-                            TorchUtils.format(
-                                np.linspace(tmp[-1],
-                                            0,
-                                            num=self.slope_length + 1)[1:])))
+        output = torch.cat(
+            (output,
+             TorchUtils.format(np.linspace(tmp[-1],
+                                           0,
+                                           num=self.slope_length + 1)[1:],
+                               device=data.device,
+                               data_type=data.dtype)))
         del tmp
         return output
 
@@ -303,8 +309,12 @@ class WaveformManager:
 
         if return_pytorch:
             return (
-                TorchUtils.format(output_data),
-                TorchUtils.format(output_mask, data_type=bool),
+                TorchUtils.format(output_data,
+                                  device=data.device,
+                                  data_type=data.dtype),
+                TorchUtils.format(output_mask,
+                                  device=data.device,
+                                  data_type=bool),
             )
         else:
             return output_data, output_mask
@@ -427,7 +437,7 @@ class WaveformManager:
             Tensor with the slopes removed.
         """
         if mask is None:
-            mask = self.generate_mask(len(data))
+            mask = self.generate_mask(len(data)).to(data.device)
         return data[mask]
 
     def generate_mask(self, data_size: int) -> torch.Tensor:

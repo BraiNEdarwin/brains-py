@@ -1,7 +1,6 @@
 import torch.nn as nn
 
 from brainspy.processors.dnpu import DNPU
-from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
 
 
@@ -86,7 +85,7 @@ class DNPUBatchNorm(DNPU):
                             affine=affine,
                             track_running_stats=track_running_stats,
                             momentum=momentum,
-                            eps=eps).to(device=TorchUtils.get_device())
+                            eps=eps)
 
     def forward(self, x):
         """  Run a forward pass through the processor, including any time-multiplexing modules that
