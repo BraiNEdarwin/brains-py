@@ -252,7 +252,8 @@ def train(
         train_losses.append(running_loss)
         description = "Training Loss: {:.6f}.. ".format(train_losses[-1])
 
-        if dataloaders[1] is not None and len(dataloaders[1]) > 0:
+        if len(dataloaders) > 1 and dataloaders[1] is not None and len(
+                dataloaders[1]) > 0:
             val_loss = default_val_step(
                 epoch,
                 model,
@@ -286,25 +287,26 @@ def train(
         # TODO: Add a save instruction and a stopping criteria
         # if stopping_criteria(train_losses, val_losses):
         #     break
-    torch.save(
-        model,
-        os.path.join(
-            save_dir,  # type: ignore[arg-type]
-            "model_raw.pt"))
-    torch.save(
-        {
-            "epoch": epoch + 1,
-            "algorithm": 'gradient',
-            "optimizer_state_dict": optimizer.state_dict(),
-            "model_state_dict": model.state_dict(),
-            "train_losses": train_losses,
-            "val_losses": val_losses,
-            "min_val_loss": min_val_loss,
-        },
-        os.path.join(
-            save_dir,  # type: ignore[arg-type]
-            "training_data.pickle"),
-    )
+    if save_dir is not None:
+        torch.save(
+            model,
+            os.path.join(
+                save_dir,  # type: ignore[arg-type]
+                "model_raw.pt"))
+        torch.save(
+            {
+                "epoch": epoch + 1,
+                "algorithm": 'gradient',
+                "optimizer_state_dict": optimizer.state_dict(),
+                "model_state_dict": model.state_dict(),
+                "train_losses": train_losses,
+                "val_losses": val_losses,
+                "min_val_loss": min_val_loss,
+            },
+            os.path.join(
+                save_dir,  # type: ignore[arg-type]
+                "training_data.pickle"),
+        )
     if logger is not None:
         logger.close()
     if (save_dir is not None and return_best_model
@@ -526,7 +528,7 @@ def default_val_step(epoch, model, dataloader, criterion, logger=None):
         for inputs, targets in dataloader:
             inputs, targets = TorchUtils.format(inputs), model.format_targets(
                 TorchUtils.format(targets))
-            targets = model.format_targets(targets)
+            #targets = model.format_targets(targets)
             predictions = model(inputs)
             loss = criterion(predictions, targets).item()
             val_loss += loss * inputs.shape[0]

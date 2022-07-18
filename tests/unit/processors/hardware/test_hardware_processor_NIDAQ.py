@@ -4,7 +4,7 @@ import warnings
 import random
 import torch
 import brainspy
-from tests.unit.processors.hardware.utils import check_test_configs
+from tests.unit.testing_utils import check_test_configs
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager

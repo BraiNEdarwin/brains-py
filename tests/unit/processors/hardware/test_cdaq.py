@@ -1,9 +1,9 @@
 import unittest
 import numpy as np
 import brainspy
-from tests.unit.processors.hardware.utils import check_test_configs
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
+from tests.unit.testing_utils import check_test_configs
 
 
 class CDAQ_Processor_Test(unittest.TestCase):

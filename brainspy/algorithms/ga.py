@@ -147,9 +147,6 @@ def train(model: torch.nn.Module,
         dataloaders[0], DataLoader
     ), "The dataloader should be an instance of torch.utils.data.DataLoader"
     assert callable(criterion), "The criterion should be a callable method"
-    assert isinstance(
-        optimizer, torch.optim.Optimizer
-    ), "The optimizer object should be an instance of torch.optim.Optimizer"
     if isinstance(optimizer, GeneticOptimizer):
         warnings.warn(
             "A custom optimizer can be used instead of the GeneticOptimizer.")
@@ -242,33 +239,33 @@ def train(model: torch.nn.Module,
                     break
 
             pool = optimizer.step(criterion_pool)
-
-        torch.save(
-            {
-                "epoch": epoch,
-                "algorithm": 'genetic',
-                "model_state_dict": model.state_dict(),
-                "performance": performance_history,
-                "correlations": correlation_history,
-                "genome_history": genome_history
-            },
-            os.path.join(
-                save_dir,  # type: ignore[arg-type]
-                "training_data.pickle"),
-        )
-        if not model.is_hardware():  # type: ignore[operator]
+        if save_dir is not None:
             torch.save(
-                model,
+                {
+                    "epoch": epoch,
+                    "algorithm": 'genetic',
+                    "model_state_dict": model.state_dict(),
+                    "performance": performance_history,
+                    "correlations": correlation_history,
+                    "genome_history": genome_history
+                },
                 os.path.join(
                     save_dir,  # type: ignore[arg-type]
-                    "model_raw.pt"))  # type: ignore[operator]
+                    "training_data.pickle"),
+            )
+            if not model.is_hardware():  # type: ignore[operator]
+                torch.save(
+                    model,
+                    os.path.join(
+                        save_dir,  # type: ignore[arg-type]
+                        "model_raw.pt"))  # type: ignore[operator]
 
-        # Load best solution
-        model.load_state_dict(
-            torch.load(os.path.join(
-                save_dir,
-                "best_training_data.pickle"))  # type: ignore[arg-type]
-            ['model_state_dict'])
+            # Load best solution
+            model.load_state_dict(
+                torch.load(
+                    os.path.join(
+                        save_dir,  # type: ignore[arg-type]
+                        "best_training_data.pickle"))['model_state_dict'])
         print("Best solution in epoch (starting from 0): " +
               str(best_result_index))
         print("Best fitness: " + str(best_fitness.item()))
@@ -303,7 +300,7 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
     targets : torch.Tensor
         The whole dataset of target values in a single batch.
     pool : torch.Tensor
-        Array of different control voltage values that are going to be evaluated. The array has a 
+        Array of different control voltage values that are going to be evaluated. The array has a
         shape of (pool_size, control_electrode_no).
     model : torch.nn.Module
         Model against which all the solutions will be measured. It can be a Processor, representing

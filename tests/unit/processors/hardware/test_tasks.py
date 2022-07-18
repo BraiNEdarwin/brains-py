@@ -5,7 +5,7 @@ import brainspy
 import nidaqmx
 import nidaqmx.constants as constants
 import nidaqmx.system.device as device
-from tests.unit.processors.hardware.utils import check_test_configs
+from tests.unit.testing_utils import check_test_configs
 from brainspy.processors.hardware.drivers.ni.channels import type_check
 from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 

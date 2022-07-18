@@ -4,7 +4,7 @@ import nidaqmx
 import math
 import random
 import brainspy
-from tests.unit.processors.hardware.utils import check_test_configs
+from tests.unit.testing_utils import check_test_configs
 from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 
