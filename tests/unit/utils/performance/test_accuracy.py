@@ -234,7 +234,7 @@ class Accuracy_Test(unittest.TestCase):
             accuracy.train_perceptron(100, np.array([1, 2, 3, 4]), optimizer,
                                       node)
         with self.assertRaises(AttributeError):
-            threshold = 500
+            threshold = 1000
             size = torch.randint(0, threshold, (1, 1)).item()
             inputs = TorchUtils.format(torch.rand((size, 1)))
             targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
@@ -244,7 +244,7 @@ class Accuracy_Test(unittest.TestCase):
             node = TorchUtils.format(torch.nn.Linear(1, 1))
             accuracy.train_perceptron(100, dataloader, "invalid type", node)
         with self.assertRaises(AttributeError):
-            threshold = 500
+            threshold = 1000
             size = torch.randint(0, threshold, (1, 1)).item()
             inputs = TorchUtils.format(torch.rand((size, 1)))
             targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))

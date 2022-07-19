@@ -12,7 +12,6 @@ class GeneticOptimizer:
     A class for implementing a genetic algorithm optimisation solution for training DNPUs on and
     off chip, in a way that resembles a PyTorch optimizer.
     """
-
     def __init__(self,
                  gene_ranges: list,
                  partition: Union[list, torch.Tensor],
@@ -239,15 +238,19 @@ class GeneticOptimizer:
             New genome (voltage combination) from two parent control voltages.
         """
         # check this in pytorch
-        assert (type(parent1) == torch.Tensor
-                and type(parent2) == torch.Tensor)
+        assert (type(parent1) == torch.Tensor and type(parent2)
+                == torch.Tensor), "Parents are not torch Tensors."
+        assert (parent1.device == parent2.device
+                ), "Parent Tensors are not in the same device."
+        assert (parent1.dtype == parent2.dtype
+                ), "Parent Tensors are not of the same datatype."
         maximum = torch.max(parent1, parent2)
         minimum = torch.min(parent1, parent2)
         diff_maxmin = maximum - minimum
         offspring = torch.zeros(
             (parent1.shape),
-            dtype=torch.get_default_dtype(),
-            device=TorchUtils.get_device(),
+            dtype=parent1.dtype,
+            device=parent1.device,
         )
         for i in range(len(parent1)):
             if parent1[i] > parent2[i]:

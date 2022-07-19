@@ -9,7 +9,6 @@ class OptimTest(unittest.TestCase):
     """
     Testing the optim.py file - GeneticOptimizer class.
     """
-
     def test_init(self):
         """
         Test to initialize the Genetic Optimizer
@@ -321,7 +320,7 @@ class OptimTest(unittest.TestCase):
         try:
             optim.update_mutation_rate()
         except (Exception):
-            self.fail("Could not update mutataion rate")
+            self.fail("Could not update mutation rate")
 
     def test_mutation(self):
         """
@@ -338,9 +337,9 @@ class OptimTest(unittest.TestCase):
             new_pool = optim.crossover(new_pool=optim.pool)
             optim.mutation(new_pool)
         except (Exception):
-            self.fail("Could not update mutataion rate")
+            self.fail("Could not update mutation rate")
 
-    def test_mutataion_fail(self):
+    def test_mutation_fail(self):
         """
         Invalid type for muttation raises an AssertionError
         """
@@ -372,7 +371,7 @@ class OptimTest(unittest.TestCase):
             new_pool = optim.crossover(new_pool=optim.pool)
             edited = optim.remove_duplicates(new_pool)
         except (Exception):
-            self.fail("Could not update mutataion rate")
+            self.fail("Could not update mutation rate")
         assert (len(new_pool) >= len(edited))
 
     def test_remove_duplicates_fail(self):
