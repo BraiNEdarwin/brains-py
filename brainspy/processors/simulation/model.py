@@ -16,12 +16,10 @@ class NeuralNetworkModel(nn.Module):
     model_structure : dict
         Dictionary containing the model structure; keys explained in
         constructor method.
-    verbose : bool
-        Indicate whether to print certain steps.
     raw_model : nn.Sequential
         Torch object containing the layers and activations of the network.
     """
-    def __init__(self, model_structure: dict, verbose=False):
+    def __init__(self, model_structure: dict):
         """
         Create a model object.
         Parameters
@@ -37,11 +35,8 @@ class NeuralNetworkModel(nn.Module):
                 "tanh", "hard-tanh", or "sigmoid".
             hidden_sizes : list[int]
                 Sizes of the hidden layers.
-        verbose : bool, optional
-            Whether to print certain steps, by default False.
         """
         super(NeuralNetworkModel, self).__init__()
-        self.verbose = verbose
         self.build_model_structure(model_structure)
 
     def build_model_structure(self, model_structure: dict):
@@ -82,8 +77,6 @@ class NeuralNetworkModel(nn.Module):
 
         modules.append(output_layer)
         self.raw_model = nn.Sequential(*modules)
-        if self.verbose:
-            print("Model built with the following modules: \n", modules)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -142,8 +135,6 @@ class NeuralNetworkModel(nn.Module):
         else:
             warnings.warn("Activation not recognized, applying ReLU")
             return nn.ReLU()
-        if self.verbose:
-            print(f"Activation function is set as {activation}")
 
     def structure_consistency_check(self, model_structure: dict):
         """
