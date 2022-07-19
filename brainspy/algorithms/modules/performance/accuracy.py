@@ -1,4 +1,5 @@
 import os
+from xmlrpc.client import boolean
 import torch
 import numpy as np
 from tqdm import trange
@@ -129,7 +130,7 @@ def get_accuracy(inputs, targets, configs=None, node=None):
                                      lr=configs["learning_rate"])
         accuracy, node = train_perceptron(configs["epochs"],
                                           dataloader,
-                                          optimizer,
+                                          optimizer=optimizer,
                                           node=node)
 
     with torch.no_grad():
@@ -223,11 +224,13 @@ def zscore_norm(inputs, eps=1e-5):
     return (inputs - inputs.mean(axis=0)) / inputs.std(dim=0)
 
 
-def train_perceptron(epochs,
-                     dataloader,
-                     optimizer,
-                     loss_fn=torch.nn.BCEWithLogitsLoss(),
-                     node=None):
+def train_perceptron(
+        epochs: int,
+        dataloader: torch.utils.data.DataLoader,
+        optimizer: torch.optim.Optimizer,
+        loss_fn: torch.nn.modules.loss._Loss = torch.nn.BCEWithLogitsLoss(),
+        node: torch.nn.Module = None,
+        stop_at_max_accuracy: bool = False):
     """
     To train the Perceptron obtain a set of weights w that accurately classifies each instance in
     our training set. In order to train our Perceptron, we iteratively feed the network with our
@@ -247,7 +250,7 @@ def train_perceptron(epochs,
     epochs : int
         Number of epochs.
 
-    dataloader : torch.utils.data.Dataloader
+    dataloader : torch.utils.data.DataLoader
         The normalised output from the DNPU or DNPU architecture, already in a dataloader format.
 
     optimizer : torch.optim.Optimizer
@@ -261,6 +264,10 @@ def train_perceptron(epochs,
         Is the trained linear layer of the perceptron. Leave it as None if you want to train a
         perceptron from scratch. (default: None)
 
+    stop_at_max_accuracy : boolean
+        Decides to immediately stop after achieving 100% solution if true. If false, it will keep 
+        training to improve the threshold separation. Recommended to be true when doing many runs
+        at the same time in tasks like capacity test or searcher.
 
     Returns
     -------
@@ -274,7 +281,7 @@ def train_perceptron(epochs,
 
     for epoch in looper:
         evaluated_sample_no = 0
-        running_loss = 0
+        running_loss = 0.
         correctly_labelled = 0
         for inputs, targets in dataloader:
             if inputs.device != TorchUtils.get_device():
@@ -288,7 +295,8 @@ def train_perceptron(epochs,
             optimizer.step()
             running_loss = loss.item() * (inputs.shape[0])
             labels = predictions > 0.0
-            correctly_labelled += torch.sum(labels == (targets == 1.0))
+            correctly_labelled += int(
+                torch.sum(labels == (targets == 1)).item())
             evaluated_sample_no += inputs.shape[0]
 
         accuracy = 100.0 * correctly_labelled / evaluated_sample_no
@@ -296,7 +304,7 @@ def train_perceptron(epochs,
         looper.set_description(
             f"Training perceptron: Epoch: {epoch}  Accuracy {accuracy}," +
             f" running loss: {running_loss}")
-        if accuracy >= 100.0:
+        if accuracy >= 100.0 and stop_at_max_accuracy:
             print("\nReached 100/% accuracy. Stopping.")
             break
     return accuracy, node
