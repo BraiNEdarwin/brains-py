@@ -369,13 +369,14 @@ class GeneticOptimizer:
                 for j in range(self.genome_no):
                     if j != i and torch.eq(pool[i], pool[j]).all():
                         for k in range(0, len(self.gene_range)):
-                            if self.gene_range[k][0] != self.gene_range[k][1]:
-                                pool[j][k] = TorchUtils.format(
+                            pool[j][k] = TorchUtils.format(
+                                [
                                     np.random.triangular(
-                                        self.gene_range[k][0],
-                                        pool[j][k],
-                                        self.gene_range[k][1],
-                                    ))
-                            else:
-                                pool[j][k] = self.gene_range[k][0]
+                                        self.gene_range[k][0].item(),
+                                        pool[j][k].item(),
+                                        self.gene_range[k][1].item(),
+                                    )
+                                ],
+                                device=pool.device,
+                                data_type=pool.dtype).squeeze()
         return pool
