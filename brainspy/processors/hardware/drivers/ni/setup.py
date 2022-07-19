@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 from threading import Thread
 from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
+from brainspy.processors.hardware.drivers.ni.channels import is_device_name
 """
 SECURITY FLAGS.
 WARNING - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
@@ -44,10 +45,11 @@ Flags related to the CDAQ TO CDAQ Setup:
 INPUT_VOLTAGE_THRESHOLD = 1.6
 CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS = 0.001
 CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS = 0.001
-SYNCHRONISATION_VALUE = 0.04  # do not reduce to less than 0.02
+SYNCHRONISATION_VALUE = 0.04  # Do not reduce to less than 0.02
 
 
 class NationalInstrumentsSetup:
+
     def __init__(self, configs):
         """
         This method invokes 4 other methods to :
@@ -66,9 +68,14 @@ class NationalInstrumentsSetup:
 
         Parameters
         ----------
+
         configs : dict
             Key-value pairs required in the configs dictionary to initialise the driver are as
             follows:
+
+                inverted_output : bool
+                    True if inversion should be applied to the output of the DNPU, else False.
+
                 output_clipping_range: [float,float]
                     The the setups have a limit in the range they can read. They typically clip at
                     approximately +-4 V. Note that in order to calculate the clipping_range, it
@@ -127,10 +134,161 @@ class NationalInstrumentsSetup:
                         E.g., cDAQ1/segment1 - More information at:
                         https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
         """
+        self.type_check(configs)
         self.init_configs(configs)
         self.init_tasks(configs)
         self.enable_os_signals()
         self.init_semaphore()
+
+    @staticmethod
+    def type_check(configs):
+        """
+        Check the type of the configurations provided for the National Instruments Setup
+        """
+        assert type(
+            configs) == dict, "The configurations should be of type - dict"
+
+        # Assertions for inverted output and Real-time-rack
+
+        assert type(
+            configs["inverted_output"]
+        ) == bool, "The inverted_output key should be of type - bool"
+        assert type(
+            configs["inverted_output"]
+        ) == bool, "The inverted_output key should be of type - bool"
+
+        # Assertion for Output clipping range
+
+        assert type(configs["output_clipping_range"]) == list or type(
+            configs["output_clipping_range"]
+        ) == np.ndarray, "Output clipping range should be a list of 2 values"
+        assert len(
+            configs["output_clipping_range"]
+        ) == 2, "Output clipping range should contain 2 values : max and min"
+        assert isinstance(
+            configs["output_clipping_range"][0], (np.floating, float, int)
+        ), "Output clipping range can contain only int or float type values"
+        assert isinstance(
+            configs["output_clipping_range"][1], (np.floating, float, int)
+        ), "Output clipping range can contain only int or float type values"
+
+        # Assertion for Amplification
+
+        assert type(configs["amplification"]) == float or type(
+            configs["amplification"]
+        ) == int, "Amplification should be of type float or int"
+
+        # Assertions for Instruments setup
+
+        assert type(configs["instruments_setup"]["multiple_devices"]
+                    ) == bool, "Multiple devices key should be of type bool"
+        assert type(configs["instruments_setup"]["trigger_source"]
+                    ) == str, "trigger_source key should be of type str"
+
+        # Assertions for a Single device
+
+        if not configs["instruments_setup"]["multiple_devices"]:
+            assert type(
+                configs["instruments_setup"]["activation_instrument"]
+            ) == str, "activation_instrument key should be of type str"
+            assert type(
+                configs["instruments_setup"]["readout_instrument"]
+            ) == str, "readout_instrument key should be of type str"
+            assert type(
+                configs["instruments_setup"]["activation_sampling_frequency"]
+            ) == int, "activation_sampling_frequency key should be of type int"
+            assert type(
+                configs["instruments_setup"]["readout_sampling_frequency"]
+            ) == int, "readout_sampling_frequency key should be of type int"
+            assert type(
+                configs["instruments_setup"]["activation_channels"]
+            ) == list, "activation_channels key should be of type list"
+            assert type(
+                configs["instruments_setup"]["readout_channels"]
+            ) == list, "readout_channels key should be of type list"
+            assert type(
+                configs["instruments_setup"]["activation_voltage_ranges"]
+            ) == list or type(
+                configs["instruments_setup"]["activation_voltage_ranges"]
+            ) == np.ndarray, "The voltage_ranges should be of type - list or numpy array"
+            assert len(
+                configs["instruments_setup"]["activation_voltage_ranges"]
+            ) == len(
+                configs["instruments_setup"]["activation_channels"]
+            ), "The length of channel_names should be equal to the length of voltage ranges"
+            for voltage_range in configs["instruments_setup"][
+                    "activation_voltage_ranges"]:
+                assert type(voltage_range) == list or type(
+                    voltage_range
+                ) == np.ndarray, "Each voltage range should be a list of 2 values"
+                assert len(
+                    voltage_range
+                ) == 2, "Voltage range should contain 2 values : max and min"
+                assert isinstance(
+                    voltage_range[0], (np.floating, float, int)
+                ), "Volatge range can contain only int or float type values"
+                assert isinstance(
+                    voltage_range[1], (np.floating, float, int)
+                ), "Volatge range can contain only int or float type values"
+
+        # Assertions for Multiple Devices
+
+        else:
+            for device_name in configs["instruments_setup"][
+                    "multiple_devices"]:
+                if is_device_name(device_name):
+                    assert type(
+                        configs["instruments_setup"][device_name]
+                        ["activation_instrument"]
+                    ) == str, "activation_instrument key should be of type str"
+                    assert type(
+                        configs["instruments_setup"][device_name]
+                        ["readout_instrument"]
+                    ) == str, "readout_instrument key should be of type str"
+                    assert type(
+                        configs["instruments_setup"][device_name]
+                        ["activation_sampling_frequency"]
+                    ) == int, "activation_sampling_frequency key should be of type int"
+                    assert type(
+                        configs["instruments_setup"][device_name]
+                        ["readout_sampling_frequency"]
+                    ) == int, "readout_sampling_frequency key should be of type int"
+                    assert type(
+                        configs["instruments_setup"][device_name]
+                        ["activation_channels"]
+                    ) == list, "activation_channels key should be of type list"
+                    assert type(
+                        configs["instruments_setup"][device_name]
+                        ["readout_channels"]
+                    ) == list, "readout_channels key should be of type list"
+                    assert type(
+                        configs["instruments_setup"][device_name]
+                        ["activation_voltage_ranges"]
+                    ) == list or type(
+                        configs["instruments_setup"][device_name]
+                        ["activation_voltage_ranges"]
+                    ) == np.ndarray, "The voltage_ranges should be of type - list or numpy array"
+                    assert len(
+                        configs["instruments_setup"][device_name]
+                        ["activation_voltage_ranges"]
+                    ) == len(
+                        configs["instruments_setup"][device_name]
+                        ["activation_channels"]
+                    ), "The length of channel_names should be equal to the length of voltage ranges"
+                    for voltage_range in configs["instruments_setup"][
+                            device_name]["activation_voltage_ranges"]:
+                        assert type(voltage_range) == list or type(
+                            voltage_range
+                        ) == np.ndarray, "Each voltage range should be a list of 2 values"
+                        assert len(
+                            voltage_range
+                        ) == 2, "Voltage range should contain 2 values : max and min"
+                        assert isinstance(
+                            voltage_range[0], (np.floating, float, int)
+                        ), "Volatge range can contain only int or float type values"
+                        assert isinstance(
+                            voltage_range[1], (np.floating, float, int)
+                        ), "Volatge range can contain only int or float type values"
 
     def init_configs(self, configs):
         """
@@ -354,13 +512,14 @@ class NationalInstrumentsSetup:
         ----------
         points_to_write : int
             Number of points to be written.
-        timeout: Specifies the amount of time in seconds to wait for samples to become
-                available. If the time elapses, the method returns an error and any samples
-                read before the timeout elapsed. The default timeout is 10 seconds. If you
-                set timeout to nidaqmx.constants.WAIT_INFINITELY, the method waits
-                indefinitely. If you set timeout to 0, the method tries once to read
-                the requested samples and returns an error if it is unable to.
-                By default, None, which calculates the timeout based on the frequency.
+        timeout: float
+            Specifies the amount of time in seconds to wait for samples to become
+            available. If the time elapses, the method returns an error and any samples
+            read before the timeout elapsed. The default timeout is 10 seconds. If you
+            set timeout to nidaqmx.constants.WAIT_INFINITELY, the method waits
+            indefinitely. If you set timeout to 0, the method tries once to read
+            the requested samples and returns an error if it is unable to.
+            By default, None, which calculates the timeout based on the frequency.
 
 
         """
@@ -566,7 +725,7 @@ class NationalInstrumentsSetup:
         Enables the OS signals by adding an a signal HandlerRoutine to support read/write in both
         linux and windows in Windows and Linux operating systems.
         """
-        import win32api
+        import win32api  # type: ignore
 
         if sys.platform == "win32":
             win32api.SetConsoleCtrlHandler(self.os_signal_handler, True)
@@ -579,7 +738,7 @@ class NationalInstrumentsSetup:
         Disables the OS signals by removing the signal HandlerRoutine in the the win32 OS or
         ignoring the signal incase of other processors.
         """
-        import win32api
+        import win32api  # type: ignore
 
         if sys.platform == "win32":
 

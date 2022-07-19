@@ -31,6 +31,7 @@ class IOTasksManager:
     https://nidaqmx-python.readthedocs.io/en/latest/task.html
 
     """
+
     def __init__(self, configs):
         """
         It declares the following nidaqmx.Task instances:
@@ -45,6 +46,7 @@ class IOTasksManager:
         These tasks will be updated as the method calls are made to do different types of tasks.
         It also initializes the device to Acquire or generate a finite number of samples
         """
+        assert type(configs) == dict, "The configs should be of type - dict"
         self.acquisition_type = constants.AcquisitionType.FINITE
         self.activation_task = None
         self.readout_task = None
@@ -61,13 +63,36 @@ class IOTasksManager:
         channel_names : list
             List of the names of the activation channels
 
-        voltage_ranges : Optional[list]
-            List of maximum and minimum voltage ranges that will be allowed to be sent through each
+        voltage_ranges : Optional[list] or numpy.ndarray
+            List/numpy.ndarray of maximum and minimum voltage ranges that will be allowed to be sent through each
             channel. The  dimension of the list should be (channel_no,2) where the second dimension
             stands for min and max values of the range, respectively. When set to None, there will
             be no specific limitations on what can be sent through the device. This could
             potentially cause damages to the device. By default is None.
         """
+        assert type(channel_names
+                    ) == list, "The channel_names should be of type - list"
+        if voltage_ranges is not None:
+            assert type(voltage_ranges) == list or type(
+                voltage_ranges
+            ) == np.ndarray, "The voltage_ranges should be of type - list or numpy array"
+            assert len(channel_names) == len(
+                voltage_ranges
+            ), "The length of channel_names should be equal to the length of voltage ranges"
+            for voltage_range in voltage_ranges:
+                assert type(voltage_range) == list or type(
+                    voltage_range
+                ) == np.ndarray, "Each voltage range should be a list of 2 values"
+                assert len(
+                    voltage_range
+                ) == 2, "Voltage range should contain 2 values : max and min"
+                assert isinstance(
+                    voltage_range[0], (np.floating, float, int)
+                ), "Volatge range can contain only int or float type values"
+                assert isinstance(
+                    voltage_range[1], (np.floating, float, int)
+                ), "Volatge range can contain only int or float type values"
+
         self.activation_task = nidaqmx.Task(
             "activation_task_" +
             datetime.utcnow().strftime("%Y_%m_%d_%H%M%S_%f"))
@@ -114,6 +139,12 @@ class IOTasksManager:
         readout_channels : list[str]
             List containing all the readout channels of the device.
         """
+        assert type(readout_channels
+                    ) == list, "The readout_channels should be of type - list"
+        for readout_channel in readout_channels:
+            assert type(
+                readout_channel
+            ) == str, "Each readout_channel should be of type - str"
         self.readout_task = nidaqmx.Task(
             "readout_task_" + datetime.utcnow().strftime("%Y_%m_%d_%H%M%S_%f"))
         for i in range(len(readout_channels)):
@@ -124,26 +155,34 @@ class IOTasksManager:
                                  readout_sampling_frequency: int,
                                  points_to_write: int, points_to_read: int):
         """
-        Sets the sampling frequency for the activation and readout tasks. The activation 
-        task is in charge to send signals from the  computer to the NI module, and the 
+        Sets the sampling frequency for the activation and readout tasks. The activation
+        task is in charge to send signals from the  computer to the NI module, and the
         readout task is in charge of reading signals from the NI module.
-
-
         Parameters
         ----------
         activation_sampling_frequency : int
             The number of samples that the activation task will obtain in one second.
-
         readout_sampling_frequency : int
             The number of samples that the readout task will obtain in one second.
-
         points_to_write : int
             Number of points that will be written.
-
         points_to_read: int
             Number of points that are expected to be read given the number
             of points to be written, and the activation and readout frequencies.
         """
+        assert type(
+            activation_sampling_frequency
+        ) == int, "The activation_sampling_frequency value should be of type - int"
+        assert type(
+            readout_sampling_frequency
+        ) == int, "The readout_sampling_frequency value should be of type - int"
+        assert type(
+            points_to_write
+        ) == int, "The points_to_write value should be of type - int"
+        assert type(
+            points_to_read
+        ) == int, "The points_to_read value should be of type - int"
+
         self.activation_task.timing.cfg_samp_clk_timing(
             activation_sampling_frequency,
             sample_mode=self.acquisition_type,
@@ -181,6 +220,17 @@ class IOTasksManager:
         readout_channel_no : int, optional
             Channel for reading the output current values, by default 7.
         """
+        assert type(readout_instrument
+                    ) == str, "The readout_instrument should be of type - str"
+        assert type(
+            activation_instrument
+        ) == str, "The actication_instrument should be of type - str"
+        assert type(
+            activation_channel_no
+        ) == int, "The activation_channel_no should be of type - int"
+        assert type(readout_channel_no
+                    ) == int, "The readout_channel_no should be of type - int"
+
         # Define ao7 as sync signal for the NI 6216 ai0
         self.activation_task.ao_channels.add_ao_voltage_chan(
             activation_instrument + "/ao" + str(activation_channel_no),
@@ -195,7 +245,7 @@ class IOTasksManager:
             max_val=5,
         )
 
-    def read(self, number_of_samples_per_channel, timeout):
+    def read(self, number_of_samples_per_channel, timeout=None):
         """
         Reads samples from the task or virtual channels you specify. This read method is dynamic,
         and is capable of inferring an appropriate return type based on these factors: - The
@@ -217,7 +267,7 @@ class IOTasksManager:
 
         Parameters
         ----------
-        number_of_samples_per_channel : Optional[int]
+        number_of_samples_per_channel : int
             Specifies the number of samples to read. If this input is not set, assumes samples to
             read is 1. Conversely, if this input is set, assumes there are multiple samples to read.
             If you set this input to nidaqmx.constants. READ_ALL_AVAILABLE, NI-DAQmx determines how
@@ -246,6 +296,17 @@ class IOTasksManager:
             including any custom scaling you apply to the channels.  Use a DAQmx Create Channel
             method to specify these units.
         """
+        if number_of_samples_per_channel is not None:
+            assert (
+                type(number_of_samples_per_channel)
+            ) == int, "number_of_samples_per_channel should be of type - int"
+            assert (number_of_samples_per_channel > 0
+                    ), "number_of_samples_per_channel value cannot be negative"
+        if timeout is not None:
+            assert type(timeout) == float or type(
+                timeout) == int, "timeout should be of type float or int"
+            assert timeout >= 0, "timeout value cannot be negative"
+
         return self.readout_task.read(
             number_of_samples_per_channel=number_of_samples_per_channel,
             timeout=timeout)
@@ -266,6 +327,9 @@ class IOTasksManager:
             found on the NI max program. Click on the device rack inside devices and interfaces,
             and then click on the Device Routes tab.
         """
+        assert type(
+            trigger_source
+        ) == str, "The name of the trigger source should be of type - str"
         self.activation_task.triggers.start_trigger.cfg_dig_edge_start_trig(
             "/" + trigger_source + "/ai/StartTrigger")
 
@@ -308,6 +372,12 @@ class IOTasksManager:
             True to enable auto-start from nidaqmx drivers. False to
             start the tasks immediately after writing.        """
 
+        assert type(
+            y
+        ) == np.ndarray, "The sample data: y should be of type - numpy array"
+        assert type(
+            auto_start) == bool, "auto_start param should be of type - bool"
+
         y = np.require(y, dtype=y.dtype, requirements=["C", "W"])
         try:
             self.activation_task.write(y, auto_start=auto_start)
@@ -340,7 +410,7 @@ class IOTasksManager:
 
             The configs should have the following keys:
 
-             processor_type : str
+            processor_type : str
                 "simulation_debug" or "cdaq_to_cdaq" or "cdaq_to_nidaq" - Processor type to
                 initialize a hardware processor
             driver:
@@ -392,37 +462,37 @@ class IOTasksManager:
                                         Switch: (Information to be completed)
                                         If no correction is desired, the amplification can be set
                                         to 1.
-                instruments_setup:
-                    multiple_devices: boolean
-                        False will initialise the drivers to read from a single hardware DNPU.
-                        True, will enable to read from more than one DNPU device at the same time.
-                    activation_instrument: str
-                        Name of the activation instrument as observed in the NI Max software.
-                        E.g.,  cDAQ1Mod3
-                    activation_channels: list
-                        Channels through which voltages will be sent for activating the device
-                        (both data inputs and control voltage electrodes). The channels can be
-                        checked in the schematic of the DNPU device.
-                        E.g., [8,10,13,11,7,12,14]
-                    activation_voltage_ranges: list
-                        Minimum and maximum voltage for the activation electrodes.
-                        E.g., [[-1.2, 0.6], [-1.2, 0.6],
-                        [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-0.7, 0.3], [-0.7, 0.3]]
-                    readout_instrument: str
-                        Name of the readout instrument as observed in the NI Max software.
-                        E.g., cDAQ1Mod4
-                    readout_channels: [2] list
-                        Channels for reading the output current values.
-                        The channels can be checked in the schematic of the DNPU device.
-                    trigger_source: str
-                        For synchronisation purposes, sending data for the activation voltages on
-                        one NI Task can trigger the readout device of another NI Task. In these
-                        cases,the trigger source name should be specified in the configs.
-                        This is only applicable for CDAQ to CDAQ setups
-                        (with or without real-time rack).
-                        E.g., cDAQ1/segment1
-                        More information at
-                        https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
+            instruments_setup:
+                multiple_devices: boolean
+                    False will initialise the drivers to read from a single hardware DNPU.
+                    True, will enable to read from more than one DNPU device at the same time.
+                activation_instrument: str
+                    Name of the activation instrument as observed in the NI Max software.
+                    E.g.,  cDAQ1Mod3
+                activation_channels: list
+                    Channels through which voltages will be sent for activating the device
+                    (both data inputs and control voltage electrodes). The channels can be
+                    checked in the schematic of the DNPU device.
+                    E.g., [8,10,13,11,7,12,14]
+                activation_voltage_ranges: list
+                    Minimum and maximum voltage for the activation electrodes.
+                    E.g., [[-1.2, 0.6], [-1.2, 0.6],
+                    [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-0.7, 0.3], [-0.7, 0.3]]
+                readout_instrument: str
+                    Name of the readout instrument as observed in the NI Max software.
+                    E.g., cDAQ1Mod4
+                readout_channels: [2] list
+                    Channels for reading the output current values.
+                    The channels can be checked in the schematic of the DNPU device.
+                trigger_source: str
+                    For synchronisation purposes, sending data for the activation voltages on
+                    one NI Task can trigger the readout device of another NI Task. In these
+                    cases,the trigger source name should be specified in the configs.
+                    This is only applicable for CDAQ to CDAQ setups
+                    (with or without real-time rack).
+                    E.g., cDAQ1/segment1
+                    More information at
+                    https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
             plateau_length: float - Length of the plateau that is being sent through the forward
             call of the HardwareProcessor
             slope_length : float - Length of the slopes in the waveforms sent to the device through
@@ -433,6 +503,7 @@ class IOTasksManager:
         list
             list of voltage ranges
         """
+        assert type(configs) == dict, "The configs should be of type - dict"
         self.configs = configs
         (
             self.activation_channel_names,

@@ -14,6 +14,7 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
     from the CDAQ to the NIDAQ. The data is offsetted to let the NIDAQ read the spike and start
     synchronising after receiving it.
     """
+
     def __init__(self, configs):
         """
         Initialize the hardware processor. No trigger source required for this device.
@@ -45,6 +46,25 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
                 as it could disable security checks designed to avoid breaking devices.
 
         """
+        if configs['instruments_setup'][
+                'average_io_point_difference'] is not True:
+            raise AssertionError(
+                "The average_io_point_difference flag can only be true for cdaq to nidaq setups"
+            )
+        assert len(configs["instruments_setup"]["activation_channels"]) == len(
+            configs["instruments_setup"]["activation_voltage_ranges"])
+        warn = False
+        for voltage_range in configs["instruments_setup"][
+                "activation_voltage_ranges"]:
+            if (voltage_range[0] < -1.2 or voltage_range[1] > 1):
+                warn = True
+        if warn is True:
+            warnings.warn(
+                " Device maybe damaged, Voltage range below -1.2 or above 1")
+        if configs["instruments_setup"]["average_io_point_difference"] is False:
+            raise AssertionError(
+                "average_io_point_difference should be set to True for Nidaq driver"
+            )
         configs["auto_start"] = False
 
         # The offset specifies the number of zero points that will be added to the
@@ -58,9 +78,6 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         self.tasks_driver.add_synchronisation_channels(
             self.configs["instruments_setup"]["readout_instrument"],
             self.configs["instruments_setup"]["activation_instrument"],
-        )
-        assert self.configs['instruments_setup']['average_io_point_difference'], (
-            "The average_io_point_difference flag can only be true for cdaq to nidaq setups"
         )
 
     def forward_numpy(self, y):
@@ -84,6 +101,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         np.array
             Output data that has been read from the device when receiving the input y.
         """
+
+        assert type(
+            y) == np.ndarray, "Input data should be of type - numpy array"
         self.original_shape = y.shape[0]
         y = y.T
 
@@ -121,6 +141,8 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         np.array,bool
             Synchronised output data from the device and wheather the readout is complete
         """
+        assert type(
+            y) == np.ndarray, "input data should be of type - numpy-array"
         data = self.read_data(y)
         data = self.process_output_data(data)
         data = self.average_point_difference(data)
@@ -155,6 +177,8 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
             Synchronised input data based on the offset value, where the synchronisation spike
             should have been received.
         """
+        assert type(y) == list or type(
+            y) == np.ndarray, "Input data should be of type - numpy array"
         # TODO: Are the following three lines really necessary?
         y = np.asarray(y)
         if len(y.shape) == 1:
@@ -194,6 +218,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         int
             Output cut value
         """
+        assert type(
+            read_data
+        ) == np.ndarray, "read-data should be of type - numpy array"
         cut_value = np.argmax(read_data[-1, :])
         if read_data[-1, cut_value] < 0.05:
             warnings.warn("initialize spike not recognised")
@@ -218,6 +245,9 @@ class CDAQtoNiDAQ(NationalInstrumentsSetup):
         bool
             Whether if the cut value is zero
         """
+        assert type(
+            read_data
+        ) == np.ndarray, "read-data should be of type - numpy array"
         cut_value = self.get_output_cut_value(read_data)
         # Add check that the cut_value is not 0
         return read_data[:-1, cut_value:self.original_shape +

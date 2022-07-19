@@ -12,6 +12,7 @@ class GeneticOptimizer:
     A class for implementing a genetic algorithm optimisation solution for training DNPUs on and
     off chip, in a way that resembles a PyTorch optimizer.
     """
+
     def __init__(self,
                  gene_ranges: list,
                  partition: Union[list, torch.Tensor],
@@ -308,7 +309,7 @@ class GeneticOptimizer:
         mask = TorchUtils.format(
             np.random.choice(
                 [0, 1],
-                size=pool[self.partition[0]:].shape,
+                size=pool[self.partition[0]:].shape,  # type: ignore[misc]
                 p=[1 - mutation_rate, mutation_rate],
             ))
         mutated_pool = np.zeros(
@@ -321,16 +322,20 @@ class GeneticOptimizer:
             else:
                 mutated_pool[:, i] = np.random.triangular(
                     gene_range[i][0],
-                    TorchUtils.to_numpy(pool[self.partition[0]:, i]),
+                    TorchUtils.to_numpy(
+                        pool[self.partition[0]:,  # type: ignore[misc]
+                             i]),  # type: ignore[misc]
                     gene_range[i][1],
                 )
 
         mutated_pool = TorchUtils.format(mutated_pool)
-        pool[self.partition[0]:] = (torch.ones(
-            pool[self.partition[0]:].shape,
-            dtype=torch.get_default_dtype(),
-            device=TorchUtils.get_device(),
-        ) - mask) * pool[self.partition[0]:] + mask * mutated_pool
+        pool[self.partition[0]:] = (  # type: ignore[misc]
+            torch.ones(
+                pool[self.partition[0]:].shape,  # type: ignore[misc]
+                dtype=torch.get_default_dtype(),
+                device=TorchUtils.get_device(),
+            ) - mask) * pool[
+                self.partition[0]:] + mask * mutated_pool  # type: ignore[misc]
 
         # Remove duplicates (Only if they are)
         if len(pool.unique(dim=1)) < len(pool):

@@ -81,7 +81,7 @@ class Processor(nn.Module):
 
     def load_processor(self,
                        configs: dict,
-                       info: dict,
+                       info: dict = None,
                        model_state_dict: collections.OrderedDict = None):
         """
         Create a processor depending on the provided settings.
@@ -124,7 +124,8 @@ class Processor(nn.Module):
         electrode_info_loaded = False
 
         # create SurrogateModel
-        if configs["processor_type"] == "simulation" or configs["processor_type"] == "simulation_debug":
+        if configs["processor_type"] == "simulation" or configs[
+                "processor_type"] == "simulation_debug":
             self.processor = SurrogateModel(
                 model_structure=self.info["model_structure"],
                 model_state_dict=model_state_dict)
@@ -231,12 +232,20 @@ class Processor(nn.Module):
         return self.processor(x)
 
     def format_targets(self, x: torch.Tensor) -> torch.Tensor:
-        """[summary]
+        """ 
+        The hardware processor uses a waveform to represent 
+        points (see 5.1 in Introduction of the Wiki). Each point is represented with some
+        slope and some plateau points. When passing through the hardware, there will be a
+        difference between the output from the device and the input (in points). This function
+        is used for the targets to have the same length in shape as the outputs. It simply 
+        repeats each point in the input as many times as there are points in the plateau. In 
+        this way, targets can then be compared against hardware outputs in the loss function.
 
         Parameters
         ----------
         x : torch.Tensor
-            [description]
+            Targets of the supervised learning problem, that will be extended to have the same
+            length shape as the outputs from the processor.
         """
         if not (self.waveform_mgr.plateau_length == 1
                 and self.waveform_mgr.slope_length == 0):
