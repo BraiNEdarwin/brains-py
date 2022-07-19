@@ -78,7 +78,10 @@ class ProcessorTest(unittest.TestCase):
         # create processors
         self.processor_simulation = Processor(self.configs_simulation,
                                               self.info)
+        self.processor_simulation = TorchUtils.format(
+            self.processor_simulation)
         self.processor_debug = Processor(self.configs_debug, self.info)
+        self.processor_debug = TorchUtils.format(self.processor_debug)
 
         # define hardware configs
         instruments_setup_cdaq = {

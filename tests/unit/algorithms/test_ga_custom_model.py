@@ -13,14 +13,14 @@ class GA_Test_SurrogateModel(unittest.TestCase):
     """
     Tests for the Genetic Algorithm with a Simulation Processor
     """
-
     def get_train_parameters(self):
         """
         Generate some random train parameters for Genetic algorithm
         """
         model = DefaultCustomModel()
+        model = TorchUtils.format(model)
         results = {}
-        threshhold = 10000
+        threshhold = 500
         size = torch.randint(1, threshhold, (1, 1)).item()
         results["inputs"] = TorchUtils.format(torch.rand((size, 2)))
         results["targets"] = TorchUtils.format(torch.randint(0, 2, (size, 1)))
@@ -32,7 +32,7 @@ class GA_Test_SurrogateModel(unittest.TestCase):
             torch.tensor([[-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6],
                           [-1.2, 0.6]])),
                                      partition=[4, 22],
-                                     epochs=100)
+                                     epochs=3)
         configs = {}
         configs["epochs"] = 100
         configs["stop_threshold"] = 0.5

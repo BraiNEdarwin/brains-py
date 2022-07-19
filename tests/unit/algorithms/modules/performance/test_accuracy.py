@@ -10,13 +10,12 @@ class Accuracy_Test(unittest.TestCase):
     """
     Tests to train the perceptron and calculate the accuracy
     """
-
     def test_get_accuracy(self):
         """
         Test for the get_accuracy method using valid input and target values
         """
-        threshhold = 10000
-        size = torch.randint(0, threshhold, (1, 1)).item()
+        threshold = 500
+        size = torch.randint(0, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         results = accuracy.get_accuracy(inputs, targets)
@@ -45,8 +44,8 @@ class Accuracy_Test(unittest.TestCase):
         Test for the get_accuracy method using invalid input and target values,
         inputs size != targets size
         """
-        threshhold = 10000
-        size = torch.randint(0, threshhold, (1, 1)).item()
+        threshold = 500
+        size = torch.randint(0, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size + 1, 1)))
         with self.assertRaises(RuntimeError):
@@ -57,8 +56,8 @@ class Accuracy_Test(unittest.TestCase):
         Test for the get_accuracy method using invalid input and target values,
         inputs shape != targets shape
         """
-        threshhold = 10000
-        size = torch.randint(0, threshhold, (1, 1)).item()
+        threshold = 500
+        size = torch.randint(0, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 2)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         with self.assertRaises(RuntimeError):
@@ -83,8 +82,8 @@ class Accuracy_Test(unittest.TestCase):
         """
         Test for the init_results method to initialize the data for evaluation of accuracy
         """
-        threshhold = 10000
-        size = torch.randint(0, threshhold, (1, 1)).item()
+        threshold = 500
+        size = torch.randint(0, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         configs = accuracy.get_default_node_configs()
@@ -121,8 +120,8 @@ class Accuracy_Test(unittest.TestCase):
         Test for the zscore_norm method for normalization of input values
         with standard deviation = 0
         """
-        threshhold = 10000
-        size = torch.randint(0, threshhold, (1, 1)).item()
+        threshold = 500
+        size = torch.randint(0, threshold, (1, 1)).item()
         inputs = torch.ones((size, 1))
         with self.assertRaises(AssertionError):
             accuracy.zscore_norm(inputs)
@@ -144,8 +143,8 @@ class Accuracy_Test(unittest.TestCase):
         """
         Test to evaluate the accuracy using the perceptron algorithm
         """
-        threshhold = 10000
-        size = torch.randint(0, threshhold, (1, 1)).item()
+        threshold = 500
+        size = torch.randint(0, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         node = TorchUtils.format(torch.nn.Linear(1, 1))
@@ -180,8 +179,8 @@ class Accuracy_Test(unittest.TestCase):
         """
         Test to train the perceptron and check if it produces an accuracy atleast above 0%
         """
-        threshhold = 10000
-        size = torch.randint(0, threshhold, (1, 1)).item()
+        threshold = 500
+        size = torch.randint(0, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         configs = accuracy.get_default_node_configs()
@@ -198,8 +197,8 @@ class Accuracy_Test(unittest.TestCase):
         """
         Invalid type for epochs raises an AssertionError
         """
-        threshhold = 10000
-        size = torch.randint(0, threshhold, (1, 1)).item()
+        threshold = 500
+        size = torch.randint(0, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         configs = accuracy.get_default_node_configs()
@@ -235,8 +234,8 @@ class Accuracy_Test(unittest.TestCase):
             accuracy.train_perceptron(100, np.array([1, 2, 3, 4]), optimizer,
                                       node)
         with self.assertRaises(AttributeError):
-            threshhold = 10000
-            size = torch.randint(0, threshhold, (1, 1)).item()
+            threshold = 500
+            size = torch.randint(0, threshold, (1, 1)).item()
             inputs = TorchUtils.format(torch.rand((size, 1)))
             targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
             configs = accuracy.get_default_node_configs()
@@ -245,8 +244,8 @@ class Accuracy_Test(unittest.TestCase):
             node = TorchUtils.format(torch.nn.Linear(1, 1))
             accuracy.train_perceptron(100, dataloader, "invalid type", node)
         with self.assertRaises(AttributeError):
-            threshhold = 10000
-            size = torch.randint(0, threshhold, (1, 1)).item()
+            threshold = 500
+            size = torch.randint(0, threshold, (1, 1)).item()
             inputs = TorchUtils.format(torch.rand((size, 1)))
             targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
             configs = accuracy.get_default_node_configs()
@@ -270,8 +269,8 @@ class Accuracy_Test(unittest.TestCase):
         Test to plot the perceppton which returns a figure which is an instance of the
         matplotlib library
         """
-        threshhold = 10000
-        size = torch.randint(0, threshhold, (1, 1)).item()
+        threshold = 500
+        size = torch.randint(0, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         results = accuracy.get_accuracy(inputs, targets)

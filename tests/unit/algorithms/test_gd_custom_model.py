@@ -11,15 +11,15 @@ class GD_Test(unittest.TestCase):
     """
     Tests for Gradient Descent with a custom simulation model.
     """
-
     def get_train_parameters(self):
         """
         Generate some random train parameters for Gradient Descent
         """
         model = DefaultCustomModel()
+        model = TorchUtils.format(model)
         results = {}
-        threshhold = 1000
-        size = torch.randint(1, threshhold, (1, 1)).item()
+        threshold = 500
+        size = torch.randint(1, threshold, (1, 1)).item()
         results["inputs"] = TorchUtils.format(torch.rand((size, 2)))
         results["targets"] = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         results["norm_inputs"] = zscore_norm(results["inputs"])
@@ -28,7 +28,7 @@ class GD_Test(unittest.TestCase):
         criterion = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
         configs = {}
-        configs["epochs"] = 2
+        configs["epochs"] = 3
         configs["constraint_control_voltages"] = "regul"
         configs["regul_factor"] = 0.5
 

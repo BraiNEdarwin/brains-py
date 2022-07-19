@@ -50,13 +50,13 @@ class ModelTest(unittest.TestCase):
         configs = {"voltage_ranges": [[3.0, 4.0]] * 7}
         self.model.set_effects_from_dict(self.info_dict, configs)
         self.assertTrue(
-            torch.equal(self.model.get_voltage_ranges(),
+            torch.equal(TorchUtils.format(self.model.get_voltage_ranges()),
                         TorchUtils.format([[3.0, 4.0]] * 7)))
 
         # should set to default from info dict
         self.model.set_effects_from_dict(self.info_dict, {})
         self.assertTrue(
-            torch.equal(self.model.get_voltage_ranges(),
+            torch.equal(TorchUtils.format(self.model.get_voltage_ranges()),
                         TorchUtils.format([[1.0, 2.0]] * 7)))
 
     def test_forward(self):
@@ -108,11 +108,11 @@ class ModelTest(unittest.TestCase):
         self.model.set_effects_from_dict(self.info_dict, configs)
         self.assertIsNone(self.model.amplification)
         self.assertTrue(
-            torch.equal(self.model.output_clipping,
+            torch.equal(TorchUtils.format(self.model.output_clipping),
                         TorchUtils.format([4.0, 3.0])))
         self.assertTrue(
             torch.equal(
-                self.model.get_voltage_ranges(),
+                TorchUtils.format(self.model.get_voltage_ranges()),
                 TorchUtils.format(self.info_dict["activation_electrodes"]
                                   ["voltage_ranges"])))
 
@@ -138,13 +138,14 @@ class ModelTest(unittest.TestCase):
                                voltage_ranges="default",
                                output_clipping=np.array([4.0, 3.0]))
         print(self.model.output_clipping)
-        self.assertEquals(self.model.amplification, TorchUtils.format([3.0]))
+        self.assertEquals(TorchUtils.format(self.model.amplification),
+                          TorchUtils.format([3.0]))
         self.assertTrue(
-            torch.equal(self.model.output_clipping,
+            torch.equal(TorchUtils.format(self.model.output_clipping),
                         TorchUtils.format([4.0, 3.0]).double()))
         self.assertTrue(
             torch.equal(
-                self.model.get_voltage_ranges(),
+                TorchUtils.format(self.model.get_voltage_ranges()),
                 TorchUtils.format(self.info_dict["activation_electrodes"]
                                   ["voltage_ranges"])))
 
@@ -156,14 +157,14 @@ class ModelTest(unittest.TestCase):
         value = [[3.0, 4.0]] * 7
         self.model.set_voltage_ranges(self.info_dict, value)
         self.assertTrue(
-            torch.equal(self.model.get_voltage_ranges(),
+            torch.equal(TorchUtils.format(self.model.get_voltage_ranges()),
                         TorchUtils.format(value)))
 
         # set to default
         self.model.set_voltage_ranges(self.info_dict, "default")
         self.assertTrue(
             torch.equal(
-                self.model.get_voltage_ranges(),
+                TorchUtils.format(self.model.get_voltage_ranges()),
                 TorchUtils.format(self.info_dict["activation_electrodes"]
                                   ["voltage_ranges"])))
 
@@ -175,13 +176,14 @@ class ModelTest(unittest.TestCase):
         value = [3.0]
         self.model.set_amplification(self.info_dict, value)
         self.assertTrue(
-            torch.equal(self.model.amplification, TorchUtils.format(value)))
+            torch.equal(TorchUtils.format(self.model.amplification),
+                        TorchUtils.format(value)))
 
         # set to default
         self.model.set_amplification(self.info_dict, "default")
         self.assertTrue(
             torch.equal(
-                self.model.amplification,
+                TorchUtils.format(self.model.amplification),
                 TorchUtils.format(
                     self.info_dict["output_electrodes"]["amplification"])))
 
@@ -197,13 +199,14 @@ class ModelTest(unittest.TestCase):
         value = [4.0, 3.0]
         self.model.set_output_clipping(self.info_dict, value)
         self.assertTrue(
-            torch.equal(self.model.output_clipping, TorchUtils.format(value)))
+            torch.equal(TorchUtils.format(self.model.output_clipping),
+                        TorchUtils.format(value)))
 
         # set to default
         self.model.set_output_clipping(self.info_dict, "default")
         self.assertTrue(
             torch.equal(
-                self.model.output_clipping,
+                TorchUtils.format(self.model.output_clipping),
                 TorchUtils.format(
                     self.info_dict["output_electrodes"]["clipping_value"])))
 

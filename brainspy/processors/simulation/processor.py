@@ -137,13 +137,13 @@ class SurrogateModel(nn.Module):
         """
         x = self.model(x)
         if self.amplification is not None:
-            x = x * self.amplification
+            x = x * self.amplification.to(x.device)
         if self.noise is not None:
             x = self.noise(x)
         if self.output_clipping is not None:
             return torch.clamp(x,
-                               min=self.output_clipping[0],
-                               max=self.output_clipping[1])
+                               min=self.output_clipping[0].to(x.device),
+                               max=self.output_clipping[1].to(x.device))
         return x
 
     # For debugging purposes
