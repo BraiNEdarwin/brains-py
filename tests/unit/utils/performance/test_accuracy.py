@@ -2,7 +2,7 @@ import torch
 import unittest
 import numpy as np
 import matplotlib
-from brainspy.algorithms.modules.performance import accuracy
+from brainspy.utils.performance import accuracy
 from brainspy.utils.pytorch import TorchUtils
 
 

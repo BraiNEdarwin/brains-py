@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import trange
 import matplotlib.pyplot as plt
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.algorithms.modules.performance.data import get_data
+from brainspy.utils.performance.data import get_data
 
 
 def get_accuracy(inputs, targets, configs=None, node=None):

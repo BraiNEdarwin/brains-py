@@ -6,8 +6,8 @@ from brainspy.algorithms.ga import train, evaluate_population
 from brainspy.processors.dnpu import DNPU
 from brainspy.processors.hardware.processor import HardwareProcessor
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.algorithms.modules.performance.accuracy import zscore_norm
-from brainspy.algorithms.modules.performance.data import get_data
+from brainspy.utils.performance.accuracy import zscore_norm
+from brainspy.utils.performance.data import get_data
 from brainspy.algorithms.modules.optim import GeneticOptimizer
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 from tests.unit.testing_utils import check_test_configs
@@ -26,7 +26,6 @@ class GA_Test_NIDAQ(unittest.TestCase):
     Some sample keys have been defined to run tests which do not require connection
     to the hardware.
     """
-
     def get_configs_NIDAQ(self):
         """
         Generate configurations to initialize the NIDAQ driver

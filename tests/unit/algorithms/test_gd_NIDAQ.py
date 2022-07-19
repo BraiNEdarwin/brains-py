@@ -6,8 +6,8 @@ from brainspy.processors.dnpu import DNPU
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 from brainspy.processors.hardware.processor import HardwareProcessor
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.algorithms.modules.performance.accuracy import zscore_norm
-from brainspy.algorithms.modules.performance.data import get_data
+from brainspy.utils.performance.accuracy import zscore_norm
+from brainspy.utils.performance.data import get_data
 from tests.unit.testing_utils import check_test_configs
 
 
@@ -21,7 +21,6 @@ class GD_Test(unittest.TestCase):
     The test mode has to be set to HARDWARE_NIDAQ in tests/main.py.
     The required keys have to be defined in the get_configs_NIDAQ() function.
     """
-
     def get_train_parameters(self):
         """
         Generate some random train parameters for Gradient Descent

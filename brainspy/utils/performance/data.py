@@ -28,7 +28,7 @@ def get_data(results, batch_size):
             architectures that you want to evaluate the accuracy against.
         norm_inputs : torch.Tensor
             Standard normal distribution of the input data. To calculate this, the
-            zscore_norm function can be used in brainspy.algorithms.modules.performance.accuracy
+            zscore_norm function can be used in brainspy.utils.performance.accuracy
         targets : torch.Tensor
             Binary targets against which the outuut of the perceptron algorithm is compared.
 

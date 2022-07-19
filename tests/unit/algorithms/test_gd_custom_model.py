@@ -2,8 +2,8 @@ import unittest
 import torch
 from brainspy.algorithms.gd import train, default_train_step, default_val_step
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.algorithms.modules.performance.accuracy import zscore_norm
-from brainspy.algorithms.modules.performance.data import get_data
+from brainspy.utils.performance.accuracy import zscore_norm
+from brainspy.utils.performance.data import get_data
 from tests.unit.algorithms.test_model import DefaultCustomModel
 
 

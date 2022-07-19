@@ -3,8 +3,8 @@ import unittest
 import random
 import numpy as np
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.algorithms.modules.performance.accuracy import zscore_norm
-from brainspy.algorithms.modules.performance.data import get_data, PerceptronDataset
+from brainspy.utils.performance.accuracy import zscore_norm
+from brainspy.utils.performance.data import get_data, PerceptronDataset
 
 
 class Data_Test(unittest.TestCase):
@@ -12,7 +12,6 @@ class Data_Test(unittest.TestCase):
     Tests for the Perceptron dataloader - data.py.
 
     """
-
     def test_get_data(self):
         """
         Test to get data from the Perceptron dataloader with some random input and target values

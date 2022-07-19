@@ -16,7 +16,7 @@ from brainspy.processors.dnpu import DNPU
 from brainspy.processors.processor import Processor
 from brainspy.algorithms.ga import train as train_ga
 from brainspy.algorithms.gd import train as train_gd
-import brainspy.algorithms.modules.signal as criterions
+import brainspy.utils.signal as criterions
 from brainspy.algorithms.modules.optim import GeneticOptimizer
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ

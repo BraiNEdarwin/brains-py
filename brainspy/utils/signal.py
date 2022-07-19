@@ -7,7 +7,7 @@ import warnings
 import torch
 
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.algorithms.modules.performance.accuracy import get_accuracy
+from brainspy.utils.performance.accuracy import get_accuracy
 
 
 def accuracy_fit(output: torch.Tensor,

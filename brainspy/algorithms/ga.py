@@ -3,7 +3,7 @@ import torch
 import warnings
 import numpy as np
 from tqdm import trange
-from brainspy.algorithms.modules.signal import pearsons_correlation
+from brainspy.utils.signal import pearsons_correlation
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.algorithms.modules.optim import GeneticOptimizer
 from torch.utils.data import DataLoader

@@ -3,8 +3,8 @@ import warnings
 import torch
 from brainspy.algorithms.ga import train, evaluate_population
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.algorithms.modules.performance.accuracy import zscore_norm
-from brainspy.algorithms.modules.performance.data import get_data
+from brainspy.utils.performance.accuracy import zscore_norm
+from brainspy.utils.performance.data import get_data
 from brainspy.algorithms.modules.optim import GeneticOptimizer
 from tests.unit.algorithms.test_model import DefaultCustomModel
 

@@ -6,7 +6,7 @@ import unittest
 import torch
 import numpy as np
 
-import brainspy.algorithms.modules.signal as signal
+import brainspy.utils.signal as signal
 from brainspy.utils.pytorch import TorchUtils
 
 
@@ -14,7 +14,6 @@ class SignalTest(unittest.TestCase):
     """
     Testing each method in signal.py.
     """
-
     def setUp(self):
         """
         Create two datasets to use for the tests.
