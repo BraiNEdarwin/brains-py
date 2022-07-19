@@ -336,14 +336,10 @@ class IOTasksManager:
         Parameters
         ----------
         configs : dict
-            configs dictionary for the device model
+            Configs dictionary for the device model
 
             The configs should have the following keys:
 
-             processor_type : str
-                "simulation_debug" or "cdaq_to_cdaq" or "cdaq_to_nidaq" - Processor type to
-                initialize a hardware processor
-            driver:
                 sampling_frequency: int
                     The average number of samples to be obtained in one second, when transforming
                     the signal from analogue to digital.
