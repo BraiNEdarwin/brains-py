@@ -138,11 +138,11 @@ def train(model: torch.nn.Module,
         model), "The is_hardware function should be implemeted in the model"
     assert "format_targets" in dir(
         model), "The format_targets function should be implemeted in the model"
-    assert type(
-        dataloaders) == list, "The dataloaders should be of type - list"
-    assert len(
+    assert type(dataloaders) == list or type(
+        dataloaders) == tuple, "The dataloaders should be of type - list"
+    assert len(dataloaders) >= 1 and len(
         dataloaders
-    ) == 1, "The dataloaders list should contain a single PyTorch Dataloader"
+    ) < 3, "The dataloaders list should contain a single PyTorch Dataloader"
     assert isinstance(
         dataloaders[0], DataLoader
     ), "The dataloader should be an instance of torch.utils.data.DataLoader"
