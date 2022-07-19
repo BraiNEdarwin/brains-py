@@ -130,9 +130,8 @@ class WaveformManager:
 
         """
         assert (parameter is not None and length is not None)
-        if isinstance(parameter, int):
-            return [parameter] * length
-        return parameter
+        assert isinstance(parameter, int)
+        return [parameter] * length
 
     def points_to_waveform(self, data):
         """
@@ -157,6 +156,11 @@ class WaveformManager:
         waveform = waveform_mgr.points_to_waveform(points)
 
         """
+        assert type(
+            data) is torch.Tensor, "Data provided is not a pytorch Tensor"
+        assert len(
+            data.shape
+        ) >= 2, "Data requires to be in at least two dimensions (data, electrode_no)"
         data_size = len(data) - 1
         tmp = TorchUtils.to_numpy(data)
         output = TorchUtils.format(np.linspace(0,
@@ -368,11 +372,13 @@ class WaveformManager:
                            data.shape[1]).mean(dim=1)
 
         # Make the output two-dimensional.
-        if len(output.shape) == 1:
-            output = output.unsqueeze(dim=1)
+        # if len(output.shape) == 1:
+        #     output = output.unsqueeze(dim=1)
         return output
 
-    def waveform_to_points(self, data=torch.Tensor, mask=None) -> torch.Tensor:
+    def waveform_to_points(self,
+                           data: torch.Tensor,
+                           mask=None) -> torch.Tensor:
         """
         Transform waveform data to point data. First apply a mask to remove
         the slopes, then apply self.plateaus_to_points to get only points.
@@ -403,6 +409,12 @@ class WaveformManager:
             If the lenght of the input data is not a multiple of the plateau
             length of the object.
         """
+        assert type(
+            data) is torch.Tensor, "Data provided is not a pytorch Tensor"
+        assert len(
+            data.shape
+        ) >= 2, "Data requires to be in at least two dimensions (data, electrode_no)"
+        print(data.shape)
         if mask is None:
             mask = self.generate_mask(len(data))
         return self.plateaus_to_points(self.waveform_to_plateaus(data, mask))
@@ -436,6 +448,11 @@ class WaveformManager:
         torch.Tensor
             Tensor with the slopes removed.
         """
+        assert type(
+            data) is torch.Tensor, "Data provided is not a pytorch Tensor"
+        assert len(
+            data.shape
+        ) >= 2, "Data requires to be in at least two dimensions (data, electrode_no)"
         if mask is None:
             mask = self.generate_mask(len(data)).to(data.device)
         return data[mask]
