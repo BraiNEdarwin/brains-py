@@ -83,8 +83,8 @@ class GA_Test_NIDAQ(unittest.TestCase):
         Generate some random train parameters for Genetic algorithm
         """
         results = {}
-        threshhold = 1000
-        size = torch.randint(1, threshhold, (1, 1)).item()
+        threshold = 20
+        size = torch.randint(11, threshold, (1, 1)).item()
         results["inputs"] = TorchUtils.format(torch.rand((size, 2)))
         results["targets"] = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         results["norm_inputs"] = zscore_norm(results["inputs"])

@@ -14,6 +14,30 @@ class WaveformTest(unittest.TestCase):
     """
     Class for testing the method - plateaus_to_waveform() in waveform.py.
     """
+    def test_plateaus_to_waveform_manual_numpy(self):
+        """
+        Test to transform from plateaus to waveform and checking the output values and mask.
+        """
+        configs = {"plateau_length": 2, "slope_length": 2}
+        manager = WaveformManager(configs)
+        data = torch.tensor([[1], [1], [3], [3]],
+                            device=TorchUtils.get_device(),
+                            dtype=torch.get_default_dtype())
+        output_data, output_mask = manager.plateaus_to_waveform(data, False)
+        self.assertTrue(
+            np.equal(
+                output_data,
+                np.array([[0.0], [0.5], [1.0], [1.0], [1.6666667461395264],
+                          [2.3333334922790527], [3.0], [3.0], [1.5],
+                          [0.0]])).all(), "Plateaus to waveform error")
+        self.assertTrue(
+            np.equal(
+                output_mask,
+                np.array([
+                    False, False, True, True, False, False, True, True, False,
+                    False
+                ])).all(), "Plateaus to waveform error")
+
     def test_plateaus_to_waveform_manual(self):
         """
         Test to transform from plateaus to waveform and checking the output values and mask.

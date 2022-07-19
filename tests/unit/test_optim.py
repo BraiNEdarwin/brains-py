@@ -360,19 +360,20 @@ class OptimTest(unittest.TestCase):
         """
         Test to remove duplicates after a crossover
         """
-        optim = GeneticOptimizer(gene_ranges=torch.tensor([[-1.2, 0.6],
-                                                           [-1.2, 0.6]]),
+        optim = GeneticOptimizer(gene_ranges=TorchUtils.format(
+            torch.tensor([[-1.2, 1.6], [-1.2, 1.6], [-1.2, 1.6], [-1.2,
+                                                                  1.6]])),
                                  partition=[4, 22],
                                  epochs=100)
         try:
-            criterion_pool = torch.randint(1, 100, (1, 26)).squeeze()
-            optim.pool = optim.pool[torch.flip(torch.argsort(criterion_pool),
-                                               dims=[0])]
-            new_pool = optim.crossover(new_pool=optim.pool)
-            edited = optim.remove_duplicates(new_pool)
+            criterion_pool = TorchUtils.format(torch.randint(
+                -1, 1, (26, 4))).squeeze()
+            criterion_pool[1] = criterion_pool[2]
+            criterion_pool[3] = criterion_pool[2]
+            edited = optim.remove_duplicates(TorchUtils.format(criterion_pool))
         except (Exception):
-            self.fail("Could not update mutation rate")
-        assert (len(new_pool) >= len(edited))
+            self.fail("Could not remove duplicates")
+        assert (len(criterion_pool) >= len(edited))
 
     def test_remove_duplicates_fail(self):
         """

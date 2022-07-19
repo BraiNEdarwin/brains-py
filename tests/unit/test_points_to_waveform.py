@@ -42,7 +42,7 @@ class WaveformTest(unittest.TestCase):
         configs["plateau_length"] = 80
         configs["slope_length"] = 0
         waveform_mgr = WaveformManager(configs)
-        points = torch.randint(3, 5, (1, ))
+        points = torch.randint(3, 5, (1, 1))
         waveform = waveform_mgr.points_to_waveform(
             points.to(TorchUtils.get_device()))
         waveform_values = waveform.tolist()
@@ -152,7 +152,7 @@ class WaveformTest(unittest.TestCase):
             waveform_mgr = WaveformManager(configs)
             self.assertEqual(len(caught_warnings), 1)
         points = torch.rand(1)
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.points_to_waveform(points.to(TorchUtils.get_device()))
 
     def test_points_to_waveform_invalid_type(self):
@@ -163,13 +163,13 @@ class WaveformTest(unittest.TestCase):
         configs["plateau_length"] = 1
         configs["slope_length"] = 10
         waveform_mgr = WaveformManager(configs)
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.points_to_waveform([1, 2, 3, 4])
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.points_to_waveform(np.array([1, 2, 3, 4]))
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.points_to_waveform("String type is not accepted")
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.points_to_waveform(None)
 
     def test_points_to_waveform_varying_data_type(self):

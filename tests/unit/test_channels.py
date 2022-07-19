@@ -15,7 +15,6 @@ class Channels_Test(unittest.TestCase):
     """
     Tests for the channels.py
     """
-
     def get_configs_multiple_devices(self):
         """
         Get the sample configurations for multiple devices:
@@ -282,6 +281,15 @@ class Channels_Test(unittest.TestCase):
                 configs["instruments_setup"]["activation_channel_mask"]).shape)
         self.assertTrue((get_mask(configs["instruments_setup"]) == np.array(
             configs["instruments_setup"]["activation_channel_mask"])).all())
+
+    def test_get_mask_no_activation_channel_mask(self):
+        """
+        Test for the get mask method for a single device
+        """
+        configs = self.get_configs()
+        del configs['instruments_setup']['activation_channel_mask']
+        mask = get_mask(configs["instruments_setup"])
+        self.assertTrue(mask is None)
 
     def test_get_mask_multipe(self):
         """

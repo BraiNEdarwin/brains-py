@@ -17,13 +17,12 @@ class Data_Test(unittest.TestCase):
         Test to get data from the Perceptron dataloader with some random input and target values
         """
         results = {}
-        results["inputs"] = TorchUtils.format(torch.rand(1000))
-        results["targets"] = TorchUtils.format(torch.rand(1000))
+        results["inputs"] = TorchUtils.format(torch.rand(500))
+        results["targets"] = TorchUtils.format(torch.rand(500))
         results["norm_inputs"] = zscore_norm(results["inputs"])
         try:
             dataloader = get_data(results, batch_size=512)
             self.assertEqual(dataloader.batch_size, 512)
-            self.assertEqual(dataloader.drop_last, False)
         except (Exception):
             self.fail("Could not get data from the Perceptron Dataloader")
 
@@ -143,7 +142,8 @@ class Data_Test(unittest.TestCase):
         results["norm_inputs"] = zscore_norm(results["inputs"])
         try:
             dataset = PerceptronDataset(results["norm_inputs"],
-                                        results["targets"])
+                                        results["targets"],
+                                        TorchUtils.get_device())
             self.assertEqual(len(results["norm_inputs"]), len(dataset))
         except (Exception):
             self.fail("Could not initialize PerceptronDataset class")

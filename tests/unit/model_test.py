@@ -189,6 +189,9 @@ class ModelTest(unittest.TestCase):
         """
         model = NeuralNetworkModel({})
         raw = model.raw_model
+        model.build_model_structure(None)
+        model.verbose = True
+        model.build_model({})
         self.assertEqual(len(raw), 13)
 
     def test_get_activation(self):
@@ -237,17 +240,99 @@ class ModelTest(unittest.TestCase):
             self.assertTrue("activation" in d)
             self.assertEqual(len(caught_warnings), 4)
 
-    def test_consistancy_check_typeerror(self):
+    def test_consistency_check_no_activation(self):
         """
-        Invalid type for structure_consistency_check raises TypeError
+        Test if info_consistency_check makes the necessary adjustments.
         """
         model = NeuralNetworkModel({})
-        with self.assertRaises(TypeError):
-            model.structure_consistency_check(None)
-        with self.assertRaises(TypeError):
-            model.structure_consistency_check([1, 2, 3, 4])
-        with self.assertRaises(TypeError):
-            model.structure_consistency_check("Invalid type")
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always")
+            d = {"D_in": 7, "D_out": 1, "hidden_sizes": [90, 90]}
+            model.structure_consistency_check(d)
+            self.assertTrue("activation" in d)
+            self.assertTrue(d['activation'] == 'relu')
+
+    def test_consistency_check_no_D_in(self):
+        """
+        Test if info_consistency_check makes the necessary adjustments.
+        """
+        model = NeuralNetworkModel({})
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always")
+            d = {"activation": 'relu', "D_out": 1, "hidden_sizes": [90, 90]}
+            model.structure_consistency_check(d)
+            self.assertTrue("D_in" in d)
+            self.assertTrue(d['D_in'] == 7)
+
+    def test_activations(self):
+        """
+        Test if info_consistency_check makes the necessary adjustments.
+        """
+        model = NeuralNetworkModel({})
+        relu = model._get_activation('relu')
+        elu = model._get_activation('elu')
+        tanh = model._get_activation('tanh')
+        hardt = model._get_activation('hard-tanh')
+        sig = model._get_activation('sigmoid')
+        relu2 = model._get_activation(None)
+        self.assertTrue(type(relu) is torch.nn.ReLU)
+        self.assertTrue(type(elu) is torch.nn.ELU)
+        self.assertTrue(type(tanh) is torch.nn.Tanh)
+        self.assertTrue(type(hardt) is torch.nn.Hardtanh)
+        self.assertTrue(type(sig) is torch.nn.Sigmoid)
+        self.assertTrue(type(relu2) is torch.nn.ReLU)
+
+    def test_consistency_check_no_D_in(self):
+        """
+        Test if info_consistency_check makes the necessary adjustments.
+        """
+        model = NeuralNetworkModel({})
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always")
+            d = {"activation": 'relu', "D_in": 7, "hidden_sizes": [90, 90]}
+            model.structure_consistency_check(d)
+            self.assertTrue("D_out" in d)
+            self.assertTrue(d['D_out'] == 1)
+
+    def test_consistency_check_no_hidden_sizes(self):
+        """
+        Test if info_consistency_check makes the necessary adjustments.
+        """
+        model = NeuralNetworkModel({})
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always")
+            d = {"activation": 'relu', "D_in": 7, "D_out": 1}
+            model.structure_consistency_check(d)
+            self.assertTrue("hidden_sizes" in d)
+            self.assertTrue(d['hidden_sizes'] == [90] * 6)
+
+    def test_consistency_check_neg_D_in(self):
+        """
+        Test if info_consistency_check makes the necessary adjustments.
+        """
+        model = NeuralNetworkModel({})
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always")
+            d = {
+                "activation": 'relu',
+                "D_in": -1,
+                "D_out": 1,
+                "hidden_sizes": [90, 90]
+            }
+            with self.assertRaises(AssertionError):
+                model.structure_consistency_check(d)
+
+    # def test_consistancy_check_typeerror(self):
+    #     """
+    #     Invalid type for structure_consistency_check raises TypeError
+    #     """
+    #     model = NeuralNetworkModel({})
+    #     with self.assertRaises(TypeError):
+    #         model.structure_consistency_check(None)
+    #     with self.assertRaises(TypeError):
+    #         model.structure_consistency_check([1, 2, 3, 4])
+    #     with self.assertRaises(TypeError):
+    #         model.structure_consistency_check("Invalid type")
 
     def test_forward(self):
         """

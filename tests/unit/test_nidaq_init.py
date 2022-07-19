@@ -2,7 +2,7 @@ import unittest
 import warnings
 import brainspy
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
-from tests.unit.processors.hardware.utils import check_test_configs
+from tests.unit.testing_utils import check_test_configs
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 
 
@@ -19,7 +19,6 @@ class NIDAQ_Init_Test(unittest.TestCase):
     Some sample keys have been defined to run tests which do not require connection
     to the hardware.
     """
-
     def get_configs(self):
         """
         Generate configurations to initialize the Nidaq driver
@@ -76,6 +75,10 @@ class NIDAQ_Init_Test(unittest.TestCase):
         except (Exception):
             self.fail("Could not initialize the driver")
 
+    @unittest.skipUnless(
+        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
+    )
     def test_init_keyerror(self):
         """
         Missing keys for the configurations of the NIdaq driver raises a key error
@@ -85,6 +88,10 @@ class NIDAQ_Init_Test(unittest.TestCase):
         with self.assertRaises(KeyError):
             CDAQtoNiDAQ(configs)
 
+    @unittest.skipUnless(
+        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
+    )
     def test_unequal_activation(self):
         """
         Unequal number of activation channels and activation voltage ranges raises assertion error
@@ -133,6 +140,10 @@ class NIDAQ_Init_Test(unittest.TestCase):
         except (Exception):
             self.fail()
 
+    @unittest.skipUnless(
+        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
+    )
     def test_voltage_range_size(self):
         """
         Voltage range should contain a range with 2 values, otherwise
@@ -146,6 +157,10 @@ class NIDAQ_Init_Test(unittest.TestCase):
         with self.assertRaises(IndexError):
             CDAQtoNiDAQ(configs)
 
+    @unittest.skipUnless(
+        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
+    )
     def test_sampling_val_error(self):
         """
         activation_sampling_frequency should be half of readout_sampling_frequency,
@@ -163,6 +178,10 @@ class NIDAQ_Init_Test(unittest.TestCase):
         with self.assertRaises(AssertionError):
             CDAQtoNiDAQ(configs)
 
+    @unittest.skipUnless(
+        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
+    )
     def test_io_point_diff_false(self):
         """
         average_io_point_difference should be set to True for Nidaq,
@@ -173,6 +192,10 @@ class NIDAQ_Init_Test(unittest.TestCase):
         with self.assertRaises(AssertionError):
             CDAQtoNiDAQ(configs)
 
+    @unittest.skipUnless(
+        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
+    )
     def test_type_check(self):
         """
         Invalid type for configs raises an AssertionError or TypeError

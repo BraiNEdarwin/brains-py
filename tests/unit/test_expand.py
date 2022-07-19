@@ -24,6 +24,7 @@ class WaveformTest(unittest.TestCase):
         """
         waveform = WaveformManager(self.configs)
         plateau_lengths = waveform._expand(waveform.plateau_length, 100)
+
         self.assertEqual(len(plateau_lengths), 100)
 
     def test_expand_worng_length(self):

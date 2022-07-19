@@ -15,10 +15,31 @@ class Accuracy_Test(unittest.TestCase):
         Test for the get_accuracy method using valid input and target values
         """
         threshold = 500
-        size = torch.randint(0, threshold, (1, 1)).item()
+        size = torch.randint(10, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         results = accuracy.get_accuracy(inputs, targets)
+
+        isinstance(results["node"], torch.nn.Linear)
+        self.assertEqual(results["configs"]["epochs"], 100)
+        self.assertEqual(results["configs"]["learning_rate"], 0.001)
+        self.assertEqual(results["configs"]["batch_size"], 256)
+        self.assertEqual(results["inputs"].shape, torch.Size((size, 1)))
+        self.assertEqual(results["targets"].shape, torch.Size((size, 1)))
+        self.assertTrue(results["accuracy_value"] >= 0)
+
+    def test_get_accuracy_with_node(self):
+        """
+        Test for the get_accuracy method using valid input and target values
+        """
+        threshold = 500
+        size = torch.randint(10, threshold, (1, 1)).item()
+        inputs = TorchUtils.format(torch.rand((size, 1)))
+        targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
+        results = accuracy.get_accuracy(inputs,
+                                        targets,
+                                        node=TorchUtils.format(
+                                            torch.nn.Linear(1, 1)))
 
         isinstance(results["node"], torch.nn.Linear)
         self.assertEqual(results["configs"]["epochs"], 100)
@@ -45,7 +66,7 @@ class Accuracy_Test(unittest.TestCase):
         inputs size != targets size
         """
         threshold = 500
-        size = torch.randint(0, threshold, (1, 1)).item()
+        size = torch.randint(10, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size + 1, 1)))
         with self.assertRaises(RuntimeError):
@@ -57,7 +78,7 @@ class Accuracy_Test(unittest.TestCase):
         inputs shape != targets shape
         """
         threshold = 500
-        size = torch.randint(0, threshold, (1, 1)).item()
+        size = torch.randint(10, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 2)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         with self.assertRaises(RuntimeError):
@@ -83,7 +104,7 @@ class Accuracy_Test(unittest.TestCase):
         Test for the init_results method to initialize the data for evaluation of accuracy
         """
         threshold = 500
-        size = torch.randint(0, threshold, (1, 1)).item()
+        size = torch.randint(10, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         configs = accuracy.get_default_node_configs()
@@ -121,7 +142,7 @@ class Accuracy_Test(unittest.TestCase):
         with standard deviation = 0
         """
         threshold = 500
-        size = torch.randint(0, threshold, (1, 1)).item()
+        size = torch.randint(10, threshold, (1, 1)).item()
         inputs = torch.ones((size, 1))
         with self.assertRaises(AssertionError):
             accuracy.zscore_norm(inputs)
@@ -144,7 +165,7 @@ class Accuracy_Test(unittest.TestCase):
         Test to evaluate the accuracy using the perceptron algorithm
         """
         threshold = 500
-        size = torch.randint(0, threshold, (1, 1)).item()
+        size = torch.randint(10, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         node = TorchUtils.format(torch.nn.Linear(1, 1))
@@ -180,7 +201,7 @@ class Accuracy_Test(unittest.TestCase):
         Test to train the perceptron and check if it produces an accuracy atleast above 0%
         """
         threshold = 500
-        size = torch.randint(0, threshold, (1, 1)).item()
+        size = torch.randint(10, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         configs = accuracy.get_default_node_configs()
@@ -198,7 +219,7 @@ class Accuracy_Test(unittest.TestCase):
         Invalid type for epochs raises an AssertionError
         """
         threshold = 500
-        size = torch.randint(0, threshold, (1, 1)).item()
+        size = torch.randint(10, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         configs = accuracy.get_default_node_configs()
@@ -235,7 +256,7 @@ class Accuracy_Test(unittest.TestCase):
                                       node)
         with self.assertRaises(AttributeError):
             threshold = 1000
-            size = torch.randint(0, threshold, (1, 1)).item()
+            size = torch.randint(10, threshold, (1, 1)).item()
             inputs = TorchUtils.format(torch.rand((size, 1)))
             targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
             configs = accuracy.get_default_node_configs()
@@ -245,7 +266,7 @@ class Accuracy_Test(unittest.TestCase):
             accuracy.train_perceptron(100, dataloader, "invalid type", node)
         with self.assertRaises(AttributeError):
             threshold = 1000
-            size = torch.randint(0, threshold, (1, 1)).item()
+            size = torch.randint(10, threshold, (1, 1)).item()
             inputs = TorchUtils.format(torch.rand((size, 1)))
             targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
             configs = accuracy.get_default_node_configs()
@@ -270,7 +291,7 @@ class Accuracy_Test(unittest.TestCase):
         matplotlib library
         """
         threshold = 500
-        size = torch.randint(0, threshold, (1, 1)).item()
+        size = torch.randint(10, threshold, (1, 1)).item()
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         results = accuracy.get_accuracy(inputs, targets)

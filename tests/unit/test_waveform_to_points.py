@@ -152,13 +152,10 @@ class WaveformTest(unittest.TestCase):
         configs["plateau_length"] = 80
         configs["slope_length"] = 20
         waveform_mgr = WaveformManager(configs)
-        points = torch.tensor([[1]])
-        try:
+        points = torch.tensor([1], dtype=torch.float32)
+        with self.assertRaises(AssertionError):
             waveform = waveform_mgr.points_to_waveform(
                 points.to(TorchUtils.get_device()))
-            waveform_mgr.waveform_to_points(waveform)
-        except Exception:
-            self.fail("Exception raised")
 
     def test_waveform_to_points_invalid_type(self):
         """
@@ -168,13 +165,13 @@ class WaveformTest(unittest.TestCase):
         configs["plateau_length"] = 1
         configs["slope_length"] = 10
         waveform_mgr = WaveformManager(configs)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.waveform_to_points([1, 2, 3, 4])
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.waveform_to_points(np.array(1))
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.waveform_to_points("String type is not accepted")
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.waveform_to_points(None)
 
     def test_waveform_to_points_varying_data_type(self):

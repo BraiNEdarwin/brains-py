@@ -1,16 +1,15 @@
 import unittest
 import numpy as np
 import random
-import warnings
 import brainspy
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
-from tests.unit.processors.hardware.utils import check_test_configs
+from tests.unit.testing_utils import check_test_configs
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 
 
-class NIDAQ_OutputCut_Test(unittest.TestCase):
+class NIDAQ_Output_Synchronise_Test(unittest.TestCase):
     """
-    Test output_cut_value() of the Nidaq Driver.
+    Test synchronise_output_data of the Nidaq Driver.
 
     To run this file, the device has to be connected to a NIDAQ setup and
     the device configurations have to be specified depending on the setup.
@@ -21,7 +20,6 @@ class NIDAQ_OutputCut_Test(unittest.TestCase):
     Some sample keys have been defined to run tests which do not require connection
     to the hardware.
     """
-
     def get_configs(self):
         """
         Generate configurations to initialize the Nidaq driver
@@ -62,16 +60,15 @@ class NIDAQ_OutputCut_Test(unittest.TestCase):
         configs["instruments_setup"]["activation_sampling_frequency"] = 500
         configs["instruments_setup"]["readout_sampling_frequency"] = 1000
         configs["instruments_setup"]["average_io_point_difference"] = True
-
         return configs
 
     @unittest.skipUnless(
         brainspy.TEST_MODE == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
-    def test_get_output_cut_random(self):
+    def test_synchronise_output_data(self):
         """
-        Test to get output cut value with random shape of data
+        Test to synchornise output data with random shape of data
         """
         a1 = random.randint(1, 1000)
         a2 = random.randint(1, 9)
@@ -79,56 +76,51 @@ class NIDAQ_OutputCut_Test(unittest.TestCase):
         nidaq = CDAQtoNiDAQ(configs)
         y = np.random.rand(a1, a2)
         try:
-            cut_val = nidaq.get_output_cut_value(y)
-            self.assertIsNotNone(cut_val)
+            nidaq.original_shape = y.shape[0]
+            val = nidaq.synchronise_output_data(y)
         except (Exception):
-            self.fail("Could not get output cut value")
+            self.fail("Could not synchronise output data")
         finally:
+            self.assertIsNotNone(val)
             nidaq.close_tasks()
 
     @unittest.skipUnless(
         brainspy.TEST_MODE == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
-    def test_get_output_cut_low(self):
+    def test_synchronise_output_data_single_dimension(self):
         """
-        Test to get output cut value with cut value less that 0.05
-        raises a "Spike not generated" warning
+        Input data with single dimension raises an Index Error
         """
+        a1 = random.randint(1, 1000)
         configs = self.get_configs()
         nidaq = CDAQtoNiDAQ(configs)
-        y = np.array([[0.04, 0.04], [0.03, 0.03]])
-        with warnings.catch_warnings(record=True) as caught_warnings:
-            warnings.simplefilter("always")
-            try:
-                nidaq.get_output_cut_value(y)
-            except (Exception):
-                self.fail("Could not get output cut value")
-            finally:
-                nidaq.close_tasks()
-            self.assertEqual(len(caught_warnings), 1)
+        y = np.random.rand(a1)
+        with self.assertRaises(IndexError):
+            nidaq.synchronise_output_data(y)
+        nidaq.close_tasks()
 
     @unittest.skipUnless(
         brainspy.TEST_MODE == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
-    def test_get_output_cut_invalid_type(self):
+    def test_synchronise_invalid_type(self):
         """
-        Invalid type for read_data raises an Assertion Error
+        Invalid type for input raises a Type Error
         """
         configs = self.get_configs()
         nidaq = CDAQtoNiDAQ(configs)
         with self.assertRaises(AssertionError):
-            nidaq.get_output_cut_value("Ïnvalid type")
+            nidaq.synchronise_output_data("Invalid type")
         with self.assertRaises(AssertionError):
-            nidaq.get_output_cut_value(100)
+            nidaq.synchronise_output_data(100)
         with self.assertRaises(AssertionError):
-            nidaq.get_output_cut_value([1, 2, 3, 4])
+            nidaq.synchronise_output_data([1, 2, 3, 4])
         nidaq.close_tasks()
 
 
 if __name__ == "__main__":
-    testobj = NIDAQ_OutputCut_Test()
+    testobj = NIDAQ_Output_Synchronise_Test()
     configs = testobj.get_configs()
     try:
         NationalInstrumentsSetup.type_check(configs)

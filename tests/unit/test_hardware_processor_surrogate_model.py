@@ -13,7 +13,6 @@ class Hardware_Processor_SM_Test(unittest.TestCase):
     """
     Tests for the hardware processor in with a surrogate model
     """
-
     def get_processor_configs_and_surrogate_model(self):
         """
         Get a Surrogate model and some configs to initialize the hardware processor
@@ -94,8 +93,9 @@ class Hardware_Processor_SM_Test(unittest.TestCase):
                 slope_length=configs["waveform"]["slope_length"],
                 plateau_length=configs["waveform"]["plateau_length"],
             )
+            model = TorchUtils.format(model)
             mgr = WaveformManager(configs["waveform"])
-            data_plateaus = mgr.points_to_plateaus(data)
+            data_plateaus = TorchUtils.format(mgr.points_to_plateaus(data))
             x = model.forward(data_plateaus)
         except (Exception):
             self.fail("Could not do a forward pass")
@@ -155,6 +155,7 @@ class Hardware_Processor_SM_Test(unittest.TestCase):
                 slope_length=configs["waveform"]["slope_length"],
                 plateau_length=configs["waveform"]["plateau_length"],
             )
+            model.driver = TorchUtils.format(model.driver)
             randomlist = []
             for i in range(0, 7):
                 randomlist.append(random.randint(0, 100))

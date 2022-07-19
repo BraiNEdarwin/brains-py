@@ -17,7 +17,7 @@ class WaveformTest(unittest.TestCase):
         """
         configs = {"plateau_length": 2, "slope_length": 1}
         manager = WaveformManager(configs)
-        output = manager.generate_mask(7)
+        output = TorchUtils.format(manager.generate_mask(7))
         self.assertTrue(
             torch.equal(
                 output,
@@ -59,7 +59,7 @@ class WaveformTest(unittest.TestCase):
         configs["plateau_length"] = 10
         configs["slope_length"] = 0
         waveform = WaveformManager(configs)
-        output = waveform.generate_mask(10)
+        output = TorchUtils.format(waveform.generate_mask(10))
         self.assertTrue(
             torch.equal(
                 output,
@@ -75,7 +75,7 @@ class WaveformTest(unittest.TestCase):
         configs["plateau_length"] = 0
         configs["slope_length"] = 10
         waveform = WaveformManager(configs)
-        output = waveform.generate_mask(10)
+        output = TorchUtils.format(waveform.generate_mask(10))
         self.assertTrue(
             torch.equal(
                 output,
@@ -106,7 +106,7 @@ class WaveformTest(unittest.TestCase):
         configs["plateau_length"] = -10
         configs["slope_length"] = -10
         waveform = WaveformManager(configs)
-        output = waveform.generate_mask(10)
+        output = TorchUtils.format(waveform.generate_mask(10))
         self.assertTrue(
             torch.equal(
                 output,

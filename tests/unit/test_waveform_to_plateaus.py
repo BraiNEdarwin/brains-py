@@ -64,7 +64,7 @@ class WaveformTest(unittest.TestCase):
         configs["plateau_length"] = 80
         configs["slope_length"] = 0
         waveform_mgr = WaveformManager(configs)
-        points = torch.randint(3, 5, (1, ))
+        points = torch.randint(3, 5, (10, 1))
         waveform = waveform_mgr.points_to_waveform(
             points.to(TorchUtils.get_device()))
         with self.assertRaises(IndexError):
@@ -175,13 +175,13 @@ class WaveformTest(unittest.TestCase):
         configs["plateau_length"] = 1
         configs["slope_length"] = 10
         waveform_mgr = WaveformManager(configs)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.waveform_to_plateaus([1, 2, 3, 4])
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.waveform_to_plateaus(np.array(1))
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.waveform_to_plateaus("String type is not accepted")
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             waveform_mgr.waveform_to_plateaus(None)
 
     def test_waveform_to_plateaus_varying_data_type(self):

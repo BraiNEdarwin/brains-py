@@ -6,7 +6,7 @@ from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.performance.accuracy import zscore_norm
 from brainspy.utils.performance.data import get_data
 from brainspy.algorithms.modules.optim import GeneticOptimizer
-from tests.unit.algorithms.test_model import DefaultCustomModel
+from tests.unit.test_model import DefaultCustomModel
 
 
 class GA_Test_SurrogateModel(unittest.TestCase):
@@ -20,12 +20,12 @@ class GA_Test_SurrogateModel(unittest.TestCase):
         model = DefaultCustomModel()
         model = TorchUtils.format(model)
         results = {}
-        threshhold = 500
-        size = torch.randint(1, threshhold, (1, 1)).item()
+        threshhold = 20
+        size = torch.randint(11, threshhold, (1, 1)).item()
         results["inputs"] = TorchUtils.format(torch.rand((size, 2)))
         results["targets"] = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         results["norm_inputs"] = zscore_norm(results["inputs"])
-        dataloader = get_data(results, batch_size=512)
+        dataloader = get_data(results, batch_size=256)
         dataloaders = [dataloader]
         criterion = torch.nn.MSELoss()
         optimizer = GeneticOptimizer(gene_ranges=TorchUtils.format(
