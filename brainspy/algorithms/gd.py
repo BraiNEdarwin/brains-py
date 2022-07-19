@@ -528,7 +528,6 @@ def default_val_step(epoch, model, dataloader, criterion, logger=None):
         for inputs, targets in dataloader:
             inputs, targets = TorchUtils.format(inputs), model.format_targets(
                 TorchUtils.format(targets))
-            #targets = model.format_targets(targets)
             predictions = model(inputs)
             loss = criterion(predictions, targets).item()
             val_loss += loss * inputs.shape[0]

@@ -44,6 +44,7 @@ class SurrogateModel(nn.Module):
     amplification : Optional[torch.Tensor]
         Amplification applied to the output of the network.
     """
+
     def __init__(
         self,
         model_structure: dict,
@@ -478,4 +479,5 @@ class SurrogateModel(nn.Module):
         if self.output_clipping is not None:
             return self.output_clipping
         else:
-            return torch.tensor([-np.inf, np.inf], device=self.device)
+            return torch.tensor([-np.inf, np.inf],
+                                device=TorchUtils.get_device())
