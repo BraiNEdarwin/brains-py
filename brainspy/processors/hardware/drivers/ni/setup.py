@@ -159,18 +159,18 @@ class NationalInstrumentsSetup:
 
         # Assertion for Output clipping range
 
-        assert type(configs["output_clipping_range"]) == list or type(
-            configs["output_clipping_range"]
-        ) == np.ndarray, "Output clipping range should be a list of 2 values"
-        assert len(
-            configs["output_clipping_range"]
-        ) == 2, "Output clipping range should contain 2 values : max and min"
-        assert isinstance(
-            configs["output_clipping_range"][0], (np.floating, float, int)
-        ), "Output clipping range can contain only int or float type values"
-        assert isinstance(
-            configs["output_clipping_range"][1], (np.floating, float, int)
-        ), "Output clipping range can contain only int or float type values"
+        # assert type(configs["output_clipping_range"]) == list or type(
+        #     configs["output_clipping_range"]
+        # ) == np.ndarray, "Output clipping range should be a list of 2 values"
+        # assert len(
+        #     configs["output_clipping_range"]
+        # ) == 2, "Output clipping range should contain 2 values : max and min"
+        # assert isinstance(
+        #     configs["output_clipping_range"][0], (np.floating, float, int)
+        # ), "Output clipping range can contain only int or float type values"
+        # assert isinstance(
+        #     configs["output_clipping_range"][1], (np.floating, float, int)
+        # ), "Output clipping range can contain only int or float type values"
 
         # Assertion for Amplification
 
@@ -234,8 +234,16 @@ class NationalInstrumentsSetup:
         # Assertions for Multiple Devices
 
         else:
-            for device_name in configs["instruments_setup"][
-                    "multiple_devices"]:
+            assert type(
+                        configs["instruments_setup"]
+                        ["activation_sampling_frequency"]
+                    ) == int, "activation_sampling_frequency key should be of type int"
+            assert type(
+                        configs["instruments_setup"]
+                        ["readout_sampling_frequency"]
+                    ) == int, "readout_sampling_frequency key should be of type int"
+
+            for device_name in configs["instruments_setup"]:
                 if is_device_name(device_name):
                     assert type(
                         configs["instruments_setup"][device_name]
@@ -245,14 +253,6 @@ class NationalInstrumentsSetup:
                         configs["instruments_setup"][device_name]
                         ["readout_instrument"]
                     ) == str, "readout_instrument key should be of type str"
-                    assert type(
-                        configs["instruments_setup"][device_name]
-                        ["activation_sampling_frequency"]
-                    ) == int, "activation_sampling_frequency key should be of type int"
-                    assert type(
-                        configs["instruments_setup"][device_name]
-                        ["readout_sampling_frequency"]
-                    ) == int, "readout_sampling_frequency key should be of type int"
                     assert type(
                         configs["instruments_setup"][device_name]
                         ["activation_channels"]
