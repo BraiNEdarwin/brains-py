@@ -384,29 +384,26 @@ def get_electrode_info(configs):
                     readout.
     """
     electrode_info = {}
-    if configs['driver']['instruments_setup']['multiple_devices']:
-        print("A single processor does not support multiple DNPUs.")
-        raise
-    else:
-        activation_electrode_no = len(
-            configs['driver']['instruments_setup']['activation_channels'])
-        readout_electrode_no = len(
-            configs['driver']['instruments_setup']['readout_channels'])
+    assert not configs['driver']['instruments_setup']['multiple_devices'], "A single processor does not support multiple DNPUs."
+    activation_electrode_no = len(
+        configs['driver']['instruments_setup']['activation_channels'])
+    readout_electrode_no = len(
+        configs['driver']['instruments_setup']['readout_channels'])
 
-        electrode_info["electrode_no"] = (activation_electrode_no +
+    electrode_info["electrode_no"] = (activation_electrode_no +
                                           readout_electrode_no)
-        electrode_info["activation_electrodes"] = {}
-        electrode_info["activation_electrodes"][
-            "electrode_no"] = activation_electrode_no
-        electrode_info["activation_electrodes"]["voltage_ranges"] = configs[
-            'driver']['instruments_setup']['activation_voltage_ranges']
-        electrode_info["output_electrodes"] = {}
-        electrode_info["output_electrodes"][
-            "electrode_no"] = readout_electrode_no
-        electrode_info["output_electrodes"]["amplification"] = configs[
-            "driver"]["amplification"]
-        electrode_info["output_electrodes"]["clipping_value"] = [
-            -float("Inf"), float("Inf")
-        ]
+    electrode_info["activation_electrodes"] = {}
+    electrode_info["activation_electrodes"][
+        "electrode_no"] = activation_electrode_no
+    electrode_info["activation_electrodes"]["voltage_ranges"] = configs[
+        'driver']['instruments_setup']['activation_voltage_ranges']
+    electrode_info["output_electrodes"] = {}
+    electrode_info["output_electrodes"][
+        "electrode_no"] = readout_electrode_no
+    electrode_info["output_electrodes"]["amplification"] = configs[
+        "driver"]["amplification"]
+    electrode_info["output_electrodes"]["clipping_value"] = [
+        -float("Inf"), float("Inf")
+    ]
 
     return electrode_info
