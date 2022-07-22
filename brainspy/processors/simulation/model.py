@@ -172,8 +172,7 @@ class NeuralNetworkModel(nn.Module):
         else:
             D_in = model_structure.get('D_in')
             assert (type(D_in) == int)
-            if D_in < 0:
-                raise AssertionError("D_in cannot be negative")
+            assert (D_in > 0), "D_in cannot be negative nor zero"
 
         if "D_out" not in model_structure:
             # Check output dimension.
@@ -184,8 +183,7 @@ class NeuralNetworkModel(nn.Module):
         else:
             D_out = model_structure.get('D_out')
             assert (type(D_out) == int)
-            if D_out < 0:
-                raise AssertionError("D_in cannot be negative")
+            assert (D_out > 0), "D_out cannot be negative nor zero"
 
         if "hidden_sizes" not in model_structure:
             # Check sizes of hidden layers.
