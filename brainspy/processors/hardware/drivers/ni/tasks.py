@@ -50,7 +50,13 @@ class IOTasksManager:
         self.acquisition_type = constants.AcquisitionType.FINITE
         self.activation_task = None
         self.readout_task = None
-        self.init_tasks(configs)
+        try:
+            self.init_tasks(configs)
+        except Exception as e:
+            if not 'devices' in dir(self):
+                self.devices = []
+            self.close_tasks()
+            raise e
 
     def init_activation_channels(self, channel_names, voltage_ranges=None):
         """
@@ -417,17 +423,6 @@ class IOTasksManager:
                 sampling_frequency: int
                     The average number of samples to be obtained in one second, when transforming
                     the signal from analogue to digital.
-                output_clipping_range: [float,float]
-                    The the setups have a limit in the range they can read. They typically clip at
-                    approximately +-4 V.
-                    Note that in order to calculate the clipping_range, it needs to be multiplied
-                    by the amplification value of the setup.
-                    (e.g., in the Brains setup the amplification is 28.5, is the clipping_value is
-                    +-4 (V), therefore,
-                    the clipping value should be +-4 * 28.5, which is [-110,110] (nA) ).
-                    The original clipping value of the surrogate models is obtained when running
-                    the preprocessing of the data in
-                    bspysmg.measurement.processing.postprocessing.post_process.
                 amplification: float
                     The output current (nA) of the device is converted by the readout hardware to
                     voltage (V), because it is easier to do the readout of the device in voltages.
