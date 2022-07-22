@@ -9,6 +9,7 @@ from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 from tests.unit.testing_utils import get_configs
 
+
 class Setup_Test(unittest.TestCase):
     """
     Tests for the NationalInstrumentsSetup.
@@ -22,7 +23,6 @@ class Setup_Test(unittest.TestCase):
     Some sample keys have been defined to run tests which do not require connection
     to the hardware.
     """
-
     @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
                          or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
@@ -34,8 +34,11 @@ class Setup_Test(unittest.TestCase):
             setup = NationalInstrumentsSetup(get_configs())
             setup.close_tasks()
         except (Exception):
-            self.fail("Could not close_tasks")   
+            self.fail("Could not close_tasks")
 
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
+                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+                         "Hardware test is skipped for simulation setup.")
     def test_init(self):
         """
         Test to check correct initialization of the Setup
@@ -96,13 +99,10 @@ class Setup_Test(unittest.TestCase):
             setup.close_tasks()
 
         with self.assertRaises(AssertionError):
-            del configs["instruments_setup"][
-                "activation_instrument"]
+            del configs["instruments_setup"]["activation_instrument"]
             setup = NationalInstrumentsSetup(configs)
         if setup is not None:
             setup.close_tasks()
-        
-
 
     @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
                          or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
@@ -232,7 +232,7 @@ class Setup_Test(unittest.TestCase):
             setup = NationalInstrumentsSetup(configs)
         if setup is not None:
             setup.close_tasks()
-    
+
         configs = get_configs()
         setup = None
         with self.assertRaises(AssertionError):
@@ -277,8 +277,7 @@ class Setup_Test(unittest.TestCase):
         configs = get_configs()
         setup = None
         with self.assertRaises(AssertionError):
-            del configs["instruments_setup"][
-                "activation_voltage_ranges"]
+            del configs["instruments_setup"]["activation_voltage_ranges"]
             setup = NationalInstrumentsSetup(configs)
         if setup is not None:
             setup.close_tasks()
@@ -569,11 +568,9 @@ class Setup_Test(unittest.TestCase):
             setup = NationalInstrumentsSetup(configs)
             y = np.random.rand(
                 len(configs["instruments_setup"]["activation_channels"]),
-                random.randint(
-                    1,
-                    100))
-            y[:,0] = 0
-            y[:,-1] = 0
+                random.randint(1, 100))
+            y[:, 0] = 0
+            y[:, -1] = 0
             setup.read_security_checks(y)
         except (Exception):
             if setup is not None:
@@ -586,10 +583,6 @@ class Setup_Test(unittest.TestCase):
     @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
                          or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
-        
-
-
-
     @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
                          or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
@@ -701,8 +694,12 @@ class Setup_Test(unittest.TestCase):
         try:
             setup = None
             setup = NationalInstrumentsSetup(configs)
-            y = np.concatenate((np.linspace(0,1,50), np.linspace(1,0,50))) / 10
-            y = np.broadcast_to(y[:,np.newaxis],(100,len(configs["instruments_setup"]["activation_channels"])))
+            y = np.concatenate(
+                (np.linspace(0, 1, 50), np.linspace(1, 0, 50))) / 10
+            y = np.broadcast_to(
+                y[:, np.newaxis],
+                (100, len(
+                    configs["instruments_setup"]["activation_channels"])))
             val = setup.read_data(y.T)
         except (Exception):
             if setup is not None:
@@ -725,8 +722,7 @@ class Setup_Test(unittest.TestCase):
             setup = None
             setup = NationalInstrumentsSetup(get_configs())
             y = np.random.rand(
-                len(configs["instruments_setup"]["activation_channels"]),
-                100)
+                len(configs["instruments_setup"]["activation_channels"]), 100)
             val = setup.average_point_difference(y)
         except (Exception):
             if setup is not None:
