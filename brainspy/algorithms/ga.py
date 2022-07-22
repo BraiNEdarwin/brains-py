@@ -158,8 +158,7 @@ def train(model: torch.nn.Module,
         assert type(configs["stop_threshold"]) == float or type(
             configs["stop_threshold"]
         ) == int, "The stop_threshhold key should be of type float or int"
-    if save_dir is not None:
-        assert type(
+    assert save_dir is None or type(
             save_dir
         ) == str, "The name/path of the save_dir should be of type - str"
 
