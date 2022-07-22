@@ -50,18 +50,6 @@ class HardwareProcessor(nn.Module):
 
                 inverted_output : bool
                     True if inversion should be applied to the output of the DNPU, else False.
-
-                output_clipping_range: [float,float]
-                    The the setups have a limit in the range they can read. They typically clip at
-                    approximately +-4 V.
-                    Note that in order to calculate the clipping_range, it needs to be multiplied
-                    by the amplification value of the setup.
-                    (e.g., in the Brains setup the amplification is 28.5, is the clipping_value is
-                    +-4 (V), therefore,
-                    the clipping value should be +-4 * 28.5, which is [-110,110] (nA) ).
-                    The original clipping value of the surrogate models is obtained when running
-                    the preprocessing of the data in
-                    bspysmg.measurement.processing.postprocessing.post_process.
                 amplification: float
                     The output current (nA) of the device is converted by the readout hardware to
                     voltage (V), because it is easier to do the readout of the device in voltages.
@@ -171,7 +159,7 @@ class HardwareProcessor(nn.Module):
             self.register_buffer("voltage_ranges", torch.tensor(self.driver.voltage_ranges, dtype=torch.get_default_dtype()))
             self.clipping_value = None
             if slope_length / self.driver.configs["instruments_setup"][
-                    "activation_sampling_frequency"] >= self.driver.configs[
+                    "activation_sampling_frequency"] <= self.driver.configs[
                         "max_ramping_time_seconds"]:
                 raise AssertionError(
                     "The ratio of the slope length and the activation sampling frequency cannot be less than the"
@@ -201,7 +189,8 @@ class HardwareProcessor(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-            input data in 'plateau' format (the forward pass will add/remove the slopes to the data)
+            input data in 'plateau' format (the forward pass will add/remove the slopes to the data).
+            The expected shape is (batch_size, activation_electrode_no)
 
         Returns
         -------
@@ -211,6 +200,7 @@ class HardwareProcessor(nn.Module):
         """
         assert type(
             x) == torch.Tensor, "The input should be of type - torch.Tensor"
+        assert x.shape[-1] == len(self.driver.configs['instruments_setup']['activation_channels'])
         with torch.no_grad():
             device, dtype = x.device, x.dtype
             x, mask = self.waveform_mgr.plateaus_to_waveform(
