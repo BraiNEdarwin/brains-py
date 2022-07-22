@@ -89,13 +89,11 @@ def get_noise(configs: dict, **kwargs):
         If the string given does not correspond to an implemented noise type.
     """
 
-    if configs is not None and configs != 'default':
+    if configs is not None:
         assert (type(configs) == dict)
-        if configs["type"] == "gaussian":
+        if 'type' in configs and configs["type"] == "gaussian":
             return GaussianNoise(configs["variance"])
         else:
-            warnings.warn(
-                "Noise configuration not recognised. No noise is being "
-                "simulated for the model.")
+            warnings.warn("No noise is being simulated for the model.")
             return None
     return None

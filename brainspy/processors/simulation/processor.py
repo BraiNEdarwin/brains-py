@@ -278,6 +278,8 @@ class SurrogateModel(nn.Module):
         """
         if configs is not None and effect_key in configs:
             return configs[effect_key]
+        if effect_key == 'noise':
+            return {'type': 'default'}
         return "default"
 
     def set_effects(
@@ -286,7 +288,7 @@ class SurrogateModel(nn.Module):
         voltage_ranges="default",
         amplification="default",
         output_clipping="default",
-        noise_configs="default",
+        noise_configs={'type': 'default'},
     ):
         """
         Set the amplification, output clipping and noise of the processor.
@@ -371,6 +373,7 @@ class SurrogateModel(nn.Module):
                 torch.tensor(info["activation_electrodes"]["voltage_ranges"],
                              dtype=torch.get_default_dtype()))
         elif value is not None:
+            assert (type(value) is list or type(value) is torch.Tensor)
             assert len(value) == info["activation_electrodes"]["electrode_no"]
             warnings.warn(
                 "Voltage ranges of surrogate model have been changed.")
@@ -378,7 +381,8 @@ class SurrogateModel(nn.Module):
                 value = torch.tensor(value)
             self.register_buffer("voltage_ranges", value)
         else:
-            warnings.warn("Voltage ranges cannot be set to None.")
+            warnings.warn(
+                "Voltage ranges could not be updated, as they cannot be None.")
 
     def set_amplification(self, info: dict, value: list):
         """
