@@ -24,7 +24,6 @@ class ModelTest(unittest.TestCase):
             warnings.simplefilter("always")
             model = NeuralNetworkModel({})
             self.assertEqual(len(caught_warnings), 4)
-        self.assertFalse(model.verbose)
         isinstance(model.raw_model, nn.Sequential)
 
     def test_init_none(self):
@@ -36,7 +35,6 @@ class ModelTest(unittest.TestCase):
             warnings.simplefilter("always")
             model = NeuralNetworkModel(None)
             self.assertEqual(len(caught_warnings), 4)
-        self.assertFalse(model.verbose)
         isinstance(model.raw_model, nn.Sequential)
 
     def test_init_dict(self):
@@ -51,9 +49,8 @@ class ModelTest(unittest.TestCase):
                 "activation": "relu",
                 "hidden_sizes": [20, 20, 20]
             }
-            model = NeuralNetworkModel(model_structure, True)
+            model = NeuralNetworkModel(model_structure)
             self.assertEqual(len(caught_warnings), 0)
-        self.assertTrue(model.verbose)
         """
         Test to generate a model with partial dict raises warnings
         """
@@ -63,7 +60,7 @@ class ModelTest(unittest.TestCase):
                 "activation": "relu",
                 "hidden_sizes": [20, 20, 20]
             }
-            model = NeuralNetworkModel(model_structure, True)
+            model = NeuralNetworkModel(model_structure)
             self.assertEqual(len(caught_warnings), 2)
 
     def test_init_negative(self):
@@ -190,8 +187,6 @@ class ModelTest(unittest.TestCase):
         model = NeuralNetworkModel({})
         raw = model.raw_model
         model.build_model_structure(None)
-        model.verbose = True
-        model.build_model({})
         self.assertEqual(len(raw), 13)
 
     def test_get_activation(self):

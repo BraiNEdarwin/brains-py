@@ -27,7 +27,7 @@ class CDAQ_Processor_Test(unittest.TestCase):
         configs = {}
         configs["instrument_type"] = "cdaq_to_cdaq"
         configs["inverted_output"] = True
-        configs["amplification"] = 100
+        configs["amplification"] = [100]
         configs["output_clipping_range"] = [-1, 1]
         configs["instruments_setup"] = {}
         configs["instruments_setup"]["multiple_devices"] = False
@@ -72,6 +72,8 @@ class CDAQ_Processor_Test(unittest.TestCase):
         except (Exception):
             self.fail("Could not initialize driver")
 
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+                         "Hardware test is skipped for simulation setup.")
     def test_init_fail(self):
         """
         AssertionError is raised if the input is of an invalid type
@@ -83,6 +85,8 @@ class CDAQ_Processor_Test(unittest.TestCase):
         with self.assertRaises(AssertionError):
             CDAQtoCDAQ(100)
 
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+                         "Hardware test is skipped for simulation setup.")
     def test_init_keyerror(self):
         """
         KeyErrror is raised if some configs are missing
@@ -136,16 +140,4 @@ class CDAQ_Processor_Test(unittest.TestCase):
 
 
 if __name__ == "__main__":
-
-    testobj = CDAQ_Processor_Test()
-    configs = testobj.get_configs_CDAQ()
-    try:
-        NationalInstrumentsSetup.type_check(configs)
-        if check_test_configs(configs):
-            raise unittest.SkipTest("Configs are missing. Skipping all tests.")
-        else:
-            unittest.main()
-    except (Exception):
-        print(Exception)
-        raise unittest.SkipTest(
-            "Configs not specified correctly. Skipping all tests.")
+    unittest.main()
