@@ -4,7 +4,7 @@ from brainspy.algorithms.gd import train, default_train_step, default_val_step
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.performance.accuracy import zscore_norm
 from brainspy.utils.performance.data import get_data
-from tests.unit.test_model import DefaultCustomModel
+from tests.unit.testing_utils import DefaultCustomModel, get_custom_model_configs
 
 
 class GD_Test(unittest.TestCase):
@@ -15,7 +15,8 @@ class GD_Test(unittest.TestCase):
         """
         Generate some random train parameters for Gradient Descent
         """
-        model = DefaultCustomModel()
+        configs, model_data = get_custom_model_configs()
+        model = DefaultCustomModel(configs, model_data['info'])
         model = TorchUtils.format(model)
         results = {}
         threshold = 20

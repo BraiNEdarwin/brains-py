@@ -6,7 +6,7 @@ from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.performance.accuracy import zscore_norm
 from brainspy.utils.performance.data import get_data
 from brainspy.algorithms.modules.optim import GeneticOptimizer
-from tests.unit.test_model import DefaultCustomModel
+from tests.unit.testing_utils import DefaultCustomModel, get_custom_model_configs
 
 
 class GA_Test_SurrogateModel(unittest.TestCase):
@@ -17,7 +17,8 @@ class GA_Test_SurrogateModel(unittest.TestCase):
         """
         Generate some random train parameters for Genetic algorithm
         """
-        model = DefaultCustomModel()
+        configs, model_data = get_custom_model_configs()
+        model = DefaultCustomModel(configs, model_data['info'])
         model = TorchUtils.format(model)
         results = {}
         threshhold = 20
@@ -45,11 +46,8 @@ class GA_Test_SurrogateModel(unittest.TestCase):
         model, dataloaders, criterion, optimizer, configs = self.get_train_parameters(
         )
         try:
-            with warnings.catch_warnings(record=True) as caught_warnings:
-                warnings.simplefilter("always")
-                model, results = train(model, dataloaders, criterion,
-                                       optimizer, configs)
-                self.assertEqual(len(caught_warnings), 1)
+            model, results = train(model, dataloaders, criterion, optimizer,
+                                   configs)
         except (Exception):
             self.fail("Could not run Genetic Algorithm")
         else:

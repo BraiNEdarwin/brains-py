@@ -127,7 +127,8 @@ class ModelTest(unittest.TestCase):
         d = {"key1": 1}
         self.assertEquals(self.model.get_key(d, key1), 1)
         self.assertEquals(self.model.get_key(d, key2), "default")
-        self.assertEquals(self.model.get_key(d, key_noise), "default")
+        self.assertEquals(self.model.get_key(d, key_noise),
+                          {'type': "default"})
 
     def test_set_effects(self):
         """
