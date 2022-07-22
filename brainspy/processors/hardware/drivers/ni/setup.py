@@ -76,16 +76,6 @@ class NationalInstrumentsSetup:
                 inverted_output : bool
                     True if inversion should be applied to the output of the DNPU, else False.
 
-                output_clipping_range: [float,float]
-                    The the setups have a limit in the range they can read. They typically clip at
-                    approximately +-4 V. Note that in order to calculate the clipping_range, it
-                    needs to be multiplied by the amplification value of the setup. (e.g., in the
-                    Brains setup the amplification is 28.5, is the clipping_value is +-4 (V),
-                    therefore, the clipping value should be +-4 * 28.5, which is [-110,110] (nA) ).
-                    The original clipping value of the surrogate models is obtained when running
-                    the preprocessing of the data in
-                    bspysmg.measurement.processing.postprocessing.post_process.
-
                 amplification: float
                     The output current (nA) of the device is converted by the readout hardware to
                     voltage (V), because it is easier to do the readout of the device in voltages.
@@ -153,9 +143,6 @@ class NationalInstrumentsSetup:
         assert type(
             configs["inverted_output"]
         ) == bool, "The inverted_output key should be of type - bool"
-        assert type(
-            configs["inverted_output"]
-        ) == bool, "The inverted_output key should be of type - bool"
 
         # Assertion for Output clipping range
 
@@ -172,11 +159,24 @@ class NationalInstrumentsSetup:
         #     configs["output_clipping_range"][1], (np.floating, float, int)
         # ), "Output clipping range can contain only int or float type values"
 
-        # Assertion for Amplification
+        # Assertion for Keys
+        assert 'amplification'in configs, "Amplification not found in configs. Check the documentation of setup.py for more information about this key."
+        assert 'inverted_output'in configs, "inverted_output not found in configs. Check the documentation of setup.py for more information about this key."
+        assert 'instruments_setup'in configs, "instruments_setup not found in configs. Check the documentation of setup.py for more information about this key."
+        
+        # Assertion for instruments_setup keys
+        assert 'multiple_devices'in configs['instruments_setup'], "multiple_devices not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert 'activation_instrument'in configs['instruments_setup'], "activation_instrument not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert 'activation_sampling_frequency'in configs['instruments_setup'], "activation_sampling_frequency not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert 'activation_channels'in configs['instruments_setup'], "activation_channels not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert 'activation_voltage_ranges'in configs['instruments_setup'], "activation_voltage_ranges not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert 'readout_instrument'in configs['instruments_setup'], "readout_instrument not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert 'readout_sampling_frequency'in configs['instruments_setup'], "readout_sampling_frequency not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert 'readout_channels'in configs['instruments_setup'], "readout_channels not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert 'trigger_source'in configs['instruments_setup'], "trigger_source not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
 
-        assert type(configs["amplification"]) == float or type(
-            configs["amplification"]
-        ) == int, "Amplification should be of type float or int"
+        # Assertion for Amplification
+        assert  type(configs["amplification"]) == list, "Amplification should be a list of floats or ints"
 
         # Assertions for Instruments setup
 
@@ -449,6 +449,7 @@ class NationalInstrumentsSetup:
         np.array
             Array with an averaged point difference, when applicable.
         """
+        assert data.shape[-1] % self.io_point_difference == 0, "Data shape must be divisible by the io_point_difference key"
         # If there is a difference in points between read and write due to sampling frequencies, and there
         # is an average_io_point_difference flag set as True, the data is averaged
         if self.io_point_difference > 1 and self.configs['instruments_setup'][
