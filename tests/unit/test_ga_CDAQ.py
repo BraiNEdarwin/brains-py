@@ -8,10 +8,11 @@ from brainspy.processors.processor import Processor
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.performance.accuracy import zscore_norm
 from brainspy.utils.performance.data import get_data
-from brainspy.algorithms.modules.optim import GeneticOptimizer
+from brainspy.algorithms.ga import GeneticOptimizer
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 from tests.unit.testing_utils import check_test_configs
 from tests.unit.testing_utils import get_configs
+
 
 class GA_Test_CDAQ(unittest.TestCase):
     """
@@ -35,6 +36,7 @@ class GA_Test_CDAQ(unittest.TestCase):
         configs["waveform"]["slope_length"] = 30
         configs['processor_type'] = 'cdaq_to_cdaq'
         return configs
+
     # def self.get_configs_CDAQ(self):
     #     """
     #     Generate configurations to initialize the CDAQ driver.

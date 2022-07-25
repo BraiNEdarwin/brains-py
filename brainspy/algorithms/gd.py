@@ -2,7 +2,6 @@ import os
 import torch
 import numpy as np
 from tqdm import trange
-from brainspy.algorithms.modules.optim import GeneticOptimizer
 from brainspy.utils.pytorch import TorchUtils
 from torch.utils.data import DataLoader
 
@@ -202,9 +201,6 @@ def train(
     assert isinstance(
         optimizer, torch.optim.Optimizer
     ), "The optimizer object should be an instance of torch.optim.Optimizer"
-    assert not isinstance(
-        optimizer, GeneticOptimizer
-    ), "The optimizer object cannot be an instance of a GeneticOptimizer incase of Gradient Descent"
     assert type(configs) == dict, "The extra configs should be of type - dict"
     if configs["epochs"]:
         assert type(
@@ -409,9 +405,6 @@ def default_train_step(model,
         dataloader, DataLoader
     ), "The dataloader should be an instance of torch.utils.data.DataLoader"
     assert callable(criterion), "The criterion should be a callable method"
-    assert not isinstance(
-        optimizer, GeneticOptimizer
-    ), "The optimizer object cannot be an instance of a GeneticOptimizer incase of Gradient Descent"
     assert isinstance(
         optimizer, torch.optim.Optimizer
     ), "The optimizer should be an instance of torch.optim.Optimizer"

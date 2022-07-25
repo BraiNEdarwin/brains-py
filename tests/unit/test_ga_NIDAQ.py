@@ -8,7 +8,7 @@ from brainspy.processors.hardware.processor import HardwareProcessor
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.performance.accuracy import zscore_norm
 from brainspy.utils.performance.data import get_data
-from brainspy.algorithms.modules.optim import GeneticOptimizer
+from brainspy.algorithms.ga import GeneticOptimizer
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 from tests.unit.testing_utils import check_test_configs
 

@@ -2,7 +2,7 @@ import unittest
 import torch
 import numpy as np
 from brainspy.utils.pytorch import TorchUtils
-from brainspy.algorithms.modules.optim import GeneticOptimizer
+from brainspy.algorithms.ga import GeneticOptimizer
 
 
 class OptimTest(unittest.TestCase):
