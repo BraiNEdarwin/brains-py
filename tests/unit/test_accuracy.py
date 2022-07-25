@@ -295,7 +295,12 @@ class Accuracy_Test(unittest.TestCase):
         inputs = TorchUtils.format(torch.rand((size, 1)))
         targets = TorchUtils.format(torch.randint(0, 2, (size, 1)))
         results = accuracy.get_accuracy(inputs, targets)
-        fig = accuracy.plot_perceptron(results)
+        backend = matplotlib.get_backend()
+        matplotlib.use('Agg')
+        fig = accuracy.plot_perceptron(results,
+                                       show_plots=True,
+                                       save_dir='tests/data')
+        matplotlib.use(backend)
         self.assertTrue(fig, matplotlib.pyplot.figure)
 
     def test_plot_perceptron_invalid_type(self):
