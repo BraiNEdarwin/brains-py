@@ -129,6 +129,22 @@ def get_random_model_state_dict():
                       map_location=TorchUtils.get_device())
 
 
+class CustomLogger():
+    def log_performance(self, train_losses, val_losses, epoch):
+        pass
+
+    def log_train_step(self, epoch, inputs, targets, predictions, model, loss,
+                       running_loss):
+        pass
+
+    def log_val_step(self, epoch, inputs, targets, predictions, model, loss,
+                     val_loss):
+        pass
+
+    def close(self):
+        pass
+
+
 class DefaultCustomModel(torch.nn.Module):
     def __init__(self, configs, info, forward_pass_type='vec'):
         super(DefaultCustomModel, self).__init__()

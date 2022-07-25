@@ -186,45 +186,7 @@ def train(
             - validation_loss: float
                 Best validation loss achieved.
     """
-    assert isinstance(
-        model,
-        torch.nn.Module), "The model should be an instance of torch.nn.Module"
-    assert "format_targets" in dir(
-        model), "The format_targets function should be implemeted in the model"
-    assert type(
-        dataloaders) == list, "The dataloaders should be of type - list"
-    for dataloader in dataloaders:
-        assert isinstance(
-            dataloader, DataLoader
-        ), "The dataloader should be an instance of torch.utils.data.DataLoader"
-    assert callable(criterion), "The criterion should be a callable method"
-    assert isinstance(
-        optimizer, torch.optim.Optimizer
-    ), "The optimizer object should be an instance of torch.optim.Optimizer"
-    assert type(configs) == dict, "The extra configs should be of type - dict"
-    if configs["epochs"]:
-        assert type(
-            configs["epochs"]) == int, "The epochs key should be of type - int"
-    assert type(
-        configs["constraint_control_voltages"]
-    ) == str, "The constraint_control_voltages key should be of type str"
-    assert configs["constraint_control_voltages"] == "clip" or configs[
-        "constraint_control_voltages"] == "regul", "The constraint_control_voltages should be either clip or regul"
-    if configs["constraint_control_voltages"] == "regul":
-        assert "regularizer" in dir(
-            model
-        ), "The model should implement the regularizer function for this option"
-        assert "set_regul_factor" in dir(
-            model
-        ), "The model should implement the set_regul_factor function for this option"
-    else:
-        assert "constraint_weights" in dir(
-            model
-        ), "The model should implement the constraint_weights function for this option"
-    if save_dir is not None:
-        assert type(
-            save_dir
-        ) == str, "The name/path of the save_dir should be of type - str"
+    train_checks(model, dataloaders, criterion, optimizer, configs, save_dir)
 
     start_epoch = 0
     train_losses, val_losses = [], []
@@ -306,14 +268,171 @@ def train(
     if logger is not None:
         logger.close()
     if (save_dir is not None and return_best_model
-            and dataloaders[1] is not None and len(dataloaders[1]) > 0):
-        model = torch.load(os.path.join(save_dir, "best_model_raw.pt"))
+            and (len(dataloaders) == 1 or
+                 (dataloaders[1] is not None and len(dataloaders[1]))) > 0):
+        if 'best_model_raw.pt' in dir(save_dir):
+            model = torch.load(os.path.join(save_dir, "best_model_raw.pt"))
 
     return model, {
         "performance_history":
         [torch.tensor(train_losses),
          torch.tensor(val_losses)]
     }
+
+
+def train_checks(model, dataloaders, criterion, optimizer, configs, save_dir):
+    """ Performs several assertions over the parameters that enter the train function.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The model to be trained. It should be an instance of a torch.nn.Module. It can be a
+        Processor, representing a hardware DNPU or a DNPU model, but it also can be a model that
+        contains different more complex architectures using several processors.
+
+        - The model can have multiple DNPU instances.
+        - The model cannot be an instance of SurrogateModel or HardwareProcessor.
+        - The model should have the following methods implemented :
+
+        1. format_targets : The hardware processor uses a waveform to represent points
+                            (see 5.1 in Introduction of the Wiki). Each point is represented with some
+                            slope and some plateau points. When passing through the hardware, there will
+                            be a difference between the output from the device and the input (in points).
+                            This function is used for the targets to have the same length in shape as the
+                            outputs. It simply repeats each point in the input as many times as there are
+                            points in the plateau. In this way, targets can then be compared against hardware
+                            outputs in the loss function.
+
+                                    Parameters
+                                    ----------
+                                    x : torch.Tensor
+                                    Targets of the supervised learning problem, that will be extended to have the same
+                                    length shape as the outputs from the processor.
+
+        2. set_regul_factor : This method only needs to be implemented if
+                              constraint_control_voltages = "regul" in the configs (see description below)
+
+                              Parameters
+                              ----------
+                              regul_factor : int
+                                            See description below
+
+        3. regularizer : This method only needs to be implemented if
+                         constraint_control_voltages = "regul" in the configs (see description below)
+                         An example can be found at: brainspy.processors.dnpu, inside the class DNPU
+
+                         Parameters : None
+
+        4. constraint_weights : This method only needs to be implemented if
+                         constraint_control_voltages = "clip" in the configs (see description below)
+
+                         Parameters : None
+
+
+    dataloaders : list
+        A list containing one or two Pytorch dataloaders. The first dataloader corresponds to the
+        training dataset. The second dataloader is optional, and it corresponds to the validation
+        dataset. If no validation dataset is given, the training loop will train the model and
+        return the trained model only after reaching to the latest epoch. If a second dataloader is
+        given, it will be used as a validation dataset. When a validation dataset is present, only
+        models with solutions that achieve the lowest validation score will be saved. It is
+        recommended to have an additional test dataset on the side, to check the model against,
+        after training it with an additional validation datasetz
+
+        More information about dataloaders can be found at:
+        https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
+
+    criterion : Object <method>
+        Loss function criterion that will be used to optimise the model. More information on
+        several loss functions supported can be found at:
+        https://pytorch.org/docs/stable/nn.html#loss-functions
+
+    optimizer : torch.optim.Optimizer
+        Optimisation algorithm to be used during the training process. More on Pytorch's optimizer
+        package can be found at:
+        https://pytorch.org/docs/stable/optim.html
+
+    configs : dict
+        Dictionary containing the following extra configuration keys:
+            epochs : int
+                Number of passes through the entire training dataset.
+            constraint_control_voltages : str
+                When training models, typically it is desired for the control voltages to stay
+                within the ranges in which they where trained, in order to avoid extrapolating, or
+                reaching the clipping values. This str key can have the following values:
+                    'regul' : It applies a penalty to the loss function when control voltages go
+                              outside the  ranges in which they were trained. This method allows a
+                              bit of flexibility, enabling to find solutions that are, in some
+                              cases, slightly outside of the control voltage ranges. In order to be
+                              used, it also requires that the model has a method called
+                              'regularizer' which controls that penalty. An example can be found at:
+                              brainspy.processors.dnpu, inside the class DNPU, method regularizer.
+                    'clip' : It applies clipping after the backward pass and optimiser step. It
+                             enforces that the control voltage ranges will not be outside the
+                             ranges in which the model was trained. In order to use it, the model
+                             should have a method called 'constraint_weights'. An example can be
+                             found at: brainspy.processors.dnpu, inside the class DNPU, method
+                             constraint_weights.
+
+    logger: logging (optional)
+        It provides a way for applications to configure different log handlers.
+        by default None.
+        The logger should be an already initialised class that contains a method called
+        'log_output', where the input is a single numpy array variable. It can be any class,
+        and the data can be treated in the way the user wants.You can get more information about
+        loggers at https://pytorch.org/docs/stable/tensorboard.html
+
+        Logger directory info :
+            log_train_step: to log each step in the training process
+            log_val_step: to log each step in the validation process
+
+    save_dir : Optional[str]
+        Folder where the trained model is going to be saved.
+        When None, the model will not be saved.
+        By default None.
+
+    return_best_model : bool, optional
+        to return the trained model instead of saving
+        it to a directory, by default True
+    """
+    assert isinstance(
+        model,
+        torch.nn.Module), "The model should be an instance of torch.nn.Module"
+    assert "format_targets" in dir(
+        model), "The format_targets function should be implemeted in the model"
+    assert type(
+        dataloaders) == list, "The dataloaders should be of type - list"
+    for dataloader in dataloaders:
+        assert isinstance(
+            dataloader, DataLoader
+        ), "The dataloader should be an instance of torch.utils.data.DataLoader"
+    assert callable(criterion), "The criterion should be a callable method"
+    assert isinstance(
+        optimizer, torch.optim.Optimizer
+    ), "The optimizer object should be an instance of torch.optim.Optimizer"
+    assert type(configs) == dict, "The extra configs should be of type - dict"
+    if configs["epochs"]:
+        assert type(
+            configs["epochs"]) == int, "The epochs key should be of type - int"
+    assert type(
+        configs["constraint_control_voltages"]
+    ) == str, "The constraint_control_voltages key should be of type str"
+    assert configs["constraint_control_voltages"] == "clip" or configs[
+        "constraint_control_voltages"] == "regul", "The constraint_control_voltages should be either clip or regul"
+    if configs["constraint_control_voltages"] == "regul":
+        assert "regularizer" in dir(
+            model
+        ), "The model should implement the regularizer function for this option"
+        assert "set_regul_factor" in dir(
+            model
+        ), "The model should implement the set_regul_factor function for this option"
+    else:
+        assert "constraint_weights" in dir(
+            model
+        ), "The model should implement the constraint_weights function for this option"
+    assert save_dir is None or type(
+        save_dir
+    ) == str, "The name/path of the save_dir should be of type - str"
 
 
 def default_train_step(model,
@@ -408,15 +527,11 @@ def default_train_step(model,
     assert isinstance(
         optimizer, torch.optim.Optimizer
     ), "The optimizer should be an instance of torch.optim.Optimizer"
-    if constraint_control_voltages is not None:
-        assert type(
-            constraint_control_voltages
-        ) == str, "The constraint_control_voltages should be of type str"
-    if constraint_control_voltages is not None:
-        if constraint_control_voltages != "clip" and constraint_control_voltages != "regul":
-            raise AssertionError(
-                "The constraint_control_voltages should be either clip or regul"
-            )
+    assert (
+        constraint_control_voltages is None
+        or constraint_control_voltages == "clip"
+        or constraint_control_voltages == "regul"
+    ), "The constraint_control_voltages should be None or 'clip' or 'regul'"
     if constraint_control_voltages == "regul":
         assert "regularizer" in dir(
             model
@@ -428,7 +543,11 @@ def default_train_step(model,
         assert "constraint_weights" in dir(
             model
         ), "The model should implement the constraint_weights function for this option"
-
+    assert (
+        constraint_control_voltages is None
+        or constraint_control_voltages == 'clip'
+        or constraint_control_voltages == 'regul'
+    ), "Variable constraint_control_voltages should be 'regul', 'clip' or None."
     running_loss = 0
     model.train()
     for inputs, targets in dataloader:
@@ -442,9 +561,6 @@ def default_train_step(model,
             loss = criterion(predictions, targets)
         elif constraint_control_voltages == 'regul':
             loss = criterion(predictions, targets) + model.regularizer()
-        else:
-            # TODO Throw an error adequately
-            assert False, "Variable constraint_control_voltages should be 'regul', 'clip' or None."
 
         loss.backward()
         optimizer.step()

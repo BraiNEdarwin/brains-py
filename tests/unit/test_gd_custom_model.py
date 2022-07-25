@@ -4,7 +4,7 @@ from brainspy.algorithms.gd import train, default_train_step, default_val_step
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.performance.accuracy import zscore_norm
 from brainspy.utils.performance.data import get_data
-from tests.unit.testing_utils import DefaultCustomModel, get_custom_model_configs
+from tests.unit.testing_utils import DefaultCustomModel, CustomLogger, get_custom_model_configs
 
 
 class GD_Test(unittest.TestCase):
@@ -41,9 +41,16 @@ class GD_Test(unittest.TestCase):
         """
         model, dataloaders, criterion, optimizer, configs = self.get_train_parameters(
         )
+        logger = CustomLogger()
         try:
-            model, results = train(model, dataloaders, criterion, optimizer,
-                                   configs)
+            model, results = train(model,
+                                   dataloaders,
+                                   criterion,
+                                   optimizer,
+                                   configs,
+                                   save_dir='tests/data',
+                                   return_best_model=True,
+                                   logger=logger)
         except Exception as e:
             print(e)
 
@@ -100,14 +107,24 @@ class GD_Test(unittest.TestCase):
                   torch.nn.Linear(1, 1)]
         model, dataloaders, criterion, optimizer, configs = self.get_train_parameters(
         )
+        logger = CustomLogger()
         for model in models:
             with self.assertRaises(AssertionError):
-                train(model, dataloaders, criterion, optimizer, configs)
+                train(model,
+                      dataloaders,
+                      criterion,
+                      optimizer,
+                      configs,
+                      logger=logger)
             with self.assertRaises(AssertionError):
                 default_train_step(model, 10, dataloaders, criterion,
                                    optimizer)
             with self.assertRaises(AssertionError):
-                default_val_step(10, model, dataloaders, criterion)
+                default_val_step(10,
+                                 model,
+                                 dataloaders,
+                                 criterion,
+                                 logger=logger)
 
     def test_invalid_dataloader_type(self):
         """
@@ -186,17 +203,16 @@ class GD_Test(unittest.TestCase):
 
     def test_default_val_step(self):
         try:
-            model, dataloaders, criterion, optimizer, configs = self.get_train_parameters(
-            )
-            for epoch in range(0, 3):
-                model, running_loss = default_train_step(model,
-                                                         epoch,
-                                                         dataloaders[0],
-                                                         criterion,
-                                                         optimizer,
-                                                         logger=None)
-                self.assertIsNotNone(running_loss)
-        except (Exception):
+            model, dataloaders, criterion, _, _ = self.get_train_parameters()
+            logger = CustomLogger()
+
+            running_loss = default_val_step(epoch=10,
+                                            model=model,
+                                            dataloader=dataloaders[0],
+                                            criterion=criterion,
+                                            logger=logger)
+            self.assertIsNotNone(running_loss)
+        except Exception:
             self.fail("Could not perform default val step")
 
 
