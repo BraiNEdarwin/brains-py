@@ -12,7 +12,6 @@ class TransformsTest(unittest.TestCase):
     """
     Class for testing 'transforms.py'.
     """
-
     def __init__(self, test_name):
         super(TransformsTest, self).__init__()
         self.threshold = 10000
@@ -22,10 +21,10 @@ class TransformsTest(unittest.TestCase):
         Test scale and offset, and evaluation at a point, of a line.
         """
         x_min = 1
-        y_min = 1
+        y_min = 0
         x_max = 2
-        y_max = 0
-        # This is the line y = 2 - x.
+        y_max = 1
+        # This is the line y = x -1
         x_val = 3
         offset = transforms.get_offset(y_min=y_min,
                                        y_max=y_max,
@@ -40,14 +39,14 @@ class TransformsTest(unittest.TestCase):
                                                          x_min=x_min,
                                                          x_max=x_max)
         self.assertEqual(both, (scale, offset))
-        self.assertEqual(offset, 2)
-        self.assertEqual(scale, -1)
+        self.assertEqual(offset, -1.)
+        self.assertEqual(scale, 1.)
         value = transforms.linear_transform(x_val=x_val,
                                             y_min=y_min,
                                             y_max=y_max,
                                             x_min=x_min,
                                             x_max=x_max)
-        self.assertEqual(value, -1)
+        self.assertEqual(value, 2.)
 
     def test_line_nan(self):
         """
@@ -154,9 +153,23 @@ class TransformsTest(unittest.TestCase):
                                         x_min=x_min,
                                         x_max=x_max)
 
+    def test_checks(self):
+        with self.assertRaises(AssertionError):
+            transforms.check_values(-1, 1, 1, 0)
+        with self.assertRaises(AssertionError):
+            transforms.check_values(1, 0, -1, 0)
+        with self.assertRaises(AssertionError):
+            zeros = torch.zeros(10)
+            ones = torch.ones(10)
+            transforms.check_values(ones, zeros, -ones, zeros)
+        with self.assertRaises(AssertionError):
+            zeros = torch.zeros(10)
+            ones = torch.ones(10)
+            transforms.check_values(-ones, zeros, ones, zeros)
+
     def test_linear_transform_fail(self):
         """
-        Invalid type for arguments raises TypeError
+        Invalid type for arguments raises AssertionError
         """
         x_min = random.randint(-self.threshold, self.threshold)
         y_min = random.randint(-self.threshold, self.threshold)
@@ -175,7 +188,7 @@ class TransformsTest(unittest.TestCase):
         x_max = "String value"
         y_max = random.randint(y_min + 1, self.threshold + 2)
         x_val = random.randint(-self.threshold, self.threshold)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             transforms.linear_transform(x_val=x_val,
                                         y_min=y_min,
                                         y_max=y_max,
@@ -187,7 +200,7 @@ class TransformsTest(unittest.TestCase):
         x_max = random.randint(1, self.threshold + 2)
         y_max = random.randint(y_min + 1, self.threshold + 2)
         x_val = random.randint(-self.threshold, self.threshold)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             transforms.linear_transform(x_val=x_val,
                                         y_min=y_min,
                                         y_max=y_max,
@@ -269,13 +282,13 @@ class TransformsTest(unittest.TestCase):
 
     def test_get_offset_fail(self):
         """
-        Invalid type for arguments raises TypeError
+        Invalid type for arguments raises AssertionError
         """
         x_min = random.randint(-self.threshold, self.threshold)
         y_min = random.randint(-self.threshold, self.threshold)
         x_max = random.randint(x_min + 1, self.threshold + 2)
         y_max = [1, 2, 3, 4, 5]
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             transforms.get_offset(y_min=y_min,
                                   y_max=y_max,
                                   x_min=x_min,
@@ -285,7 +298,7 @@ class TransformsTest(unittest.TestCase):
         y_min = random.randint(-self.threshold, self.threshold)
         x_max = "String val"
         y_max = random.randint(y_min + 1, self.threshold + 2)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             transforms.get_offset(y_min=y_min,
                                   y_max=y_max,
                                   x_min=x_min,
@@ -295,7 +308,7 @@ class TransformsTest(unittest.TestCase):
         y_min = random.randint(-self.threshold, self.threshold)
         x_max = random.randint(1, self.threshold + 2)
         y_max = random.randint(y_min + 1, self.threshold + 2)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             transforms.get_offset(y_min=y_min,
                                   y_max=y_max,
                                   x_min=x_min,
@@ -376,13 +389,13 @@ class TransformsTest(unittest.TestCase):
 
     def test_get_scale_fail(self):
         """
-        Invalid type for arguments raises TypeError
+        Invalid type for arguments raises AssertionError
         """
         x_min = random.randint(-self.threshold, self.threshold)
         y_min = random.randint(-self.threshold, self.threshold)
         x_max = random.randint(x_min + 1, self.threshold + 2)
         y_max = [1, 2, 3, 4, 5]
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             transforms.get_scale(y_min=y_min,
                                  y_max=y_max,
                                  x_min=x_min,
@@ -392,7 +405,7 @@ class TransformsTest(unittest.TestCase):
         y_min = random.randint(-self.threshold, self.threshold)
         x_max = "String val"
         y_max = random.randint(y_min + 1, self.threshold + 2)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             transforms.get_scale(y_min=y_min,
                                  y_max=y_max,
                                  x_min=x_min,
@@ -402,7 +415,7 @@ class TransformsTest(unittest.TestCase):
         y_min = random.randint(-self.threshold, self.threshold)
         x_max = random.randint(1, self.threshold + 2)
         y_max = random.randint(y_min + 1, self.threshold + 2)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             transforms.get_scale(y_min=y_min,
                                  y_max=y_max,
                                  x_min=x_min,
@@ -486,13 +499,13 @@ class TransformsTest(unittest.TestCase):
 
     def test_get_linear_transform_constants_fail(self):
         """
-        Invalid type for arguments raises TypeError
+        Invalid type for arguments raises AssertionError
         """
         x_min = random.randint(-self.threshold, self.threshold)
         y_min = random.randint(-self.threshold, self.threshold)
         x_max = random.randint(x_min + 1, self.threshold + 2)
         y_max = [1, 2, 3, 4, 5]
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             transforms.get_linear_transform_constants(y_min=y_min,
                                                       y_max=y_max,
                                                       x_min=x_min,
@@ -502,7 +515,7 @@ class TransformsTest(unittest.TestCase):
         y_min = random.randint(-self.threshold, self.threshold)
         x_max = "String val"
         y_max = random.randint(y_min + 1, self.threshold + 2)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             transforms.get_linear_transform_constants(y_min=y_min,
                                                       y_max=y_max,
                                                       x_min=x_min,
@@ -512,7 +525,7 @@ class TransformsTest(unittest.TestCase):
         y_min = random.randint(-self.threshold, self.threshold)
         x_max = random.randint(1, self.threshold + 2)
         y_max = random.randint(y_min + 1, self.threshold + 2)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             transforms.get_linear_transform_constants(y_min=y_min,
                                                       y_max=y_max,
                                                       x_min=x_min,
@@ -533,6 +546,7 @@ class TransformsTest(unittest.TestCase):
         self.test_linear_transform()
         self.test_linear_transform_fail()
         self.test_linear_transform_min_max()
+        self.test_checks()
 
 
 if __name__ == "__main__":

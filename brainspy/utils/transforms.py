@@ -244,16 +244,19 @@ def check_values(x_max, x_min, y_max, y_min):
     """
     if (type(x_max) == int or type(x_max) == float) and (type(x_min) == int or
                                                          type(x_min) == float):
-        if x_max < x_min:
-            raise AssertionError("x_min cannot be greater than x_max")
-    elif (type(y_max) == int or type(y_max)
-          == float) and (type(y_min) == int or type(y_min) == float):
-        if y_max < y_min:
-            raise AssertionError("y_min cannot be greater than y_max")
+        assert x_max >= x_min, "x_min cannot be greater than x_max"
+        assert (type(y_max) == int or type(y_max) == float) and (
+            type(y_min) == int or type(y_min) == float
+        ), "x_max and x_min should be of the same datatype as y_max and y_min"
+        assert (y_max >= y_min), "y_min cannot be greater than y_max"
     else:
-        check = x_max > x_min
-        check2 = y_max > y_min
-        if torch.all(check) == torch.tensor(False):
-            raise AssertionError("x_min cannot be greater than x_max")
-        if torch.all(check2) == torch.tensor(False):
-            raise AssertionError("y_min cannot be greater than y_max")
+        assert type(x_min) == torch.Tensor and type(
+            x_max
+        ) == torch.Tensor, "x_min and x_max should be either integer, floats or torch.Tensor"
+        assert type(y_min) == torch.Tensor and type(
+            y_max
+        ) == torch.Tensor, "y_min and y_max should be either integer, floats or torch.Tensor"
+        assert (x_max >=
+                x_min).all().item(), "x_min cannot be greater than x_max"
+        assert (y_max >=
+                y_min).all().item(), "y_min cannot be greater than y_max"
