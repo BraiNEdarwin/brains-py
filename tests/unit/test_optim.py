@@ -38,7 +38,7 @@ class OptimTest(unittest.TestCase):
         if max value of gene ranges is less than the min value,
         a ValueError is raised
         """
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AssertionError):
             GeneticOptimizer(gene_ranges=torch.tensor([[1.2, 0.6], [1.2,
                                                                     0.6]]),
                              partition=[torch.tensor(4),
@@ -210,7 +210,11 @@ class OptimTest(unittest.TestCase):
             criterion_pool = torch.randint(1, 100, (1, 26)).squeeze()
             optim.pool = optim.pool[torch.flip(torch.argsort(criterion_pool),
                                                dims=[0])]
-            new_pool = optim.crossover(new_pool=optim.pool)
+            chosen = optim.universal_sampling()
+            chosen[0] = 0
+            chosen[
+                1] = 0  # Ensure that there are two consecutive zero values for coverage
+            new_pool = optim.crossover(optim.pool, chosen)
         except (Exception):
             self.fail("Could not generate random pool")
         else:
@@ -230,7 +234,7 @@ class OptimTest(unittest.TestCase):
             criterion_pool = torch.randint(1, 100, (1, 20)).squeeze()
             optim.pool = optim.pool[torch.flip(torch.argsort(criterion_pool),
                                                dims=[0])]
-            optim.crossover(new_pool=optim.pool)
+            optim.crossover(optim.pool, optim.universal_sampling())
 
     def test_crossover_fail(self):
         """
@@ -241,13 +245,13 @@ class OptimTest(unittest.TestCase):
                                  partition=[4, 22],
                                  epochs=100)
         with self.assertRaises(AssertionError):
-            optim.crossover("String type")
+            optim.crossover("String type", [1, 2])
         with self.assertRaises(AssertionError):
-            optim.crossover(np.array([1, 2, 3]))
+            optim.crossover(np.array([1, 2, 3]), [1, 2])
         with self.assertRaises(AssertionError):
-            optim.crossover(100)
+            optim.crossover(100, [1, 2])
         with self.assertRaises(AssertionError):
-            optim.crossover([1, 2, 3, 4])
+            optim.crossover([1, 2, 3, 4], [1, 2])
 
     def test_universal_sampling(self):
         """
@@ -287,7 +291,9 @@ class OptimTest(unittest.TestCase):
                                  partition=[4, 22],
                                  epochs=100)
         try:
-            offspring = optim.crossover_blxab(torch.rand(10), torch.rand(10))
+            parent1 = torch.rand(10)
+            offspring = optim.crossover_blxab(parent1, torch.rand(10))
+            offspring = optim.crossover_blxab(parent1, parent1)
             assert isinstance(offspring, torch.Tensor)
         except (Exception):
             self.fail("Couldn do alpha beta crossover ")
@@ -334,7 +340,13 @@ class OptimTest(unittest.TestCase):
             criterion_pool = torch.randint(1, 100, (1, 26)).squeeze()
             optim.pool = optim.pool[torch.flip(torch.argsort(criterion_pool),
                                                dims=[0])]
-            new_pool = optim.crossover(new_pool=optim.pool)
+            chosen = optim.universal_sampling()
+            chosen[0] = 0
+            chosen[
+                1] = 0  # Ensure that there are two consecutive zero values for coverage
+            new_pool = optim.crossover(optim.pool, chosen)
+            new_pool[0] = new_pool[1].clone(
+            )  # Ensure there are repeated values for coverage
             optim.mutation(new_pool)
         except (Exception):
             self.fail("Could not update mutation rate")

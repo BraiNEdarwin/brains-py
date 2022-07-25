@@ -52,6 +52,10 @@ class GeneticOptimizer:
             self.gene_range = TorchUtils.format(np.array(gene_ranges))
         else:
             self.gene_range = gene_ranges
+        assert not torch.eq(self.gene_range[:, 0], self.gene_range[:, 1]).any(
+        ), "Min and Max control voltage ranges should be different from each other."
+        assert (self.gene_range[:, 0] < self.gene_range[:, 1]).all(
+        ), "Min control voltage ranges should be lower than max control voltage ranges."
         self.partition = partition
         self.genome_no = sum(self.partition)
         self.pool = self._init_pool()
@@ -89,7 +93,7 @@ class GeneticOptimizer:
 
         # Generate offspring by means of crossover.
         # The crossover method returns 1 genome from 2 parents.
-        new_pool = self.crossover(self.pool.clone())
+        new_pool = self.crossover(self.pool.clone(), self.universal_sampling())
 
         # Mutate every genome except the partition[0]
         self.pool = self.mutation(new_pool).clone()
@@ -120,7 +124,7 @@ class GeneticOptimizer:
                                      (self.genome_no, ))
         return pool
 
-    def crossover(self, new_pool: torch.Tensor):
+    def crossover(self, new_pool: torch.Tensor, chosen: list):
         """
         In genetic algorithms and evolutionary computation, crossover, also called recombination,
         is a genetic operator used to combine the genetic information of two parents to generate
@@ -133,6 +137,9 @@ class GeneticOptimizer:
         new_pool : torch.Tensor
             A copy of the genome pool containing the set of all control voltage solutions ordered
             by fitness performance.
+        chosen: list
+            Parents that have been chosen for potentially good solutions.
+
         Returns
         -------
         new_pool : torch.Tensor
@@ -145,7 +152,7 @@ class GeneticOptimizer:
         # Determine which genomes are chosen to generate offspring
         # Note: twice as much parents are selected as there are genomes to be generated
         assert (type(new_pool) == torch.Tensor)
-        chosen = self.universal_sampling()
+        assert (type(chosen) == list)
         for i in range(0, len(chosen), 2):
             index_newpool = int(i / 2 + sum(self.partition[:1]))
             if chosen[i] == chosen[i + 1]:
@@ -173,8 +180,8 @@ class GeneticOptimizer:
 
         Returns
         -------
-        torch.Tensor
-            The chosen 'parents' length: len(self.fitness) == len(self.pool).
+        list
+            The chosen 'parents'. length: len(self.fitness) == len(self.pool).
         """
         no_genomes = 2 * self.partition[1]
         chosen = []
@@ -319,17 +326,13 @@ class GeneticOptimizer:
             (self.genome_no - self.partition[0], len(self.gene_range)))
         gene_range = TorchUtils.to_numpy(self.gene_range)
         for i in range(0, len(gene_range)):
-            if gene_range[i][0] == gene_range[i][1]:
-                mutated_pool[:, i] = gene_range[i][0] * np.ones(
-                    mutated_pool[:, i].shape)
-            else:
-                mutated_pool[:, i] = np.random.triangular(
-                    gene_range[i][0],
-                    TorchUtils.to_numpy(
-                        pool[self.partition[0]:,  # type: ignore[misc]
-                             i]),  # type: ignore[misc]
-                    gene_range[i][1],
-                )
+            mutated_pool[:, i] = np.random.triangular(
+                gene_range[i][0],
+                TorchUtils.to_numpy(
+                    pool[self.partition[0]:,  # type: ignore[misc]
+                         i]),  # type: ignore[misc]
+                gene_range[i][1],
+            )
 
         mutated_pool = TorchUtils.format(mutated_pool)
         pool[self.partition[0]:] = (  # type: ignore[misc]
@@ -341,7 +344,7 @@ class GeneticOptimizer:
                 self.partition[0]:] + mask * mutated_pool  # type: ignore[misc]
 
         # Remove duplicates (Only if they are)
-        if len(pool.unique(dim=1)) < len(pool):
+        if len(pool.unique(dim=0)) < len(pool):
             pool = self.remove_duplicates(pool)
 
         return pool
