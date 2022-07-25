@@ -102,12 +102,26 @@ class ManagerTest(unittest.TestCase):
         optimizer = get_optimizer(custom_model, configs)
         assert isinstance(optimizer, GeneticOptimizer)
 
+    def test_get_optimizer_adam_from_custom_model(self):
+        """
+        Test for the get_optimizer() method which returns a genetic optimizer for a custom model
+        """
+        configs = self.get_default_node_configs()
+        info = self.get_default_info_dict()
+        node = Processor(configs, info)
+        custom_model = DNPU(node, data_input_indices=[[3, 4]])
+        configs["optimizer"] = "adam"
+        configs["partition"] = [4, 22]
+        configs["epochs"] = 1000
+        optimizer = get_optimizer(custom_model, configs)
+        assert isinstance(optimizer, torch.optim.Adam)
+
     def test_get_genetic_optimizer_wrong_model(self):
         """
         AttributeError is raised if a genetic optimizer is called with the incorrect model
         A DNPU instance has to be provided if the configs contain only partition and epochs
         """
-        model = torch.nn.Linear(20, 40)
+        model = torch.nn.Linear(1, 1)
         configs = {}
         configs["partition"] = [4, 22]
         configs["epochs"] = 1000
@@ -120,7 +134,7 @@ class ManagerTest(unittest.TestCase):
         Test to acquire a genetic optimizer by providing the partiion, epochs and gene range
         in the configs
         """
-        model = torch.nn.Linear(20, 40)
+        model = torch.nn.Linear(1, 1)
         configs = {}
         configs["optimizer"] = "genetic"
         configs["partition"] = [4, 22]
@@ -141,7 +155,7 @@ class ManagerTest(unittest.TestCase):
         """
         Test to acquire a genetic optimizer by providing an wrong shape for the gene range
         """
-        model = torch.nn.Linear(20, 40)
+        model = torch.nn.Linear(1, 1)
         configs = {}
         configs["optimizer"] = "genetic"
         configs["partition"] = [10, 22, 30]
@@ -157,8 +171,17 @@ class ManagerTest(unittest.TestCase):
         configs = {}
         configs["optimizer"] = "adam"
         configs["learning_rate"] = 0.001
-        optim = get_adam(torch.nn.Linear(20, 44), configs)
-        assert isinstance(optim, torch.optim.Adam)
+        configs['weight_decay'] = 0
+        configs['betas'] = (0.9, 0.999)
+        configs['eps'] = 1e-08
+        configs['amsgrad'] = True
+        try:
+            optim = get_adam(torch.nn.Linear(1, 1), configs)
+            assert isinstance(optim, torch.optim.Adam)
+            optim = get_adam(torch.nn.Linear(1, 1))
+            assert isinstance(optim, torch.optim.Adam)
+        except Exception:
+            self.fail('Not able to initialise adam')
 
     def test_get_optimizer_missing_model(self):
         """
@@ -184,12 +207,12 @@ class ManagerTest(unittest.TestCase):
         configs = {}
         configs["optimizer"] = None
         with self.assertRaises(AssertionError):
-            get_optimizer(torch.nn.Linear(20, 44), configs)
+            get_optimizer(torch.nn.Linear(1, 1), configs)
 
         configs = {}
         configs["optimizer"] = "wrong_input"
         with self.assertRaises(AssertionError):
-            get_optimizer(torch.nn.Linear(20, 44), configs)
+            get_optimizer(torch.nn.Linear(1, 1), configs)
 
     def test_get_algorithm_ga(self):
         """

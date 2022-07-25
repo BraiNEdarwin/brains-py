@@ -157,12 +157,12 @@ class IncludeLoader(yaml.Loader):
         """
         super(IncludeLoader, self).__init__(*args, **kwargs)
         self.add_constructor("!include", self._include)
-        if "root" in kwargs:
-            self.root = kwargs["root"]
-        elif isinstance(self.stream, io.TextIOWrapper):
-            self.root = os.path.dirname(self.stream.name)
-        else:
-            self.root = os.path.curdir
+        # if "root" in kwargs:
+        #     self.root = kwargs["root"]
+        #if isinstance(self.stream, io.TextIOWrapper):
+        self.root = os.path.dirname(self.stream.name)
+        #else:
+        #    self.root = os.path.curdir
 
     def _include(self, loader, node):
         """

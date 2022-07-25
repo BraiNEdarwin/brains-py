@@ -145,6 +145,14 @@ class CustomLogger():
         pass
 
 
+def is_hardware_fake():
+    return True
+
+
+def fake_criterion(outputs, targets):
+    return -TorchUtils.format(torch.ones_like(targets[0]))
+
+
 class DefaultCustomModel(torch.nn.Module):
     def __init__(self, configs, info, forward_pass_type='vec'):
         super(DefaultCustomModel, self).__init__()
@@ -200,7 +208,7 @@ class DefaultCustomModel(torch.nn.Module):
     def constraint_weights(self):
         print()
 
-    def constraint_control_voltages(self):
+    def constraint_weights(self):
         self.dnpu.constraint_control_voltages()
 
     def format_targets(self, x: torch.Tensor) -> torch.Tensor:
@@ -209,7 +217,7 @@ class DefaultCustomModel(torch.nn.Module):
     ################################################################
     #  If you want to implement on-chip GA, you need these functions
     def is_hardware(self):
-        return self.dnpu.processor.is_hardware
+        return self.dnpu.processor.is_hardware()
 
     def close(self):
         self.dnpu.close()

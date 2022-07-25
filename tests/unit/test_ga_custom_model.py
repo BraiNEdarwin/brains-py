@@ -1,12 +1,13 @@
 import unittest
 import warnings
+import numpy as np
 import torch
 from brainspy.algorithms.ga import train, evaluate_population
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.performance.accuracy import zscore_norm
 from brainspy.utils.performance.data import get_data
 from brainspy.algorithms.ga import GeneticOptimizer
-from tests.unit.testing_utils import DefaultCustomModel, get_custom_model_configs
+from tests.unit.testing_utils import DefaultCustomModel, get_custom_model_configs, is_hardware_fake, fake_criterion
 
 
 class GA_Test_SurrogateModel(unittest.TestCase):
@@ -46,8 +47,36 @@ class GA_Test_SurrogateModel(unittest.TestCase):
         model, dataloaders, criterion, optimizer, configs = self.get_train_parameters(
         )
         try:
-            model, results = train(model, dataloaders, criterion, optimizer,
-                                   configs)
+            model, results = train(model,
+                                   dataloaders,
+                                   criterion,
+                                   optimizer,
+                                   configs,
+                                   save_dir='tests/data')
+        except (Exception):
+            self.fail("Could not run Genetic Algorithm")
+        else:
+            self.assertTrue("best_result_index" in results)
+            self.assertTrue("genome_history" in results)
+            self.assertTrue("performance_history" in results)
+            self.assertTrue("correlation_history" in results)
+            self.assertTrue("best_output" in results)
+
+    def test_train_low_threshold(self):
+        """
+        Test for genetic algorithm with random inputs using a surrogate model
+        """
+        model, dataloaders, criterion, optimizer, configs = self.get_train_parameters(
+        )
+        try:
+            configs['stop_threshold'] = -np.inf
+            model.is_hardware = is_hardware_fake
+            model, results = train(model,
+                                   dataloaders,
+                                   criterion,
+                                   optimizer,
+                                   configs,
+                                   save_dir='tests/data')
         except (Exception):
             self.fail("Could not run Genetic Algorithm")
         else:
@@ -130,6 +159,27 @@ class GA_Test_SurrogateModel(unittest.TestCase):
             self.assertIsInstance(outputs, torch.Tensor)
             self.assertTrue(criterion_pool is not None)
             self.assertIsInstance(criterion_pool, torch.Tensor)
+
+    def test_evaluate_population_negatives(self):
+        """
+        Test for the evaluate_population method
+        """
+        # try:
+        model, dataloaders, criterion, optimizer, configs = self.get_train_parameters(
+        )
+        inputs, targets = dataloaders[0].dataset[:]
+        inputs, targets = TorchUtils.format(inputs), TorchUtils.format(targets)
+        outputs, criterion_pool = evaluate_population(inputs, targets,
+                                                      optimizer.pool, model,
+                                                      fake_criterion)
+        print('a')
+        # except (Exception):
+        #     self.fail("Could not execute function for the surrogate model")
+        # else:
+        #     self.assertTrue(outputs is not None)
+        #     self.assertIsInstance(outputs, torch.Tensor)
+        #     self.assertTrue(criterion_pool is not None)
+        #     self.assertIsInstance(criterion_pool, torch.Tensor)
 
     def test_evaluate_population_fail(self):
         """

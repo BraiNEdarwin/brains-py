@@ -84,10 +84,26 @@ class IOTest(unittest.TestCase):
         """
         Test to create a new directory with a given file path
         """
-        path = self.path + "/TestDirectory"
-        newpath = create_directory(path)
-        self.assertTrue(os.path.exists(newpath))
-        shutil.rmtree(newpath)
+        try:
+            path = self.path + "/TestDirectory"
+            newpath = create_directory(path)
+            self.assertTrue(os.path.exists(newpath))
+            shutil.rmtree(newpath)
+        except Exception:
+            self.fail('Unable to create dir')
+
+    def test_createdexistingir(self):
+        """
+        Test to create a new directory with a given file path
+        """
+        try:
+            path = self.path + "/TestDirectory"
+            os.mkdir(path)
+            newpath = create_directory(path, overwrite=True)
+            self.assertTrue(os.path.exists(newpath))
+            shutil.rmtree(newpath)
+        except Exception:
+            self.fail('Unable to create/overwrite dir')
 
     def test_createdir_none(self):
         """
@@ -101,10 +117,13 @@ class IOTest(unittest.TestCase):
         """
         Test to create a new directory with a given name and current timestamp
         """
-        name = "TestDirectory"
-        newpath = create_directory_timestamp(self.path, name)
-        self.assertTrue(os.path.exists(newpath))
-        shutil.rmtree(newpath)
+        try:
+            name = "TestDirectory"
+            newpath = create_directory_timestamp(self.path, name)
+            self.assertTrue(os.path.exists(newpath))
+            shutil.rmtree(newpath)
+        except Exception:
+            self.fail('Unable to create/overwrite dir')
 
     def test_create_dir_timestamp_none(self):
         """
@@ -119,10 +138,13 @@ class IOTest(unittest.TestCase):
         Test for the _init_() method of IncludeLoader to check the correct initiliztaion of
         the file root
         """
-        file = open(self.path + "/test_torch.yaml", "r")
-        loader = IncludeLoader(file)
-        self.assertEqual(loader.root, self.path)
-        file.close()
+        try:
+            file = open(self.path + "/test_torch.yaml", "r")
+            loader = IncludeLoader(file)
+            self.assertEqual(loader.root, self.path)
+            file.close()
+        except Exception:
+            self.fail('Unable to create/overwrite dir')
 
     def test_includeloader_init_none(self):
         """
@@ -137,16 +159,19 @@ class IOTest(unittest.TestCase):
         The !include directive is tested with the test_torch.yaml file which contains
         !include boolean.yaml
         """
-        file = open(self.path + "/test_torch.yaml", "r")
-        # !include
-        loader = IncludeLoader(file)
-        data = loader.get_data()
-        self.assertEqual(
-            data["processor_type"],
-            "simulation_debug")  # data in the test_torch.yaml file
-        self.assertEqual(data["algorithm"]["optimizer"],
-                         "genetic")  # data in the boolean.yaml file
-        file.close()
+        try:
+            file = open(self.path + "/test_torch.yaml", "r")
+            # !include
+            loader = IncludeLoader(file)
+            data = loader.get_data()
+            self.assertEqual(
+                data["processor_type"],
+                "simulation_debug")  # data in the test_torch.yaml file
+            self.assertEqual(data["algorithm"]["optimizer"],
+                             "genetic")  # data in the boolean.yaml file
+            file.close()
+        except Exception:
+            self.fail('Unable to create/overwrite dir')
 
     def runTest(self):
         self.test_save_load_configs()
@@ -162,6 +187,7 @@ class IOTest(unittest.TestCase):
         self.test_includeloader_init()
         self.test_includeloader_init_none()
         self.test_includeloader_include()
+        self.test_createdexistingir()
 
 
 if __name__ == "__main__":

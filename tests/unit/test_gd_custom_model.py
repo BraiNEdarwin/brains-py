@@ -37,11 +37,12 @@ class GD_Test(unittest.TestCase):
 
     def test_train(self):
         """
-        Test for genetic algorithm with random train parameters
+        Test for gradient descent with random train parameters
         """
         model, dataloaders, criterion, optimizer, configs = self.get_train_parameters(
         )
         logger = CustomLogger()
+        dataloaders.append(dataloaders[0])
         try:
             model, results = train(model,
                                    dataloaders,
@@ -76,6 +77,7 @@ class GD_Test(unittest.TestCase):
         """
         model, dataloaders, criterion, optimizer, configs = self.get_train_parameters(
         )
+        configs['constraint_control_voltages'] = 'clip'
         dataloaders.append(dataloaders[0])
         try:
             model, results = train(model, dataloaders, criterion, optimizer,
@@ -88,7 +90,7 @@ class GD_Test(unittest.TestCase):
             self.assertTrue("performance_history" in results)
 
         configs = {}
-        configs["epochs"] = 100
+        configs["epochs"] = 3
         configs["constraint_control_voltages"] = "clip"
 
         try:

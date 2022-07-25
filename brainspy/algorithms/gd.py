@@ -222,7 +222,8 @@ def train(
             val_losses.append(val_loss)
             description += "Validation Loss: {:.6f}.. ".format(val_losses[-1])
             # Save only when peak val performance is reached
-            if save_dir is not None and val_losses[-1] < min_val_loss:
+            if save_dir is not None and (val_losses[-1] < min_val_loss
+                                         or epoch == 0):
                 min_val_loss = val_losses[-1]
                 description += " Saving model ..."
                 torch.save(model, os.path.join(save_dir, "best_model_raw.pt"))
@@ -270,7 +271,7 @@ def train(
     if (save_dir is not None and return_best_model
             and (len(dataloaders) == 1 or
                  (dataloaders[1] is not None and len(dataloaders[1]))) > 0):
-        if 'best_model_raw.pt' in dir(save_dir):
+        if os.path.exists(os.path.join(save_dir, "best_model_raw.pt")):
             model = torch.load(os.path.join(save_dir, "best_model_raw.pt"))
 
     return model, {

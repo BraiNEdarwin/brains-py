@@ -167,7 +167,7 @@ def get_adam(model: object, configs: dict = {}):
     else:
         betas = (0.9, 0.999)
     if 'eps' in configs:
-        eps = configs['epsilon']
+        eps = configs['eps']
     else:
         eps = 1e-8
     if 'weight_decay' in configs:
