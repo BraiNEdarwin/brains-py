@@ -54,6 +54,14 @@ class PyTorchTest(unittest.TestCase):
                                    data_type=torch.float32)
         assert isinstance(tensor, torch.Tensor)
 
+    def test_format_from_model(self):
+        """
+        Test to get a model into corresponding device
+        """
+        model = torch.nn.Linear(1, 1)
+        model = TorchUtils.format(model)
+        assert isinstance(model, torch.nn.Module)
+
     def test_format(self):
         """
         Test to format a tensor with a new data type
@@ -122,6 +130,9 @@ class PyTorchTest(unittest.TestCase):
         tensor = TorchUtils.format(data, device=self.device)
         numpy_data = TorchUtils.to_numpy(tensor)
         assert isinstance(numpy_data, np.ndarray)
+        tensor.requires_grad = True
+        numpy_data = TorchUtils.to_numpy(tensor)
+        assert isinstance(numpy_data, np.ndarray)
 
     def test_to_numpy_none(self):
         """
@@ -140,9 +151,9 @@ class PyTorchTest(unittest.TestCase):
         Test to initialize the seed and generating random values by resetting the seed to
         the same value everytime
         """
-        TorchUtils.init_seed(0)
+        TorchUtils.init_seed(0, deterministic=True)
         random1 = np.random.rand(4)
-        TorchUtils.init_seed(0)
+        TorchUtils.init_seed(0, deterministic=True)
         random2 = np.random.rand(4)
         self.assertEqual(random1[0], random2[0])
 
