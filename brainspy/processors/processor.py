@@ -9,6 +9,7 @@ import collections
 from typing import Union
 
 import torch
+import copy
 import torch.nn as nn
 
 from brainspy.utils.waveform import WaveformManager
@@ -124,8 +125,8 @@ class Processor(nn.Module):
         electrode_info_loaded = False
 
         # create SurrogateModel
-        if configs["processor_type"] == "simulation" or configs[
-                "processor_type"] == "simulation_debug":
+        if configs["processor_type"] == "simulation":
+            assert self.info is not None, "Simulation processor requires to be provided with an info dictionary in the constructor."
             self.processor = SurrogateModel(
                 model_structure=self.info["model_structure"],
                 model_state_dict=model_state_dict)
@@ -191,6 +192,7 @@ class Processor(nn.Module):
 
         # create simulation processor for debugging
         elif configs["processor_type"] == "simulation_debug":
+            assert self.info is not None, "Simulation_debug processor requires to be provided with an info dictionary in the constructor."
             driver = SurrogateModel(self.info["model_structure"],
                                     model_state_dict)
             if 'electrode_effects' in configs:
@@ -198,6 +200,17 @@ class Processor(nn.Module):
                                              configs["electrode_effects"])
             else:
                 driver.set_effects_from_dict(self.info["electrode_info"])
+            driver.configs = copy.deepcopy(configs)
+            if 'instruments_setup' not in driver.configs:
+                driver.configs['instruments_setup'] = {}
+                driver.configs['instruments_setup']['activation_channels'] = [
+                    1
+                ] * self.info['electrode_info']['activation_electrodes'][
+                    'electrode_no']
+            #[
+            #     'activation_electrodes'] = self.info['electrode_info'][
+            #         'activation_electrodes']
+
             self.processor = HardwareProcessor(
                 instrument_configs=driver,
                 slope_length=configs["waveform"]["slope_length"],
@@ -384,24 +397,24 @@ def get_electrode_info(configs):
                     readout.
     """
     electrode_info = {}
-    assert not configs['driver']['instruments_setup']['multiple_devices'], "A single processor does not support multiple DNPUs."
+    assert not configs['driver']['instruments_setup'][
+        'multiple_devices'], "A single processor does not support multiple DNPUs."
     activation_electrode_no = len(
         configs['driver']['instruments_setup']['activation_channels'])
     readout_electrode_no = len(
         configs['driver']['instruments_setup']['readout_channels'])
 
     electrode_info["electrode_no"] = (activation_electrode_no +
-                                          readout_electrode_no)
+                                      readout_electrode_no)
     electrode_info["activation_electrodes"] = {}
     electrode_info["activation_electrodes"][
         "electrode_no"] = activation_electrode_no
     electrode_info["activation_electrodes"]["voltage_ranges"] = configs[
         'driver']['instruments_setup']['activation_voltage_ranges']
     electrode_info["output_electrodes"] = {}
-    electrode_info["output_electrodes"][
-        "electrode_no"] = readout_electrode_no
-    electrode_info["output_electrodes"]["amplification"] = configs[
-        "driver"]["amplification"]
+    electrode_info["output_electrodes"]["electrode_no"] = readout_electrode_no
+    electrode_info["output_electrodes"]["amplification"] = configs["driver"][
+        "amplification"]
     electrode_info["output_electrodes"]["clipping_value"] = [
         -float("Inf"), float("Inf")
     ]

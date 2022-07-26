@@ -148,15 +148,18 @@ class HardwareProcessor(nn.Module):
         ) == float, "The slope length should be of type - int or float"
         if not isinstance(instrument_configs, dict):
             self.driver = instrument_configs
-            if self.driver.is_hardware():
-                self.voltage_ranges = self.driver.get_voltage_ranges()
-            else:
-                self.voltage_ranges = None
+            #if self.driver.is_hardware():
+            self.voltage_ranges = self.driver.get_voltage_ranges()
+            # else:
+            #     self.voltage_ranges = None
             self.clipping_value = self.driver.get_clipping_value()
         else:
             NationalInstrumentsSetup.type_check(instrument_configs)
             self.driver = get_driver(instrument_configs)
-            self.register_buffer("voltage_ranges", torch.tensor(self.driver.voltage_ranges, dtype=torch.get_default_dtype()))
+            self.register_buffer(
+                "voltage_ranges",
+                torch.tensor(self.driver.voltage_ranges,
+                             dtype=torch.get_default_dtype()))
             self.clipping_value = None
             if slope_length / self.driver.configs["instruments_setup"][
                     "activation_sampling_frequency"] <= self.driver.configs[
@@ -200,7 +203,8 @@ class HardwareProcessor(nn.Module):
         """
         assert type(
             x) == torch.Tensor, "The input should be of type - torch.Tensor"
-        assert x.shape[-1] == len(self.driver.configs['instruments_setup']['activation_channels'])
+        assert x.shape[-1] == len(
+            self.driver.configs['instruments_setup']['activation_channels'])
         with torch.no_grad():
             device, dtype = x.device, x.dtype
             x, mask = self.waveform_mgr.plateaus_to_waveform(
@@ -210,9 +214,7 @@ class HardwareProcessor(nn.Module):
             x = self.forward_numpy(x)
             if self.logger is not None:
                 self.logger.log_output(x)
-        return TorchUtils.format(x[mask],
-                                 device=device,
-                                 data_type=dtype)
+        return TorchUtils.format(x[mask], device=device, data_type=dtype)
 
     def forward_numpy(self, x):
         """

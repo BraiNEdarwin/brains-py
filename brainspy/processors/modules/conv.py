@@ -259,10 +259,10 @@ class DNPUConv2d(DNPU):
 
         """
         # Expand controls according to batch_size and window_no
-        controls_shape = list(self.bias.shape)
+        controls_shape = list(self.control_voltages.shape)
         controls_shape.insert(0, x.shape[1])  # Add window_no dimension
         controls_shape.insert(0, x.shape[0])  # Add batch_size dimension
-        controls = self.bias.expand(controls_shape)
+        controls = self.control_voltages.expand(controls_shape)
 
         # Expand indices according to batch size
         control_indices = self.control_indices.expand(controls_shape)

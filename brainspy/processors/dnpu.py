@@ -6,6 +6,7 @@ import numpy as np
 from torch import nn, Tensor
 from typing import Sequence, Union
 from brainspy.processors.processor import Processor
+from brainspy.utils.performance import data
 
 from brainspy.utils.transforms import get_linear_transform_constants
 
@@ -59,10 +60,14 @@ class DNPU(nn.Module):
             'for'. By default it uses the vectorised version.
         """
         super(DNPU, self).__init__()
+        assert isinstance(
+            processor, Processor
+        ), "Processor should be an instance of brainspy.processors.processor.Processor"
         self.processor = processor
-        self.forward_pass_type = forward_pass_type
+
         self.init_electrode_info(data_input_indices)
         self._init_learnable_parameters()
+
         self.set_forward_pass(forward_pass_type)
         self.input_transform = False
         self.input_clip = False
@@ -78,50 +83,17 @@ class DNPU(nn.Module):
             will be executed using vectorisation or a for loop. The available options are 'vec' or
             'for'. By default it uses the vectorised version.
         """
+        assert type(forward_pass_type) is str and (
+            forward_pass_type == 'vec' or forward_pass_type == 'for'
+        ), "Forward pass type not recognised. It should be either 'for' or 'vec'"
+        self.forward_pass_type = forward_pass_type
+
         if forward_pass_type == 'vec':
             self.forward_pass = self.forward_vec
             self.clip_input = self.clip_input_vec
-        elif forward_pass_type == 'for':
+        else:
             self.forward_pass = self.forward_for
             self.clip_input = self.clip_input_for
-        else:
-            raise ValueError(
-                "Dnpu type not recognised. It should be either 'single', 'for' or 'vec'"
-            )
-            # TODO: Change the assestion for raising an exception
-
-    def init_node_no(self):
-        """
-        Counts how many DNPU nodes are going to be in the layer for time-multiplexing.
-
-        Attributes
-        ----------
-        data_input_indices: Sequence[int]
-            Specifies which electrodes are going to be used for inputing data. The reminder of the
-            activation electrodes will be automatically selected as control electrodes. The list
-            should have the following shape (dnpu_node_no,data_input_electrode_no). The minimum
-            dnpu_node_no should be 1, e.g., data_input_indices = [[1,2]]. When specifying more than
-            one dnpu node in the list, the module will simulate, in time-multiplexing,
-            as if there was a layer of DNPU devices. Fore example, for an 8 electrode DNPU device
-            with a single readout electrode and 7 activation electrodes, when
-            data_input_indices = [[1,2],[1,3],[3,4]], it will be considered that there are 3 DNPU
-            devices, where the first DNPU device will use the data input electrodes
-            1 and 2, the second DNPU device will use data input electrodes 1 and 3 and the third
-            DNPU device will use data input electrodes 3 and 4. Also, the first DNPU device will
-            have electrodes 0, 3, 4, 5, and 6 defined as control electrodes. The second DNPU device
-            will have electrodes 0,2,4,5, and 6 defined as control electrodes. The third DNPU device
-            will have electrodes 0,1,2,5, and 6 defined as control electrodes. More information
-            about what activation, readout, data input and control electrodes are can be found at
-            the wiki: https://github.com/BraiNEdarwin/brains-py/wiki/A.-Introduction
-
-        Returns
-        -------
-        int - The number of nodes that are going to be used in the layer for time-multiplexing.
-        """
-        if len(self.data_input_indices.shape) == 1:
-            return 1
-        else:
-            return len(self.data_input_indices)
 
     def init_activation_electrode_no(self):
         """
@@ -198,10 +170,28 @@ class DNPU(nn.Module):
         data_input_indices : Sequence[int]
             Indices of the input electrodes.
         """
+        assert type(
+            data_input_indices
+        ) is list, "Data input indices should be provided as a list."
+        temp = torch.tensor(data_input_indices)
+        assert len(temp.shape) == 2 and temp.shape[0] >= 1 and temp.shape[
+            1] <= self.processor.get_activation_electrode_no() and (
+                temp < self.processor.get_activation_electrode_no()
+            ).all().item() and torch.tensor([
+                (e.unique().shape == e.shape) for e in temp
+            ]).all().item(), (
+                "Please revise the format in which data input indices has been passed to the DNPU. "
+                +
+                "Data input indices should be represented with two dimensions (number of DNPU nodes, "
+                +
+                "number of data input electrodes) (e.g., [[1,2]] or [[1,2],[1,3]], data input indices"
+                + "CANNOT be represented as just [1,2]. )")
+        del temp
+
         self.register_buffer(
             "data_input_indices",
             torch.tensor(data_input_indices, dtype=torch.long))
-        self.node_no = self.init_node_no()
+        self.node_no = len(self.data_input_indices)
         self.data_input_electrode_no, self.control_electrode_no = self.init_activation_electrode_no(
         )
         voltage_ranges = self.processor.processor.get_voltage_ranges()
@@ -211,13 +201,6 @@ class DNPU(nn.Module):
         # electrode_no, 2) where last 2 is for min and max
         # Define data input electrode indices
 
-        assert len(self.data_input_indices.shape) == 2, (
-            "Please revise the format in which data input indices has been passed to the DNPU. "
-            +
-            "Data input indices should be represented with two dimensions (number of DNPU nodes, "
-            +
-            "number of data input electrodes) (e.g., [[1,2]] or [[1,2],[1,3]], data input indices"
-            + "CANNOT be represented as just [1,2]. )")
         self.register_buffer(
             "data_input_ranges",
             torch.stack([voltage_ranges[i] for i in data_input_indices]))
@@ -290,12 +273,12 @@ class DNPU(nn.Module):
                 *torch.arange(self.get_control_ranges().ndim - 1, -1, -1))[0]
             min_ranges = min_ranges.permute(
                 *torch.arange(min_ranges.ndim - 1, -1, -1))
-            self.bias.data = torch.max(torch.min(self.bias, max_ranges),
-                                       min_ranges)
+            self.control_voltages.data = torch.max(
+                torch.min(self.control_voltages, max_ranges), min_ranges)
 
         else:
-            self.bias.data = torch.max(
-                torch.min(self.bias,
+            self.control_voltages.data = torch.max(
+                torch.min(self.control_voltages,
                           self.get_control_ranges().T[1].T),
                 self.get_control_ranges().T[0].T)
 
@@ -347,9 +330,9 @@ class DNPU(nn.Module):
         """
         for params in self.parameters():
             params.requires_grad = False
-        self._init_bias()
+        self._init_control_voltages()
 
-    def _init_bias(self):
+    def _init_control_voltages(self):
         """
         Sets the intial random values for the control voltages of the DNPU, and declares them
         as learnable pytorch parameters. The initial random values are specified within the range
@@ -362,7 +345,7 @@ class DNPU(nn.Module):
         AssertionError
             If negative voltages are detected.
         """
-        self.bias = nn.Parameter(self.sample_controls())
+        self.control_voltages = nn.Parameter(self.sample_controls())
 
     # node_index: For time multiplexing only.
     # Is the index of the processor to which the data will be sent.
@@ -446,7 +429,7 @@ class DNPU(nn.Module):
         outputs = [
             self.forward_single(
                 node_x,
-                self.bias[node_index],
+                self.control_voltages[node_index],
                 self.data_input_indices[node_index],
                 self.control_indices[node_index],
             ) for node_index, node_x in enumerate(self.get_node_input_data(x))
@@ -474,12 +457,12 @@ class DNPU(nn.Module):
         batch_size = x.size(0)
         data_input_shape = list(self.data_input_indices.shape)
         data_input_shape.insert(0, batch_size)
-        bias_shape = list(self.bias.shape)
-        bias_shape.insert(0, batch_size)
+        control_voltages_shape = list(self.control_voltages.shape)
+        control_voltages_shape.insert(0, batch_size)
         # Reshape input and expand controls
         x = x.reshape(data_input_shape)
         last_dim = len(x.size()) - 1
-        controls = self.bias.expand(bias_shape)
+        controls = self.control_voltages.expand(control_voltages_shape)
 
         # Cut input values to force linear transform or force being between a voltage range.
         x = self.clip_input(x)
@@ -490,7 +473,7 @@ class DNPU(nn.Module):
 
         # Expand indices according to batch size
         input_indices = self.data_input_indices.expand(data_input_shape)
-        control_indices = self.control_indices.expand(bias_shape)
+        control_indices = self.control_indices.expand(control_voltages_shape)
 
         # Create input data and order it according to the indices
         indices = torch.argsort(torch.cat((input_indices, control_indices),
@@ -540,7 +523,8 @@ class DNPU(nn.Module):
         self.input_transform = True
         self.input_clip = strict
         input_range = torch.tensor(input_range,
-                                   dtype=self.data_input_ranges.dtype)
+                                   dtype=self.data_input_ranges.dtype,
+                                   device=self.data_input_ranges.device)
         if input_range.shape != self.data_input_ranges.shape:
             input_range = input_range.expand_as(
                 self.data_input_ranges).detach().clone()
@@ -645,12 +629,12 @@ class DNPU(nn.Module):
             yield x[:, i:i + self.data_input_indices.shape[-1]]
             i += self.data_input_indices.shape[-1]
 
-    def refresh_after_processor_swap():
-        pass
+    # def refresh_after_processor_swap():
+    #     pass
 
     def regularizer(self) -> torch.Tensor:
         """
-        Return a penalty term if the value of the bias is outside of the
+        Return a penalty term if the value of the control_voltages is outside of the
         interval for the control voltages.
 
         Example
@@ -659,13 +643,13 @@ class DNPU(nn.Module):
         torch.Tensor([1.0, 5.0])
         >>> dnpu.control_high
         torch.Tensor([3.0, 7.0])
-        >>> dnpu.bias
+        >>> dnpu.control_voltages
         torch.Tensor([2.5, 8.0])
         >>> dnpu.regularizer()
         torch.Tensor([1.0])
 
         In this example we have two control electrodes, the first with voltage
-        range 1 to 3 and the second 5 to 7. The bias of the network is 2.5 for
+        range 1 to 3 and the second 5 to 7. The control_voltages of the network is 2.5 for
         the first electrode and 8 for the second. The first is within the
         boundaries so no penalty is generated from it but the second is
         outside, which means a penalty will be generated, which is equal to
@@ -694,6 +678,7 @@ class DNPU(nn.Module):
         self,
         configs: dict,
         info: dict,
+        data_input_indices: list = None,
         model_state_dict: collections.OrderedDict = None,
     ):
         """
@@ -715,10 +700,20 @@ class DNPU(nn.Module):
             If control voltages of the new processor are different than the
             ones used for training the DNPU.
         """
+        assert type(
+            configs
+        ) is dict, "Configs should be a dictionary. Check Processor for the information that the dictionary should have."
+        assert type(
+            info
+        ) is dict, "Info should be a dictionary. Check Processor for the information that the dictionary should have."
+        assert data_input_indices is None or type(
+            data_input_indices
+        ) is list, "Data input indices should be None or a list with shape (DNPU node number, electrode_no)"
         self.eval()
         old_ranges = self.processor.get_voltage_ranges().cpu().half().clone()
         self.processor.swap(configs, info, model_state_dict)
-        self.init_electrode_info(configs['input_indices'])
+        if data_input_indices is not None:
+            self.init_electrode_info(data_input_indices)
         new_ranges = self.processor.get_voltage_ranges().cpu().half().clone()
         if not torch.equal(old_ranges, new_ranges):
             warnings.warn(
@@ -755,9 +750,9 @@ class DNPU(nn.Module):
             ones used for training the DNPU.
         """
         self.train()
-        old_ranges = self.processor.get_voltage_ranges().cpu().half().clone()
+        old_ranges = self.processor.get_voltage_ranges().clone().cpu().half()
         self.processor.swap(configs, info, model_state_dict)
-        new_ranges = self.processor.get_voltage_ranges().cpu().half().clone()
+        new_ranges = self.processor.get_voltage_ranges().clone().cpu().half()
         assert torch.equal(
             old_ranges,
             new_ranges), "Voltage ranges for the new processor are different "
@@ -765,9 +760,9 @@ class DNPU(nn.Module):
         del old_ranges
         del new_ranges
 
-    def set_control_voltages(self, bias: torch.Tensor):
+    def set_control_voltages(self, control_voltages: torch.Tensor):
         """
-        Change the control voltages/bias of the network.
+        Change the control_voltages of the network.
 
         Example
         -------
@@ -775,33 +770,34 @@ class DNPU(nn.Module):
 
         Parameters
         ----------
-        bias : torch.Tensor
-            New value of the bias/control voltage.
+        control_voltages : torch.Tensor
+            New value of the control_voltages.
             One dimensional tensor.
         """
         with torch.no_grad():
             assert (
-                self.bias.shape == bias.shape
+                self.control_voltages.shape == control_voltages.shape
             ), "Control voltages could not be set due to a shape missmatch "
             "with regard to the ones already in the model."
             assert (
-                self.bias.dtype == bias.dtype
+                self.control_voltages.dtype == control_voltages.dtype
             ), "Control voltages could not be set due to a shape missmatch "
             "with regard to the ones already in the model."
-            self.bias = torch.nn.Parameter(
-                bias.type_as(self.bias).to(self.bias.device))
+            self.control_voltages = torch.nn.Parameter(
+                control_voltages.type_as(self.control_voltages).to(
+                    self.control_voltages.device))
 
     def get_control_voltages(self) -> torch.Tensor:
         """
-        Get the (next) control voltages/bias of the network, detach it from
+        Get the (next) control_voltages of the network, detach it from
         the computational graph.
 
         Returns
         -------
         torch.Tensor
-            Value of the bias/control voltage.
+            Value of the control_voltages.
         """
-        return self.bias.detach()
+        return self.control_voltages.detach()
 
     def get_input_ranges(self) -> torch.Tensor:
         """
@@ -840,10 +836,10 @@ class DNPU(nn.Module):
 
     def reset(self):
         """
-        Reset the bias of the processor.
+        Reset the control_voltages of the processor.
         """
-        del self.bias
-        self._init_bias()
+        del self.control_voltages
+        self._init_control_voltages()
 
     # TODO: Document the need to override the closing of the processor on
     # custom models.
