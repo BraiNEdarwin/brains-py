@@ -424,9 +424,6 @@ def train_checks(model, dataloaders, criterion, optimizer, configs, save_dir):
         assert "regularizer" in dir(
             model
         ), "The model should implement the regularizer function for this option"
-        assert "set_regul_factor" in dir(
-            model
-        ), "The model should implement the set_regul_factor function for this option"
     else:
         assert "constraint_weights" in dir(
             model
@@ -537,9 +534,6 @@ def default_train_step(model,
         assert "regularizer" in dir(
             model
         ), "The model should implement the regularizer function for this option"
-        assert "set_regul_factor" in dir(
-            model
-        ), "The model should implement the set_regul_factor function for this option"
     else:
         assert "constraint_weights" in dir(
             model
