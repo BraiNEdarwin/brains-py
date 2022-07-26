@@ -5,6 +5,7 @@ import copy
 import numpy as np
 
 from brainspy.processors import dnpu
+from brainspy.processors.modules import bn
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
 from tests.unit.testing_utils import is_hardware_fake
@@ -421,6 +422,21 @@ class ProcessorTest(unittest.TestCase):
             self.assertTrue(torch.eq(res1, res3).all().detach().cpu().item())
         except Exception:
             self.fail("Failed setting forward pass DNPU")
+        del model
+
+    def test_dnpu_batch_norm(self):
+        try:
+            model = None
+            model = TorchUtils.format(
+                bn.DNPUBatchNorm(self.node,
+                                 data_input_indices=self.data_input_indices))
+            x = TorchUtils.format(
+                torch.rand((torch.randint(10, 15, (1, 1)).item(),
+                            len(self.data_input_indices[0]))))
+            model(x)
+            model.get_logged_variables()
+        except Exception:
+            self.fail('Init with vec pass type failed')
         del model
 
 
