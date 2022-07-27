@@ -130,8 +130,7 @@ class NationalInstrumentsSetup:
         self.enable_os_signals()
         self.init_semaphore()
 
-    @staticmethod
-    def type_check(configs):
+    def type_check(self, configs):
         """
         Check the type of the configurations provided for the National Instruments Setup
         """
@@ -144,80 +143,71 @@ class NationalInstrumentsSetup:
             configs["inverted_output"]
         ) == bool, "The inverted_output key should be of type - bool"
 
-        # Assertion for Output clipping range
-
-        # assert type(configs["output_clipping_range"]) == list or type(
-        #     configs["output_clipping_range"]
-        # ) == np.ndarray, "Output clipping range should be a list of 2 values"
-        # assert len(
-        #     configs["output_clipping_range"]
-        # ) == 2, "Output clipping range should contain 2 values : max and min"
-        # assert isinstance(
-        #     configs["output_clipping_range"][0], (np.floating, float, int)
-        # ), "Output clipping range can contain only int or float type values"
-        # assert isinstance(
-        #     configs["output_clipping_range"][1], (np.floating, float, int)
-        # ), "Output clipping range can contain only int or float type values"
-
         # Assertion for Keys
         assert 'amplification'in configs, "Amplification not found in configs. Check the documentation of setup.py for more information about this key."
-        assert 'inverted_output'in configs, "inverted_output not found in configs. Check the documentation of setup.py for more information about this key."
-        assert 'instruments_setup'in configs, "instruments_setup not found in configs. Check the documentation of setup.py for more information about this key."
-        
-        # Assertion for instruments_setup keys
-        assert 'multiple_devices'in configs['instruments_setup'], "multiple_devices not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
-        assert 'activation_instrument'in configs['instruments_setup'], "activation_instrument not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
-        assert 'activation_sampling_frequency'in configs['instruments_setup'], "activation_sampling_frequency not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
-        assert 'activation_channels'in configs['instruments_setup'], "activation_channels not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
-        assert 'activation_voltage_ranges'in configs['instruments_setup'], "activation_voltage_ranges not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
-        assert 'readout_instrument'in configs['instruments_setup'], "readout_instrument not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
-        assert 'readout_sampling_frequency'in configs['instruments_setup'], "readout_sampling_frequency not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
-        assert 'readout_channels'in configs['instruments_setup'], "readout_channels not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
-        assert 'trigger_source'in configs['instruments_setup'], "trigger_source not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
-
-        # Assertion for Amplification
         assert  type(configs["amplification"]) == list, "Amplification should be a list of floats or ints"
-
-        # Assertions for Instruments setup
-
+        assert 'inverted_output'in configs, "inverted_output not found in configs. Check the documentation of setup.py for more information about this key."
+        assert  type(configs["inverted_output"]) == bool, "inverted_output should be boolean"
+        assert 'instruments_setup'in configs, "instruments_setup not found in configs. Check the documentation of setup.py for more information about this key."
+        assert  type(configs["instruments_setup"]) == dict, "inverted_output should be a dictionary"
+       
+        # General assertions for Instruments setups
+                # Multiple devices
+        assert 'multiple_devices'in configs['instruments_setup'], "multiple_devices not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
         assert type(configs["instruments_setup"]["multiple_devices"]
                     ) == bool, "Multiple devices key should be of type bool"
+                # Trigger source
+        assert 'trigger_source'in configs['instruments_setup'], "trigger_source not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
         assert type(configs["instruments_setup"]["trigger_source"]
                     ) == str, "trigger_source key should be of type str"
-
-        # Assertions for a Single device
-
-        if not configs["instruments_setup"]["multiple_devices"]:
-            assert type(
-                configs["instruments_setup"]["activation_instrument"]
-            ) == str, "activation_instrument key should be of type str"
-            assert type(
-                configs["instruments_setup"]["readout_instrument"]
-            ) == str, "readout_instrument key should be of type str"
-            assert type(
+                # Average io point difference
+        assert 'average_io_point_difference' in configs['instruments_setup'], "average_io_point_difference key not found in instruments_setup configs. Check the documentation of setup.py for mode information about this key."
+        assert type(configs['instruments_setup']['average_io_point_difference']) is bool, "average_io_point_difference should be boolean."
+                # Activation sampling frequency
+        assert 'activation_sampling_frequency'in configs['instruments_setup'], "activation_sampling_frequency not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert type(
                 configs["instruments_setup"]["activation_sampling_frequency"]
-            ) == int, "activation_sampling_frequency key should be of type int"
-            assert type(
-                configs["instruments_setup"]["readout_sampling_frequency"]
-            ) == int, "readout_sampling_frequency key should be of type int"
-            assert type(
-                configs["instruments_setup"]["activation_channels"]
-            ) == list, "activation_channels key should be of type list"
-            assert type(
-                configs["instruments_setup"]["readout_channels"]
-            ) == list, "readout_channels key should be of type list"
-            assert type(
-                configs["instruments_setup"]["activation_voltage_ranges"]
-            ) == list or type(
-                configs["instruments_setup"]["activation_voltage_ranges"]
-            ) == np.ndarray, "The voltage_ranges should be of type - list or numpy array"
-            assert len(
-                configs["instruments_setup"]["activation_voltage_ranges"]
-            ) == len(
-                configs["instruments_setup"]["activation_channels"]
-            ), "The length of channel_names should be equal to the length of voltage ranges"
-            for voltage_range in configs["instruments_setup"][
-                    "activation_voltage_ranges"]:
+            ) == int, "activation_sampling_frequency key should be of type int"  
+                # Readout sampling frequency
+        assert 'readout_sampling_frequency'in configs['instruments_setup'], "readout_sampling_frequency not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert type(
+               configs["instruments_setup"]["readout_sampling_frequency"]
+        ) == int, "readout_sampling_frequency key should be of type int"
+
+        # Particular assertions for multiple / simple device modes
+        if not configs["instruments_setup"]["multiple_devices"]:
+            self.check_instruments(configs['instruments_setup'], 'activation')
+            self.check_instruments(configs['instruments_setup'], 'readout')
+        else:
+            for device_name in configs["instruments_setup"]:
+                if is_device_name(device_name):
+                    self.check_instruments(configs['instruments_setup'][device_name], 'activation')
+                    self.check_instruments(configs['instruments_setup'][device_name], 'readout')
+
+
+    def check_instruments(self, configs: dict, type_instrument: str):
+        # Activation instrument
+        assert type_instrument+'_instrument'in configs, type_instrument+"_instrument not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert type(
+                        configs[type_instrument+"_instrument"]
+                    ) == str, type_instrument+"_instrument key should be of type str"
+        # Activation channels
+        assert type_instrument+'_channels'in configs, type_instrument+"_channels not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+        assert type(
+                configs[type_instrument+"_channels"]
+            ) == list, type_instrument+"_channels key should be of type list"
+        # Activation voltage ranges
+        if type_instrument == 'activation':
+            assert type_instrument+'_voltage_ranges'in configs, type_instrument+"_voltage_ranges not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+            assert type(configs[type_instrument+'_voltage_ranges']) is list, type_instrument+'_voltage_ranges should be a list'
+            self.check_voltage_ranges(configs[type_instrument+'_voltage_ranges'])
+            # Activation channel mask
+            assert type_instrument+'_channel_mask'in configs, type_instrument+"_channel_mask not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
+            assert type(configs[type_instrument+'_channel_mask']) is list, type_instrument+'_channel_mask should be a list'
+            assert len(configs[type_instrument+'_channel_mask']) == len(configs[type_instrument+'_channels']), type_instrument+" channels and channel mask should be the same length "
+    
+    def check_voltage_ranges(self,voltage_ranges):
+            for voltage_range in voltage_ranges:
                 assert type(voltage_range) == list or type(
                     voltage_range
                 ) == np.ndarray, "Each voltage range should be a list of 2 values"
@@ -230,65 +220,6 @@ class NationalInstrumentsSetup:
                 assert isinstance(
                     voltage_range[1], (np.floating, float, int)
                 ), "Volatge range can contain only int or float type values"
-
-        # Assertions for Multiple Devices
-
-        else:
-            assert type(
-                        configs["instruments_setup"]
-                        ["activation_sampling_frequency"]
-                    ) == int, "activation_sampling_frequency key should be of type int"
-            assert type(
-                        configs["instruments_setup"]
-                        ["readout_sampling_frequency"]
-                    ) == int, "readout_sampling_frequency key should be of type int"
-
-            for device_name in configs["instruments_setup"]:
-                if is_device_name(device_name):
-                    assert type(
-                        configs["instruments_setup"][device_name]
-                        ["activation_instrument"]
-                    ) == str, "activation_instrument key should be of type str"
-                    assert type(
-                        configs["instruments_setup"][device_name]
-                        ["readout_instrument"]
-                    ) == str, "readout_instrument key should be of type str"
-                    assert type(
-                        configs["instruments_setup"][device_name]
-                        ["activation_channels"]
-                    ) == list, "activation_channels key should be of type list"
-                    assert type(
-                        configs["instruments_setup"][device_name]
-                        ["readout_channels"]
-                    ) == list, "readout_channels key should be of type list"
-                    assert type(
-                        configs["instruments_setup"][device_name]
-                        ["activation_voltage_ranges"]
-                    ) == list or type(
-                        configs["instruments_setup"][device_name]
-                        ["activation_voltage_ranges"]
-                    ) == np.ndarray, "The voltage_ranges should be of type - list or numpy array"
-                    assert len(
-                        configs["instruments_setup"][device_name]
-                        ["activation_voltage_ranges"]
-                    ) == len(
-                        configs["instruments_setup"][device_name]
-                        ["activation_channels"]
-                    ), "The length of channel_names should be equal to the length of voltage ranges"
-                    for voltage_range in configs["instruments_setup"][
-                            device_name]["activation_voltage_ranges"]:
-                        assert type(voltage_range) == list or type(
-                            voltage_range
-                        ) == np.ndarray, "Each voltage range should be a list of 2 values"
-                        assert len(
-                            voltage_range
-                        ) == 2, "Voltage range should contain 2 values : max and min"
-                        assert isinstance(
-                            voltage_range[0], (np.floating, float, int)
-                        ), "Volatge range can contain only int or float type values"
-                        assert isinstance(
-                            voltage_range[1], (np.floating, float, int)
-                        ), "Volatge range can contain only int or float type values"
 
     def init_configs(self, configs):
         """

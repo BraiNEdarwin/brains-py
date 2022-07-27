@@ -154,7 +154,6 @@ class HardwareProcessor(nn.Module):
             #     self.voltage_ranges = None
             self.clipping_value = self.driver.get_clipping_value()
         else:
-            NationalInstrumentsSetup.type_check(instrument_configs)
             self.driver = get_driver(instrument_configs)
             self.register_buffer(
                 "voltage_ranges",
