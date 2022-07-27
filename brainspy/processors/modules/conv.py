@@ -12,18 +12,15 @@ class DNPUConv2d(DNPU):
     https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html?highlight=conv#torch.nn.Conv2d
 
     """
-    def __init__(
-        self,
-        processor,
-        data_input_indices: list,
-        in_channels: int,
-        out_channels: int,
-        kernel_size,  # TODO: put datatype as : _size_2_t format
-        stride=1,
-        padding=0,
-        dilation=1,
-        forward_pass_type: str = 'vec',
-    ):
+    def __init__(self,
+                 processor,
+                 data_input_indices: list,
+                 in_channels: int,
+                 out_channels: int,
+                 kernel_size: int,
+                 stride: int = 1,
+                 padding: int = 0,
+                 forward_pass_type: str = 'vec'):
         """
         Applies a conv2d operation with time multiplexing on a core DNPU processor.
 
@@ -72,27 +69,28 @@ class DNPUConv2d(DNPU):
         super(DNPUConv2d, self).__init__(processor,
                                          data_input_indices,
                                          forward_pass_type=forward_pass_type)
-
+        assert type(in_channels) is int, 'in_channels should be integer'
+        assert type(out_channels) is int, 'out_channels should be integer'
+        assert type(
+            kernel_size
+        ) is int, 'kernel_size should be integer. Only square kernel sizes are supported, represented by a single number.'
+        assert type(stride) is int, 'in_channels should be integer'
+        assert type(padding) is int, 'in_channels should be integer'
+        assert (
+            torch.tensor(data_input_indices).numel() == kernel_size**2
+        ), "Data input indices should be defined as mapping a single kernel. E.g., for a 3x3 convolution you need 9 data input indices, represented as (dnpu_node_no=3, data_input_no_per_dnpu_node=3)."
         self.raw_inputs_list = data_input_indices  # data_input_indices TO BE REMOVED!
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.padding = padding
         self.stride = stride
-        self.dilation = dilation
         self.unfold = torch.nn.Unfold(kernel_size=kernel_size,
                                       stride=stride,
                                       padding=padding)
 
         # @TODO: Are kernel size and stride needed as self parameters?
         self.input_transform = False
-
-        if isinstance(processor, Processor):
-            self.processor = processor
-        else:
-            self.processor = Processor(
-                processor
-            )  # It accepts initialising a processor as a dictionary
 
         self.init_params()
 
@@ -155,15 +153,16 @@ class DNPUConv2d(DNPU):
         """
         Get the expected dimension of the output after the convolution.
         """
-        if isinstance(self.stride, tuple):
-            assert self.stride[0] == self.stride[
-                1], "Different sized stride tuple not supported."
-            stride = self.stride[0]
-        else:
-            stride = self.stride
+        # Tuple support has been dropped
+        # if isinstance(self.stride, tuple):
+        #     assert self.stride[0] == self.stride[
+        #         1], "Different sized stride tuple not supported."
+        #     stride = self.stride[0]
+        # else:
+        #     stride = self.stride
 
-        return int(((dim + (2 * self.padding) - self.kernel_size) / stride) +
-                   1)
+        return int(((dim +
+                     (2 * self.padding) - self.kernel_size) / self.stride) + 1)
 
     def preprocess(self, x):
         """
