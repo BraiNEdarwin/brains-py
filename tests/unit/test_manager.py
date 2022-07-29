@@ -20,7 +20,7 @@ import brainspy.utils.signal as criterions
 from brainspy.algorithms.ga import GeneticOptimizer
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
-
+from tests.unit.testing_utils import get_configs
 
 class ManagerTest(unittest.TestCase):
     """
@@ -261,36 +261,7 @@ class ManagerTest(unittest.TestCase):
         """
         Testing for the driver type - CDAQtoCDAQ
         """
-        configs = {}
-        configs["instrument_type"] = "cdaq_to_cdaq"
-        configs["instruments_setup"] = {}
-        configs["instruments_setup"]["multiple_devices"] = False
-        configs["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-        configs["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
-        configs["driver"]["instruments_setup"][
-            "activation_sampling_frequency"] = 1000
-        configs["instruments_setup"]["activation_channels"] = [
-            0,
-            2,
-            5,
-            3,
-            4,
-            6,
-            1,
-        ]
-        configs["instruments_setup"]["activation_voltage_ranges"] = [
-            [-1.2, 0.6],
-            [-1.2, 0.6],
-            [-1.2, 0.6],
-            [-1.2, 0.6],
-            [-1.2, 0.6],
-            [-0.7, 0.3],
-            [-0.7, 0.3],
-        ]
-        configs["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
-        configs["driver"]["instruments_setup"][
-            "readout_sampling_frequency"] = 1000
-        configs["instruments_setup"]["readout_channels"] = [4]
+        configs = get_configs()
         driver = get_driver(configs)
         assert isinstance(driver, CDAQtoCDAQ)
 

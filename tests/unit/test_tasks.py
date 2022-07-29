@@ -632,19 +632,20 @@ class Tasks_Test(unittest.TestCase):
     #         self.assertIsNone(tasks.activation_task)
     #     tasks.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
-                         "Hardware test is skipped for simulation setup.")
-    def test_write(self):
-        """
-        Test to write a random sample to the task
-        """
-        try:
-            tasks = IOTasksManager(get_configs())
-            tasks.write(np.random.rand(0, 100), False)
-        except (Exception):
-            self.fail("Could not close write data for these values")
-        tasks.close_tasks()
+    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
+    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    #                      "Hardware test is skipped for simulation setup.")
+    # def test_write(self):
+    #     """
+    #     Test to write a random sample to the task
+    #     """
+        # try:
+        #     tasks = IOTasksManager(get_configs())
+        #     sample = np.random.rand(0, 100)
+        #     tasks.write(sample, False)
+        # except (Exception):
+        #     self.fail("Could not close write data for these values")
+        # tasks.close_tasks()
 
     # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
     #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",

@@ -89,7 +89,7 @@ class GA_Test_CDAQ(unittest.TestCase):
 
     #     return configs
 
-    def get_train_parameters(self):
+    def get_train_parameters(self, model):
         """
         Generate some random train parameters for Genetic algorithm
         """
@@ -102,9 +102,10 @@ class GA_Test_CDAQ(unittest.TestCase):
         dataloader = get_data(results, batch_size=512)
         dataloaders = [dataloader]
         criterion = torch.nn.MSELoss()
-        optimizer = GeneticOptimizer(gene_ranges=TorchUtils.format(
-            torch.tensor([[-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6],
-                          [-1.2, 0.6]])),
+        # TorchUtils.format(
+        #torch.tensor([[-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6],
+        #              [-1.2, 0.6]])
+        optimizer = GeneticOptimizer(gene_ranges=model.get_control_ranges()[0], 
                                      partition=[4, 22],
                                      epochs=2)
         configs = {}
@@ -122,14 +123,10 @@ class GA_Test_CDAQ(unittest.TestCase):
         hp = None
         hp = Processor(configs)
         model = DNPU(hp, [[1, 2]])
-        dataloaders, criterion, optimizer, configs = self.get_train_parameters(
-        )
+        dataloaders, criterion, optimizer, configs = self.get_train_parameters(model)
         try:
-            with warnings.catch_warnings(record=True) as caught_warnings:
-                warnings.simplefilter("always")
-                model, results = train(model, dataloaders, criterion,
-                                       optimizer, configs)
-                self.assertEqual(len(caught_warnings), 1)
+            model, results = train(model, dataloaders, criterion,
+                                    optimizer, configs)
         except (Exception):
             if hp is not None:
                 hp.close()
