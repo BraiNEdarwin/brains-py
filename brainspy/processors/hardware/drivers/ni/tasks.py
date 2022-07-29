@@ -12,6 +12,7 @@ Both nidaqmx.Task instances will declare a channel per electrode, and in the cas
 to nidaq connection, they will also declare an extra synchronization channel.
 It can alo be used to set the shape variables according to the requiremnets.
 """
+import sys
 import nidaqmx
 import nidaqmx.constants as constants
 import nidaqmx.system.device as device
@@ -393,6 +394,7 @@ class IOTasksManager:
             print("There was an error writing to the activation task: " +
                   self.activation_task.name + "\n" + str(error))
             self.close_tasks()
+            sys.exit(1)
 
     def stop_tasks(self):
         """
