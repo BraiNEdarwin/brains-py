@@ -26,7 +26,7 @@ The package relies on the following libraries:
 * Configurations:
   * pyyaml
 * Linting, and testing:
-  * unittest, mypy, flake8, html-testRunner
+  * unittest, mypy, flake8, coverage
 
 ## 3. Related scientific publications
 
