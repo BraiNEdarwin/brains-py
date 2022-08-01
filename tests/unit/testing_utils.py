@@ -15,7 +15,7 @@ def get_configs():
 
     configs["amplification"] = 100
     configs["inverted_output"] = True
-    configs["output_clipping_range"] = [-1, 1]
+   #configs["output_clipping_range"] = [-1, 1]
 
     configs["instrument_type"] = "cdaq_to_cdaq"
     configs["instruments_setup"] = {}
@@ -34,6 +34,7 @@ def get_configs():
     # TODO Specify the Activation channels (pin numbers)
     # For example, [1,2,3,4,5,6,7]
     configs["instruments_setup"]["activation_channels"] = [0, 1, 2, 3, 4, 5, 6]
+    configs["instruments_setup"]["activation_channel_mask"] = [1, 1, 1, 1, 1, 1, 1]
     # TODO Specify the activation Voltage ranges
     # For example, [[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-0.7, 0.3],[-0.7, 0.3]]
     configs["instruments_setup"]["activation_voltage_ranges"] = [[-1.2, 0.6],
@@ -52,11 +53,11 @@ def get_configs():
     configs["instruments_setup"]["readout_channels"] = [0]
 
     configs["instruments_setup"]["activation_sampling_frequency"] = 5000
+    
     configs["instruments_setup"]["readout_sampling_frequency"] = 10000
     configs["instruments_setup"]["average_io_point_difference"] = True
     configs["instruments_setup"]["multiple_devices"] = False
 
-    configs['driver'] = {}
     configs['max_ramping_time_seconds'] = 1
     configs["inverted_output"] = True
     configs["amplification"] = [100]
