@@ -528,9 +528,10 @@ def train(model: torch.nn.Module,
         dataloaders[0], DataLoader
     ), "The dataloader should be an instance of torch.utils.data.DataLoader"
     assert callable(criterion), "The criterion should be a callable method"
-    if isinstance(optimizer, GeneticOptimizer):
+    if not isinstance(optimizer, GeneticOptimizer):
         warnings.warn(
-            "A custom optimizer can be used instead of the GeneticOptimizer.")
+            "The GeneticOptimizer is the only optimizer officially supported. In principle you could use your own custom optimizer with a similar structure to that of GeneticOptimizer. Double check if you really wanted to input an instance of another optimizer than GeneticOptimizer."
+        )
     assert type(configs) == dict, "The extra configs should be of type - dict"
     if configs["epochs"]:
         assert type(
