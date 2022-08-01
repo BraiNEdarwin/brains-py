@@ -7,6 +7,7 @@ Also handles merging the data with control voltages.
 import warnings
 import collections
 from typing import Union
+from numpy import average
 
 import torch
 import copy
@@ -30,13 +31,14 @@ class Processor(nn.Module):
         Info dictionary, documented in init method.
     model_state_dict : collections.OrderedDict, optional. Documented in
     init method.
+    average_plateaus: bool
+        When there are plateaus that are higher than 1, wether if average the whole plateau or not.
     """
-    def __init__(
-        self,
-        configs: dict,
-        info: dict = None,
-        model_state_dict: collections.OrderedDict = None,
-    ):
+    def __init__(self,
+                 configs: dict,
+                 info: dict = None,
+                 model_state_dict: collections.OrderedDict = None,
+                 average_plateaus: bool = True):
         """
         Create a processor and run load_processor, which creates either a
         simulation processor or a hardware processor from the given
@@ -75,10 +77,13 @@ class Processor(nn.Module):
             parameters of the pytorch neural network; if not given, will be
             initialized with random parameters (weights and biases);
             by default None.
+        average_plateaus: bool
+            When there are plateaus that are higher than 1, wether if average the whole plateau or not.
         """
         super(Processor, self).__init__()
         self.load_processor(configs, info, model_state_dict)
         self.waveform_mgr = WaveformManager(configs['waveform'])
+        self.average_plateaus = average_plateaus
 
     def load_processor(self,
                        configs: dict,
@@ -242,7 +247,11 @@ class Processor(nn.Module):
         if not (self.waveform_mgr.plateau_length == 1
                 and self.waveform_mgr.slope_length == 0):
             x = self.waveform_mgr.points_to_plateaus(x)
-        return self.processor(x)
+        x = self.processor(x)
+        if not (self.waveform_mgr.plateau_length == 1 and
+                self.waveform_mgr.slope_length == 0) and self.average_plateaus:
+            x = self.waveform_mgr.plateaus_to_points(x)
+        return x
 
     def format_targets(self, x: torch.Tensor) -> torch.Tensor:
         """ 
@@ -261,10 +270,11 @@ class Processor(nn.Module):
             length shape as the outputs from the processor.
         """
         if not (self.waveform_mgr.plateau_length == 1
-                and self.waveform_mgr.slope_length == 0):
-            return self.waveform_mgr.points_to_plateaus(x)
-        else:
-            return x
+                and self.waveform_mgr.slope_length
+                == 0) and not self.average_plateaus:
+            x = self.waveform_mgr.points_to_plateaus(x)
+
+        return x
 
     def get_voltage_ranges(self) -> torch.Tensor:
         """
