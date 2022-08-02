@@ -2,7 +2,7 @@ import unittest
 import warnings
 import torch
 import brainspy
-from brainspy.algorithms.ga import train, evaluate_population
+from brainspy.algorithms.ga import train
 from brainspy.processors.dnpu import DNPU
 from brainspy.processors.processor import Processor
 from brainspy.utils.pytorch import TorchUtils
@@ -115,22 +115,23 @@ class GA_Test_CDAQ(unittest.TestCase):
 
     @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
-    def test_train_cdaq(self):
+    def test_train_cdaq_average_plateaus(self):
         """
         Test for genetic algorithm with random inputs using a CDAQ model
         """
         configs = self.get_configs()
         hp = None
-        hp = Processor(configs)
+        hp = Processor(configs, average_plateaus=True)
         model = DNPU(hp, [[1, 2]])
         dataloaders, criterion, optimizer, configs = self.get_train_parameters(model)
         try:
             model, results = train(model, dataloaders, criterion,
-                                    optimizer, configs)
-        except (Exception):
+                                    optimizer, configs, average_plateaus=True)
+        except Exception as e:
             if hp is not None:
                 hp.close()
             self.fail("Could not run Genetic Algorithm")
+            print(e)
         else:
             self.assertTrue("best_result_index" in results)
             self.assertTrue("genome_history" in results)
@@ -140,6 +141,31 @@ class GA_Test_CDAQ(unittest.TestCase):
             if hp is not None:
                 hp.close()
 
+def test_train_cdaq(self):
+        """
+        Test for genetic algorithm with random inputs using a CDAQ model
+        """
+        configs = self.get_configs()
+        hp = None
+        hp = Processor(configs, average_plateaus=False)
+        model = DNPU(hp, [[1, 2]])
+        dataloaders, criterion, optimizer, configs = self.get_train_parameters(model)
+        try:
+            model, results = train(model, dataloaders, criterion,
+                                    optimizer, configs, average_plateaus=False)
+        except Exception as e:
+            if hp is not None:
+                hp.close()
+            self.fail("Could not run Genetic Algorithm")
+            print(e)
+        else:
+            self.assertTrue("best_result_index" in results)
+            self.assertTrue("genome_history" in results)
+            self.assertTrue("performance_history" in results)
+            self.assertTrue("correlation_history" in results)
+            self.assertTrue("best_output" in results)
+            if hp is not None:
+                hp.close()
     # def test_train_invalid_model(self):
     #     """
     #     Running genetic algorithm on an external pytorch model raises an Exception
