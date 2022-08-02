@@ -228,6 +228,24 @@ class ProcessorTest(unittest.TestCase):
 
         torch.__version__ = ver
 
+    def test_unique_control_ranges_linear_transform(self):
+        try:
+            model = None
+            model = TorchUtils.format(
+                dnpu.DNPU(self.node,
+                          data_input_indices=[[2, 3]],
+                          forward_pass_type='for'))
+            model.add_input_transform([0, 1], strict=True)
+            x = TorchUtils.format(
+                torch.rand((torch.randint(10, 15, (1, 1)).item(),
+                            len(self.data_input_indices[0]))))
+            res1 = model(x)
+            
+        except Exception:
+            self.fail('Init with for pass type failed')
+        if model is not None:
+            del model
+
     def test_constraint_control_voltages(self):
         ver = torch.__version__
         torch.__version__ = '1.10.0'
