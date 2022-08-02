@@ -488,9 +488,10 @@ class DNPU(nn.Module):
             data = data.reshape(
                 original_data_shape[0] * original_data_shape[1], -1)
             result = self.processor(data)
-            result = result.reshape(
-                int(self.processor.waveform_mgr.plateau_length *
-                    original_data_shape[0]), original_data_shape[1])
+            if not self.processor.average_plateaus:
+                result = result.reshape(
+                    int(self.processor.waveform_mgr.plateau_length *
+                        original_data_shape[0]), original_data_shape[1])
             return result
         else:
             return self.processor(data).squeeze(
