@@ -44,8 +44,8 @@ Flags related to the CDAQ TO CDAQ Setup:
 
 INPUT_VOLTAGE_THRESHOLD = 1.6
 CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS = 0.001
-CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS = 0.001
-SYNCHRONISATION_VALUE = 0.04  # Do not reduce to less than 0.02
+CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS = 0.1
+SYNCHRONISATION_VALUE = 0.04  # Do not reduce to less than 0.02, only useful for nidaq
 
 
 class NationalInstrumentsSetup:
