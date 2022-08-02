@@ -131,7 +131,8 @@ def get_accuracy(inputs, targets, configs=None, node=None):
         accuracy, node = train_perceptron(configs["epochs"],
                                           dataloader,
                                           optimizer=optimizer,
-                                          node=node)
+                                          node=node,
+                                          stop_at_max_accuracy=True)
 
     with torch.no_grad():
         node.eval()

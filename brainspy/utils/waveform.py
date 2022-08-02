@@ -368,8 +368,11 @@ class WaveformManager:
         # Reshape input so that each data point is represented along
         # dimension 0, then take average over dimension 1 to get rid
         # of plateaus.
-        output = data.view(data_size, self.plateau_length,
-                           data.shape[1]).mean(dim=1)
+        data = data.unsqueeze(1)
+        data_shape = list(data.shape)
+        data_shape[0] = data_size
+        data_shape[1] = self.plateau_length
+        output = data.view(data_shape).mean(dim=1)
 
         # Make the output two-dimensional.
         # if len(output.shape) == 1:
