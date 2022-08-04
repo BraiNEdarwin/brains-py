@@ -4,7 +4,6 @@ import nidaqmx
 import math
 import random
 import brainspy
-from tests.unit.testing_utils import check_test_configs
 from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 from tests.unit.testing_utils import get_configs
@@ -60,6 +59,57 @@ class Setup_Test(unittest.TestCase):
             self.assertIsInstance(setup.tasks_driver, IOTasksManager)
         if setup is not None:
             setup.close_tasks()
+
+    def test_init_multiple(self):
+        """
+        Test to check correct initialization of the Setup
+        """
+        setup = None
+        try:
+            configs = get_configs()
+            # TODO Specify the Activation channels (pin numbers)
+            # For example, [1,2,3,4,5,6,7]
+            
+            configs["instruments_setup"]["multiple_devices"] = True
+            configs["instruments_setup"]["A"] = {}
+
+            configs['instruments_setup']["A"]["activation_instrument"] = configs['instruments_setup']["activation_instrument"]
+            del configs['instruments_setup']['activation_instrument']
+
+            configs["instruments_setup"]["A"]["activation_channels"] = configs['instruments_setup']['activation_channels']
+            del configs['instruments_setup']['activation_channels']
+
+            configs["instruments_setup"]["A"]["activation_channel_mask"] = configs["instruments_setup"]["activation_channel_mask"]
+            del configs["instruments_setup"]["activation_channel_mask"]
+
+            # TODO Specify the activation Voltage ranges
+            # For example, [[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-0.7, 0.3],[-0.7, 0.3]]
+            configs["instruments_setup"]["A"]["activation_voltage_ranges"] = configs["instruments_setup"]["activation_voltage_ranges"]
+            del configs["instruments_setup"]["activation_voltage_ranges"]
+
+            # TODO Specify the name of the Readout Instrument
+            configs["instruments_setup"]["A"]["readout_instrument"] = configs["instruments_setup"]["readout_instrument"]
+            del configs["instruments_setup"]["readout_instrument"]
+            # TODO Specify the readout channels
+            # For example, [4]
+            configs["instruments_setup"]["A"]["readout_channels"] = configs["instruments_setup"]["readout_channels"]
+            del configs["instruments_setup"]["readout_channels"]
+
+            configs["instruments_setup"]["A"]["activation_sampling_frequency"] = configs["instruments_setup"]["activation_sampling_frequency"]
+            del configs["instruments_setup"]["activation_sampling_frequency"]
+            
+            configs["instruments_setup"]["A"]["readout_sampling_frequency"] = configs["instruments_setup"]["readout_sampling_frequency"]
+            del configs["instruments_setup"]["readout_sampling_frequency"]
+            
+
+            setup = NationalInstrumentsSetup(configs)
+        except (Exception):
+            if setup is not None:
+                setup.close_tasks()
+            self.fail("Could not initialize the NationalInstrumentsSetup")
+        else:
+            if setup is not None:
+                setup.close_tasks()
 
     @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
                          or brainspy.TEST_MODE == "HARDWARE_NIDAQ",

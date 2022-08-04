@@ -140,8 +140,10 @@ class GA_Test_CDAQ(unittest.TestCase):
             self.assertTrue("best_output" in results)
             if hp is not None:
                 hp.close()
-
-def test_train_cdaq(self):
+                
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+                         "Hardware test is skipped for simulation setup.")
+    def test_train_cdaq_no_average_plateaus(self):
         """
         Test for genetic algorithm with random inputs using a CDAQ model
         """
