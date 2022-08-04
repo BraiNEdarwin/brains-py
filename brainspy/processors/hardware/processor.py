@@ -154,7 +154,7 @@ class HardwareProcessor(nn.Module):
             self.clipping_value = None
             assert ( (slope_length / self.driver.configs["instruments_setup"][
                     "activation_sampling_frequency"]) <= self.driver.configs[
-                        "min_ramping_time_seconds"]), "The ratio of the slope length and the activation sampling frequency cannot be less than the max ramping time"
+                        "max_ramping_time_seconds"]), "The ratio of the slope length and the activation sampling frequency cannot be less than the max ramping time"
 
         self.waveform_mgr = WaveformManager({
             "slope_length": slope_length,

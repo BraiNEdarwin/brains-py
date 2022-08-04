@@ -561,7 +561,7 @@ def train(model: torch.nn.Module,
             inputs, targets = dataloaders[0].dataset[:]
             inputs, targets = TorchUtils.format(inputs), TorchUtils.format(
                 targets)
-            if average_plateaus:
+            if not average_plateaus:
                 targets = model.format_targets(targets)
             outputs, criterion_pool = evaluate_population(
                 inputs, targets, pool, model, criterion)
