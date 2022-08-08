@@ -196,13 +196,13 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-        configs = get_configs()
-        setup = None
-        with self.assertRaises(AssertionError):
-            del configs["instruments_setup"]["trigger_source"]
-            setup = NationalInstrumentsSetup(configs)
-        if setup is not None:
-            setup.close_tasks()
+        # configs = get_configs()
+        # setup = None
+        # with self.assertRaises(AssertionError):
+        #     del configs["instruments_setup"]["trigger_source"]
+        #     setup = NationalInstrumentsSetup(configs)
+        # if setup is not None:
+        #     setup.close_tasks()
 
         configs = get_configs()
         setup = None

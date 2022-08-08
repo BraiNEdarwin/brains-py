@@ -237,10 +237,10 @@ class NationalInstrumentsSetup:
             for device_name in configs["instruments_setup"]:
                 if is_device_name(device_name): 
                     print(
-                        f"DAC sampling frequency for Device {device_name}: {configs['instruments_setup']['activation_sampling_frequency']}"
+                        f"DAC sampling frequency for Device {device_name}: {configs['instruments_setup'][device_name]['activation_sampling_frequency']}"
                     )
                     print(
-                        f"ADC sampling frequency for Device {device_name}: {configs['instruments_setup']['readout_sampling_frequency']}"
+                        f"ADC sampling frequency for Device {device_name}: {configs['instruments_setup'][device_name]['readout_sampling_frequency']}"
                     )
         else:
             print(
@@ -287,8 +287,10 @@ class NationalInstrumentsSetup:
             activation_sampling_frequency = None
             for device_name in configs["instruments_setup"]:
                 if is_device_name(device_name):
+                    assert 'readout_sampling_frequency' in configs['instruments_setup'][device_name], "readout_sampling_frequency key not found for device"+device_name
+                    assert 'activation_sampling_frequency' in configs['instruments_setup'][device_name], "activation_sampling_frequency key not found for device"+device_name
                     readout_sampling_frequency_aux = configs['instruments_setup'][device_name]['readout_sampling_frequency']
-                    activation_sampling_frequency_aux = configs['instruments_setup'][device_name]['readout_sampling_frequency']
+                    activation_sampling_frequency_aux = configs['instruments_setup'][device_name]['activation_sampling_frequency']
                     if first_time:
                         readout_sampling_frequency = readout_sampling_frequency_aux
                         activation_sampling_frequency = activation_sampling_frequency_aux
@@ -299,11 +301,12 @@ class NationalInstrumentsSetup:
                     first_time = False
 
         else:
+            assert 'readout_sampling_frequency' in configs['instruments_setup'], "readout_sampling_frequency key not found for device"
+            assert 'activation_sampling_frequency' in configs['instruments_setup'], "activation_sampling_frequency key not found for device"
             readout_sampling_frequency = configs['instruments_setup']['readout_sampling_frequency']
-            activation_sampling_frequency = configs['instruments_setup']['readout_sampling_frequency']
-        self.io_point_difference = int(
-            readout_sampling_frequency /
-            activation_sampling_frequency)
+            activation_sampling_frequency = configs['instruments_setup']['activation_sampling_frequency']
+        assert type(readout_sampling_frequency) is int, "Readout sampling frequency should be an integer"
+        assert type(activation_sampling_frequency) is int, "Activation sampling frequency should be an integer"
         assert readout_sampling_frequency % activation_sampling_frequency == 0, (
                 "Remainder of the division between readout (" +
                 f"{readout_sampling_frequency} Hz) "
@@ -319,6 +322,9 @@ class NationalInstrumentsSetup:
                 + " is higher than half of the readout frequency (" +
                 f"{readout_sampling_frequency} Hz). "
                 "By setting this configuration, you are losing resolution. ")
+        self.io_point_difference = int(
+            readout_sampling_frequency /
+            activation_sampling_frequency)
 
     def init_tasks(self, configs):
         """
