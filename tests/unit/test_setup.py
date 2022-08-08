@@ -60,6 +60,9 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
+                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+                         "Hardware test is skipped for simulation setup.")
     def test_init_multiple(self):
         """
         Test to check correct initialization of the Setup
@@ -630,9 +633,6 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
-                         "Hardware test is skipped for simulation setup.")
     @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
                          or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")

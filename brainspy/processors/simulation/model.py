@@ -97,6 +97,7 @@ class NeuralNetworkModel(nn.Module):
         torch.Tensor
             Output data.
         """
+        assert type(x) is torch.Tensor, "Input to the forward pass can only be a Pytorch tensor"
         return self.raw_model(x)
 
     def _get_activation(self, activation: str):
@@ -197,4 +198,5 @@ class NeuralNetworkModel(nn.Module):
             hidden_sizes = model_structure.get('hidden_sizes')
             assert (type(hidden_sizes) == list)
             for i in hidden_sizes:
-                assert (type(i) == int)
+                assert (type(i) == int), "Values for hidden sizes should be int"
+                assert i > 0, "Values lower than 1 not allowed for hidden sizes"
