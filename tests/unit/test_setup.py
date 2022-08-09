@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 import nidaqmx
-import math
 import random
 import brainspy
 from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
@@ -157,12 +156,6 @@ class Setup_Test(unittest.TestCase):
             # For example, [4]
             configs["instruments_setup"]["A"]["readout_channels"] = configs["instruments_setup"]["readout_channels"]
             del configs["instruments_setup"]["readout_channels"]
-
-            configs["instruments_setup"]["A"]["activation_sampling_frequency"] = configs["instruments_setup"]["activation_sampling_frequency"]
-            del configs["instruments_setup"]["activation_sampling_frequency"]
-            
-            configs["instruments_setup"]["A"]["readout_sampling_frequency"] = configs["instruments_setup"]["readout_sampling_frequency"]
-            del configs["instruments_setup"]["readout_sampling_frequency"]
             
 
             setup = NationalInstrumentsSetup(configs)

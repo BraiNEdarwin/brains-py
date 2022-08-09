@@ -236,22 +236,22 @@ class NationalInstrumentsSetup:
             self.inversion = -1
         else:
             self.inversion = 1
-        if self.configs["instruments_setup"]['multiple_devices']:
-            for device_name in configs["instruments_setup"]:
-                if is_device_name(device_name): 
-                    print(
-                        f"DAC sampling frequency for Device {device_name}: {configs['instruments_setup'][device_name]['activation_sampling_frequency']}"
-                    )
-                    print(
-                        f"ADC sampling frequency for Device {device_name}: {configs['instruments_setup'][device_name]['readout_sampling_frequency']}"
-                    )
-        else:
-            print(
+        # if self.configs["instruments_setup"]['multiple_devices']:
+        #     for device_name in configs["instruments_setup"]:
+        #         if is_device_name(device_name): 
+        #             print(
+        #                 f"DAC sampling frequency for Device {device_name}: {configs['instruments_setup'][device_name]['activation_sampling_frequency']}"
+        #             )
+        #             print(
+        #                 f"ADC sampling frequency for Device {device_name}: {configs['instruments_setup'][device_name]['readout_sampling_frequency']}"
+        #             )
+        # else:
+        print(
                 f"DAC sampling frequency: {configs['instruments_setup']['activation_sampling_frequency']}"
-            )
-            print(
+        )
+        print(
                 f"ADC sampling frequency: {configs['instruments_setup']['readout_sampling_frequency']}"
-            )
+        )
         print(f"DAC/ADC point difference: {self.io_point_difference}")
         print(
             f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. "
@@ -284,30 +284,30 @@ class NationalInstrumentsSetup:
                     readout_sampling_frequency: Frequency at which the ADC will sample.
                     activation_sampling_frequency: Frequency at which the DAC will sample.
         """
-        if configs['instruments_setup']['multiple_devices']:
-            first_time = True
-            readout_sampling_frequency = None
-            activation_sampling_frequency = None
-            for device_name in configs["instruments_setup"]:
-                if is_device_name(device_name):
-                    assert 'readout_sampling_frequency' in configs['instruments_setup'][device_name], "readout_sampling_frequency key not found for device"+device_name
-                    assert 'activation_sampling_frequency' in configs['instruments_setup'][device_name], "activation_sampling_frequency key not found for device"+device_name
-                    readout_sampling_frequency_aux = configs['instruments_setup'][device_name]['readout_sampling_frequency']
-                    activation_sampling_frequency_aux = configs['instruments_setup'][device_name]['activation_sampling_frequency']
-                    if first_time:
-                        readout_sampling_frequency = readout_sampling_frequency_aux
-                        activation_sampling_frequency = activation_sampling_frequency_aux
-                    else:
-                        assert readout_sampling_frequency == readout_sampling_frequency_aux, "Readout sampling frequency in multiple devices mode should be equal in all devices"
-                        assert activation_sampling_frequency == activation_sampling_frequency_aux, "Readout sampling frequency in multiple devices mode should be equal in all devices"
+        # if configs['instruments_setup']['multiple_devices']:
+        #     first_time = True
+        #     readout_sampling_frequency = None
+        #     activation_sampling_frequency = None
+        #     for device_name in configs["instruments_setup"]:
+        #         if is_device_name(device_name):
+        #             assert 'readout_sampling_frequency' in configs['instruments_setup'][device_name], "readout_sampling_frequency key not found for device "+device_name
+        #             assert 'activation_sampling_frequency' in configs['instruments_setup'][device_name], "activation_sampling_frequency key not found for device "+device_name
+        #             readout_sampling_frequency_aux = configs['instruments_setup'][device_name]['readout_sampling_frequency']
+        #             activation_sampling_frequency_aux = configs['instruments_setup'][device_name]['activation_sampling_frequency']
+        #             if first_time:
+        #                 readout_sampling_frequency = readout_sampling_frequency_aux
+        #                 activation_sampling_frequency = activation_sampling_frequency_aux
+        #             else:
+        #                 assert readout_sampling_frequency == readout_sampling_frequency_aux, "Readout sampling frequency in multiple devices mode should be equal in all devices"
+        #                 assert activation_sampling_frequency == activation_sampling_frequency_aux, "Readout sampling frequency in multiple devices mode should be equal in all devices"
 
-                    first_time = False
+        #             first_time = False
 
-        else:
-            assert 'readout_sampling_frequency' in configs['instruments_setup'], "readout_sampling_frequency key not found for device"
-            assert 'activation_sampling_frequency' in configs['instruments_setup'], "activation_sampling_frequency key not found for device"
-            readout_sampling_frequency = configs['instruments_setup']['readout_sampling_frequency']
-            activation_sampling_frequency = configs['instruments_setup']['activation_sampling_frequency']
+        # else:
+        assert 'readout_sampling_frequency' in configs['instruments_setup'], "readout_sampling_frequency key not found for device"
+        assert 'activation_sampling_frequency' in configs['instruments_setup'], "activation_sampling_frequency key not found for device"
+        readout_sampling_frequency = configs['instruments_setup']['readout_sampling_frequency']
+        activation_sampling_frequency = configs['instruments_setup']['activation_sampling_frequency']
         assert type(readout_sampling_frequency) is int, "Readout sampling frequency should be an integer"
         assert type(activation_sampling_frequency) is int, "Activation sampling frequency should be an integer"
         assert readout_sampling_frequency % activation_sampling_frequency == 0, (

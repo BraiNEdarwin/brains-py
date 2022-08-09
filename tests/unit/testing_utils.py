@@ -82,8 +82,6 @@ def get_configs():
     configs["instruments_setup"]["B"]["activation_voltage_ranges"] = configs["instruments_setup"]["activation_voltage_ranges"]
     configs["instruments_setup"]["B"]["readout_instrument"] = READOUT_INSTRUMENT2
     configs["instruments_setup"]["B"]["readout_channels"] = [1]
-    configs["instruments_setup"]["B"]["activation_sampling_frequency"] = configs["instruments_setup"]["activation_sampling_frequency"]
-    configs["instruments_setup"]["B"]["readout_sampling_frequency"] = configs["instruments_setup"]["readout_sampling_frequency"]    
     return configs
 
 
