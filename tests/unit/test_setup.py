@@ -63,6 +63,66 @@ class Setup_Test(unittest.TestCase):
     @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
                          or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
+    def test_forward_numpy(self):
+        """
+        Test to check correct initialization of the Setup
+        """
+        setup = None
+        try:
+            configs = get_configs()
+            setup = NationalInstrumentsSetup(configs)
+            setup.forward_numpy()
+        except (Exception):
+            if setup is not None:
+                setup.close_tasks()
+            self.fail("Could not initialize the NationalInstrumentsSetup")
+        if setup is not None:
+            setup.close_tasks()
+
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
+                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+                         "Hardware test is skipped for simulation setup.")
+    def test_signals(self):
+        """
+        Test to check correct initialization of the Setup
+        """
+        setup = None
+        with self.assertRaises(SystemExit):
+            configs = get_configs()
+            setup = NationalInstrumentsSetup(configs)
+            setup.os_signal_handler(None)
+        if setup is not None:
+            setup.close_tasks()
+
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
+                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+                         "Hardware test is skipped for simulation setup.")
+    def test_init_sampling_frequency(self):
+        """
+        Test to check correct initialization of the Setup
+        """
+        setup = None
+        try:
+            configs = get_configs()
+            configs["instruments_setup"]["readout_sampling_frequency"] = configs["instruments_setup"]["activation_sampling_frequency"]#int(configs["instruments_setup"]["activation_sampling_frequency"] / 2) 
+            setup = NationalInstrumentsSetup(configs)
+        except (Exception):
+            if setup is not None:
+                setup.close_tasks()
+            self.fail("Could not initialize the NationalInstrumentsSetup")
+        else:
+            self.assertEqual(setup.inversion, -1)
+            self.assertEqual(setup.last_points_to_write_val, -1)
+            self.assertIsNone(setup.data_results)
+            self.assertIsNone(setup.offsetted_points_to_write)
+            self.assertIsNone(setup.timeout)
+            self.assertIsInstance(setup.tasks_driver, IOTasksManager)
+        if setup is not None:
+            setup.close_tasks()
+
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
+                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+                         "Hardware test is skipped for simulation setup.")
     def test_init_multiple(self):
         """
         Test to check correct initialization of the Setup
@@ -72,7 +132,7 @@ class Setup_Test(unittest.TestCase):
             configs = get_configs()
             # TODO Specify the Activation channels (pin numbers)
             # For example, [1,2,3,4,5,6,7]
-            
+            configs['inverted_output'] = False
             configs["instruments_setup"]["multiple_devices"] = True
             configs["instruments_setup"]["A"] = {}
 
@@ -111,6 +171,7 @@ class Setup_Test(unittest.TestCase):
                 setup.close_tasks()
             self.fail("Could not initialize the NationalInstrumentsSetup")
         else:
+            self.assertEqual(setup.inversion, 1)
             if setup is not None:
                 setup.close_tasks()
 

@@ -10,6 +10,9 @@ ACTIVATION_INSTRUMENT1= "cDAQ2Mod2"
 READOUT_INSTRUMENT1 = "cDAQ2Mod8"
 INSTRUMENT_TYPE = "cdaq_to_cdaq"
 
+ACTIVATION_INSTRUMENT2 = "cDAQ2Mod1"
+READOUT_INSTRUMENT2 = "cDAQ2Mod8"
+
 def get_configs():
     """
     Generate the sample configs for the Task Manager
@@ -39,7 +42,7 @@ def get_configs():
 
     # TODO Specify the Activation channels (pin numbers)
     # For example, [1,2,3,4,5,6,7]
-    configs["instruments_setup"]["activation_channels"] = [0, 2, 3, 4, 5, 6, 7]
+    configs["instruments_setup"]["activation_channels"] = [0, 1, 2, 3, 4, 5, 6]
     configs["instruments_setup"]["activation_channel_mask"] = [1, 1, 1, 1, 1, 1, 1]
     # TODO Specify the activation Voltage ranges
     # For example, [[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-0.7, 0.3],[-0.7, 0.3]]
@@ -71,6 +74,16 @@ def get_configs():
     configs["slope_length"] = 10
     configs["offset"] = 0
     configs['auto_start'] = True
+
+    configs["instruments_setup"]["B"] = {}
+    configs['instruments_setup']["B"]["activation_instrument"] = ACTIVATION_INSTRUMENT2
+    configs["instruments_setup"]["B"]["activation_channels"] = configs['instruments_setup']['activation_channels']
+    configs["instruments_setup"]["B"]["activation_channel_mask"] = configs["instruments_setup"]["activation_channel_mask"]
+    configs["instruments_setup"]["B"]["activation_voltage_ranges"] = configs["instruments_setup"]["activation_voltage_ranges"]
+    configs["instruments_setup"]["B"]["readout_instrument"] = READOUT_INSTRUMENT2
+    configs["instruments_setup"]["B"]["readout_channels"] = [1]
+    configs["instruments_setup"]["B"]["activation_sampling_frequency"] = configs["instruments_setup"]["activation_sampling_frequency"]
+    configs["instruments_setup"]["B"]["readout_sampling_frequency"] = configs["instruments_setup"]["readout_sampling_frequency"]    
     return configs
 
 

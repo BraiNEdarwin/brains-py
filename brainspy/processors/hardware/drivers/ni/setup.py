@@ -143,6 +143,9 @@ class NationalInstrumentsSetup:
             configs["inverted_output"]
         ) == bool, "The inverted_output key should be of type - bool"
 
+        assert 'instrument_type' in configs, "Instrument type key missing. It should be cdaq_to_cdaq, cdaq_to_nidaq or simulation_debug"
+        assert type(configs['instrument_type']) is str, 'Instrument type should be a string.'
+        assert configs['instrument_type'] == 'cdaq_to_cdaq' or configs['instrument_type'] == 'cdaq_to_nidaq' or configs['instrument_type'] == 'simulation_debug', "Wrong instrument type. It should be cdaq_to_cdaq, cdaq_to_nidaq or simulation_debug"
         # Assertion for Keys
         assert 'amplification'in configs, "Amplification not found in configs. Check the documentation of setup.py for more information about this key."
         assert  type(configs["amplification"]) == list, "Amplification should be a list of floats or ints"
@@ -253,18 +256,18 @@ class NationalInstrumentsSetup:
         print(
             f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. "
         )
-        if configs["max_ramping_time_seconds"] == 0:
-            input(
-                "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n"
-                +
-                "The security check for the ramping time has been disabled. Steep rampings can"
-                +
-                " damage the device. Proceed only if you are sure that you will not damage the "
-                +
-                "device. If you want to avoid damage simply exit the execution. \n ONLY If you are "
-                +
-                "sure about what you are doing press ENTER to continue. Otherwise STOP the "
-                + "execution of this program.")
+        # if configs["max_ramping_time_seconds"] == 0:
+        #     input(
+        #         "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n"
+        #         +
+        #         "The security check for the ramping time has been disabled. Steep rampings can"
+        #         +
+        #         " damage the device. Proceed only if you are sure that you will not damage the "
+        #         +
+        #         "device. If you want to avoid damage simply exit the execution. \n ONLY If you are "
+        #         +
+        #         "sure about what you are doing press ENTER to continue. Otherwise STOP the "
+        #         + "execution of this program.")
 
     def init_sampling_configs(self, configs):
         """ Initialises configuration related to sampling.
@@ -518,11 +521,6 @@ class NationalInstrumentsSetup:
         points_to_write : int
             The raw number of points that was passed as input of the method.
 
-        Raises
-        ------
-        ValueError
-            If the configurations 'instrument_type' is different than 'cdaq_to_cdaq' or
-            'cdaq_to_nidaq', it raises an error stating that is not supported.
         """
         self.offsetted_points_to_read = self.io_point_difference * points_to_write
         if self.configs['instrument_type'] == 'cdaq_to_nidaq':
@@ -533,10 +531,6 @@ class NationalInstrumentsSetup:
         elif self.configs['instrument_type'] == 'cdaq_to_cdaq':
             self.offsetted_points_to_write = points_to_write
             self.offsetted_points_to_read += self.configs["offset"]
-        else:
-            raise ValueError(
-                f"Unsupported instrument_type {self.configs['instrument_type']}. It should be"
-                + "cdaq_to_nidaq or cdaq_to_cdaq.")
 
     def set_timeout(self, timeout=None):
         """
