@@ -17,7 +17,6 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            /home/circleci/repo/venv/bin/python3 -m pip install --upgrade pip
             pip install -r requirements.txt
       # Step 3: run linter and tests
       - run:
