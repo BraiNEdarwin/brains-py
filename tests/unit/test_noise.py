@@ -32,7 +32,6 @@ class NoiseTest(unittest.TestCase):
                            device=TorchUtils.get_device(),
                            dtype=torch.get_default_dtype())
             self.assertTrue(torch.equal(x, gaussian(x)))
-            self.assertEqual(0, 500)
 
     def test_gaussian(self):
         """
