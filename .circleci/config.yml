@@ -7,9 +7,7 @@ jobs:
     branches:
               only: 
                 - main
-
     working_directory: ~/repo
-
     steps:
       # Step 1: obtain repo from GitHub
       - checkout
