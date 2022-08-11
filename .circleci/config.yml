@@ -25,4 +25,4 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py develop
-            pytest -v --cov ci_test brains-py/tests
+            pytest -v --cov brains-py tests
