@@ -14,6 +14,7 @@ class NoiseTest(unittest.TestCase):
     """
     Class for testing 'noise.py'.
     """
+
     def __init__(self, test_name):
         super(NoiseTest, self).__init__()
         self.threshold = 10000
@@ -31,6 +32,7 @@ class NoiseTest(unittest.TestCase):
                            device=TorchUtils.get_device(),
                            dtype=torch.get_default_dtype())
             self.assertTrue(torch.equal(x, gaussian(x)))
+            self.assertEqual(0, 500)
 
     def test_gaussian(self):
         """
