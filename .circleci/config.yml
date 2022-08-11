@@ -24,5 +24,4 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            python setup.py develop
             pytest -v --cov brains-py tests
