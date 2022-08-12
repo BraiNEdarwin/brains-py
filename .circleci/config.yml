@@ -24,4 +24,4 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pytest -v --cov brains-py tests omit = tests/unit/test_io.py
+            pytest -v --cov brains-py tests
