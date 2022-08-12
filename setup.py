@@ -16,7 +16,6 @@ requires = [
     "yapf==0.31.0",
     # Packages for testing
     "unittest2",
-    "html-testRunner",
 ]
 
 assert (
