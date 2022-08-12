@@ -18,6 +18,7 @@ class IOTest(unittest.TestCase):
     Tests for the io.py class. The class is used to test
     the methods used to load and save the contents of a file.
     """
+
     def __init__(self, test_name):
         super(IOTest, self).__init__()
         configs = {}
