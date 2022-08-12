@@ -24,4 +24,5 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pytest -v --cov brains-py tests
+            python -m coverage run -m unittest
+            coverage report -m

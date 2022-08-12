@@ -18,6 +18,7 @@ class IOTest(unittest.TestCase):
     Tests for the io.py class. The class is used to test
     the methods used to load and save the contents of a file.
     """
+
     def __init__(self, test_name):
         super(IOTest, self).__init__()
         configs = {}
@@ -26,7 +27,7 @@ class IOTest(unittest.TestCase):
         configs["batch"] = None
         configs["data"] = {"data1": "New data"}
         self.configs = configs
-        self.path = os.path.join(os.getcwd(), "tests/unit/utils/testfiles")
+        self.path = os.path.join(os.getcwd(), "tests/unit/ut/testfiles")
 
     def test_save_load_configs(self):
         """
