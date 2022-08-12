@@ -395,7 +395,8 @@ def train(model: torch.nn.Module,
           criterion,
           optimizer,
           configs: dict,
-          save_dir: str = None):
+          save_dir: str = None,
+          average_plateaus: bool = False):
     """
     Main training loop for the genetic algorithm. It supports training a single DNPU hardware
     device on both on and off chip flavours. It only supports using a training dataset (not a
@@ -517,8 +518,8 @@ def train(model: torch.nn.Module,
     ), "The set_control_voltages function should be implemeted in the model"
     assert "is_hardware" in dir(
         model), "The is_hardware function should be implemeted in the model"
-    assert "format_targets" in dir(
-        model), "The format_targets function should be implemeted in the model"
+    assert ("format_targets" in dir(
+            model) and not average_plateaus) or average_plateaus, "The format_targets function should be implemeted in the model"
     assert type(dataloaders) == list or type(
         dataloaders) == tuple, "The dataloaders should be of type - list"
     assert len(dataloaders) >= 1 and len(
@@ -528,9 +529,10 @@ def train(model: torch.nn.Module,
         dataloaders[0], DataLoader
     ), "The dataloader should be an instance of torch.utils.data.DataLoader"
     assert callable(criterion), "The criterion should be a callable method"
-    if isinstance(optimizer, GeneticOptimizer):
+    if not isinstance(optimizer, GeneticOptimizer):
         warnings.warn(
-            "A custom optimizer can be used instead of the GeneticOptimizer.")
+            "The GeneticOptimizer is the only optimizer officially supported. In principle you could use your own custom optimizer with a similar structure to that of GeneticOptimizer. Double check if you really wanted to input an instance of another optimizer than GeneticOptimizer."
+        )
     assert type(configs) == dict, "The extra configs should be of type - dict"
     if configs["epochs"]:
         assert type(
@@ -559,8 +561,11 @@ def train(model: torch.nn.Module,
             inputs, targets = dataloaders[0].dataset[:]
             inputs, targets = TorchUtils.format(inputs), TorchUtils.format(
                 targets)
+            if not average_plateaus:
+                targets = model.format_targets(targets)
             outputs, criterion_pool = evaluate_population(
                 inputs, targets, pool, model, criterion)
+
 
             # log results
             current_best_index = torch.argmax(
@@ -573,8 +578,7 @@ def train(model: torch.nn.Module,
             genome_history.append(pool[current_best_index].detach().cpu())
             correlation_history.append(
                 pearsons_correlation(
-                    best_current_output, model.format_targets(
-                        targets)).detach().cpu())  # type: ignore[operator]
+                    best_current_output, targets).detach().cpu())  # type: ignore[operator]
             looper.set_description("  Gen: " + str(epoch + 1) +
                                    ". Max fitness: " +
                                    str(performance_history[-1].item()) +
@@ -713,13 +717,10 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
     ), "The set_control_voltages function should be implemeted in the model"
     assert "is_hardware" in dir(
         model), "The is_hardware function should be implemeted in the model"
-    assert "format_targets" in dir(
-        model), "The format_targets function should be implemeted in the model"
     assert callable(criterion), "The criterion should be a callable method"
-
     outputs_pool = torch.zeros(
         (len(pool), ) +
-        (len(model.format_targets(inputs)), 1),  # type: ignore[operator]
+        (len(targets), 1),  # type: ignore[operator]
         dtype=torch.get_default_dtype(),
         device=TorchUtils.get_device(),
     )
@@ -747,12 +748,12 @@ def evaluate_population(inputs: torch.Tensor, targets: torch.Tensor,
                     == 0.0).all()):  # type: ignore[operator]
             criterion_pool[j] = criterion(
                 outputs_pool[j],
-                model.format_targets(targets),  # type: ignore[operator]
+                targets,  # type: ignore[operator]
                 default_value=True)
         else:
             criterion_pool[j] = criterion(
                 outputs_pool[j],
-                model.format_targets(targets))  # type: ignore[operator]
+                targets)  # type: ignore[operator]
 
         # output_popul[j] = self.processor.get_output(merge_inputs_and_control_voltages_in_numpy(
         # inputs_without_offset_ and_scale, control_voltage_genes, self.input_indices,

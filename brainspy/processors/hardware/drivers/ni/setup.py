@@ -44,8 +44,8 @@ Flags related to the CDAQ TO CDAQ Setup:
 
 INPUT_VOLTAGE_THRESHOLD = 1.6
 CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS = 0.001
-CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS = 0.001
-SYNCHRONISATION_VALUE = 0.04  # Do not reduce to less than 0.02
+CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS = 0.1
+SYNCHRONISATION_VALUE = 0.04  # Do not reduce to less than 0.02, only useful for nidaq
 
 
 class NationalInstrumentsSetup:
@@ -143,6 +143,9 @@ class NationalInstrumentsSetup:
             configs["inverted_output"]
         ) == bool, "The inverted_output key should be of type - bool"
 
+        assert 'instrument_type' in configs, "Instrument type key missing. It should be cdaq_to_cdaq, cdaq_to_nidaq or simulation_debug"
+        assert type(configs['instrument_type']) is str, 'Instrument type should be a string.'
+        assert configs['instrument_type'] == 'cdaq_to_cdaq' or configs['instrument_type'] == 'cdaq_to_nidaq' or configs['instrument_type'] == 'simulation_debug', "Wrong instrument type. It should be cdaq_to_cdaq, cdaq_to_nidaq or simulation_debug"
         # Assertion for Keys
         assert 'amplification'in configs, "Amplification not found in configs. Check the documentation of setup.py for more information about this key."
         assert  type(configs["amplification"]) == list, "Amplification should be a list of floats or ints"
@@ -163,16 +166,6 @@ class NationalInstrumentsSetup:
                 # Average io point difference
         assert 'average_io_point_difference' in configs['instruments_setup'], "average_io_point_difference key not found in instruments_setup configs. Check the documentation of setup.py for mode information about this key."
         assert type(configs['instruments_setup']['average_io_point_difference']) is bool, "average_io_point_difference should be boolean."
-                # Activation sampling frequency
-        assert 'activation_sampling_frequency'in configs['instruments_setup'], "activation_sampling_frequency not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
-        assert type(
-                configs["instruments_setup"]["activation_sampling_frequency"]
-            ) == int, "activation_sampling_frequency key should be of type int"  
-                # Readout sampling frequency
-        assert 'readout_sampling_frequency'in configs['instruments_setup'], "readout_sampling_frequency not found in instruments_setup configs. Check the documentation of setup.py for more information about this key."
-        assert type(
-               configs["instruments_setup"]["readout_sampling_frequency"]
-        ) == int, "readout_sampling_frequency key should be of type int"
 
         # Particular assertions for multiple / simple device modes
         if not configs["instruments_setup"]["multiple_devices"]:
@@ -243,28 +236,38 @@ class NationalInstrumentsSetup:
             self.inversion = -1
         else:
             self.inversion = 1
+        # if self.configs["instruments_setup"]['multiple_devices']:
+        #     for device_name in configs["instruments_setup"]:
+        #         if is_device_name(device_name): 
+        #             print(
+        #                 f"DAC sampling frequency for Device {device_name}: {configs['instruments_setup'][device_name]['activation_sampling_frequency']}"
+        #             )
+        #             print(
+        #                 f"ADC sampling frequency for Device {device_name}: {configs['instruments_setup'][device_name]['readout_sampling_frequency']}"
+        #             )
+        # else:
         print(
-            f"DAC sampling frequency: {configs['instruments_setup']['activation_sampling_frequency']}"
+                f"DAC sampling frequency: {configs['instruments_setup']['activation_sampling_frequency']}"
         )
         print(
-            f"ADC sampling frequency: {configs['instruments_setup']['readout_sampling_frequency']}"
+                f"ADC sampling frequency: {configs['instruments_setup']['readout_sampling_frequency']}"
         )
         print(f"DAC/ADC point difference: {self.io_point_difference}")
         print(
             f"Max ramping time: {configs['max_ramping_time_seconds']} seconds. "
         )
-        if configs["max_ramping_time_seconds"] == 0:
-            input(
-                "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n"
-                +
-                "The security check for the ramping time has been disabled. Steep rampings can"
-                +
-                " damage the device. Proceed only if you are sure that you will not damage the "
-                +
-                "device. If you want to avoid damage simply exit the execution. \n ONLY If you are "
-                +
-                "sure about what you are doing press ENTER to continue. Otherwise STOP the "
-                + "execution of this program.")
+        # if configs["max_ramping_time_seconds"] == 0:
+        #     input(
+        #         "WARNING: IF YOU PROCEED THE DEVICE CAN BE DAMAGED. READ THIS MESSAGE CAREFULLY. \n"
+        #         +
+        #         "The security check for the ramping time has been disabled. Steep rampings can"
+        #         +
+        #         " damage the device. Proceed only if you are sure that you will not damage the "
+        #         +
+        #         "device. If you want to avoid damage simply exit the execution. \n ONLY If you are "
+        #         +
+        #         "sure about what you are doing press ENTER to continue. Otherwise STOP the "
+        #         + "execution of this program.")
 
     def init_sampling_configs(self, configs):
         """ Initialises configuration related to sampling.
@@ -281,25 +284,50 @@ class NationalInstrumentsSetup:
                     readout_sampling_frequency: Frequency at which the ADC will sample.
                     activation_sampling_frequency: Frequency at which the DAC will sample.
         """
-        self.io_point_difference = int(
-            configs['instruments_setup']['readout_sampling_frequency'] /
-            configs['instruments_setup']['activation_sampling_frequency'])
-        assert configs['instruments_setup']['readout_sampling_frequency'] % configs[
-            'instruments_setup']['activation_sampling_frequency'] == 0, (
+        # if configs['instruments_setup']['multiple_devices']:
+        #     first_time = True
+        #     readout_sampling_frequency = None
+        #     activation_sampling_frequency = None
+        #     for device_name in configs["instruments_setup"]:
+        #         if is_device_name(device_name):
+        #             assert 'readout_sampling_frequency' in configs['instruments_setup'][device_name], "readout_sampling_frequency key not found for device "+device_name
+        #             assert 'activation_sampling_frequency' in configs['instruments_setup'][device_name], "activation_sampling_frequency key not found for device "+device_name
+        #             readout_sampling_frequency_aux = configs['instruments_setup'][device_name]['readout_sampling_frequency']
+        #             activation_sampling_frequency_aux = configs['instruments_setup'][device_name]['activation_sampling_frequency']
+        #             if first_time:
+        #                 readout_sampling_frequency = readout_sampling_frequency_aux
+        #                 activation_sampling_frequency = activation_sampling_frequency_aux
+        #             else:
+        #                 assert readout_sampling_frequency == readout_sampling_frequency_aux, "Readout sampling frequency in multiple devices mode should be equal in all devices"
+        #                 assert activation_sampling_frequency == activation_sampling_frequency_aux, "Readout sampling frequency in multiple devices mode should be equal in all devices"
+
+        #             first_time = False
+
+        # else:
+        assert 'readout_sampling_frequency' in configs['instruments_setup'], "readout_sampling_frequency key not found for device"
+        assert 'activation_sampling_frequency' in configs['instruments_setup'], "activation_sampling_frequency key not found for device"
+        readout_sampling_frequency = configs['instruments_setup']['readout_sampling_frequency']
+        activation_sampling_frequency = configs['instruments_setup']['activation_sampling_frequency']
+        assert type(readout_sampling_frequency) is int, "Readout sampling frequency should be an integer"
+        assert type(activation_sampling_frequency) is int, "Activation sampling frequency should be an integer"
+        assert readout_sampling_frequency % activation_sampling_frequency == 0, (
                 "Remainder of the division between readout (" +
-                f"{configs['instruments_setup']['readout_sampling_frequency']} Hz) "
+                f"{readout_sampling_frequency} Hz) "
                 +
-                f" and activation ({configs['instruments_setup']['activation_sampling_frequency']} Hz)"
+                f" and activation ({activation_sampling_frequency} Hz)"
                 + " frequencies is not zero.")
-        if configs['instruments_setup']['activation_sampling_frequency'] > (
-                configs['instruments_setup']['readout_sampling_frequency'] /
+        if activation_sampling_frequency > (
+                readout_sampling_frequency /
                 2):
             warnings.warn(
                 "Activation sampling frequency (" +
-                f"{configs['instruments_setup']['activation_sampling_frequency']} Hz) "
+                f"{activation_sampling_frequency} Hz) "
                 + " is higher than half of the readout frequency (" +
-                f"{configs['instruments_setup']['readout_sampling_frequency']} Hz). "
+                f"{readout_sampling_frequency} Hz). "
                 "By setting this configuration, you are losing resolution. ")
+        self.io_point_difference = int(
+            readout_sampling_frequency /
+            activation_sampling_frequency)
 
     def init_tasks(self, configs):
         """
@@ -493,11 +521,6 @@ class NationalInstrumentsSetup:
         points_to_write : int
             The raw number of points that was passed as input of the method.
 
-        Raises
-        ------
-        ValueError
-            If the configurations 'instrument_type' is different than 'cdaq_to_cdaq' or
-            'cdaq_to_nidaq', it raises an error stating that is not supported.
         """
         self.offsetted_points_to_read = self.io_point_difference * points_to_write
         if self.configs['instrument_type'] == 'cdaq_to_nidaq':
@@ -508,10 +531,6 @@ class NationalInstrumentsSetup:
         elif self.configs['instrument_type'] == 'cdaq_to_cdaq':
             self.offsetted_points_to_write = points_to_write
             self.offsetted_points_to_read += self.configs["offset"]
-        else:
-            raise ValueError(
-                f"Unsupported instrument_type {self.configs['instrument_type']}. It should be"
-                + "cdaq_to_nidaq or cdaq_to_cdaq.")
 
     def set_timeout(self, timeout=None):
         """

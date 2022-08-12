@@ -1,16 +1,13 @@
 import unittest
 import numpy as np
-import warnings
-import random
 import torch
 import brainspy
-from tests.unit.testing_utils import check_test_configs
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager
 from brainspy.processors.hardware.processor import HardwareProcessor
-from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
-from tests.unit.testing_utils import get_configs
+from brainspy.processors.simulation.processor import SurrogateModel
+from tests.unit.testing_utils import get_configs, get_custom_model_configs
 
 class Hardware_Processor_Test_CDAQ(unittest.TestCase):
     """
@@ -138,20 +135,19 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
         data /= 50
         try:
             model = None
-            
             model = HardwareProcessor(
                 configs,
                 slope_length=configs["waveform"]["slope_length"],
-                plateau_length=configs["waveform"]["plateau_length"],
+                plateau_length=configs["waveform"]["plateau_length"]
             )
             mgr = WaveformManager(configs["waveform"])
             data_plateaus = mgr.points_to_plateaus(data)
             x = model.forward(data_plateaus)
             x = mgr.plateaus_to_points(x)
-        except (Exception):
+        except Exception as e:
             if model is not None:
                 model.close()
-            self.fail("Could not do a forward pass")
+            self.fail("Could not do a forward pass" + e)
         else:
             self.assertEqual(x.shape[0], data.shape[0])
             if model is not None:
@@ -265,12 +261,31 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
         Test if closing the processor raises a warning.
         """
         configs = get_configs()
-        model = HardwareProcessor(
-            configs,
-            slope_length=configs["waveform"]["slope_length"],
-            plateau_length=configs["waveform"]["plateau_length"],
-        )
-        model.close()
+        try: 
+            model = None
+            model = HardwareProcessor(
+                configs,
+                slope_length=configs["waveform"]["slope_length"],
+                plateau_length=configs["waveform"]["plateau_length"],
+            )
+            model.close()
+        except Exception:
+            self.fail("Failed closing model")
+        
+    def test_close_simulation(self):
+        #configs = get_configs()
+        try:
+            configs , model_data = get_custom_model_configs()
+            driver = SurrogateModel(model_data['info']["model_structure"])
+            driver.set_effects_from_dict(model_data['info']["electrode_info"])
+            model = HardwareProcessor(
+                    driver,
+                    slope_length=configs["waveform"]["slope_length"],
+                    plateau_length=configs["waveform"]["plateau_length"],
+                )
+            model.close()
+        except Exception:
+            self.fail('Failed closing on simulation')
 
     @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")

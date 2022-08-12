@@ -101,7 +101,6 @@ class ConvTest(unittest.TestCase):
         data_input_indices = data_input_indices.detach().cpu().tolist()
         stride = torch.randint(1, 3, (1, 1)).detach().cpu().item()
         padding = torch.randint(0, 5, (1, 1)).detach().cpu().item()
-        dilation = torch.randint(1, 5, (1, 1)).detach().cpu().item()
         batch_size = 2
 
         x = TorchUtils.format(torch.rand((batch_size, in_channels, 28, 28)))
@@ -112,9 +111,6 @@ class ConvTest(unittest.TestCase):
                             kernel_size,
                             stride=stride,
                             padding=padding))
-        print(stride)
-        print(padding)
-        print(dilation)
         res1 = orig_conv(x)
         del orig_conv
         c = TorchUtils.format(
@@ -129,29 +125,49 @@ class ConvTest(unittest.TestCase):
         res2 = c(x)
         del c
 
-        # input_indices = [[2, 3, 4]] * 3
-        # c = TorchUtils.format(
-        #     conv.DNPUConv2d(self.node,
-        #                     data_input_indices=input_indices,
-        #                     in_channels=in_channels,
-        #                     out_channels=out_channels,
-        #                     kernel_size=3,
-        #                     stride=stride,
-        #                     padding=padding))
-        # c.add_input_transform([0, 1], strict=True)
+    def test_conv_input_layer_unique(self):
+        in_channels = torch.randint(1, 10, (1, 1)).detach().cpu().item()
+        out_channels = in_channels = torch.randint(
+                1, 10, (1, 1)).detach().cpu().item()
+        kernel_size = 3
+        data_input_indices = [[2, 3, 4]] * kernel_size
+        batch_size = 2
 
-        # del c
-        # input_indices = [[0, 3, 4]] * 3
-        # c = TorchUtils.format(
-        #     conv.DNPUConv2d(self.node,
-        #                     data_input_indices=input_indices,
-        #                     in_channels=in_channels,
-        #                     out_channels=out_channels,
-        #                     kernel_size=3,
-        #                     stride=stride,
-        #                     padding=padding))
-        # c.add_input_transform([0, 1], strict=True)
-        # del c
+        x = TorchUtils.format(torch.rand((batch_size, in_channels, 12, 12)))
+
+        c = TorchUtils.format(
+                conv.DNPUConv2d(self.node,
+                                data_input_indices=data_input_indices,
+                                in_channels=in_channels,
+                                out_channels=out_channels,
+                                kernel_size=kernel_size))
+        c.add_input_transform([0, 1], strict=True)
+        c(x)
+        del c
+
+            # input_indices = [[2, 3, 4]] * 3
+            # c = TorchUtils.format(
+            #     conv.DNPUConv2d(self.node,
+            #                     data_input_indices=input_indices,
+            #                     in_channels=in_channels,
+            #                     out_channels=out_channels,
+            #                     kernel_size=3,
+            #                     stride=stride,
+            #                     padding=padding))
+            # c.add_input_transform([0, 1], strict=True)
+
+            # del c
+            # input_indices = [[0, 3, 4]] * 3
+            # c = TorchUtils.format(
+            #     conv.DNPUConv2d(self.node,
+            #                     data_input_indices=input_indices,
+            #                     in_channels=in_channels,
+            #                     out_channels=out_channels,
+            #                     kernel_size=3,
+            #                     stride=stride,
+            #                     padding=padding))
+            # c.add_input_transform([0, 1], strict=True)
+            # del c
 
 
 if __name__ == "__main__":

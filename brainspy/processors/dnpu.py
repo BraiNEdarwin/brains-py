@@ -488,9 +488,10 @@ class DNPU(nn.Module):
             data = data.reshape(
                 original_data_shape[0] * original_data_shape[1], -1)
             result = self.processor(data)
-            result = result.reshape(
-                int(self.processor.waveform_mgr.plateau_length *
-                    original_data_shape[0]), original_data_shape[1])
+            if not self.processor.average_plateaus:
+                result = result.reshape(
+                    int(self.processor.waveform_mgr.plateau_length *
+                        original_data_shape[0]), original_data_shape[1])
             return result
         else:
             return self.processor(data).squeeze(
@@ -546,8 +547,8 @@ class DNPU(nn.Module):
                 self.data_input_ranges.T[0].T, self.data_input_ranges.T[1].T,
                 input_range.T[0].T, input_range.T[1].T)
         if scale.unique().shape[0] and offset.unique().shape[0] == 1:
-            self.register_buffer("scale", scale.flatten()[0])
-            self.register_buffer("offset", offset.flatten()[0])
+            self.register_buffer("scale", scale.unique())
+            self.register_buffer("offset", offset.unique())
             self.unique_transform = True
         else:
             self.register_buffer("scale", scale)

@@ -112,8 +112,7 @@ class ModelTest(unittest.TestCase):
         If hidden sizes contains 0 , a warning is raised:
         Initializing zero-element tensors is a no-op
         """
-        with warnings.catch_warnings(record=True) as caught_warnings:
-            warnings.simplefilter("always")
+        with self.assertRaises(AssertionError):
             model_structure = {
                 "D_in": 7,
                 "D_out": 1,
@@ -122,7 +121,6 @@ class ModelTest(unittest.TestCase):
             }
             model = None
             model = NeuralNetworkModel(model_structure)
-            self.assertEqual(len(caught_warnings), 2)
         if model is not None:
             del model
 
@@ -435,13 +433,13 @@ class ModelTest(unittest.TestCase):
         model = None
         model = NeuralNetworkModel({})
         x = [1, 2, 3, 4]
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             model.forward(x)
         x = None
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             model.forward(x)
         x = "Invalid type"
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AssertionError):
             model.forward(x)
         if model is not None:
             del model

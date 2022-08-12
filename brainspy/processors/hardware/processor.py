@@ -5,7 +5,6 @@ import numpy as np
 from brainspy.utils.manager import get_driver
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager
-from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 
 
 class HardwareProcessor(nn.Module):
@@ -33,8 +32,7 @@ class HardwareProcessor(nn.Module):
     def __init__(self,
                  instrument_configs,
                  slope_length,
-                 plateau_length,
-                 logger=None):
+                 plateau_length):
         """
         To intialise the hardware processor
 
@@ -132,12 +130,6 @@ class HardwareProcessor(nn.Module):
             Please check https://github.com/BraiNEdarwin/brains-py/wiki/A.-Introduction for more
             information about hardware setups and how the waveform works.
 
-            logger: logging (optional) - It provides a way for applications to configure different
-                log handlers , by default None. The logger should be an already initialised class that
-                contains a method called 'log_output', where the input is a single numpy array variable.
-                It can be any class, and the data can be treated in the way the user wants.
-                You can get more information about loggers at
-                https://pytorch.org/docs/stable/tensorboard.html
         """
         super(HardwareProcessor, self).__init__()
         assert type(plateau_length) == int or type(
@@ -160,19 +152,14 @@ class HardwareProcessor(nn.Module):
                 torch.tensor(self.driver.voltage_ranges,
                              dtype=torch.get_default_dtype()))
             self.clipping_value = None
-            if slope_length / self.driver.configs["instruments_setup"][
-                    "activation_sampling_frequency"] <= self.driver.configs[
-                        "max_ramping_time_seconds"]:
-                raise AssertionError(
-                    "The ratio of the slope length and the activation sampling frequency cannot be less than the"
-                    + "max ramping time")
+            assert ( (slope_length / self.driver.configs["instruments_setup"][
+                    "activation_sampling_frequency"]) <= self.driver.configs[
+                        "max_ramping_time_seconds"]), "The ratio of the slope length and the activation sampling frequency cannot be less than the max ramping time"
 
         self.waveform_mgr = WaveformManager({
             "slope_length": slope_length,
             "plateau_length": plateau_length
         })
-
-        self.logger = logger
 
     def forward(self, x):
         """
@@ -211,8 +198,6 @@ class HardwareProcessor(nn.Module):
             if len(x.shape) > 2:
                 x = x.squeeze()
             x = self.forward_numpy(x)
-            if self.logger is not None:
-                self.logger.log_output(x)
         return TorchUtils.format(x[mask], device=device, data_type=dtype)
 
     def forward_numpy(self, x):

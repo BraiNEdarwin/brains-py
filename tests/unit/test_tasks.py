@@ -490,27 +490,27 @@ class Tasks_Test(unittest.TestCase):
             self.assertIsNotNone(tasks.activation_task.ai_channels)
         tasks.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
-                         "Hardware test is skipped for simulation setup.")
-    def test_read_random(self):
-        """
-        Test to read from the device with set parameters
-        """
-        tasks = None
-        try:
-            tasks = IOTasksManager(get_configs())
-            read_data = tasks.read(random.randint(1, 100),
-                                   random.uniform(10.0, 100.0))
-        except (Exception):
-            self.fail("Could not read any data")
-        else:
-            self.assertIsNotNone(read_data)
-            self.assertTrue(
-                type(read_data) == int or type(read_data) == float
-                or type(read_data) == list)
-        if tasks is not None:
-            tasks.close_tasks()
+    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
+    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    #                      "Hardware test is skipped for simulation setup.")
+    # def test_read_random(self):
+    #     """
+    #     Test to read from the device with set parameters
+    #     """
+    #     tasks = None
+    #     try:
+    #         tasks = IOTasksManager(get_configs())
+    #         read_data = tasks.read(random.randint(1, 100),
+    #                                random.uniform(10.0, 100.0))
+    #     except (Exception):
+    #         self.fail("Could not read any data")
+    #     else:
+    #         self.assertIsNotNone(read_data)
+    #         self.assertTrue(
+    #             type(read_data) == int or type(read_data) == float
+    #             or type(read_data) == list)
+    #     if tasks is not None:
+    #         tasks.close_tasks()
 
     # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
     #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",

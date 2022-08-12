@@ -3,6 +3,15 @@ from brainspy.processors.dnpu import DNPU
 from brainspy.processors.processor import Processor
 from brainspy.utils.pytorch import TorchUtils
 
+# Make sure these are the right configs for the setup you want to test
+# You can find them using the NI MAX application
+TRIGGER_SOURCE = "cDAQ2"#/segment1"
+ACTIVATION_INSTRUMENT1= "cDAQ2Mod2"
+READOUT_INSTRUMENT1 = "cDAQ2Mod8"
+INSTRUMENT_TYPE = "cdaq_to_cdaq"
+
+ACTIVATION_INSTRUMENT2 = "cDAQ2Mod1"
+READOUT_INSTRUMENT2 = "cDAQ2Mod8"
 
 def get_configs():
     """
@@ -17,19 +26,19 @@ def get_configs():
     configs["inverted_output"] = True
    #configs["output_clipping_range"] = [-1, 1]
 
-    configs["instrument_type"] = "cdaq_to_cdaq"
+    configs["instrument_type"] = INSTRUMENT_TYPE
     configs["instruments_setup"] = {}
 
     # TODO Specify Instrument type
     # For a CDAQ setup, cdaq_to_cdaq.
     # For a NIDAQ setup, cdaq_to_nidaq.
-    configs["processor_type"] = configs["instrument_type"] = "cdaq_to_cdaq"
+    configs["processor_type"] = configs["instrument_type"] = INSTRUMENT_TYPE
 
     # TODO Specify the name of the Trigger Source
-    configs["instruments_setup"]["trigger_source"] = "cDAQ2/segment1"
+    configs["instruments_setup"]["trigger_source"] = TRIGGER_SOURCE
 
     # TODO Specify the name of the Activation instrument
-    configs["instruments_setup"]["activation_instrument"] = "cDAQ2Mod3"
+    configs["instruments_setup"]["activation_instrument"] = ACTIVATION_INSTRUMENT1
 
     # TODO Specify the Activation channels (pin numbers)
     # For example, [1,2,3,4,5,6,7]
@@ -46,7 +55,7 @@ def get_configs():
                                                                  [-1.2, 0.6]]
 
     # TODO Specify the name of the Readout Instrument
-    configs["instruments_setup"]["readout_instrument"] = "cDAQ2Mod1"
+    configs["instruments_setup"]["readout_instrument"] = READOUT_INSTRUMENT1
 
     # TODO Specify the readout channels
     # For example, [4]
@@ -65,6 +74,14 @@ def get_configs():
     configs["slope_length"] = 10
     configs["offset"] = 0
     configs['auto_start'] = True
+
+    configs["instruments_setup"]["B"] = {}
+    configs['instruments_setup']["B"]["activation_instrument"] = ACTIVATION_INSTRUMENT2
+    configs["instruments_setup"]["B"]["activation_channels"] = configs['instruments_setup']['activation_channels']
+    configs["instruments_setup"]["B"]["activation_channel_mask"] = configs["instruments_setup"]["activation_channel_mask"]
+    configs["instruments_setup"]["B"]["activation_voltage_ranges"] = configs["instruments_setup"]["activation_voltage_ranges"]
+    configs["instruments_setup"]["B"]["readout_instrument"] = READOUT_INSTRUMENT2
+    configs["instruments_setup"]["B"]["readout_channels"] = [1]
     return configs
 
 
