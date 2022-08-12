@@ -6,7 +6,7 @@ jobs:
       - image: circleci/python:3.9
     branches:
               only: 
-                - dev2
+                - master
     working_directory: ~/repo
     steps:
       # Step 1: obtain repo from GitHub
