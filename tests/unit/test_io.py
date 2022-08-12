@@ -27,7 +27,7 @@ class IOTest(unittest.TestCase):
         configs["batch"] = None
         configs["data"] = {"data1": "New data"}
         self.configs = configs
-        self.path = os.path.join(os.getcwd(), "tests/unit/ut/testfiles")
+        self.path = os.path.join(os.getcwd(), "tests/unit/utils/testfiles")
 
     def test_save_load_configs(self):
         """
