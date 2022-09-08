@@ -7,7 +7,6 @@ Also handles merging the data with control voltages.
 import warnings
 import collections
 from typing import Union
-from numpy import average
 
 import torch
 import copy
