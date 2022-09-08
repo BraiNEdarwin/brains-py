@@ -678,9 +678,7 @@ class DNPU(nn.Module):
     def hw_eval(
         self,
         configs: dict,
-        info: dict,
         data_input_indices: list = None,
-        model_state_dict: collections.OrderedDict = None,
     ):
         """
         It helps setting the DNPU to evaluation mode. While training happens in simulation,
@@ -704,15 +702,12 @@ class DNPU(nn.Module):
         assert type(
             configs
         ) is dict, "Configs should be a dictionary. Check Processor for the information that the dictionary should have."
-        assert type(
-            info
-        ) is dict, "Info should be a dictionary. Check Processor for the information that the dictionary should have."
         assert data_input_indices is None or type(
             data_input_indices
         ) is list, "Data input indices should be None or a list with shape (DNPU node number, electrode_no)"
         self.eval()
         old_ranges = self.processor.get_voltage_ranges().cpu().half().clone()
-        self.processor.swap(configs, info, model_state_dict)
+        self.processor.swap(configs, self.get_info_dict())
         if data_input_indices is not None:
             self.init_electrode_info(data_input_indices)
         new_ranges = self.processor.get_voltage_ranges().cpu().half().clone()
