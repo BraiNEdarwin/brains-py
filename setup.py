@@ -1,55 +1,43 @@
 import subprocess as sp
 import platform
-
 from setuptools import setup, find_packages
+
+with open("README.md", "r") as f:
+    long_description = f.read()
 
 proceed = True
 requires = [
-    "tqdm",
-    "pyyaml",
-    "nidaqmx",
-    "matplotlib==3.4.2",
-    # Packages for linting and code formatting
-    #"mypy==0.910",
-    #"mypy-extensions==0.4.3",
-    #"flake8==3.9.2",
-    #"yapf==0.31.0",
-    # Packages for testing
-    "unittest2",
+    "torch~=1.11",
+    "torchvision~=0.12",
+    "matplotlib~=3.4",
+    "nidaqmx~=0.6",
+    "tqdm~=4.63",
+    "PyYAML==6.0",
+    "unittest2==1.1.0",
+    "pytest==7.1.2",
+    "pytest-cov==3.0.0",
+    "coverage==6.4"
 ]
 
-#assert (
-#    "\\npytorch " in str(sp.check_output("conda list pytorch", shell=True))
-#    or '\\ntorch ' in str(sp.check_output("pip list", shell=True))
-#), (
-#    "\n\n**********************************************************************\n"
-#    + "ERROR: PYTORCH INSTALLATION NOT PRESENT" +
-#    "\n**********************************************************************\n"
-#    "The correct brains-py setup requires to have pytorch installed prior\n" +
-#    "to the installation of brains-py. The installation of pytorch has to\n" +
-#    "be done manually, as it is computer-dependent (cpu or gpu). \n" +
-#    #"\n\n----------------------------------------------------------------------\n"
-#    "\n * \rPlease follow the installation instructions for installing pytorch\n"
-#    +
-#    "before installing brains-py. More information at:\nhttps://pytorch.org/ \n"
-#    +
-#    "\n**********************************************************************\n\n"
-#)
-
 if platform.system() == "Windows":
-    requires.append("pypiwin32")
-
+    requires.append("pywin32==225")
+    
+print(requires)
 setup(
     name="brains-py",
     version="1.0.0",
     description=
-    "A python package to support the study of Dopant Network Processing Units as hardware accelerators for non-linear operations. Its aim is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.",
-    url="https://github.com/BraiNEdarwin/brains-py",
-    author=
-    "Unai Alegre-Ibarra, and Hans-Christian Ruiz Euler. Other collaborations are acknowledged in https://github.com/BraiNEdarwin/brains-py",
+    "A python package to support research on different nano-scale materials for creating hardware accelerators in the context of deep neural networks.",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    keywords=['pytorch', 'nano', 'material', 'hardware acceleration', 'deep neural networks'],	
+    author="Unai Alegre-Ibarra et al.",
     author_email="u.alegre@utwente.nl",
     license="GPL-3.0",
-    packages=find_packages(),
+    python_requires='==3.9.1',
     install_requires=requires,
+    packages=find_packages(),
+    py_modules=["brainspy"],
+    url="https://github.com/BraiNEdarwin/brains-py",
     zip_safe=False,
 )
