@@ -1,6 +1,7 @@
 """
 Module for testing waveform transformations.
 """
+from numpy import dtype
 import torch
 import unittest
 from brainspy.utils.pytorch import TorchUtils
@@ -11,13 +12,15 @@ class WaveformTest(unittest.TestCase):
     """
     Class for testing the method - generate_mask() in waveform.py.
     """
+
     def test_generate_mask_manual(self):
         """
         Test to generate a mask.
         """
         configs = {"plateau_length": 2, "slope_length": 1}
         manager = WaveformManager(configs)
-        output = TorchUtils.format(manager.generate_mask(7))
+        output = TorchUtils.format(manager.generate_mask(7),
+                                   data_type=torch.bool)
         self.assertTrue(
             torch.equal(
                 output,
@@ -75,7 +78,8 @@ class WaveformTest(unittest.TestCase):
         configs["plateau_length"] = 0
         configs["slope_length"] = 10
         waveform = WaveformManager(configs)
-        output = TorchUtils.format(waveform.generate_mask(10))
+        output = TorchUtils.format(waveform.generate_mask(10),
+                                   data_type=torch.bool)
         self.assertTrue(
             torch.equal(
                 output,

@@ -14,6 +14,7 @@ class NoiseTest(unittest.TestCase):
     """
     Class for testing 'noise.py'.
     """
+
     def __init__(self, test_name):
         super(NoiseTest, self).__init__()
         self.threshold = 10000
