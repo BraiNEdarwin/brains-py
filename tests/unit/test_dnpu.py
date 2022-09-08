@@ -4,6 +4,7 @@ import torch
 import copy
 import numpy as np
 
+import brainspy
 from brainspy.processors import dnpu
 from brainspy.processors.modules import bn
 from brainspy.utils.pytorch import TorchUtils
@@ -240,7 +241,7 @@ class ProcessorTest(unittest.TestCase):
                 torch.rand((torch.randint(10, 15, (1, 1)).item(),
                             len(self.data_input_indices[0]))))
             res1 = model(x)
-            
+
         except Exception:
             self.fail('Init with for pass type failed')
         if model is not None:
@@ -405,7 +406,34 @@ class ProcessorTest(unittest.TestCase):
         except Exception:
             self.fail("Failed sampling control voltage")
 
-    def test_model_swap(self):
+    def test_model_swap_sw(self):
+        try:
+            model = None
+
+            model = TorchUtils.format(
+                dnpu.DNPU(self.node,
+                          data_input_indices=self.data_input_indices))
+            state_dict = self.node.processor.model.state_dict()
+            x = TorchUtils.format(
+                torch.rand((torch.randint(10, 15, (1, 1)).item(),
+                            len(self.data_input_indices[0]))))
+            res1 = model(x)
+
+            model.sw_train(self.configs,
+                           self.info,
+                           model_state_dict=state_dict)
+            model = TorchUtils.format(model)
+            res2 = model(x)
+
+            self.assertTrue(torch.eq(res1, res2).all().detach().cpu().item())
+        except Exception:
+            self.fail("Failed setting forward pass DNPU in software")
+        del model
+
+    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
+                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+                         "Hardware test is skipped for simulation setup.")
+    def test_model_swap_hw(self):
         try:
             model = None
             hw_configs = copy.deepcopy(self.configs)
@@ -423,8 +451,6 @@ class ProcessorTest(unittest.TestCase):
             model.processor.processor.voltage_ranges[
                 0] = model.processor.processor.voltage_ranges[2]
             model.hw_eval(hw_configs,
-                          self.info,
-                          model_state_dict=state_dict,
                           data_input_indices=self.data_input_indices)
             model = TorchUtils.format(model)
             model.processor.processor.driver.is_hardware = is_hardware_fake
@@ -436,10 +462,9 @@ class ProcessorTest(unittest.TestCase):
             model = TorchUtils.format(model)
             res3 = model(x)
 
-            self.assertTrue(torch.eq(res1, res2).all().detach().cpu().item())
             self.assertTrue(torch.eq(res1, res3).all().detach().cpu().item())
         except Exception:
-            self.fail("Failed setting forward pass DNPU")
+            self.fail("Failed setting forward pass DNPU in hardware")
         del model
 
     def test_dnpu_batch_norm(self):
