@@ -1,6 +1,7 @@
 # brains-py
-
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/BraiNEdarwin/brains-py/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/BraiNEdarwin/brains-py/tree/master)
 A python package based on PyTorch and NumPy to support the study of Dopant Network Processing Units (DNPUs) [[1]]((https://doi.org/10.1038/s41586-019-1901-0))[[2]](https://arxiv.org/abs/2007.12371) as low-power computational units in the context of neural networks. The aim of the package is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.  The package is part of the brains-py project, a set of python libraries to support the development of nano-scale in-materio hardware for designing hardware accelerators for neural-network like operations. This package is based on several peer-reviewed scientific publications. 
+
 
 [![Tools](https://img.shields.io/badge/brainspy-smg-darkblue.svg)](https://github.com/BraiNEdarwin/brainspy-smg)[![Theory](https://img.shields.io/badge/brainspy-tasks-lightblue.svg)](https://github.com/BraiNEdarwin/brainspy-tasks) 
 
