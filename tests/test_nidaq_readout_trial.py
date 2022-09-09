@@ -3,13 +3,13 @@ import numpy as np
 import random
 import brainspy
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
-from tests.unit.testing_utils import check_test_configs
+from utils import check_test_configs
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 
 
-class NIDAQ_Forward_Numpy_Test(unittest.TestCase):
+class NIDAQ_ReadoutTrial_Test(unittest.TestCase):
     """
-    Test forward_numpy() of the Nidaq Driver.
+    Test readout_trial() of the Nidaq Driver.
 
     To run this file, the device has to be connected to a NIDAQ setup and
     the device configurations have to be specified depending on the setup.
@@ -60,81 +60,20 @@ class NIDAQ_Forward_Numpy_Test(unittest.TestCase):
         configs["instruments_setup"]["activation_sampling_frequency"] = 500
         configs["instruments_setup"]["readout_sampling_frequency"] = 1000
         configs["instruments_setup"]["average_io_point_difference"] = True
-
         return configs
 
     @unittest.skipUnless(
         brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
-    def test_forward_numpy_simple(self):
+    def test_readout_trial_random(self):
         """
-        A simple test for the forward numpy method with a helper method
-        """
-        configs = self.get_configs()
-        nidaq = CDAQtoNiDAQ(configs)
-
-        point_no = 1000
-        vmax = 0.08
-        vmin = -0.08
-        input_electrode = 5
-        activation_electrode_no = len(
-            nidaq.configs['instruments_setup']['activation_channels'])
-        data = np.zeros((activation_electrode_no, point_no))
-        data[input_electrode] = self.generate_sample(vmax,
-                                                     vmin,
-                                                     point_no,
-                                                     up_direction=True)
-        print(data.shape)
-        try:
-            nidaq.forward_numpy(data.T)
-        except (Exception):
-            self.fail("Could not make forward pass")
-        finally:
-            nidaq.close_tasks()
-
-    @unittest.skipUnless(
-        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
-        "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
-    )
-    def generate_sample(self,
-                        v_low: float,
-                        v_high: float,
-                        point_no: int,
-                        up_direction: bool = False):
-        """
-        THis is a helper funtion for the above test
-        Geneartes the sample data for the input electrode data
-        """
-        assert point_no % 2 == 0, 'Only an even point number is accepted.'
-        point_no = int(point_no / 2)
-
-        if up_direction:
-            aux = v_low
-            v_low = v_high
-            v_high = aux
-
-        ramp1 = np.linspace(0, v_low,
-                            round((point_no * v_low) / (v_low - v_high)))
-        ramp2 = np.linspace(v_low, v_high, point_no)
-        ramp3 = np.linspace(v_high, 0,
-                            round((point_no * v_high) / (v_high - v_low)))
-
-        result = np.concatenate((ramp1, ramp2, ramp3))
-        return result
-
-    @unittest.skipUnless(
-        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
-        "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
-    )
-    def test_forward_numpy_random(self):
-        """
-        Test the forward pass with random input data
+        Test the readout_trial with random input data and check
+        if the readout is not none
         """
         configs = self.get_configs()
         a1 = random.randint(1, 1000)
-        a2 = len(configs["instruments_setup"]["activation_channels"])
-
+        a2 = len(configs["instruments_setup"]["activation_channels"]) + 1
         nidaq = CDAQtoNiDAQ(configs)
         y = np.random.rand(a1, a2) / 1000
         # Force them to start and end at zero
@@ -142,7 +81,7 @@ class NIDAQ_Forward_Numpy_Test(unittest.TestCase):
         y[-1] = np.zeros_like(a2)
         try:
             nidaq.original_shape = y.shape[0]
-            val = nidaq.forward_numpy(y)
+            val = nidaq.readout_trial(y.T)
         except (Exception):
             self.fail("Could not synchronise output data")
         finally:
@@ -153,27 +92,27 @@ class NIDAQ_Forward_Numpy_Test(unittest.TestCase):
         brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
-    def test_forward_numpy_invalid_type(self):
+    def test_readout_trial_invalid_type(self):
         """
         Invalid type for input raises an AssertionError
         """
         configs = self.get_configs()
         nidaq = CDAQtoNiDAQ(configs)
         with self.assertRaises(AssertionError):
-            nidaq.forward_numpy("Invalid type")
+            nidaq.readout_trial("Invalid type")
         with self.assertRaises(AssertionError):
-            nidaq.forward_numpy(500)
+            nidaq.readout_trial(500)
         with self.assertRaises(AssertionError):
-            nidaq.forward_numpy(100.10)
+            nidaq.readout_trial(100.10)
         with self.assertRaises(AssertionError):
-            nidaq.forward_numpy({"dict_key": 2})
+            nidaq.readout_trial({"dict_key": 2})
         with self.assertRaises(AssertionError):
-            nidaq.forward_numpy([1, 2, 3, 4, 5, 6])
+            nidaq.readout_trial([1, 2, 3, 4, 5, 6])
         nidaq.close_tasks()
 
 
 if __name__ == "__main__":
-    testobj = NIDAQ_Forward_Numpy_Test()
+    testobj = NIDAQ_ReadoutTrial_Test()
     configs = testobj.get_configs()
     try:
         NationalInstrumentsSetup.type_check(configs)

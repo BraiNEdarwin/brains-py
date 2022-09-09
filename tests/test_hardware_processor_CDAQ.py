@@ -7,7 +7,7 @@ from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.waveform import WaveformManager
 from brainspy.processors.hardware.processor import HardwareProcessor
 from brainspy.processors.simulation.processor import SurrogateModel
-from tests.unit.testing_utils import get_configs, get_custom_model_configs
+from utils import get_configs, get_custom_model_configs
 
 
 class Hardware_Processor_Test_CDAQ(unittest.TestCase):

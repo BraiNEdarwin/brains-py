@@ -9,7 +9,7 @@ from brainspy.processors import dnpu
 from brainspy.processors.modules import bn
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
-from tests.unit.testing_utils import is_hardware_fake
+from utils import is_hardware_fake
 
 
 class ProcessorTest(unittest.TestCase):

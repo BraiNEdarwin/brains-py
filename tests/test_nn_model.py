@@ -175,7 +175,7 @@ class ModelTest(unittest.TestCase):
         If the method fails, the cpu cannot allocate enough bytes
         """
         threshold_electrodes = 20
-        threshold_hidden_sizes = 90
+        threshold_hidden_sizes = 40
         threshold_hidden_layer_no = 4
         model_structure = {
             "D_in":

@@ -10,8 +10,8 @@ from brainspy.utils.performance.accuracy import zscore_norm
 from brainspy.utils.performance.data import get_data
 from brainspy.algorithms.ga import GeneticOptimizer
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
-from tests.unit.testing_utils import check_test_configs
-from tests.unit.testing_utils import get_configs
+from utils import check_test_configs
+from utils import get_configs
 
 
 class GA_Test_CDAQ(unittest.TestCase):

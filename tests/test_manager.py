@@ -20,7 +20,7 @@ import brainspy.utils.signal as criterions
 from brainspy.algorithms.ga import GeneticOptimizer
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
-from tests.unit.testing_utils import get_configs
+from utils import get_configs
 
 
 class ManagerTest(unittest.TestCase):

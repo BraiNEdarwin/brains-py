@@ -22,10 +22,8 @@ requires = [
 if platform.system() == "Windows":
     requires.append("pywin32==225")
     
-print(requires)
 setup(
     name="brainspy",
-    packages=["brainspy"],
     version="1.0.0",
     description=
     "A python package to support research on different nano-scale materials for creating hardware accelerators in the context of deep neural networks.",
@@ -36,12 +34,12 @@ setup(
     author_email="u.alegre@utwente.nl",
     license="GPL-3.0",
     python_requires='==3.9.1',
-    package_dir={'': 'brainspy'},
+    package_dir={'': 'src'},
     install_requires=requires,
     packages=find_packages('brainspy'),
     py_modules=["brainspy"],
     url="https://github.com/BraiNEdarwin/brains-py",
-    download_url = "https://github.com/brainedarwin/brains-py/archive/1.0.0.tar.gz"
+    download_url = "https://github.com/brainedarwin/brains-py/archive/1.0.0.tar.gz",
     zip_safe=False,
     classifiers=[
         'Development Status :: 5 - Production/Stable',

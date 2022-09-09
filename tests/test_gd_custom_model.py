@@ -4,7 +4,7 @@ from brainspy.algorithms.gd import train, default_train_step, default_val_step
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.performance.accuracy import zscore_norm
 from brainspy.utils.performance.data import get_data
-from tests.unit.testing_utils import DefaultCustomModel, CustomLogger, get_custom_model_configs
+from utils import DefaultCustomModel, CustomLogger, get_custom_model_configs
 
 
 class GD_Test(unittest.TestCase):

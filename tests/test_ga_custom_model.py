@@ -7,7 +7,7 @@ from brainspy.utils.pytorch import TorchUtils
 from brainspy.utils.performance.accuracy import zscore_norm
 from brainspy.utils.performance.data import get_data
 from brainspy.algorithms.ga import GeneticOptimizer
-from tests.unit.testing_utils import DefaultCustomModel, get_custom_model_configs, is_hardware_fake, fake_criterion
+from utils import DefaultCustomModel, get_custom_model_configs, is_hardware_fake, fake_criterion
 
 
 class GA_Test_SurrogateModel(unittest.TestCase):

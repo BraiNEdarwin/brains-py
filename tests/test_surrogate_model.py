@@ -9,7 +9,7 @@ import torch
 from torch import nn
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.simulation.processor import SurrogateModel
-from tests.unit.testing_utils import get_custom_model_configs, get_random_model_state_dict
+from utils import get_custom_model_configs, get_random_model_state_dict
 
 
 class SurrogateModelTest(unittest.TestCase):
