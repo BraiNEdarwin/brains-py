@@ -105,7 +105,7 @@ class GA_Test_CDAQ(unittest.TestCase):
         # TorchUtils.format(
         #torch.tensor([[-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6],
         #              [-1.2, 0.6]])
-        optimizer = GeneticOptimizer(gene_ranges=model.get_control_ranges()[0], 
+        optimizer = GeneticOptimizer(gene_ranges=model.get_control_ranges()[0],
                                      partition=[4, 22],
                                      epochs=2)
         configs = {}
@@ -113,7 +113,7 @@ class GA_Test_CDAQ(unittest.TestCase):
         configs["stop_threshold"] = 0.5
         return dataloaders, criterion, optimizer, configs
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_train_cdaq_average_plateaus(self):
         """
@@ -123,10 +123,15 @@ class GA_Test_CDAQ(unittest.TestCase):
         hp = None
         hp = Processor(configs, average_plateaus=True)
         model = DNPU(hp, [[1, 2]])
-        dataloaders, criterion, optimizer, configs = self.get_train_parameters(model)
+        dataloaders, criterion, optimizer, configs = self.get_train_parameters(
+            model)
         try:
-            model, results = train(model, dataloaders, criterion,
-                                    optimizer, configs, average_plateaus=True)
+            model, results = train(model,
+                                   dataloaders,
+                                   criterion,
+                                   optimizer,
+                                   configs,
+                                   average_plateaus=True)
         except Exception as e:
             if hp is not None:
                 hp.close()
@@ -140,8 +145,8 @@ class GA_Test_CDAQ(unittest.TestCase):
             self.assertTrue("best_output" in results)
             if hp is not None:
                 hp.close()
-                
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_train_cdaq_no_average_plateaus(self):
         """
@@ -151,10 +156,15 @@ class GA_Test_CDAQ(unittest.TestCase):
         hp = None
         hp = Processor(configs, average_plateaus=False)
         model = DNPU(hp, [[1, 2]])
-        dataloaders, criterion, optimizer, configs = self.get_train_parameters(model)
+        dataloaders, criterion, optimizer, configs = self.get_train_parameters(
+            model)
         try:
-            model, results = train(model, dataloaders, criterion,
-                                    optimizer, configs, average_plateaus=False)
+            model, results = train(model,
+                                   dataloaders,
+                                   criterion,
+                                   optimizer,
+                                   configs,
+                                   average_plateaus=False)
         except Exception as e:
             if hp is not None:
                 hp.close()
@@ -168,6 +178,7 @@ class GA_Test_CDAQ(unittest.TestCase):
             self.assertTrue("best_output" in results)
             if hp is not None:
                 hp.close()
+
     # def test_train_invalid_model(self):
     #     """
     #     Running genetic algorithm on an external pytorch model raises an Exception
@@ -189,7 +200,7 @@ class GA_Test_CDAQ(unittest.TestCase):
     #         with self.assertRaises(AssertionError):
     #             train(model, dataloaders, criterion, optimizer, configs)
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_train_invalid_dataloader_type(self):
     #     """
@@ -208,7 +219,7 @@ class GA_Test_CDAQ(unittest.TestCase):
     #         with self.assertRaises(AssertionError):
     #             train(model, d, criterion, optimizer, configs)
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_train_invalid_optimizer_type(self):
     #     """
@@ -228,7 +239,7 @@ class GA_Test_CDAQ(unittest.TestCase):
     #         with self.assertRaises(AssertionError):
     #             train(model, dataloaders, criterion, o, configs)
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_train_invalid_criterion_type(self):
     #     """
@@ -248,7 +259,7 @@ class GA_Test_CDAQ(unittest.TestCase):
     #         with self.assertRaises(AssertionError):
     #             train(model, dataloaders, c, optimizer, configs)
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_train_invalid_configs_type(self):
     #     """
@@ -268,7 +279,7 @@ class GA_Test_CDAQ(unittest.TestCase):
     #         with self.assertRaises(AssertionError):
     #             train(model, dataloaders, criterion, optimizer, config)
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_evaluate_population_CDAQ(self):
     #     """
@@ -297,7 +308,7 @@ class GA_Test_CDAQ(unittest.TestCase):
     #         self.assertTrue(criterion_pool is not None)
     #         self.assertIsInstance(criterion_pool, torch.Tensor)
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_evaluate_population_fail(self):
     #     """

@@ -65,7 +65,7 @@ class NIDAQ_OutputCut_Test(unittest.TestCase):
         return configs
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_get_output_cut_random(self):
@@ -86,7 +86,7 @@ class NIDAQ_OutputCut_Test(unittest.TestCase):
             nidaq.close_tasks()
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_get_output_cut_low(self):
@@ -108,7 +108,7 @@ class NIDAQ_OutputCut_Test(unittest.TestCase):
             self.assertEqual(len(caught_warnings), 1)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_get_output_cut_invalid_type(self):

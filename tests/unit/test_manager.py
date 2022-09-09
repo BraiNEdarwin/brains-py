@@ -22,6 +22,7 @@ from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 from tests.unit.testing_utils import get_configs
 
+
 class ManagerTest(unittest.TestCase):
     """
     Tests for the manager.py class. The class is is used to test methods
@@ -254,7 +255,7 @@ class ManagerTest(unittest.TestCase):
     """
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_CDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO CDAQ setup",
     )
     def test_get_driver_cdaq_to_cdaq(self):
@@ -266,7 +267,7 @@ class ManagerTest(unittest.TestCase):
         assert isinstance(driver, CDAQtoCDAQ)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a NIDAQ TO NIDAQ setup",
     )
     def test_get_driver_cdaq_to_nidaq(self):

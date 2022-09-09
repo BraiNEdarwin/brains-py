@@ -9,6 +9,7 @@ from brainspy.processors.hardware.processor import HardwareProcessor
 from brainspy.processors.simulation.processor import SurrogateModel
 from tests.unit.testing_utils import get_configs, get_custom_model_configs
 
+
 class Hardware_Processor_Test_CDAQ(unittest.TestCase):
     """
     Tests for the hardware processor with a CDAQ driver.
@@ -73,7 +74,7 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
 
     #     return configs
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init(self):
         """
@@ -123,7 +124,7 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
         if model is not None:
             model.close()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_forward(self):
         """
@@ -131,15 +132,17 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
         right shape.
         """
         configs = get_configs()
-        data = TorchUtils.format(torch.rand(np.random.randint(10,100),len(configs['instruments_setup']['activation_channels'])))
+        data = TorchUtils.format(
+            torch.rand(
+                np.random.randint(10, 100),
+                len(configs['instruments_setup']['activation_channels'])))
         data /= 50
         try:
             model = None
             model = HardwareProcessor(
                 configs,
                 slope_length=configs["waveform"]["slope_length"],
-                plateau_length=configs["waveform"]["plateau_length"]
-            )
+                plateau_length=configs["waveform"]["plateau_length"])
             mgr = WaveformManager(configs["waveform"])
             data_plateaus = mgr.points_to_plateaus(data)
             x = model.forward(data_plateaus)
@@ -153,7 +156,7 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
             if model is not None:
                 model.close()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_forward_fail(self):
         """
@@ -177,7 +180,7 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
         if model is not None:
             model.close()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_forward_invalid_type(self):
         """
@@ -201,7 +204,7 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
         if model is not None:
             model.close()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_forward_numpy(self):
     #     """
@@ -230,7 +233,7 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
     #         if model is not None:
     #             model.close()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_forward_numpy_invalid_type(self):
         """
@@ -254,14 +257,14 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
         if model is not None:
             model.close()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_close(self):
         """
         Test if closing the processor raises a warning.
         """
         configs = get_configs()
-        try: 
+        try:
             model = None
             model = HardwareProcessor(
                 configs,
@@ -271,23 +274,23 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
             model.close()
         except Exception:
             self.fail("Failed closing model")
-        
+
     def test_close_simulation(self):
         #configs = get_configs()
         try:
-            configs , model_data = get_custom_model_configs()
+            configs, model_data = get_custom_model_configs()
             driver = SurrogateModel(model_data['info']["model_structure"])
             driver.set_effects_from_dict(model_data['info']["electrode_info"])
             model = HardwareProcessor(
-                    driver,
-                    slope_length=configs["waveform"]["slope_length"],
-                    plateau_length=configs["waveform"]["plateau_length"],
-                )
+                driver,
+                slope_length=configs["waveform"]["slope_length"],
+                plateau_length=configs["waveform"]["plateau_length"],
+            )
             model.close()
         except Exception:
             self.fail('Failed closing on simulation')
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_is_hardware(self):
         """
@@ -304,7 +307,7 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
         if model is not None:
             model.close()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_get_voltage_ranges(self):
         """
@@ -321,7 +324,7 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
         if model is not None:
             model.close()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_get_clipping_value(self):
         """
@@ -334,7 +337,7 @@ class Hardware_Processor_Test_CDAQ(unittest.TestCase):
             slope_length=configs["waveform"]["slope_length"],
             plateau_length=configs["waveform"]["plateau_length"],
         )
-        try:    
+        try:
             model.get_clipping_value()
         except Exception:
             if model is not None:

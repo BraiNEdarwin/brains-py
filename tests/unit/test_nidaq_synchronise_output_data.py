@@ -63,7 +63,7 @@ class NIDAQ_Output_Synchronise_Test(unittest.TestCase):
         return configs
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_synchronise_output_data(self):
@@ -85,7 +85,7 @@ class NIDAQ_Output_Synchronise_Test(unittest.TestCase):
             nidaq.close_tasks()
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_synchronise_output_data_single_dimension(self):
@@ -101,7 +101,7 @@ class NIDAQ_Output_Synchronise_Test(unittest.TestCase):
         nidaq.close_tasks()
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_synchronise_invalid_type(self):

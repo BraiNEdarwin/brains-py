@@ -26,7 +26,6 @@ class Hardware_Processor_Test_NIDAQ(unittest.TestCase):
     to the hardware.
 
     """
-
     def get_processor_configs(self):
         """
         Get the configs to initialize the hardware processor
@@ -77,7 +76,7 @@ class Hardware_Processor_Test_NIDAQ(unittest.TestCase):
         return configs
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_init(self):
@@ -110,7 +109,7 @@ class Hardware_Processor_Test_NIDAQ(unittest.TestCase):
             HardwareProcessor(configs, None, 100)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_forward(self):
@@ -141,7 +140,7 @@ class Hardware_Processor_Test_NIDAQ(unittest.TestCase):
             self.assertEqual(list(x.shape), [30, 1])
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_forward_fail(self):
@@ -164,7 +163,7 @@ class Hardware_Processor_Test_NIDAQ(unittest.TestCase):
             model.forward(data_plateaus)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_forward_invalid_type(self):
@@ -187,7 +186,7 @@ class Hardware_Processor_Test_NIDAQ(unittest.TestCase):
             model.forward("invalid type")
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_forward_numpy(self):
@@ -213,7 +212,7 @@ class Hardware_Processor_Test_NIDAQ(unittest.TestCase):
             self.assertEqual(list(x.shape), [1])
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_forward_numpy_invalid_type(self):
@@ -236,7 +235,7 @@ class Hardware_Processor_Test_NIDAQ(unittest.TestCase):
             model.forward_numpy("invalid type")
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_close(self):
@@ -255,7 +254,7 @@ class Hardware_Processor_Test_NIDAQ(unittest.TestCase):
             self.assertEqual(len(caught_warnings), 1)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_is_hardware(self):
@@ -271,7 +270,7 @@ class Hardware_Processor_Test_NIDAQ(unittest.TestCase):
         self.assertTrue(model.is_hardware())
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_get_voltage_ranges(self):
@@ -287,7 +286,7 @@ class Hardware_Processor_Test_NIDAQ(unittest.TestCase):
         self.assertIsNotNone(model.get_voltage_ranges())
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_get_clipping_value(self):

@@ -62,7 +62,7 @@ class NIDAQ_Init_Test(unittest.TestCase):
         return configs
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_init(self):
@@ -76,7 +76,7 @@ class NIDAQ_Init_Test(unittest.TestCase):
             self.fail("Could not initialize the driver")
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_init_keyerror(self):
@@ -89,7 +89,7 @@ class NIDAQ_Init_Test(unittest.TestCase):
             CDAQtoNiDAQ(configs)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_unequal_activation(self):
@@ -115,7 +115,7 @@ class NIDAQ_Init_Test(unittest.TestCase):
             CDAQtoNiDAQ(configs)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_very_high_low_voltages(self):
@@ -141,7 +141,7 @@ class NIDAQ_Init_Test(unittest.TestCase):
             self.fail()
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_voltage_range_size(self):
@@ -158,7 +158,7 @@ class NIDAQ_Init_Test(unittest.TestCase):
             CDAQtoNiDAQ(configs)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_sampling_val_error(self):
@@ -179,7 +179,7 @@ class NIDAQ_Init_Test(unittest.TestCase):
             CDAQtoNiDAQ(configs)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_io_point_diff_false(self):
@@ -193,7 +193,7 @@ class NIDAQ_Init_Test(unittest.TestCase):
             CDAQtoNiDAQ(configs)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_type_check(self):

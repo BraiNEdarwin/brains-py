@@ -406,7 +406,7 @@ class ProcessorTest(unittest.TestCase):
         except Exception:
             self.fail("Failed sampling control voltage")
 
-    def test_model_swap_sw(self):
+    def __TEST_MODE__l_swap_sw(self):
         try:
             model = None
 
@@ -430,10 +430,10 @@ class ProcessorTest(unittest.TestCase):
             self.fail("Failed setting forward pass DNPU in software")
         del model
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
-    def test_model_swap_hw(self):
+    def __TEST_MODE__l_swap_hw(self):
         try:
             model = None
             hw_configs = copy.deepcopy(self.configs)

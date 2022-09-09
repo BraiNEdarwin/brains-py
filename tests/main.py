@@ -12,4 +12,4 @@ if __name__ == "__main__":
     
     runner = unittest.TextTestRunner()
     runner.run(modules_to_test)
-    print(brainspy.TEST_MODE)
+    print(brainspy.__TEST_MODE__)

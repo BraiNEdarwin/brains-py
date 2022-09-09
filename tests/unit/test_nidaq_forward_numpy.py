@@ -20,7 +20,6 @@ class NIDAQ_Forward_Numpy_Test(unittest.TestCase):
     Some sample keys have been defined to run tests which do not require connection
     to the hardware.
     """
-
     def get_configs(self):
         """
         Generate configurations to initialize the Nidaq driver
@@ -65,7 +64,7 @@ class NIDAQ_Forward_Numpy_Test(unittest.TestCase):
         return configs
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_forward_numpy_simple(self):
@@ -95,7 +94,7 @@ class NIDAQ_Forward_Numpy_Test(unittest.TestCase):
             nidaq.close_tasks()
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def generate_sample(self,
@@ -125,7 +124,7 @@ class NIDAQ_Forward_Numpy_Test(unittest.TestCase):
         return result
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_forward_numpy_random(self):
@@ -151,7 +150,7 @@ class NIDAQ_Forward_Numpy_Test(unittest.TestCase):
             self.assertIsNotNone(val)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_forward_numpy_invalid_type(self):

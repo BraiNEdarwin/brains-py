@@ -101,7 +101,7 @@ class GA_Test_NIDAQ(unittest.TestCase):
         configs["stop_threshold"] = 0.5
         return dataloaders, criterion, optimizer, configs
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_train_nidaq(self):
         """
@@ -152,7 +152,7 @@ class GA_Test_NIDAQ(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 train(model, dataloaders, criterion, optimizer, configs)
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_train_invalid_dataloader_type(self):
         """
@@ -171,7 +171,7 @@ class GA_Test_NIDAQ(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 train(model, d, criterion, optimizer, configs)
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_train_invalid_optimizer_type(self):
         """
@@ -191,7 +191,7 @@ class GA_Test_NIDAQ(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 train(model, dataloaders, criterion, o, configs)
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_train_invalid_criterion_type(self):
         """
@@ -211,7 +211,7 @@ class GA_Test_NIDAQ(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 train(model, dataloaders, c, optimizer, configs)
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_train_invalid_configs_type(self):
         """
@@ -231,7 +231,7 @@ class GA_Test_NIDAQ(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 train(model, dataloaders, criterion, optimizer, config)
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_evaluate_population_NIDAQ(self):
         """
@@ -260,7 +260,7 @@ class GA_Test_NIDAQ(unittest.TestCase):
             self.assertTrue(criterion_pool is not None)
             self.assertIsInstance(criterion_pool, torch.Tensor)
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_evaluate_population_fail(self):
         """

@@ -63,7 +63,7 @@ class NIDAQ_ReadoutTrial_Test(unittest.TestCase):
         return configs
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_readout_trial_random(self):
@@ -89,7 +89,7 @@ class NIDAQ_ReadoutTrial_Test(unittest.TestCase):
             self.assertIsNotNone(val)
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_readout_trial_invalid_type(self):

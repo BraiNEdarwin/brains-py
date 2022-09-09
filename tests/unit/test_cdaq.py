@@ -64,7 +64,7 @@ class CDAQ_Processor_Test(unittest.TestCase):
     #     configs["instruments_setup"]["average_io_point_difference"] = True
     #     return configs
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init(self):
         """
@@ -81,7 +81,7 @@ class CDAQ_Processor_Test(unittest.TestCase):
             if model is not None:
                 model.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_fail(self):
         """
@@ -103,7 +103,7 @@ class CDAQ_Processor_Test(unittest.TestCase):
         if model is not None:
             model.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_keyerror(self):
         """
@@ -130,7 +130,7 @@ class CDAQ_Processor_Test(unittest.TestCase):
             del configs["instruments_setup"]
             CDAQtoCDAQ(configs)
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_forward_numpy(self):
         """
@@ -138,10 +138,12 @@ class CDAQ_Processor_Test(unittest.TestCase):
         right shape (the numpy version).
         """
         model = None
-        x_dim = np.random.randint(2,10)
+        x_dim = np.random.randint(2, 10)
         try:
             model = CDAQtoCDAQ(get_configs())
-            x = np.zeros((7,x_dim)).T #/ 1000#np.array([[0.1, 0.2, 0.1, 0.2, 0.13, 0.1, 0.2]]).T
+            x = np.zeros(
+                (7, x_dim)
+            ).T  #/ 1000#np.array([[0.1, 0.2, 0.1, 0.2, 0.13, 0.1, 0.2]]).T
             x = model.forward_numpy(x)
 
         except (Exception):
@@ -153,7 +155,7 @@ class CDAQ_Processor_Test(unittest.TestCase):
             if model is not None:
                 model.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_forward_numpy_fail(self):
         """
@@ -164,28 +166,28 @@ class CDAQ_Processor_Test(unittest.TestCase):
         with self.assertRaises(AssertionError):
             model.forward_numpy("Wrong data type")
         if model is not None:
-                model.close_tasks()
+            model.close_tasks()
 
         model = None
         model = CDAQtoCDAQ(get_configs())
         with self.assertRaises(AssertionError):
             model.forward_numpy(100)
         if model is not None:
-                model.close_tasks()
+            model.close_tasks()
 
         model = None
         model = CDAQtoCDAQ(get_configs())
         with self.assertRaises(AssertionError):
             model.forward_numpy([1, 2, 3, 4])
         if model is not None:
-                model.close_tasks()
+            model.close_tasks()
 
         model = None
         model = CDAQtoCDAQ(get_configs())
         with self.assertRaises(AssertionError):
             model.forward_numpy({})
         if model is not None:
-                model.close_tasks()
+            model.close_tasks()
 
 
 if __name__ == "__main__":

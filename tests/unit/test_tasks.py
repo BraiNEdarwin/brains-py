@@ -11,6 +11,7 @@ from brainspy.processors.hardware.drivers.ni.channels import type_check
 from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 from tests.unit.testing_utils import get_configs
 
+
 class Tasks_Test(unittest.TestCase):
     """
     Tests for tasks.py with some custom configs and no real time rack.
@@ -25,8 +26,8 @@ class Tasks_Test(unittest.TestCase):
     to the hardware.
     """
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_configs(self):
     #     """
@@ -79,7 +80,6 @@ class Tasks_Test(unittest.TestCase):
         if tasks is not None:
             tasks.close_tasks()
 
-
         configs = get_configs()
         tasks = None
         del configs["instruments_setup"]["readout_channels"]
@@ -113,8 +113,8 @@ class Tasks_Test(unittest.TestCase):
     #     if tasks is not None:
     #         tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_tasks(self):
     #     """
@@ -135,8 +135,8 @@ class Tasks_Test(unittest.TestCase):
     #     if tasks is not None:
     #         tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_tasks_invalid_input(self):
     #     """
@@ -163,8 +163,8 @@ class Tasks_Test(unittest.TestCase):
     #     if tasks is not None:
     #         tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_activation_channels(self):
     #     """
@@ -190,8 +190,8 @@ class Tasks_Test(unittest.TestCase):
     #                 1)
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_activation_channels_error_1(self):
     #     """
@@ -205,23 +205,23 @@ class Tasks_Test(unittest.TestCase):
     #     if tasks is not None:
     #         tasks.close_tasks()
 
-        # tasks = None
-        # with self.assertRaises(AssertionError):
-        #     tasks = IOTasksManager(get_configs())
-        #     tasks.init_activation_channels({"Invalid type": "invalid"},
-        #                                    tasks.voltage_ranges)
-        # if tasks is not None:
-        #     tasks.close_tasks()
+    # tasks = None
+    # with self.assertRaises(AssertionError):
+    #     tasks = IOTasksManager(get_configs())
+    #     tasks.init_activation_channels({"Invalid type": "invalid"},
+    #                                    tasks.voltage_ranges)
+    # if tasks is not None:
+    #     tasks.close_tasks()
 
-        # tasks = None
-        # with self.assertRaises(AssertionError):
-        #     tasks = IOTasksManager(get_configs())
-        #     tasks.init_activation_channels(100, tasks.voltage_ranges)
-        # if tasks is not None:
-        #     tasks.close_tasks()
+    # tasks = None
+    # with self.assertRaises(AssertionError):
+    #     tasks = IOTasksManager(get_configs())
+    #     tasks.init_activation_channels(100, tasks.voltage_ranges)
+    # if tasks is not None:
+    #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_activation_channels_error_2(self):
     #     """
@@ -243,8 +243,8 @@ class Tasks_Test(unittest.TestCase):
     #         tasks.init_activation_channels(tasks.activation_channel_names, {})
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_activation_channels_error_3(self):
     #     """
@@ -266,8 +266,8 @@ class Tasks_Test(unittest.TestCase):
     #         tasks.init_activation_channels(channel_names, voltage_ranges)
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_activation_channels_error_4(self):
     #     """
@@ -288,8 +288,8 @@ class Tasks_Test(unittest.TestCase):
     #         tasks.init_activation_channels(channel_names, voltage_ranges)
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_activation_channels_error_5(self):
     #     """
@@ -310,8 +310,8 @@ class Tasks_Test(unittest.TestCase):
     #         tasks.init_activation_channels(channel_names, voltage_ranges)
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_activation_channels_error_6(self):
     #     """
@@ -346,8 +346,8 @@ class Tasks_Test(unittest.TestCase):
     #         tasks.init_activation_channels(channel_names, voltage_ranges)
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_readout_channels(self):
     #     """
@@ -373,8 +373,8 @@ class Tasks_Test(unittest.TestCase):
     #                     ["readout_sampling_frequency"]) + 1)
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_readout_channels_error_1(self):
     #     """
@@ -393,8 +393,8 @@ class Tasks_Test(unittest.TestCase):
     #         tasks.init_readout_channels("Invalid type")
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_init_readout_channels_error_2(self):
     #     """
@@ -409,8 +409,8 @@ class Tasks_Test(unittest.TestCase):
     #         tasks.init_readout_channels(["1", "2", 3])
     #     tasks.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_set_sampling_frequencies(self):
         """
@@ -419,9 +419,7 @@ class Tasks_Test(unittest.TestCase):
         tasks = None
         try:
             tasks = IOTasksManager(get_configs())
-            tasks.set_sampling_frequencies(100,
-                                           200,
-                                           random.randint(10, 100),
+            tasks.set_sampling_frequencies(100, 200, random.randint(10, 100),
                                            random.randint(10, 1000))
         except (Exception):
             if tasks is not None:
@@ -430,8 +428,8 @@ class Tasks_Test(unittest.TestCase):
         if tasks is not None:
             tasks.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_set_sampling_frequencies_fail(self):
         """
@@ -474,7 +472,7 @@ class Tasks_Test(unittest.TestCase):
         if tasks is not None:
             tasks.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_add_synchronisation_channels(self):
         """
@@ -490,8 +488,8 @@ class Tasks_Test(unittest.TestCase):
             self.assertIsNotNone(tasks.activation_task.ai_channels)
         tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_read_random(self):
     #     """
@@ -512,8 +510,8 @@ class Tasks_Test(unittest.TestCase):
     #     if tasks is not None:
     #         tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_read_no_params(self):
     #     """
@@ -535,8 +533,8 @@ class Tasks_Test(unittest.TestCase):
     #     if tasks is not None:
     #         tasks.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_read_fail(self):
         """
@@ -556,8 +554,8 @@ class Tasks_Test(unittest.TestCase):
         if tasks is not None:
             tasks.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_start_trigger(self):
         """
@@ -573,8 +571,8 @@ class Tasks_Test(unittest.TestCase):
             self.assertIsNotNone(tasks.activation_task.triggers)
         tasks.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def start_trigger_fail_invalid_device(self):
         """
@@ -602,8 +600,8 @@ class Tasks_Test(unittest.TestCase):
     #         tasks.start_trigger([1, 2, 3, 4])
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_stop_tasks(self):
     #     """
@@ -616,8 +614,8 @@ class Tasks_Test(unittest.TestCase):
     #         self.fail("Could not stop activation and readout tasks")
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_close_tasks(self):
     #     """
@@ -632,23 +630,23 @@ class Tasks_Test(unittest.TestCase):
     #         self.assertIsNone(tasks.activation_task)
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_write(self):
     #     """
     #     Test to write a random sample to the task
     #     """
-        # try:
-        #     tasks = IOTasksManager(get_configs())
-        #     sample = np.random.rand(0, 100)
-        #     tasks.write(sample, False)
-        # except (Exception):
-        #     self.fail("Could not close write data for these values")
-        # tasks.close_tasks()
+    # try:
+    #     tasks = IOTasksManager(get_configs())
+    #     sample = np.random.rand(0, 100)
+    #     tasks.write(sample, False)
+    # except (Exception):
+    #     self.fail("Could not close write data for these values")
+    # tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_write_fail_1(self):
     #     """
@@ -667,8 +665,8 @@ class Tasks_Test(unittest.TestCase):
     #         tasks.write({}, False)
     #     tasks.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_write_fail_2(self):
     #     """

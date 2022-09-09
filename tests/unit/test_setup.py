@@ -21,8 +21,8 @@ class Setup_Test(unittest.TestCase):
     Some sample keys have been defined to run tests which do not require connection
     to the hardware.
     """
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_close_tasks(self):
         """
@@ -34,8 +34,8 @@ class Setup_Test(unittest.TestCase):
         except (Exception):
             self.fail("Could not close_tasks")
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init(self):
         """
@@ -59,8 +59,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_forward_numpy(self):
         """
@@ -78,8 +78,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_signals(self):
         """
@@ -93,8 +93,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_sampling_frequency(self):
         """
@@ -103,7 +103,9 @@ class Setup_Test(unittest.TestCase):
         setup = None
         try:
             configs = get_configs()
-            configs["instruments_setup"]["readout_sampling_frequency"] = configs["instruments_setup"]["activation_sampling_frequency"]#int(configs["instruments_setup"]["activation_sampling_frequency"] / 2) 
+            configs["instruments_setup"][
+                "readout_sampling_frequency"] = configs["instruments_setup"][
+                    "activation_sampling_frequency"]  #int(configs["instruments_setup"]["activation_sampling_frequency"] / 2)
             setup = NationalInstrumentsSetup(configs)
         except (Exception):
             if setup is not None:
@@ -119,8 +121,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_multiple(self):
         """
@@ -135,28 +137,36 @@ class Setup_Test(unittest.TestCase):
             configs["instruments_setup"]["multiple_devices"] = True
             configs["instruments_setup"]["A"] = {}
 
-            configs['instruments_setup']["A"]["activation_instrument"] = configs['instruments_setup']["activation_instrument"]
+            configs['instruments_setup']["A"][
+                "activation_instrument"] = configs['instruments_setup'][
+                    "activation_instrument"]
             del configs['instruments_setup']['activation_instrument']
 
-            configs["instruments_setup"]["A"]["activation_channels"] = configs['instruments_setup']['activation_channels']
+            configs["instruments_setup"]["A"]["activation_channels"] = configs[
+                'instruments_setup']['activation_channels']
             del configs['instruments_setup']['activation_channels']
 
-            configs["instruments_setup"]["A"]["activation_channel_mask"] = configs["instruments_setup"]["activation_channel_mask"]
+            configs["instruments_setup"]["A"][
+                "activation_channel_mask"] = configs["instruments_setup"][
+                    "activation_channel_mask"]
             del configs["instruments_setup"]["activation_channel_mask"]
 
             # TODO Specify the activation Voltage ranges
             # For example, [[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-1.2, 0.6],[-0.7, 0.3],[-0.7, 0.3]]
-            configs["instruments_setup"]["A"]["activation_voltage_ranges"] = configs["instruments_setup"]["activation_voltage_ranges"]
+            configs["instruments_setup"]["A"][
+                "activation_voltage_ranges"] = configs["instruments_setup"][
+                    "activation_voltage_ranges"]
             del configs["instruments_setup"]["activation_voltage_ranges"]
 
             # TODO Specify the name of the Readout Instrument
-            configs["instruments_setup"]["A"]["readout_instrument"] = configs["instruments_setup"]["readout_instrument"]
+            configs["instruments_setup"]["A"]["readout_instrument"] = configs[
+                "instruments_setup"]["readout_instrument"]
             del configs["instruments_setup"]["readout_instrument"]
             # TODO Specify the readout channels
             # For example, [4]
-            configs["instruments_setup"]["A"]["readout_channels"] = configs["instruments_setup"]["readout_channels"]
+            configs["instruments_setup"]["A"]["readout_channels"] = configs[
+                "instruments_setup"]["readout_channels"]
             del configs["instruments_setup"]["readout_channels"]
-            
 
             setup = NationalInstrumentsSetup(configs)
         except (Exception):
@@ -168,8 +178,8 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_fail_amplification(self):
         """
@@ -189,8 +199,8 @@ class Setup_Test(unittest.TestCase):
             del configs["amplification"]
             NationalInstrumentsSetup(configs)
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_fail_devices(self):
         """
@@ -211,8 +221,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_fail_devices_type(self):
         """
@@ -308,8 +318,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_activation_channels_error_1(self):
         """
@@ -349,8 +359,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_activation_voltages(self):
         """
@@ -389,8 +399,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_activation_channels_error_different_size(self):
         """
@@ -414,8 +424,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_activation_channels_error_4(self):
         """
@@ -437,8 +447,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_activation_channels_error_5(self):
         """
@@ -460,8 +470,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_activation_channels_error_6(self):
         """
@@ -483,8 +493,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_configs(self):
         """
@@ -506,8 +516,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_sampling_configs(self):
         """
@@ -527,8 +537,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_sampling_configs_fail(self):
         """
@@ -544,8 +554,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_tasks(self):
         """
@@ -566,8 +576,8 @@ class Setup_Test(unittest.TestCase):
         if setup is not None:
             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_semaphore(self):
         """
@@ -585,8 +595,8 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_enable_os_signals(self):
         """
@@ -604,8 +614,8 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_disable_os_signals(self):
         """
@@ -623,8 +633,8 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_os_signal_handler(self):
     #     """
@@ -642,8 +652,8 @@ class Setup_Test(unittest.TestCase):
     #         if setup is not None:
     #             setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_get_amplification_value(self):
         """
@@ -662,8 +672,8 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_read_security_checks(self):
         """
@@ -687,8 +697,8 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_is_hardware(self):
         """
@@ -707,8 +717,8 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    # @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-    #                      or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    # @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+    #                      or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #                      "Hardware test is skipped for simulation setup.")
     # def test_set_timeout(self):
     #     """
@@ -747,8 +757,8 @@ class Setup_Test(unittest.TestCase):
     #         test_timeout = (math.ceil(timeout) + 10)
     #         self.assertEqual(setup.timeout, test_timeout)
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_calculate_io_points(self):
         """
@@ -768,8 +778,8 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_set_io_configs(self):
         """
@@ -787,8 +797,8 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_read_data(self):
         """
@@ -814,8 +824,8 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_average_point_difference(self):
         """
@@ -837,8 +847,8 @@ class Setup_Test(unittest.TestCase):
             if setup is not None:
                 setup.close_tasks()
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ"
-                         or brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ"
+                         or brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_process_output_data(self):
         """

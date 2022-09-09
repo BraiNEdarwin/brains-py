@@ -63,7 +63,7 @@ class NIDAQ_Synchronise_Input_Test(unittest.TestCase):
         return configs
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_synchronise_random_shape(self):
@@ -89,7 +89,7 @@ class NIDAQ_Synchronise_Input_Test(unittest.TestCase):
 
     # Failing test
     # @unittest.skipUnless(
-    #     brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+    #     brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
     #     "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     # )
     # def test_synchronise_large_shape(self):
@@ -103,7 +103,7 @@ class NIDAQ_Synchronise_Input_Test(unittest.TestCase):
     #         self.fail("Could not synchronise inout data")
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_synchronise_single_dimension(self):
@@ -121,7 +121,7 @@ class NIDAQ_Synchronise_Input_Test(unittest.TestCase):
         nidaq.close_tasks()
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_synchronise_output_contains_input(self):
@@ -143,7 +143,7 @@ class NIDAQ_Synchronise_Input_Test(unittest.TestCase):
         nidaq.close_tasks()
 
     @unittest.skipUnless(
-        brainspy.TEST_MODE == "HARDWARE_NIDAQ",
+        brainspy.__TEST_MODE__ == "HARDWARE_NIDAQ",
         "Method deactivated as it is only possible to be tested on a CDAQ TO NIDAQ setup"
     )
     def test_synchronise_invalid_type(self):

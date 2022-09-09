@@ -5,6 +5,7 @@ from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
 from tests.unit.testing_utils import get_configs, get_custom_model_configs
 
+
 class Processor_Test_CDAQ(unittest.TestCase):
     """
     Tests for the hardware processor with a CDAQ driver.
@@ -69,7 +70,7 @@ class Processor_Test_CDAQ(unittest.TestCase):
 
     #     return configs
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_simulation(self):
         """
@@ -89,7 +90,7 @@ class Processor_Test_CDAQ(unittest.TestCase):
                 model.close()
             self.fail("Could not initialize processor")
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_cdaq(self):
         driver_configs = get_configs()
@@ -97,30 +98,25 @@ class Processor_Test_CDAQ(unittest.TestCase):
         processor_configs["processor_type"] = 'cdaq_to_cdaq'
         processor_configs['driver'] = driver_configs
         #del processor_configs['driver']['amplification']
-        del processor_configs["driver"]["instruments_setup"]["activation_voltage_ranges"]
+        del processor_configs["driver"]["instruments_setup"][
+            "activation_voltage_ranges"]
         try:
             model = None
-            model = Processor(
-                processor_configs,
-                model_data['info']
-            )
+            model = Processor(processor_configs, model_data['info'])
             model.get_readout_electrode_no()
         except (Exception):
             if model is not None:
                 model.close()
             self.fail("Could not initialize processor")
 
-    @unittest.skipUnless(brainspy.TEST_MODE == "HARDWARE_CDAQ",
+    @unittest.skipUnless(brainspy.__TEST_MODE__ == "HARDWARE_CDAQ",
                          "Hardware test is skipped for simulation setup.")
     def test_init_cdaq_no_electrode_effects(self):
         processor_configs, model_data = get_custom_model_configs()
         processor_configs["processor_type"] = 'simulation_debug'
         try:
             model = None
-            model = Processor(
-                processor_configs,
-                model_data['info']
-            )
+            model = Processor(processor_configs, model_data['info'])
             model.get_readout_electrode_no()
         except (Exception):
             if model is not None:
@@ -132,10 +128,7 @@ class Processor_Test_CDAQ(unittest.TestCase):
         processor_configs["processor_type"] = 'asdf'
         with self.assertRaises(NotImplementedError):
             model = None
-            model = Processor(
-                processor_configs,
-                model_data['info']
-            )
+            model = Processor(processor_configs, model_data['info'])
         if model is not None:
             model.close()
 
@@ -146,18 +139,15 @@ class Processor_Test_CDAQ(unittest.TestCase):
         processor_configs, model_data = get_custom_model_configs()
         try:
             model = None
-            model = Processor(
-                processor_configs,
-                model_data['info'],
-                average_plateaus=False
-            )
+            model = Processor(processor_configs,
+                              model_data['info'],
+                              average_plateaus=False)
             model = TorchUtils.format(model)
-            res = model.format_targets(TorchUtils.format(torch.rand((3,7))))
+            res = model.format_targets(TorchUtils.format(torch.rand((3, 7))))
         except (Exception):
             if model is not None:
                 model.close()
             self.fail("Could not initialize processor")
-        
 
 
 if __name__ == "__main__":
