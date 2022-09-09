@@ -33,7 +33,7 @@ setup(
     author="Unai Alegre-Ibarra et al.",
     author_email="u.alegre@utwente.nl",
     license="GPL-3.0",
-    python_requires='==3.9.1',
+    python_requires='==3.9',
     install_requires=requires,
     packages=find_packages(exclude=["tests"]),
 	#package_dir={"": str("src/brainspy")},
