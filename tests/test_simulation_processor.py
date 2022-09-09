@@ -13,7 +13,7 @@ import numpy as np
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.simulation.processor import SurrogateModel
 from brainspy.processors.simulation.noise.noise import GaussianNoise
-from utils import get_custom_model_configs
+from tests.test_utils import get_custom_model_configs
 
 
 class ModelTest(unittest.TestCase):

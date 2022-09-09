@@ -4,7 +4,7 @@ import random
 import warnings
 import brainspy
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
-from utils import check_test_configs
+from tests.test_utils import check_test_configs
 from brainspy.processors.hardware.drivers.nidaq import CDAQtoNiDAQ
 
 

@@ -21,7 +21,7 @@ requires = [
 
 if platform.system() == "Windows":
     requires.append("pywin32==225")
-    
+
 setup(
     name="brainspy",
     version="1.0.0",
@@ -34,18 +34,18 @@ setup(
     author_email="u.alegre@utwente.nl",
     license="GPL-3.0",
     python_requires='==3.9.1',
-    package_dir={'': 'src'},
     install_requires=requires,
-    packages=find_packages('brainspy'),
-    py_modules=["brainspy"],
-    url="https://github.com/BraiNEdarwin/brains-py",
-    download_url = "https://github.com/brainedarwin/brains-py/archive/1.0.0.tar.gz",
+    packages=find_packages(exclude=["tests"]),
+	#package_dir={"": str("src/brainspy")},
+    #py_modules=["brainspy"],
+    #url="https://github.com/BraiNEdarwin/brains-py",
+    #download_url = "https://github.com/brainedarwin/brains-py/archive/1.0.0.tar.gz",
     zip_safe=False,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
         'Intended Audience :: Science/Research',
         'Programming Language :: Python :: 3.9',
-        'License :: OSI Approved :: GPL-3.0'
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)'
     ]
 )

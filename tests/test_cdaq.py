@@ -3,7 +3,7 @@ import numpy as np
 import brainspy
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
 from brainspy.processors.hardware.drivers.cdaq import CDAQtoCDAQ
-from utils import get_configs
+from tests.test_utils import get_configs
 
 
 class CDAQ_Processor_Test(unittest.TestCase):

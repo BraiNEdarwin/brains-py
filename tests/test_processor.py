@@ -3,7 +3,7 @@ import torch
 import brainspy
 from brainspy.utils.pytorch import TorchUtils
 from brainspy.processors.processor import Processor
-from utils import get_configs, get_custom_model_configs
+from tests.test_utils import get_configs, get_custom_model_configs
 
 
 class Processor_Test_CDAQ(unittest.TestCase):

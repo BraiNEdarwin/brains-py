@@ -5,7 +5,7 @@ import random
 import brainspy
 from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 from brainspy.processors.hardware.drivers.ni.setup import NationalInstrumentsSetup
-from utils import get_configs
+from tests.test_utils import get_configs
 
 
 class Setup_Test(unittest.TestCase):

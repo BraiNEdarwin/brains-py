@@ -1,15 +1,9 @@
 import random
 import unittest
-import numpy as np
 import brainspy
 import nidaqmx
-import nidaqmx.constants as constants
-from nidaqmx import errors
-import nidaqmx.system.device as device
-from utils import check_test_configs
-from brainspy.processors.hardware.drivers.ni.channels import type_check
 from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
-from utils import get_configs
+from tests.test_utils import get_configs
 
 
 class Tasks_Test(unittest.TestCase):

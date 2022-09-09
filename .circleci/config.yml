@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.9
+      - image: circleci/python:3.9.1
     branches:
               only: 
                 - master
@@ -26,3 +26,11 @@ jobs:
             . venv/bin/activate
             python -m coverage run -m unittest
             coverage report -m
+generate-config:
+    jobs:
+      - path-filtering/filter:
+          base-revision: main
+          config-path: .circleci/continue-config.yml
+          mapping: |
+            src/.* build-code true
+            doc/.* build-docs true            
