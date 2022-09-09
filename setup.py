@@ -1,6 +1,7 @@
 import subprocess as sp
 import platform
 from setuptools import setup, find_packages
+from brainspy import __VERSION__
 
 with open("README.md", "r") as f:
     long_description = f.read()
@@ -25,7 +26,7 @@ if platform.system() == "Windows":
 print(requires)
 setup(
     name="brains-py",
-    version="1.0.0",
+    version=__VERSION__,
     description=
     "A python package to support research on different nano-scale materials for creating hardware accelerators in the context of deep neural networks.",
     long_description=long_description,
