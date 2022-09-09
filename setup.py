@@ -24,7 +24,7 @@ if platform.system() == "Windows":
     
 print(requires)
 setup(
-    name="brains-py",
+    name="brainspy",
     version="1.0.0",
     description=
     "A python package to support research on different nano-scale materials for creating hardware accelerators in the context of deep neural networks.",
