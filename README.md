@@ -1,9 +1,9 @@
-# brains-py
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/BraiNEdarwin/brains-py/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/BraiNEdarwin/brains-py/tree/master)
+# brains-py [![CircleCI](https://dl.circleci.com/status-badge/img/gh/BraiNEdarwin/brains-py/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/BraiNEdarwin/brains-py/tree/master) [![Tools](https://img.shields.io/badge/brainspy-smg-darkblue.svg)](https://github.com/BraiNEdarwin/brainspy-smg) [![Theory](https://img.shields.io/badge/brainspy-tasks-lightblue.svg)](https://github.com/BraiNEdarwin/brainspy-tasks) 
+
+
 A python package based on PyTorch and NumPy to support the study of Dopant Network Processing Units (DNPUs) [[1]]((https://doi.org/10.1038/s41586-019-1901-0))[[2]](https://arxiv.org/abs/2007.12371) as low-power computational units in the context of neural networks. The aim of the package is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.  The package is part of the brains-py project, a set of python libraries to support the development of nano-scale in-materio hardware for designing hardware accelerators for neural-network like operations. This package is based on several peer-reviewed scientific publications. 
 
 
-[![Tools](https://img.shields.io/badge/brainspy-smg-darkblue.svg)](https://github.com/BraiNEdarwin/brainspy-smg)[![Theory](https://img.shields.io/badge/brainspy-tasks-lightblue.svg)](https://github.com/BraiNEdarwin/brainspy-tasks) 
 
 ## 1. Instructions
 
@@ -48,14 +48,14 @@ With the contribution of:
 
 - **Humaid A. Mollah**, [@hnm27](https://github.com/hnm27) ([h.a.mollah@student.utwente.nl](mailto:h.a.mollah@student.utwente.nl)) : Testing, identification of bugs, linting tools, continuous integration and documentation.
 - **Bozhidar P. Petrov**, [@bozhidar-petrov](https://github.com/bozhidar-petrov) ([b.p.petrov@student.utwente.nl](mailto:b.p.petrov@student.utwente.nl)) : Testing, identification of bugs, linting tools and documentation.
-- **Srikumar Sastry**, [Vishu26](https://github.com/Vishu26) ([s.s.sastry@student.utwente.nl](mailto:s.s.sastry@student.utwente.nl)) : Testing and identification of bugs.
 - **Marcus Boon**: [@Mark-Boon](https://github.com/Mark-Boon): The on-chip gradient descent. The initial structure for the CDAQ to NiDAQ drivers in the legacy [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt) repository.
 - **Dr. ir. Michel P. de Jong** [@xX-Michel-Xx](https://github.com/xX-Michel-Xx) ([m.p.dejong@utwente.nl](mailto:m.p.dejong@utwente.nl)): Testing and identification of bugs, especially on the installation procedure.
-- **Mohamadreza Zolfagharinejad** [@mamrez](https://github.com/mamrez) ([m.zolfagharinejad@utwente.nl](mailto:m.zolfagharinejad@utwente.nl)): Writing of some of the examples in Jupyter notebooks (IV curves and surrogate model generation).
 - **Annefleur Uitzetter**: The genetic algorithm as shown in the legacy [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt) repository.
 - **Michelangelo Barocci** [@micbar-21](https://github.com/micbar-21/).  The usage of multiple DNPUs simultaneously on hardware and the creation of an improved PCB for measuring DNPUs.
 - **Antonio J. Sousa de Almeida** [@ajsousal](https://github.com/ajsousal) ([a.j.sousadealmeida@utwente.nl](mailto:a.j.sousadealmeida@utwente.nl)): Checking and upgrading drivers and National Instruments equipment from the labs.
+- **Srikumar Sastry**, [Vishu26](https://github.com/Vishu26) ([s.s.sastry@student.utwente.nl](mailto:s.s.sastry@student.utwente.nl)) : Testing and identification of bugs.
 - **Bram van de Ven**, [@bbroo1](https://github.com/bbroo1) ([b.vandeven@utwente.nl](mailto:b.vandeven@utwente.nl)) : General improvements and testing of the different hardware drivers and devices and documentation.
+- **Mohamadreza Zolfagharinejad** [@mamrez](https://github.com/mamrez) ([m.zolfagharinejad@utwente.nl](mailto:m.zolfagharinejad@utwente.nl)): Writing of some of the examples in Jupyter notebooks (IV curves and surrogate model generation).
 - **Jochem Wildeboer** [@jtwild](https://github.com/jtwild/)  Nearest neighbour loss functions.
 
 Other minor contributions might have been added, in form of previous scripts that have been improved and restructured from [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt), and the authorship remains of those people who collaborated in it. 
