@@ -1,7 +1,6 @@
 import subprocess as sp
 import platform
 from setuptools import setup, find_packages
-from brainspy import __VERSION__
 
 with open("README.md", "r") as f:
     long_description = f.read()
