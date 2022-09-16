@@ -1,2 +1,2 @@
-__VERSION__ = "1.0.0"
+__VERSION__ = "1.0.1"
 __TEST_MODE__ = "SIMULATION_PC"
