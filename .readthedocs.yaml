@@ -13,11 +13,9 @@ build:
 
 mkdocs:
   configuration: mkdocs.yml
-  
-markdown_extensions:
-  - admonition
-  - codehilite
-  - mkautodoc
+
+plugins:
+  - mkdocs_apidoc
 # Optionally declare the Python requirements required to build your docs
 python:
    install:
