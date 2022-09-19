@@ -1,5 +1,5 @@
 .. brainspy documentation master file, created by
-   sphinx-quickstart on Fri Sep 16 16:32:58 2022.
+   sphinx-quickstart on Mon Sep 19 16:18:40 2022.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
@@ -9,9 +9,9 @@ Welcome to brainspy's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-   
-   modules
 
+   modules
+   autoapi/index
 
 Indices and tables
 ==================
