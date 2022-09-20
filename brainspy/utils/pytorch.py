@@ -13,10 +13,9 @@ class TorchUtils:
     """ Consistently manage data movement and formatting of pytorch tensors and torch.nn.Module
     instances. This includes data movement to/from CUDA and CPU, as well as transformations to/
     from lists and numpy arrays. It also enables to manage the seeds for reproducibility purpo-
-    ses.
-        More information can be found at:
-        https://pytorch.org/docs/stable/torch.html
-        https://pytorch.org/docs/stable/notes/randomness.html
+    ses. More information can be found at:
+    https://pytorch.org/docs/stable/torch.html
+    https://pytorch.org/docs/stable/notes/randomness.html
     """
 
     force_cpu = False

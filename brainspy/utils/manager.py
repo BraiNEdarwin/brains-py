@@ -89,21 +89,23 @@ def get_optimizer(model: object, configs: dict):
 
     Example
     --------
-    configs = {"optimizer" : "genetic",
-               "partition": [4,22],
-               "epochs": 100}
+    A simple example can be:
+    >>> configs = {"optimizer" : "genetic",
+    >>>            "partition": [4,22],
+    >>>            "epochs": 100}
 
-    model = CustomDNPUModel()
+    >>> model = CustomDNPUModel()
 
-    optimizer = get_optimizer(model,configs)
+    >>> optimizer = get_optimizer(model,configs)
 
-    -------
-    configs = {"optimizer" : "adam",
+    Another example can be: 
+
+    >>> configs = {"optimizer" : "adam",
             "learning_rate": 1e-3}
 
-    model = torch.nn.Linear(1,1)
+    >>> model = torch.nn.Linear(1,1)
 
-    optimizer = get_optimizer(model,configs)
+    >>> optimizer = get_optimizer(model,configs)
 
     """
     if configs["optimizer"] == "genetic":
@@ -195,7 +197,8 @@ def get_algorithm(name: str):
     """
     To get a default train function for either GA - genetic algorithm or GD - Gradient Descent,
     based on its name.
-    1. Genetic Algorithm : In computer science and operations research, a genetic algorithm (GA) is a
+
+    A genetic algorithm (GA), in computer science and operations research, is a
     meta-heuristic inspired by the process of natural selection that belongs to
     the larger class of evolutionary algorithms (EA). Genetic algorithms are
     commonly used to generate high-quality solutions to optimization and search
@@ -203,7 +206,7 @@ def get_algorithm(name: str):
     and selection. This algorithm is suitable for experiments with reservoir
     computing.
 
-    Gradient Descent : Gradient descent is a first-order iterative optimization algorithm for
+    A gradient descent algorithm (GD) is a first-order iterative optimization algorithm for
     finding the minimum of a function. To find a local minimum of a function
     using gradient descent, one takes steps proportional to the negative of
     the gradient (or approximate gradient) of the function at the current point.
@@ -220,10 +223,11 @@ def get_algorithm(name: str):
 
     Example
     --------
-    algorithm = get_algorithm('genetic')
+    For a fetching the genetic algorithm: 
+    >>> algorithm = get_algorithm('genetic')
 
-    --------
-    algorithm = get_algorithm('gradient')
+    For fetching the gradient descent algorithm:
+    >>> algorithm = get_algorithm('gradient')
 
     """
     if name == "gradient":
@@ -270,49 +274,49 @@ def get_driver(configs: dict):
     Example to load a CDAQtoNiDAQ driver
     (differnt configurations can be provided for differt drivers)
 
-    configs = {}
-    configs["processor_type"] = "cdaq_to_nidaq"
-    configs["input_indices"] = [2, 3]
-    configs["electrode_effects"] = {}
-    configs["electrode_effects"]["amplification"] = 3
-    configs["electrode_effects"]["clipping_value"] = [-300, 300]
-    configs["electrode_effects"]["noise"] = {}
-    configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
-    configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
-    configs["driver"] = {}
+    >>> configs = {}
+    >>> configs["processor_type"] = "cdaq_to_nidaq"
+    >>> configs["input_indices"] = [2, 3]
+    >>> configs["electrode_effects"] = {}
+    >>> configs["electrode_effects"]["amplification"] = 3
+    >>> configs["electrode_effects"]["clipping_value"] = [-300, 300]
+    >>> configs["electrode_effects"]["noise"] = {}
+    >>> configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
+    >>> configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
+    >>> configs["driver"] = {}
 
-    configs["driver"]["instruments_setup"] = {}
-    configs["driver"]["instruments_setup"]["multiple_devices"] = False
-    configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-    configs["driver"]["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
-    configs["driver"]["instruments_setup"]["activation_sampling_frequency"] = 1000
-    configs["driver"]["instruments_setup"]["activation_channels"] = [
-        0,
-        2,
-        5,
-        3,
-        4,
-        6,
-        1,
-    ]
-    configs["driver"]["instruments_setup"]["activation_voltages"] = [
-        [-1.2, 0.6],
-        [-1.2, 0.6],
-        [-1.2, 0.6],
-        [-1.2, 0.6],
-        [-1.2, 0.6],
-        [-0.7, 0.3],
-        [-0.7, 0.3],
-    ]
-    configs["driver"]["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
-    configs["driver"]["instruments_setup"]["readout_sampling_frequency"] = 1000
-    configs["driver"]["instruments_setup"]["readout_channels"] = [
-        4
-    ]
-    configs["waveform"] = {}
-    configs["waveform"]["plateau_length"] = 10
-    configs["waveform"]["slope_length"] = 30
-    driver = get_driver(configs)
+    >>> configs["driver"]["instruments_setup"] = {}
+    >>> configs["driver"]["instruments_setup"]["multiple_devices"] = False
+    >>> configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
+    >>> configs["driver"]["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+    >>> configs["driver"]["instruments_setup"]["activation_sampling_frequency"] = 1000
+    >>> configs["driver"]["instruments_setup"]["activation_channels"] = [
+    >>>     0,
+    >>>     2,
+    >>>     5,
+    >>>     3,
+    >>>     4,
+    >>>     6,
+    >>>     1,
+    >>> ]
+    >>> configs["driver"]["instruments_setup"]["activation_voltages"] = [
+    >>>     [-1.2, 0.6],
+    >>>     [-1.2, 0.6],
+    >>>     [-1.2, 0.6],
+    >>>     [-1.2, 0.6],
+    >>>     [-1.2, 0.6],
+    >>>     [-0.7, 0.3],
+    >>>     [-0.7, 0.3],
+    >>> ]
+    >>> configs["driver"]["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+    >>> configs["driver"]["instruments_setup"]["readout_sampling_frequency"] = 1000
+    >>> configs["driver"]["instruments_setup"]["readout_channels"] = [
+    >>>     4
+    >>> ]
+    >>> configs["waveform"] = {}
+    >>> configs["waveform"]["plateau_length"] = 10
+    >>> configs["waveform"]["slope_length"] = 30
+    >>> driver = get_driver(configs)
 
     """
     if configs["instrument_type"] == "cdaq_to_cdaq":

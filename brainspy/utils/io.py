@@ -117,8 +117,8 @@ class IncludeLoader(yaml.Loader):
     """
     Class to handle !include directives in config files.
     This allows you to load the contents of a file from within a file
-    and therefore multiple files can be loaded into a dict by simply using
-    !include "filename/filepath"
+    and therefore multiple files can be loaded into a dict by simply 
+    using !include "filename/filepath"
 
     When constructed with a file object, the root path for "include"
     defaults to the directory containing the file, otherwise to the current
@@ -126,30 +126,29 @@ class IncludeLoader(yaml.Loader):
     `root` keyword argument. When an included file F contain its own !include
     directive, the path is relative to F's location.
 
-        Example :
-        ----------------------------------------------------------------
-        file1.yaml -
+    Example
+    --------
+    Given two yaml files file1.yaml and file2.yaml
+    file1.yaml -
 
-        processor : simulation
-        algorithm : !include file2.yaml
+    >>> processor : simulation
+    >>> algorithm : !include file2.yaml
 
-        file2.yaml -
+    file2.yaml -
 
-        optimizer : genetic
+    >>> optimizer : genetic
 
-        ----------------------------------------------------------------
-        In this example, if you load file1.yaml, you will get a dictionary with the following
-        result:
+    When loading file1.yaml, you will get a dictionary in which file2.yaml
+    is already incorporated:
 
-        file = open(self.path + "file1.yaml", "r") --loading the file
-        loader = IncludeLoader(file)
-        data = loader.get_data()
+    >>> file = open(self.path + "file1.yaml", "r") --loading the file
+    >>> loader = IncludeLoader(file)
+    >>> data = loader.get_data()
 
-        data : dict                                --result
-        Keys and values of data :
-            processor : simulation
-            algorithm :
-                    optimizer : genetic
+    The result is a data : dict with the following keys and values of data:
+    >>>     processor : simulation
+    >>>     algorithm :
+    >>>             optimizer : genetic
     """
     def __init__(self, *args, **kwargs):
         """

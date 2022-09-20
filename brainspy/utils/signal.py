@@ -445,7 +445,7 @@ def get_clamped_intervals(output: torch.Tensor,
     "single_nn" - for each point the smaller distance to a neighbor
     "double_nn" - simply the distances between the points
     "intervals" - for each point the summed distance to the point in front
-                  and behind it
+    and behind it
 
     Example
     -------
