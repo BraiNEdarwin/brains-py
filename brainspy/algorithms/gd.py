@@ -28,44 +28,39 @@ def train(
         Processor, representing a hardware DNPU or a DNPU model, but it also can be a model that
         contains different more complex architectures using several processors.
 
-        - The model can have multiple DNPU instances.
-        - The model cannot be an instance of SurrogateModel or HardwareProcessor.
-        - The model should have the following methods implemented :
+        Note that the model can be a custom model (child of torch.nn.Module) containing multiple 
+        DNPU instances, but the model cannot be an instance of SurrogateModel or 
+        HardwareProcessor. If the model is a custom model, it should have the following methods
+        implemented:
 
-        1. format_targets : The hardware processor uses a waveform to represent points
-                            (see 5.1 in Introduction of the Wiki). Each point is represented with some
-                            slope and some plateau points. When passing through the hardware, there will
-                            be a difference between the output from the device and the input (in points).
-                            This function is used for the targets to have the same length in shape as the
-                            outputs. It simply repeats each point in the input as many times as there are
-                            points in the plateau. In this way, targets can then be compared against hardware
-                            outputs in the loss function.
+        format_targets : The hardware processor uses a waveform to represent points
+        (see 5.1 in Introduction of the Wiki). Each point is represented with some
+        slope and some plateau points. When passing through the hardware, there will
+        be a difference between the output from the device and the input (in points).
+        This function is used for the targets to have the same length in shape as the
+        outputs. It simply repeats each point in the input as many times as there are
+        points in the plateau. In this way, targets can then be compared against hardware
+        outputs in the loss function. This function should have the following input 
+        (x : torch.Tensor), that represents the rgets of the supervised learning problem, 
+        which will be extended to have the same length shape as the outputs from the processor.
 
-                                    Parameters
-                                    ----------
-                                    x : torch.Tensor
-                                    Targets of the supervised learning problem, that will be extended to have the same
-                                    length shape as the outputs from the processor.
+        regularizer : When the constraint_control_voltages parameter is set to "regul", the 
+        result from the custom method regularizer will be added to the loss function. It is used 
+        to add a penalisation to the loss function when found control voltages are outside the 
+        control electrode ranges. The developer should decide how this value will be computed. 
+        Each DNPU class contains a regularizer method that returns how much the current control
+        voltages of the DNPU are outside from the control electrode ranges. In a custom model, the
+        custom regularizer function can be composed by calling the regularizer function of instantiated
+        DNPUs. The custom regularizer method of a custom model only needs to be implemented if 
+        constraint_control_voltages = "regul" in the configs. An example can be 
+        found at: brainspy.processors.dnpu, inside the class DNPU.
 
-        2. set_regul_factor : This method only needs to be implemented if
-                              constraint_control_voltages = "regul" in the configs (see description below)
-
-                              Parameters
-                              ----------
-                              regul_factor : int
-                                            See description below
-
-        3. regularizer : This method only needs to be implemented if
-                         constraint_control_voltages = "regul" in the configs (see description below)
-                         An example can be found at: brainspy.processors.dnpu, inside the class DNPU
-
-                         Parameters : None
-
-        4. constraint_weights : This method only needs to be implemented if
-                         constraint_control_voltages = "clip" in the configs (see description below)
-
-                         Parameters : None
-
+        constraint_weights : When the constraint_control_voltages parameter is set to "clip", the 
+        trainer will call this function to clip the current control voltages, if they are outside from
+        the control electrode ranges to which they correspond. Each DNPU class contains a clip method 
+        (constraint_control_voltages) that clips current control voltage electrodes in this way.
+        This method only needs to be implemented in a custom model if 
+        constraint_control_voltages = "clip" in the configs.
 
     dataloaders : list
         A list containing one or two Pytorch dataloaders. The first dataloader corresponds to the
@@ -92,37 +87,41 @@ def train(
 
     configs : dict
         Dictionary containing the following extra configuration keys:
-            epochs : int
-                Number of passes through the entire training dataset.
-            constraint_control_voltages : str
-                When training models, typically it is desired for the control voltages to stay
-                within the ranges in which they where trained, in order to avoid extrapolating, or
-                reaching the clipping values. This str key can have the following values:
-                    'regul' : It applies a penalty to the loss function when control voltages go
-                              outside the  ranges in which they were trained. This method allows a
-                              bit of flexibility, enabling to find solutions that are, in some
-                              cases, slightly outside of the control voltage ranges. In order to be
-                              used, it also requires that the model has a method called
-                              'regularizer' which controls that penalty. An example can be found at:
-                              brainspy.processors.dnpu, inside the class DNPU, method regularizer.
-                    'clip' : It applies clipping after the backward pass and optimiser step. It
-                             enforces that the control voltage ranges will not be outside the
-                             ranges in which the model was trained. In order to use it, the model
-                             should have a method called 'constraint_weights'. An example can be
-                             found at: brainspy.processors.dnpu, inside the class DNPU, method
-                             constraint_weights.
+        
+        epochs : int
+        Number of passes through the entire training dataset.
+        
+        constraint_control_voltages : str
+        When training models, typically it is desired for the control voltages to stay
+        within the ranges in which they where trained, in order to avoid extrapolating, or
+        reaching the clipping values. This str key can have the following values:
+
+        1. 'regul' : It applies a penalty to the loss function when control voltages go
+        outside the  ranges in which they were trained. This method allows a
+        bit of flexibility, enabling to find solutions that are, in some
+        cases, slightly outside of the control voltage ranges. In order to be
+        used, it also requires that the model has a method called
+        'regularizer' which controls that penalty. An example can be found at:
+        brainspy.processors.dnpu, inside the class DNPU, method regularizer.
+
+        2. 'clip' : It applies clipping after the backward pass and optimiser step. It
+        enforces that the control voltage ranges will not be outside the
+        ranges in which the model was trained. In order to use it, the model
+        should have a method called 'constraint_weights'. An example can be
+        found at: brainspy.processors.dnpu, inside the class DNPU, method
+        constraint_weights.
 
     logger: logging (optional)
         It provides a way for applications to configure different log handlers.
-        by default None.
+        By default None.
         The logger should be an already initialised class that contains a method called
         'log_output', where the input is a single numpy array variable. It can be any class,
         and the data can be treated in the way the user wants.You can get more information about
         loggers at https://pytorch.org/docs/stable/tensorboard.html
 
-        Logger directory info :
-            log_train_step: to log each step in the training process
-            log_val_step: to log each step in the validation process
+        Logger directory info:
+        1. log_train_step: to log each step in the training process
+        2. log_val_step: to log each step in the validation process
 
     save_dir : Optional[str]
         Folder where the trained model is going to be saved.
@@ -144,49 +143,61 @@ def train(
         It also adds to the configs dictionary whether the algorithm was returning the best model or not
         at configs['return_best_model'].
 
-    Saved Data
-    ----------
+    Notes
+    -----
     A) After the end of the last epoch, the algorithm saves two main files:
-        model_raw.pt: An exact copy of the model after the end of the training process. It can be loaded directly as
-        an instance of the model using:
-            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
-        training_data.pickle: A pytorch picle which contains the following keys:
-            - epochs: int
-                Number of epochs used for training the model
-            - algorithm:
-                Algorithm type that was being used. Either 'genetic' or 'gradient'.
-            - optimizer_state_dict: OrderedDict
-                State of the optimizer at the end of last epoch. It can be used to resume model training at that
-                exact point.
-            - model_state_dict: OrderedDict
-                It contains the value of the learnable parameters (weights, or in this case, control voltages) at
-                the point where all the training was finised.
-            - train_losses: list
-                A list of the loss performance over all epochs
-            - val_losses: list
-                A list of the loss performance over all epochs
+    model_raw.pt: An exact copy of the model after the end of the training process. It can be loaded directly as
+    an instance of the model using: my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+    training_data.pickle: A pytorch picle which contains the following keys:
+    
+    epochs: int
+    Number of epochs used for training the model
+    
+    algorithm:
+    Algorithm type that was being used. Either 'genetic' or 'gradient'.
+    
+    optimizer_state_dict: OrderedDict
+    State of the optimizer at the end of last epoch. It can be used to resume model training at that
+    exact point.
+    
+    model_state_dict: OrderedDict
+    It contains the value of the learnable parameters (weights, or in this case, control voltages) at
+    the point where all the training was finised.
+    
+    train_losses: list
+    A list of the loss performance over all epochs
+    
+    val_losses: list
+    A list of the loss performance over all epochs
+    
     B) If there is a validation dataset present, and return_best_model is set to true. The algorithm will
     save, each time that the validation loss is better than the previous, the following files:
-        best_model_raw.pt: An exact copy of the model when it got the best validation results. It can be
-        loaded directly as an instance of the model using:
-                            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
-        best_training_data.pickle: A pytorch picle which contains the following keys:
-            - epoch: int
-                Epoch at which the model with best validation loss was found.
-            - algorithm: str
-                Algorithm type that was being used. Either 'genetic' or 'gradient'.
-            - optimizer_state_dict: OrderedDict
-                State of the optimizer at the moment when the best validation loss was achieved. It can be used
-                to resume model training at that exact point.
-            - model_state_dict: OrderedDict
-                It contains the value of the learnable parameters (weights, or in this case, control voltages) at
-                the point where the best validation was achieved.
-            - train_loss: float
-                Training loss at the point where the best validation was achieved.
-            - validation_loss: float
-                Best validation loss achieved.
+    best_model_raw.pt: An exact copy of the model when it got the best validation results. It can be
+    loaded directly as an instance of the model using:
+    my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+    best_training_data.pickle: A pytorch picle which contains the following keys:
+
+    epoch: int
+    Epoch at which the model with best validation loss was found.
+
+    algorithm: str
+    Algorithm type that was being used. Either 'genetic' or 'gradient'.
+
+    optimizer_state_dict: OrderedDict
+    State of the optimizer at the moment when the best validation loss was achieved. It can be used
+    to resume model training at that exact point.
+
+    model_state_dict: OrderedDict
+    It contains the value of the learnable parameters (weights, or in this case, control voltages) at
+    the point where the best validation was achieved.
+    
+    train_loss: float
+    Training loss at the point where the best validation was achieved.
+    
+    validation_loss: float
+    Best validation loss achieved.
     """
-    train_checks(model, dataloaders, criterion, optimizer, configs, save_dir)
+    train_checks(model, dataloaders, criterion, optimizer, configs, save_dir, return_best_model)
 
     start_epoch = 0
     train_losses, val_losses = [], []
@@ -281,8 +292,11 @@ def train(
     }
 
 
-def train_checks(model, dataloaders, criterion, optimizer, configs, save_dir):
-    """ Performs several assertions over the parameters that enter the train function.
+def train_checks(model, dataloaders, criterion, optimizer, configs, save_dir, return_best_model):
+    """
+    Main training loop for off-chip gradient descent training  with early stopping using PyTorch.
+    It is a default training loop used for simple training tasks, but its code can be taken as a
+    reference on how to implement a training loop for more specific or complext tasks.
 
     Parameters
     ----------
@@ -291,44 +305,39 @@ def train_checks(model, dataloaders, criterion, optimizer, configs, save_dir):
         Processor, representing a hardware DNPU or a DNPU model, but it also can be a model that
         contains different more complex architectures using several processors.
 
-        - The model can have multiple DNPU instances.
-        - The model cannot be an instance of SurrogateModel or HardwareProcessor.
-        - The model should have the following methods implemented :
+        Note that the model can be a custom model (child of torch.nn.Module) containing multiple 
+        DNPU instances, but the model cannot be an instance of SurrogateModel or 
+        HardwareProcessor. If the model is a custom model, it should have the following methods
+        implemented:
 
-        1. format_targets : The hardware processor uses a waveform to represent points
-                            (see 5.1 in Introduction of the Wiki). Each point is represented with some
-                            slope and some plateau points. When passing through the hardware, there will
-                            be a difference between the output from the device and the input (in points).
-                            This function is used for the targets to have the same length in shape as the
-                            outputs. It simply repeats each point in the input as many times as there are
-                            points in the plateau. In this way, targets can then be compared against hardware
-                            outputs in the loss function.
+        format_targets : The hardware processor uses a waveform to represent points
+        (see 5.1 in Introduction of the Wiki). Each point is represented with some
+        slope and some plateau points. When passing through the hardware, there will
+        be a difference between the output from the device and the input (in points).
+        This function is used for the targets to have the same length in shape as the
+        outputs. It simply repeats each point in the input as many times as there are
+        points in the plateau. In this way, targets can then be compared against hardware
+        outputs in the loss function. This function should have the following input 
+        (x : torch.Tensor), that represents the rgets of the supervised learning problem, 
+        which will be extended to have the same length shape as the outputs from the processor.
 
-                                    Parameters
-                                    ----------
-                                    x : torch.Tensor
-                                    Targets of the supervised learning problem, that will be extended to have the same
-                                    length shape as the outputs from the processor.
+        regularizer : When the constraint_control_voltages parameter is set to "regul", the 
+        result from the custom method regularizer will be added to the loss function. It is used 
+        to add a penalisation to the loss function when found control voltages are outside the 
+        control electrode ranges. The developer should decide how this value will be computed. 
+        Each DNPU class contains a regularizer method that returns how much the current control
+        voltages of the DNPU are outside from the control electrode ranges. In a custom model, the
+        custom regularizer function can be composed by calling the regularizer function of instantiated
+        DNPUs. The custom regularizer method of a custom model only needs to be implemented if 
+        constraint_control_voltages = "regul" in the configs. An example can be 
+        found at: brainspy.processors.dnpu, inside the class DNPU.
 
-        2. set_regul_factor : This method only needs to be implemented if
-                              constraint_control_voltages = "regul" in the configs (see description below)
-
-                              Parameters
-                              ----------
-                              regul_factor : int
-                                            See description below
-
-        3. regularizer : This method only needs to be implemented if
-                         constraint_control_voltages = "regul" in the configs (see description below)
-                         An example can be found at: brainspy.processors.dnpu, inside the class DNPU
-
-                         Parameters : None
-
-        4. constraint_weights : This method only needs to be implemented if
-                         constraint_control_voltages = "clip" in the configs (see description below)
-
-                         Parameters : None
-
+        constraint_weights : When the constraint_control_voltages parameter is set to "clip", the 
+        trainer will call this function to clip the current control voltages, if they are outside from
+        the control electrode ranges to which they correspond. Each DNPU class contains a clip method 
+        (constraint_control_voltages) that clips current control voltage electrodes in this way.
+        This method only needs to be implemented in a custom model if 
+        constraint_control_voltages = "clip" in the configs.
 
     dataloaders : list
         A list containing one or two Pytorch dataloaders. The first dataloader corresponds to the
@@ -355,37 +364,41 @@ def train_checks(model, dataloaders, criterion, optimizer, configs, save_dir):
 
     configs : dict
         Dictionary containing the following extra configuration keys:
-            epochs : int
-                Number of passes through the entire training dataset.
-            constraint_control_voltages : str
-                When training models, typically it is desired for the control voltages to stay
-                within the ranges in which they where trained, in order to avoid extrapolating, or
-                reaching the clipping values. This str key can have the following values:
-                    'regul' : It applies a penalty to the loss function when control voltages go
-                              outside the  ranges in which they were trained. This method allows a
-                              bit of flexibility, enabling to find solutions that are, in some
-                              cases, slightly outside of the control voltage ranges. In order to be
-                              used, it also requires that the model has a method called
-                              'regularizer' which controls that penalty. An example can be found at:
-                              brainspy.processors.dnpu, inside the class DNPU, method regularizer.
-                    'clip' : It applies clipping after the backward pass and optimiser step. It
-                             enforces that the control voltage ranges will not be outside the
-                             ranges in which the model was trained. In order to use it, the model
-                             should have a method called 'constraint_weights'. An example can be
-                             found at: brainspy.processors.dnpu, inside the class DNPU, method
-                             constraint_weights.
+        
+        epochs : int
+        Number of passes through the entire training dataset.
+        
+        constraint_control_voltages : str
+        When training models, typically it is desired for the control voltages to stay
+        within the ranges in which they where trained, in order to avoid extrapolating, or
+        reaching the clipping values. This str key can have the following values:
+
+        1. 'regul' : It applies a penalty to the loss function when control voltages go
+        outside the  ranges in which they were trained. This method allows a
+        bit of flexibility, enabling to find solutions that are, in some
+        cases, slightly outside of the control voltage ranges. In order to be
+        used, it also requires that the model has a method called
+        'regularizer' which controls that penalty. An example can be found at:
+        brainspy.processors.dnpu, inside the class DNPU, method regularizer.
+
+        2. 'clip' : It applies clipping after the backward pass and optimiser step. It
+        enforces that the control voltage ranges will not be outside the
+        ranges in which the model was trained. In order to use it, the model
+        should have a method called 'constraint_weights'. An example can be
+        found at: brainspy.processors.dnpu, inside the class DNPU, method
+        constraint_weights.
 
     logger: logging (optional)
         It provides a way for applications to configure different log handlers.
-        by default None.
+        By default None.
         The logger should be an already initialised class that contains a method called
         'log_output', where the input is a single numpy array variable. It can be any class,
         and the data can be treated in the way the user wants.You can get more information about
         loggers at https://pytorch.org/docs/stable/tensorboard.html
 
-        Logger directory info :
-            log_train_step: to log each step in the training process
-            log_val_step: to log each step in the validation process
+        Logger directory info:
+        1. log_train_step: to log each step in the training process
+        2. log_val_step: to log each step in the validation process
 
     save_dir : Optional[str]
         Folder where the trained model is going to be saved.
@@ -395,6 +408,72 @@ def train_checks(model, dataloaders, criterion, optimizer, configs, save_dir):
     return_best_model : bool, optional
         to return the trained model instead of saving
         it to a directory, by default True
+
+    Returns
+    -------
+    model : torch.nn.Module
+        Trained model with best results according to the criterion fitness function.
+    training_data: dict
+        Dictionary returning relevant data produced while training the model.
+
+    configs['return_best_model']: boolean
+        It also adds to the configs dictionary whether the algorithm was returning the best model or not
+        at configs['return_best_model'].
+
+    Notes
+    -----
+    A) After the end of the last epoch, the algorithm saves two main files:
+    model_raw.pt: An exact copy of the model after the end of the training process. It can be loaded directly as
+    an instance of the model using: my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+    training_data.pickle: A pytorch picle which contains the following keys:
+    
+    epochs: int
+    Number of epochs used for training the model
+    
+    algorithm:
+    Algorithm type that was being used. Either 'genetic' or 'gradient'.
+    
+    optimizer_state_dict: OrderedDict
+    State of the optimizer at the end of last epoch. It can be used to resume model training at that
+    exact point.
+    
+    model_state_dict: OrderedDict
+    It contains the value of the learnable parameters (weights, or in this case, control voltages) at
+    the point where all the training was finised.
+    
+    train_losses: list
+    A list of the loss performance over all epochs
+    
+    val_losses: list
+    A list of the loss performance over all epochs
+    
+    B) If there is a validation dataset present, and return_best_model is set to true. The algorithm will
+    save, each time that the validation loss is better than the previous, the following files:
+    best_model_raw.pt: An exact copy of the model when it got the best validation results. It can be
+    loaded directly as an instance of the model using:
+    my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+    best_training_data.pickle: A pytorch picle which contains the following keys:
+
+    epoch: int
+    Epoch at which the model with best validation loss was found.
+
+    algorithm: str
+    Algorithm type that was being used. Either 'genetic' or 'gradient'.
+
+    optimizer_state_dict: OrderedDict
+    State of the optimizer at the moment when the best validation loss was achieved. It can be used
+    to resume model training at that exact point.
+
+    model_state_dict: OrderedDict
+    It contains the value of the learnable parameters (weights, or in this case, control voltages) at
+    the point where the best validation was achieved.
+    
+    train_loss: float
+    Training loss at the point where the best validation was achieved.
+    
+    validation_loss: float
+    Best validation loss achieved.
+ 
     """
     assert isinstance(
         model,
@@ -431,6 +510,7 @@ def train_checks(model, dataloaders, criterion, optimizer, configs, save_dir):
     assert save_dir is None or type(
         save_dir
     ) == str, "The name/path of the save_dir should be of type - str"
+    assert type(return_best_model) == bool, "Return best model should be boolean."
 
 
 def default_train_step(model,
@@ -490,19 +570,20 @@ def default_train_step(model,
         When training models, typically it is desired for the control voltages to stay
         within the ranges in which they where trained, in order to avoid extrapolating, or
         reaching the clipping values. This str key can have the following values:
-            'regul' : It applies a penalty to the loss function when control voltages go
-                        outside the  ranges in which they were trained. This method allows a
-                        bit of flexibility, enabling to find solutions that are, in some
-                        cases, slightly outside of the control voltage ranges. In order to be
-                        used, it also requires that the model has a method called
-                        'regularizer' which controls that penalty. An example can be found at:
-                        brainspy.processors.dnpu, inside the class DNPU, method regularizer.
-            'clip' : It applies clipping after the backward pass and optimiser step. It
-                        enforces that the control voltage ranges will not be outside the
-                        ranges in which the model was trained. In order to use it, the model
-                        should have a method called 'constraint_weights'. An example can be
-                        found at: brainspy.processors.dnpu, inside the class DNPU, method
-                        constraint_weights.
+        
+        1. 'regul' : It applies a penalty to the loss function when control voltages go
+        outside the  ranges in which they were trained. This method allows a
+        bit of flexibility, enabling to find solutions that are, in some
+        cases, slightly outside of the control voltage ranges. In order to be
+        used, it also requires that the model has a method called
+        'regularizer' which controls that penalty. An example can be found at:
+        brainspy.processors.dnpu, inside the class DNPU, method regularizer.
+        2. 'clip' : It applies clipping after the backward pass and optimiser step. It
+        enforces that the control voltage ranges will not be outside the
+        ranges in which the model was trained. In order to use it, the model
+        should have a method called 'constraint_weights'. An example can be
+        found at: brainspy.processors.dnpu, inside the class DNPU, method
+        constraint_weights.
 
     Returns
     -------

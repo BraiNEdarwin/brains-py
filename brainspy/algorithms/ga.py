@@ -30,7 +30,7 @@ class GeneticOptimizer:
         ----------
         gene_ranges : list
             The ranges of the learnable parameters that will be optimised using the algorithm.
-        partition : Union[list, torch.Tensor]
+        partition : list or torch.Tensor
             All possible solutions are stored in a pool that is ordered by fitness performance.
             The partition will identify the number of best performing solutions that will not
             mutate on each generation. Expected to be a list or torch.Tensor of length two.
@@ -400,63 +400,28 @@ def train(model: torch.nn.Module,
     """
     Main training loop for the genetic algorithm. It supports training a single DNPU hardware
     device on both on and off chip flavours. It only supports using a training dataset (not a
-    validation one).
-
-    More information on what a genetic algorithm is can be found at:
+    validation one). More information on what a genetic algorithm is can be found at:
     https://towardsdatascience.com/introduction-to-genetic-algorithms-including-example-code-e396e98d8bf3
 
     Parameters
     ----------
     model : torch.nn.Module
-        Model to be trained.
-
-        - The model cannot be an instance of SurrogateModel, HardwareProcessor or Processor.
-        - The model can only consist of 1 DNPU instance.
-        - The model should have the following methods implemented :
-
-        1. set_control_voltages : To change the control voltages/bias of the network.
-
-                                    Parameters
-                                    ----------
-                                    bias : torch.Tensor
-                                        New value of the bias/control voltage.
-                                        One dimensional tensor.
-
-        2. format_targets : The hardware processor uses a waveform to represent points
-                            (see 5.1 in Introduction of the Wiki). Each point is represented with some
-                            slope and some plateau points. When passing through the hardware, there will
-                            be a difference between the output from the device and the input (in points).
-                            This function is used for the targets to have the same length in shape as the
-                            outputs. It simply repeats each point in the input as many times as there are
-                            points in the plateau. In this way, targets can then be compared against hardware
-                            outputs in the loss function.
-
-                                    Parameters
-                                    ----------
-                                    x : torch.Tensor
-                                    Targets of the supervised learning problem, that will be extended to have the same
-                                    length shape as the outputs from the processor.
-
-
-        3. is_hardware : Return True if the device is connected to hardware and
-                         False if a simulation device is being used
-
-                                    Parameters : None
-
+        Model to be trained. Note that the model cannot be an instance of SurrogateModel, 
+        HardwareProcessor or Processor, it can only consist of 1 DNPU instance.
     dataloaders : list
-                  A list containing a single PyTorch Dataloader containing the training dataset.
-                  More information about dataloaders can be found at:
-                  https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
+        A list containing a single PyTorch Dataloader containing the training dataset.
+        More information about dataloaders can be found at:
+        https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
     criterion : <method>
-                Fitness function that will be used to train the model.
+        Fitness function that will be used to train the model.
     optimizer : GeneticOptimizer
-                Optimization method for sorting the genome pool by fitness and creating new
-                offspring based on the best resulting genomes.
+        Optimization method for sorting the genome pool by fitness and creating new
+        offspring based on the best resulting genomes.
     configs : dict
         A dictionary containing extra configurations for the algorithm.
-            * stop_threshold: float
-                When the criterion fitness function reaches the specified threshold, or a higher
-                value, the algorithm will stop.
+        * stop_threshold: float
+        When the criterion fitness function reaches the specified threshold, or a higher
+        value, the algorithm will stop.
     save_dir : Optional[str]
         Folder where the trained model is going to be saved. When None, the model will not be saved.
         By default None.
@@ -469,46 +434,45 @@ def train(model: torch.nn.Module,
     training_data: dict
         Dictionary returning relevant data produced while training the model.
 
-
-    Saved Data
-    ----------
+    Notes
+    -----
     A) After the end of the last epoch, the algorithm saves two main files:
-        model_raw.pt: This file is only saved when the model is not hardware (simulation).
-        The file is an exact copy of the model after the end of the training process.
-        It can be loaded directly as an instance of the model using:
-            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
-        training_data.pickle: A pytorch picle which contains the following keys:
-            - epochs: int
-                Number of epochs used for training the model
-            - algorithm:
-                Algorithm type that was being used. Either 'genetic' or 'gradient'.
-            - model_state_dict: OrderedDict
-                It contains the value of the learnable parameters (weights, or in this case, control voltages) at
-                the point where all the training was finised.
-            - performance: list
-                A list of the fitness function performance over all epochs
-            - correlations: list
-                A list of the correlation over all epochs
-            - genome_history: list
-                A list of the genomes that were used in each epoch
+    model_raw.pt: This file is only saved when the model is not hardware (simulation).
+    The file is an exact copy of the model after the end of the training process.
+    It can be loaded directly as an instance of the model using:
+    my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+    training_data.pickle: A pytorch picle which contains the following keys:
+    - epochs: int
+    Number of epochs used for training the model
+    - algorithm:
+    Algorithm type that was being used. Either 'genetic' or 'gradient'.
+    - model_state_dict: OrderedDict
+    It contains the value of the learnable parameters (weights, or in this case, control voltages) at
+    the point where all the training was finised.
+    - performance: list
+    A list of the fitness function performance over all epochs
+    - correlations: list
+    A list of the correlation over all epochs
+    - genome_history: list
+    A list of the genomes that were used in each epoch
 
     B) If the fitness performance is better than in previous epochs, the following files are saved:
-        best_model_raw.pt: This file is only saved when the model is not hardware (simulation). The file is an exact
-        copy of the model when it got the best validation results. It can be loaded directly as an instance of the
-        model using:
-            my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
-        best_training_data.pickle: A pytorch picle which contains the following keys:
-            - epoch: int
-                Epoch at which the model with best validation loss was found.
-            - algorithm: str
-                Algorithm type that was being used. Either 'genetic' or 'gradient'.
-            - model_state_dict: OrderedDict
-                It contains the value of the learnable parameters (weights, or in this case, control voltages)
-                at the point where the best validation was achieved.
-            - best_fitness: float
-                Training fitness at the point where the best validation was achieved.
-            - correlation: float
-                Correlation achieved on the best fitness achieved.
+    best_model_raw.pt: This file is only saved when the model is not hardware (simulation). The file is an exact
+    copy of the model when it got the best validation results. It can be loaded directly as an instance of the
+    model using:
+    my_model_instance_at_best_val_results = torch.load('best_model_raw.pt').
+    best_training_data.pickle: A pytorch picle which contains the following keys:
+    - epoch: int
+    Epoch at which the model with best validation loss was found.
+    - algorithm: str
+    Algorithm type that was being used. Either 'genetic' or 'gradient'.
+    - model_state_dict: OrderedDict
+    It contains the value of the learnable parameters (weights, or in this case, control voltages)
+    at the point where the best validation was achieved.
+    - best_fitness: float
+    Training fitness at the point where the best validation was achieved.
+    - correlation: float
+    Correlation achieved on the best fitness achieved.
     """
     assert isinstance(
         model,
