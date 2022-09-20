@@ -24,7 +24,8 @@ class DNPUConv2d(DNPU):
         """
         Applies a conv2d operation with time multiplexing on a core DNPU processor.
 
-        Attributes:
+        Parameters
+        ----------
         processor : brainspy.processors.processor.Processor
             An instance of a Processor, which can hold a DNPU model or a driver connection to the
             DNPU hardware.
@@ -135,7 +136,8 @@ class DNPUConv2d(DNPU):
         [Batch_size, window_no, in_chanels, node_no, input_electrode_no]. This function
         has to be called from outside the module, after its initialisation.
 
-        Attributes:
+        Parameters
+        ----------
         input_range : list
             The range that the original raw input data is going to have. It can be specified with
             two values [min, max], representing the minimum and maximum values that the input data
@@ -172,7 +174,8 @@ class DNPUConv2d(DNPU):
         if these are added by calling add_input_transform after the
         initialisation of this module. These call only needs to happen once.
 
-        Attributes:
+        Parameters
+        ----------
         x : torch.Tensor
             The raw input data to the convolution.
 
@@ -211,7 +214,8 @@ class DNPUConv2d(DNPU):
         the initialisation of the module. It is applied after the data has been reshaped into
         [Batch_size, window_no, in_chanels, node_no, input_electrode_no].
 
-        Attributes:
+        Parameters
+        ----------
             x : torch.Tensor
             Input data, reshaped as [Batch_size, window_no, in_chanels, node_no, input_electrode_no]
 

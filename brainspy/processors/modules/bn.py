@@ -12,13 +12,6 @@ class DNPUBatchNorm(DNPU):
     More information about batch normalisation can be found in:
     https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm1d.html
 
-    Attributes:
-    bn : torch.nn.Module
-        A batch normalisation module that is an instance of a torch.nn.Module.
-    verbose : bool
-        Indicate whether to print certain steps.
-    raw_model : nn.Sequential
-        Torch object containing the layers and activations of the network.
     """
     def __init__(self,
                  processor: Processor,
@@ -36,7 +29,8 @@ class DNPUBatchNorm(DNPU):
         More information about batch normalisation can be found in:
         https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm1d.html
 
-        Attributes:
+        Parameters
+        ----------
         processor : brainspy.processors.processor.Processor
             An instance of a Processor, which can hold a DNPU model or a driver connection to the
             DNPU hardware.
@@ -88,7 +82,8 @@ class DNPUBatchNorm(DNPU):
                             eps=eps)
 
     def forward(self, x):
-        """  Run a forward pass through the processor, including any time-multiplexing modules that
+        """  
+        Run a forward pass through the processor, including any time-multiplexing modules that
         are declared to be measured in the same layer. After getting the output from the processor
         the output is passed through the batch normalisation layer.
 
@@ -107,15 +102,16 @@ class DNPUBatchNorm(DNPU):
         return self.batch_norm_output
 
     def get_logged_variables(self):
-        """ Get the otuput results from each layer from the last forward pass.
+        """ 
+        Get the otuput results from each layer from the last forward pass.
 
-            Returns
-            -------
-            dict
-                Dictionary containing the output from the last forward pass as a dictionary.
-                    c_dnpu_output: Output of the dnpu / dnpu layer
-                    d_batch_norm_output: Output of the batch norm layer
-            """
+        Returns
+        -------
+        dict
+            Dictionary containing the output from the last forward pass as a dictionary.
+            1. c_dnpu_output: Output of the dnpu / dnpu layer
+            2. d_batch_norm_output: Output of the batch norm layer
+        """
         return {
             "c_dnpu_output": self.dnpu_output.clone().detach(),
             "d_batch_norm_output": self.batch_norm_output.clone().detach(),
