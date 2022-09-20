@@ -13,11 +13,11 @@ class NeuralNetworkModel(nn.Module):
     with a neural network model. It consists of a custom length fully connected layer.
 
     Attributes:
-    model_structure : dict
-        Dictionary containing the model structure; keys explained in
-        constructor method.
-    raw_model : nn.Sequential
-        Torch object containing the layers and activations of the network.
+    1. model_structure : dict
+    Dictionary containing the model structure; keys explained in
+    constructor method.
+    2. raw_model : nn.Sequential
+    Torch object containing the layers and activations of the network.
     """
     def __init__(self, model_structure: dict):
         """
@@ -26,15 +26,18 @@ class NeuralNetworkModel(nn.Module):
         ----------
         model_structure : dict
             Dictionary containing the model structure.
-            D_in : int
-                Number of inputs (electrodes).
-            D_out : int
-                Number of outputs (electrodes).
-            activation : str
-                Type of activation. Supported activations are "relu", "elu",
-                "tanh", "hard-tanh", or "sigmoid".
-            hidden_sizes : list[int]
-                Sizes of the hidden layers.
+            1. D_in : int
+            Number of inputs (electrodes).
+            
+            2. D_out : int
+            Number of outputs (electrodes).
+            
+            3. activation : str
+            Type of activation. Supported activations are "relu", "elu",
+            "tanh", "hard-tanh", or "sigmoid".
+            
+            4. hidden_sizes : list[int]
+            Sizes of the hidden layers.
         """
         super(NeuralNetworkModel, self).__init__()
         self.build_model_structure(model_structure)
@@ -45,20 +48,25 @@ class NeuralNetworkModel(nn.Module):
         First perform the consistency check, then set the layers and
         activations.
         This method is called when an object is created.
+
         Parameters
         ----------
         model_structure : dict
             Dictionary containing the weights and activations of the model.
-            The following keys are required :
-                D_in : int
-                    Number of inputs (electrodes).
-                D_out : int
-                    Number of outputs (electrodes).
-                activation : str
-                    Type of activation. Supported activations are "relu", "elu",
-                    "tanh", "hard-tanh", or "sigmoid".
-                hidden_sizes : list[int]
-                    Sizes of the hidden layers.
+            The following keys are required:
+
+            1. D_in : int
+            Number of inputs (electrodes).
+
+            2. D_out : int
+            Number of outputs (electrodes).
+
+            3. activation : str
+            Type of activation. Supported activations are "relu", "elu",
+            "tanh", "hard-tanh", or "sigmoid".
+            
+            4. hidden_sizes : list[int]
+            Sizes of the hidden layers.
         """
         if model_structure is None:
             model_structure = {}
@@ -88,6 +96,7 @@ class NeuralNetworkModel(nn.Module):
         >>> model = NeuralNetworkModel(d)
         >>> model.forward(torch.tensor([1.0, 2.0, 3.0]))
         torch.Tensor([4.0])
+
         Parameters
         ----------
         x : torch.Tensor
@@ -105,19 +114,23 @@ class NeuralNetworkModel(nn.Module):
         Get the activation of the model. If it's a string then return an
         actual activation object, if that type of activation is implemented.
         If string is not recognized, raise warning and return relu.
+
         Example
         -------
         >>> model = NeuralNetworkModel(d)
         >>> model._get_activation("tanh")
         nn.Tanh
+
         Parameters
         ----------
         activation : str
             Type of activation, can be relu, elu, tanh, hard-tanh, sigmoid.
+
         Returns
         -------
         activation
             An activation object.
+
         Raises
         ------
         UserWarning
@@ -144,10 +157,12 @@ class NeuralNetworkModel(nn.Module):
         number and sizes are defined in the config? If they aren't, set them
         to default values and print a warning.
         This method is called when an object is created.
+
         Parameters
         ----------
         model_structure : dict
             Dictionary of the configs.
+
         Raises
         ------
         UserWarning

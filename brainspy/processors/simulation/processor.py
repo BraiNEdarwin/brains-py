@@ -52,21 +52,21 @@ class SurrogateModel(nn.Module):
         """
         Create a processor, load the model. The effects of the model need to
         be set after initialization, there are 3 ways to do this:
-        - set_effects_from_dict
-        - set_effects
-        - using the method for each effect (set_amplitude, set_voltage_ranges,
+        1. set_effects_from_dict
+        2. set_effects
+        3. using the method for each effect (set_amplitude, set_voltage_ranges,
         set_output_clipping)
         For all of these, an info dictionary is required, which is explained
-        in set_effects_from_dict
+        in set_effects_from_dict method
 
         Example
         -------
         >>> model_structure = {
-                "D_in": 7,
-                "D_out": 1,
-                "activation": "relu",
-                "hidden_sizes": [20, 20, 20]
-            }
+        >>>        "D_in": 7,
+        >>>        "D_out": 1,
+        >>>        "activation": "relu",
+        >>>        "hidden_sizes": [20, 20, 20]
+        >>>    }
         >>> SurrogateModel(model_structure)
 
         In this example a SurrogateModel is instantiated with 7 input
@@ -197,48 +197,57 @@ class SurrogateModel(nn.Module):
         """
         Set the effects of the processor from a dictionary (voltage_ranges,
         amplification, output_clipping, noise). See set_effects for more
-        details.
-        Need to provide info dictionary in case configs are set to "default".
+        details.Need to provide info dictionary in case configs are set
+        to "default".
 
         Effect values are provided as lists and stored as tensors.
 
         Example
         -------
         >>> configs = {"amplification": [2.0],
-                       "voltage_ranges": [[1.0, 2.0]] * 7,
-                       "output_clipping": [2.0, 1.0]}
+        >>>            "voltage_ranges": [[1.0, 2.0]] * 7,
+        >>>            "output_clipping": [2.0, 1.0]}
         >>> model.set_effects_from_dict(info_dict, configs)
 
         Parameters
         ----------
         info : dict
             Info dictionary of the processor.
-            activation_electrodes:
-                electrode_no : int
-                    Number of activation electrodes.
-                voltage_ranges : list[list[float]]
-                    Voltage ranges for the input (activation) electrodes.
-                    Should contain a pair of values (min and max) for each
-                    input.
-            output_electrodes:
-                electrode_no : int
-                    Number of output electrodes.
-                amplification : list[float]
-                    Amplification applied to the output electrodes.
-                output_clipping : list[float]
-                    Clipping applied to the output electrodes (2 elements:
-                    maximum and minimum value in that order).
+            1. activation_electrodes:
+
+            1.1 electrode_no : int
+            Number of activation electrodes.
+
+            1.2 voltage_ranges : list[list[float]]
+            Voltage ranges for the input (activation) electrodes.
+            Should contain a pair of values (min and max) for each
+            input.
+
+            2. output_electrodes:
+            2.1 electrode_no : int
+            Number of output electrodes.
+
+            2.2 amplification : list[float]
+            Amplification applied to the output electrodes.
+
+            2.3 output_clipping : list[float]
+            Clipping applied to the output electrodes (2 elements:
+            maximum and minimum value in that order).
         configs : dict
             Dictionary containing the desired effects.
-            amplification : list[float]
-                Optional, ampfliciation to be applied to the output of the
-                network.
-            voltage_ranges : list[list[float]]
-                Optional, voltage ranges of the input electrodes.
-            output_clipping : list[float]
-                Clipping applied to the output electrodes.
-            noise : dict
-                Optional, noise to be applied to the output of the network.
+
+            1. amplification : list[float]
+            Optional, ampfliciation to be applied to the output of the
+            network.
+
+            2. voltage_ranges : list[list[float]]
+            Optional, voltage ranges of the input electrodes.
+
+            3. output_clipping : list[float]
+            Clipping applied to the output electrodes.
+
+            4. noise : dict
+            Optional, noise to be applied to the output of the network.
         """
         return self.set_effects(
             info,
