@@ -7,12 +7,13 @@ Welcome to brainspy's documentation!
 ====================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
 
-   modules
-   autoapi/index
-
+.. autosummary::
+   :toctree: _autosummary
+   :recursive:
+   
+   brainspy
+   
 Indices and tables
 ==================
 
