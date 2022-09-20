@@ -508,7 +508,8 @@ class DNPU(nn.Module):
         [Batch_size, window_no, in_chanels, node_no, input_electrode_no]. This function
         has to be called from outside the module, after its initialisation.
 
-        Attributes:
+        Parameters
+        ----------
         input_range : list
             The range that the original raw input data is going to have. It can be specified with
             two values [min, max], representing the minimum and maximum values that the input data
@@ -520,6 +521,7 @@ class DNPU(nn.Module):
         strict : boolean
             Defines if the input is going to be clipped before doing the linear transformation in
             order to ensure that the transformation is correct.
+
         """
         self.input_transform = True
         self.input_clip = strict

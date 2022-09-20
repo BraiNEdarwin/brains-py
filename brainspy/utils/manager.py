@@ -20,8 +20,9 @@ def get_criterion(name: str):
 
     Parameters
     ----------
-    name : Name of the criterion that will be instantiated from
-           brainspy.algorithms.modules.signal
+    name : str
+        Name of the criterion that will be instantiated from
+        brainspy.algorithms.modules.signal
 
     Returns
     -------
@@ -65,19 +66,21 @@ def get_optimizer(model: object, configs: dict):
     parameters from the model. On the genetic algorithm, it is required to gather the
     control ranges.
 
-    configs : dict
-            This configuration is different depending on whether a genetic or
-            a gradient descent optimiser is requested.
-                Gradient descent keys: See the function get_adam
-                Genetic algorithm keys:
-                    * Gene range (Optional): Specifies what is the range of the control
-                                                electrodes. If this key is not present, the
-                                                gene range will be calculated automatically
-                                                from the control electrode range function
-                                                of the model.
-                    * Partition: Tuple[int, int] Defines the partition of genomes when
-                        generating offspring.
-                    * Epochs: Number of loops that the algorithm is going to take.
+    1. configs : dict
+    This configuration is different depending on whether a genetic or
+    a gradient descent optimiser is requested.
+    
+    1.1 For gradient descent keys: See the function get_adam
+    
+    1.2 For genetic algorithm keys:
+    
+    1.2.1 Gene range (Optional): Specifies what is the range of the control
+    electrodes. If this key is not present, the gene range will be calculated automatically
+    from the control electrode range function of the model.
+                    
+    1.2.2 Partition: Tuple[int, int] Defines the partition of genomes when generating offspring.
+    
+    1.2.3 Epochs: Number of loops that the algorithm is going to take.
 
     Returns
     -------
@@ -132,15 +135,16 @@ def get_adam(model: object, configs: dict = {}):
     model : torch.nn.Module
         A Module object which can be a DNPU,Processor or a SurrogateModel
         object.
-    configs (dict): Configurations of the adam optimizer. The configurations do not require to have
-                    all of these keys. The keys of the dictionary are as follows:
-                        * learning_rate: float
-                        * betas: Tuple[float, float]
-                        * epsilon: float
-                        * weight_decay: float
-                        * amsgrad: boolean
-            More information on what these keys do can be found at:
-            https://pytorch.org/docs/stable/generated/torch.optim.Adam.html#torch.optim.Adam
+    configs: dict
+        Configurations of the adam optimizer. The configurations do not require to have
+        all of these keys. The keys of the dictionary are as follows:
+        1. learning_rate: float
+        2. betas: Tuple[float, float]
+        3. epsilon: float
+        4. weight_decay: float
+        5. amsgrad: boolean
+        More information on what these keys do can be found at:
+        https://pytorch.org/docs/stable/generated/torch.optim.Adam.html#torch.optim.Adam
 
     Returns
     -------
@@ -191,18 +195,18 @@ def get_algorithm(name: str):
     """
     To get a default train function for either GA - genetic algorithm or GD - Gradient Descent,
     based on its name.
-    Genetic Algorithm : In computer science and operations research, a genetic algorithm (GA) is a
-                        meta-heuristic inspired by the process of natural selection that belongs to
-                        the larger class of evolutionary algorithms (EA). Genetic algorithms are
-                        commonly used to generate high-quality solutions to optimization and search
-                        problems by relying on bio-inspired operators such as mutation, crossover
-                        and selection. This algorithm is suitable for experiments with reservoir
-                        computing.
+    1. Genetic Algorithm : In computer science and operations research, a genetic algorithm (GA) is a
+    meta-heuristic inspired by the process of natural selection that belongs to
+    the larger class of evolutionary algorithms (EA). Genetic algorithms are
+    commonly used to generate high-quality solutions to optimization and search
+    problems by relying on bio-inspired operators such as mutation, crossover
+    and selection. This algorithm is suitable for experiments with reservoir
+    computing.
 
     Gradient Descent : Gradient descent is a first-order iterative optimization algorithm for
-                       finding the minimum of a function. To find a local minimum of a function
-                       using gradient descent, one takes steps proportional to the negative of
-                       the gradient (or approximate gradient) of the function at the current point.
+    finding the minimum of a function. To find a local minimum of a function
+    using gradient descent, one takes steps proportional to the negative of
+    the gradient (or approximate gradient) of the function at the current point.
 
     Parameters
     ----------
@@ -237,15 +241,15 @@ def get_driver(configs: dict):
     To get an instance of a driver object from brainspy.processors.hardware.drivers.nidaq/cdaq
     based on a configurations dictionary.
     The driver here are defined under the processor type tag in the configs dictionary and can be a
-        SurrogateModel (Software processor) -  It is a deep neural network with information about
-                        the control voltage ranges, the amplification of the device and relevant
-                        noise simulations that it may have.
-        Hardware Processor - It establishes a connection (for a single, or multiple hardware DNPUs)
-                             with one of the following National Instruments measurement devices.
-                * CDAQ-to-NiDAQ
-                * CDAQ-to-CDAQ
-                        * With a regular rack
-                        * With a real time rack
+    
+    1. SurrogateModel (Software processor) -  It is a deep neural network with information about
+    the control voltage ranges, the amplification of the device and relevant
+    noise simulations that it may have.
+    
+    2. Hardware Processor - It establishes a connection (for a single, or multiple hardware DNPUs)
+    with one of the following National Instruments measurement devices.
+    * CDAQ-to-NiDAQ
+    * CDAQ-to-CDAQ
 
     Parameters
     -----------
@@ -261,52 +265,54 @@ def get_driver(configs: dict):
     brainspy.processors.hardware.drivers.ni.NationalInstrumentsSetup: Returns and driver object
     which can be CDAQtoCDAQ or CDAQtoNiDAQ.
 
+    Example
+    --------
     Example to load a CDAQtoNiDAQ driver
     (differnt configurations can be provided for differt drivers)
-    --------
-        configs = {}
-        configs["processor_type"] = "cdaq_to_nidaq"
-        configs["input_indices"] = [2, 3]
-        configs["electrode_effects"] = {}
-        configs["electrode_effects"]["amplification"] = 3
-        configs["electrode_effects"]["clipping_value"] = [-300, 300]
-        configs["electrode_effects"]["noise"] = {}
-        configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
-        configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
-        configs["driver"] = {}
 
-        configs["driver"]["instruments_setup"] = {}
-        configs["driver"]["instruments_setup"]["multiple_devices"] = False
-        configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
-        configs["driver"]["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
-        configs["driver"]["instruments_setup"]["activation_sampling_frequency"] = 1000
-        configs["driver"]["instruments_setup"]["activation_channels"] = [
-            0,
-            2,
-            5,
-            3,
-            4,
-            6,
-            1,
-        ]
-        configs["driver"]["instruments_setup"]["activation_voltages"] = [
-            [-1.2, 0.6],
-            [-1.2, 0.6],
-            [-1.2, 0.6],
-            [-1.2, 0.6],
-            [-1.2, 0.6],
-            [-0.7, 0.3],
-            [-0.7, 0.3],
-        ]
-        configs["driver"]["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
-        configs["driver"]["instruments_setup"]["readout_sampling_frequency"] = 1000
-        configs["driver"]["instruments_setup"]["readout_channels"] = [
-            4
-        ]
-        configs["waveform"] = {}
-        configs["waveform"]["plateau_length"] = 10
-        configs["waveform"]["slope_length"] = 30
-        driver = get_driver(configs)
+    configs = {}
+    configs["processor_type"] = "cdaq_to_nidaq"
+    configs["input_indices"] = [2, 3]
+    configs["electrode_effects"] = {}
+    configs["electrode_effects"]["amplification"] = 3
+    configs["electrode_effects"]["clipping_value"] = [-300, 300]
+    configs["electrode_effects"]["noise"] = {}
+    configs["electrode_effects"]["noise"]["noise_type"] = "gaussian"
+    configs["electrode_effects"]["noise"]["variance"] = 0.6533523201942444
+    configs["driver"] = {}
+
+    configs["driver"]["instruments_setup"] = {}
+    configs["driver"]["instruments_setup"]["multiple_devices"] = False
+    configs["driver"]["instruments_setup"]["trigger_source"] = "cDAQ1/segment1"
+    configs["driver"]["instruments_setup"]["activation_instrument"] = "cDAQ1Mod3"
+    configs["driver"]["instruments_setup"]["activation_sampling_frequency"] = 1000
+    configs["driver"]["instruments_setup"]["activation_channels"] = [
+        0,
+        2,
+        5,
+        3,
+        4,
+        6,
+        1,
+    ]
+    configs["driver"]["instruments_setup"]["activation_voltages"] = [
+        [-1.2, 0.6],
+        [-1.2, 0.6],
+        [-1.2, 0.6],
+        [-1.2, 0.6],
+        [-1.2, 0.6],
+        [-0.7, 0.3],
+        [-0.7, 0.3],
+    ]
+    configs["driver"]["instruments_setup"]["readout_instrument"] = "cDAQ1Mod4"
+    configs["driver"]["instruments_setup"]["readout_sampling_frequency"] = 1000
+    configs["driver"]["instruments_setup"]["readout_channels"] = [
+        4
+    ]
+    configs["waveform"] = {}
+    configs["waveform"]["plateau_length"] = 10
+    configs["waveform"]["slope_length"] = 30
+    driver = get_driver(configs)
 
     """
     if configs["instrument_type"] == "cdaq_to_cdaq":

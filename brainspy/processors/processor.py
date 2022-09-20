@@ -46,31 +46,42 @@ class Processor(nn.Module):
         Parameters
         ----------
         configs : dict
-            processor_type : str
-                Type of processor, can be
-                "simulation",
-                "cdaq_to_cdaq" (hardware),
-                "cdaq_to_nidaq" (hardware), or
-                "simulation_debug".
-            electrode_effects : dict
-                (Only for simulation)
-                Electode effects for simulation processors.
-                Documented in SurrogateModel, set effects method.
-            waveform:
-                slope_length : int
-                    Length of the slopes, see waveform.py.
-                plateau_length : int
-                    Length of the plateaus, see waveform.py.
-            driver:
-                Only for hardware, refer to HardwareProcessor for keys.
+            A dictionary that contains the following keys:
+            
+            1. processor_type : str
+            Type of processor, can be
+            simulation",
+            "cdaq_to_cdaq" (hardware),
+            "cdaq_to_nidaq" (hardware), or
+            "simulation_debug".
+            
+            2. electrode_effects : dict
+            (Only for simulation)
+            Electode effects for simulation processors.
+            Documented in SurrogateModel, set effects method.
+            
+            3. waveform: which contains the following parameters:
+            
+            3.1 slope_length : int
+            Length of the slopes, see waveform.py.
+            
+            3.2 plateau_length : int
+            Length of the plateaus, see waveform.py.
+
+            4. driver:
+            Only for hardware, refer to HardwareProcessor for a description of the keys.
         info : dict
-            model_structure : dict
-                Dimensions of the neural network.
-                Documented in SurrogateModel, init method.
-            electrode_info : dict
-                Dictionary containing the default values for the electrodes in
-                the simulation processor.
-                Documented in SurrogateModel, set effects method (see info).
+            A dictionary that contains the following keys:
+            
+            1. model_structure : dict
+            Dimensions of the neural network.
+            Documented in SurrogateModel, init method.
+            
+            2. electrode_info : dict
+            Dictionary containing the default values for the electrodes in
+            the simulation processor.
+            Documented in SurrogateModel, set effects method (see info).
+
         model_state_dict : collections.OrderedDict, optional
             State dictionary of the simulation model,
             parameters of the pytorch neural network; if not given, will be
@@ -373,37 +384,40 @@ def get_electrode_info(configs):
 
     Parameters
     ----------
-    configs: dict
-        driver:
-            amplification: Amplification correction value of the output. Calculated from the op-amp.
-            instruments_setup:
-                multiple_devices:
-                activation_channels
-                activation_voltage_ranges
-                readout_channels
+    1. configs: dict
+        Refer to HardwareProcessor for a description of the keys.
+    
 
     Returns
     -------
     electrode_info : dict
         Configuration dictionary containing all the keys related to the electrode information:
-            * electrode_no: int
-                Total number of electrodes in the device
-            * activation_electrodes: dict
-                - electrode_no: int
-                    Number of activation electrodes used for gathering the data
-                - voltage_ranges: list
-                    Voltage ranges used for gathering the data. It contains the ranges per
-                    electrode, where the shape is (electrode_no,2). Being 2 the minimum and maximum
-                    of the ranges, respectively.
-            * output_electrodes: dict
-                - electrode_no : int
-                    Number of output electrodes used for gathering the data
-                - clipping_value: list[float,float]
-                    Value used to apply a clipping to the sampling data within the specified values.
-                - amplification: float
-                    Amplification correction factor used in the device to correct the amplification
-                    applied to the output current in order to convert it into voltage before its
-                    readout.
+        
+        1. electrode_no: int
+        Total number of electrodes in the device
+        
+        2. activation_electrodes: dict
+
+        2.1 electrode_no: int
+        Number of activation electrodes used for gathering the data
+                
+        2.2 voltage_ranges: list
+        Voltage ranges used for gathering the data. It contains the ranges per
+        electrode, where the shape is (electrode_no,2). Being 2 the minimum and maximum
+        of the ranges, respectively.
+
+        3. output_electrodes: dict
+        
+        3.1 electrode_no : int
+        Number of output electrodes used for gathering the data
+        
+        3.2 clipping_value: list[float,float]
+        Value used to apply a clipping to the sampling data within the specified values.
+        
+        3.3 amplification: float
+        Amplification correction factor used in the device to correct the amplification
+        applied to the output current in order to convert it into voltage before its
+        readout.
     """
     electrode_info = {}
     assert not configs['driver']['instruments_setup'][
