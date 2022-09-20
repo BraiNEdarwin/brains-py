@@ -11,34 +11,36 @@ from threading import Thread
 from brainspy.processors.hardware.drivers.ni.tasks import IOTasksManager
 from brainspy.processors.hardware.drivers.ni.channels import is_device_name
 """
-SECURITY FLAGS.
-WARNING - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
+This class includes the following security flags.
+
+WARNING! - INCORRECT VALUES FOR THESE FLAGS CAN RESULT IN DAMAGING THE DEVICES
 
 General flags:
 
-    * INPUT_VOLTAGE_THRESHOLD: The maximum voltage threshold that will be allowed to be sent to
-                               devices.
+INPUT_VOLTAGE_THRESHOLD: The maximum voltage threshold that will be allowed to be sent to
+devices.
 
-Flags related to the CDAQ TO NIDAQ Setup:
+* Flags related to the CDAQ TO NIDAQ Setup:
 
-    * CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS: The value will be added to the flag
-                                          max_ramping_time_seconds : int
-                                          This is an internal flag used to control that devices do
-                                          not exceed this time threshold, as steep rampings can can
-                                          damage DNPU devices. It will only apply to the CDAQ to
-                                          NIDAQ setup.
-    * SYNCHRONISATION_VALUE: It determines the time that will be taken to do the synchronisation
-                             signal from the cdaq to the nidaq device. Do not reduce it to less
-                             than 0.02
+1. CDAQ_TO_NIDAQ_RAMPING_TIME_SECONDS: The value will be added to the flag
+max_ramping_time_seconds : int
+This is an internal flag used to control that devices do
+not exceed this time threshold, as steep rampings can can
+damage DNPU devices. It will only apply to the CDAQ to
+NIDAQ setup.
 
-Flags related to the CDAQ TO CDAQ Setup:
+2. SYNCHRONISATION_VALUE: It determines the time that will be taken to do the synchronisation
+signal from the cdaq to the nidaq device. Do not reduce it to less
+than 0.02
 
-    * CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS: The value will be added to the flag
-                                         max_ramping_time_seconds : int
-                                         This is an internal flag used to control that devices do
-                                         not exceed this time threshold, as steep rampings can can
-                                         damage DNPU devices. It will apply to any CDAQ to CDAQ
-                                         setups, with or without real-time rack.
+* Flags related to the CDAQ TO CDAQ Setup:
+
+1. CDAQ_TO_CDAQ_RAMPING_TIME_SECONDS: The value will be added to the flag
+max_ramping_time_seconds : int
+This is an internal flag used to control that devices do
+not exceed this time threshold, as steep rampings can can
+damage DNPU devices. It will apply to any CDAQ to CDAQ
+setups, with or without real-time rack.
 
 """
 
@@ -53,18 +55,18 @@ class NationalInstrumentsSetup:
     def __init__(self, configs):
         """
         This method invokes 4 other methods to :
-            1. Initialise the configurations of the setup.
+        1. Initialise the configurations of the setup.
 
-            2. Initialise the semaphore which will manage the main thread by synchronsing it with
-               the read/write of data.
+        2. Initialise the semaphore which will manage the main thread by synchronsing it with
+        the read/write of data.
 
-            3. Enable OS signals to support read/write in both linux and windows based operating
-               systems at all times. This ensures security for the device which can be interrupted
-               with a Ctrl+C command if something goes wrong. These functions are used to handle
-               the termination of the read task in such a way that enables the last read to finish,
-               and closes the tasks afterwards.
+        3. Enable OS signals to support read/write in both linux and windows based operating
+        systems at all times. This ensures security for the device which can be interrupted
+        with a Ctrl+C command if something goes wrong. These functions are used to handle
+        the termination of the read task in such a way that enables the last read to finish,
+        and closes the tasks afterwards.
 
-            4. To intialize the tasks driver based on the configurations.
+        4. To intialize the tasks driver based on the configurations.
 
         Parameters
         ----------
@@ -73,56 +75,64 @@ class NationalInstrumentsSetup:
             Key-value pairs required in the configs dictionary to initialise the driver are as
             follows:
 
-                inverted_output : bool
-                    True if inversion should be applied to the output of the DNPU, else False.
+            1. inverted_output : bool
+            True if inversion should be applied to the output of the DNPU, else False.
 
-                amplification: float
-                    The output current (nA) of the device is converted by the readout hardware to
-                    voltage (V), because it is easier to do the readout of the device in voltages.
-                    This output signal in nA is amplified by the hardware when doing this current to
-                    voltage conversion, as larger signals are easier to detect. In order to obtain
-                    the real current (nA) output of the device, the conversion is automatically
-                    corrected in software by multiplying by the amplification value again.
-                    The amplification value depends on the feedback resistance of each of the
-                    setups. You can find a guide of the amplification value needed for each setup
-                    at the brains-py wiki:
-                    https://github.com/BraiNEdarwin/brains-py/wiki/F.-Hardware-setups-at-BRAINS-research-group
+            2. amplification: float
+            The output current (nA) of the device is converted by the readout hardware to
+            voltage (V), because it is easier to do the readout of the device in voltages.
+            This output signal in nA is amplified by the hardware when doing this current to
+            voltage conversion, as larger signals are easier to detect. In order to obtain
+            the real current (nA) output of the device, the conversion is automatically
+            corrected in software by multiplying by the amplification value again.
+            The amplification value depends on the feedback resistance of each of the
+            setups. You can find a guide of the amplification value needed for each setup
+            at the brains-py wiki:
+            https://github.com/BraiNEdarwin/brains-py/wiki/F.-Hardware-setups-at-BRAINS-research-group
 
-                instruments_setup:
-                    multiple_devices: boolean
-                        False will initialise the drivers to read from a single hardware DNPU.
-                        True, will enable to read from more than one DNPU device at the same time.
-                    activation_instrument: str
-                        Name of the activation instrument as observed in the NI Max software.
-                        E.g., cDAQ1Mod3
-                    activation_sampling_frequency: int
-                        The number of samples to be obtained in one second,
-                        when transforming the activation signal from digital to analogue.
-                    activation_channels: list
-                        Channels through which voltages will be sent for activating the device
-                        (both data inputs and control voltage electrodes). The channels can be
-                        checked in the schematic of the DNPU device.
-                        E.g., [8,10,13,11,7,12,14]
-                    activation_voltage_ranges: list
-                        Minimum and maximum voltage for the activation electrodes.
-                        E.g., [[-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6],
-                        [-0.7, 0.3], [-0.7, 0.3]]
-                    readout_instrument: str
-                        Name of the readout instrument as observed in the NI Max
-                        software. E.g., cDAQ1Mod4
-                    readout_sampling_frequency: int
-                        The number of samples to be obtained in one second,
-                        when transforming the readout signal from analogue to digital.
-                    readout_channels: [2] list
-                        Channels for reading the output current values. The channels can be checked
-                        in the schematic of the DNPU device.
-                    trigger_source: str
-                        For synchronisation purposes, sending data for the activation voltages on
-                        one NI Task can trigger the readout device of another NI Task. In these
-                        cases, the trigger source name should be specified in the configs. This is
-                        only applicable for CDAQ to CDAQ setups (with or without real-time rack).
-                        E.g., cDAQ1/segment1 - More information at:
-                        https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
+            3. instruments_setup:
+            3.1 multiple_devices: boolean
+            False will initialise the drivers to read from a single hardware DNPU.
+            True, will enable to read from more than one DNPU device at the same time.
+
+            3.2 activation_instrument: str
+            Name of the activation instrument as observed in the NI Max software.
+            E.g., cDAQ1Mod3
+
+            3.3 activation_sampling_frequency: int
+            The number of samples to be obtained in one second,
+            when transforming the activation signal from digital to analogue.
+
+            3.4 activation_channels: list
+            Channels through which voltages will be sent for activating the device
+            (both data inputs and control voltage electrodes). The channels can be
+            checked in the schematic of the DNPU device.
+            E.g., [8,10,13,11,7,12,14]
+
+            3.5 activation_voltage_ranges: list
+            Minimum and maximum voltage for the activation electrodes.
+            E.g., [[-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6],
+            [-0.7, 0.3], [-0.7, 0.3]]
+
+            3.6 readout_instrument: str
+            Name of the readout instrument as observed in the NI Max
+            software. E.g., cDAQ1Mod4
+
+            3.7 readout_sampling_frequency: int
+            The number of samples to be obtained in one second,
+            when transforming the readout signal from analogue to digital.
+
+            3.8 readout_channels: [2] list
+            Channels for reading the output current values. The channels can be checked
+            in the schematic of the DNPU device.
+
+            3.9 trigger_source: str
+            For synchronisation purposes, sending data for the activation voltages on
+            one NI Task can trigger the readout device of another NI Task. In these
+            cases, the trigger source name should be specified in the configs. This is
+            only applicable for CDAQ to CDAQ setups (with or without real-time rack).
+            E.g., cDAQ1/segment1 - More information at:
+            https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
         """
         self.type_check(configs)
         self.init_configs(configs)
@@ -270,19 +280,21 @@ class NationalInstrumentsSetup:
         #         + "execution of this program.")
 
     def init_sampling_configs(self, configs):
-        """ Initialises configuration related to sampling.
-            It saves the variable io_point_difference, which is calculated dividing the
-            readout_sampling_frequency by the activation_sampling_frequency.
-            It asserts that the remainder of this division between frequencies is zero.
-            It raises a warning related to resolution loss if the activation_sampling_frequency
-            is higher than half of the readout_sampling_frequency.
+        """ 
+        Initialises configuration related to sampling.
+        It saves the variable io_point_difference, which is calculated dividing the
+        readout_sampling_frequency by the activation_sampling_frequency.
+        It asserts that the remainder of this division between frequencies is zero.
+        It raises a warning related to resolution loss if the activation_sampling_frequency
+        is higher than half of the readout_sampling_frequency.
 
-        Args:
-            configs (dict):
-                A dictionary containing at least the following keys:
-                - instruments_setup:
-                    readout_sampling_frequency: Frequency at which the ADC will sample.
-                    activation_sampling_frequency: Frequency at which the DAC will sample.
+        Parameters
+        ----------
+        configs: dict
+            A dictionary containing at least the following keys:
+            1. instruments_setup:
+            1.1 readout_sampling_frequency: Frequency at which the ADC will sample.
+            1.2 activation_sampling_frequency: Frequency at which the DAC will sample.
         """
         # if configs['instruments_setup']['multiple_devices']:
         #     first_time = True
@@ -456,22 +468,28 @@ class NationalInstrumentsSetup:
         the signal that is going to be writing and reading. This is only performed if there
         is a change with respect to the last number of points that were write/read.
         The calculation includes:
-            - last_points_to_write_val: Number of points that were sent in the previos write
-                                        attempt.
-            - offsetted_points_to_write: Number of points with to be written with an extra offset
-                                        that depends on the setup type. For cdaq, the default
-                                        offset is 1 point, for nidaq, it is calculated from the
-                                        sampling frequency.
-            - set_sampling_frequencies: Sets the sampling frequencies of the activation and readout
-                                        instruments.
-            - timeout: Specifies the timeout for reading. Read below for more information.
-            - points_to_read: Number of points that will be read given the number of points that
-                              are written and the activation/readout frequency relationship.
+
+        1. last_points_to_write_val: Number of points that were sent in the previos write
+        attempt.
+
+        2. offsetted_points_to_write: Number of points with to be written with an extra offset
+        that depends on the setup type. For cdaq, the default
+        offset is 1 point, for nidaq, it is calculated from the
+        sampling frequency.
+
+        3. set_sampling_frequencies: Sets the sampling frequencies of the activation and readout
+        instruments.
+
+        4. timeout: Specifies the timeout for reading. Read below for more information.
+
+        5. points_to_read: Number of points that will be read given the number of points that
+        are written and the activation/readout frequency relationship.
 
         Parameters
         ----------
         points_to_write : int
             Number of points to be written.
+
         timeout: float
             Specifies the amount of time in seconds to wait for samples to become
             available. If the time elapses, the method returns an error and any samples
@@ -480,8 +498,6 @@ class NationalInstrumentsSetup:
             indefinitely. If you set timeout to 0, the method tries once to read
             the requested samples and returns an error if it is unable to.
             By default, None, which calculates the timeout based on the frequency.
-
-
         """
         if self.last_points_to_write_val != points_to_write:
             self.last_points_to_write_val = points_to_write

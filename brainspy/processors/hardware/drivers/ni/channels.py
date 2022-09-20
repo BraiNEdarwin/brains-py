@@ -20,74 +20,83 @@ def init_channel_data(configs):
     configs: dict
         Dictionary containing information about the instruments setup. The dictionary contains
         the following keys:
-            instruments_setup:
-                multiple_devices: boolean
-                    Whether if the configurations contain the configurations of reading from a
-                    single DNPU hardware device or multiple DNPU hardware devices.
-                trigger_source: str
-                    For synchronisation purposes, sending data for the activation voltages on one NI
-                    Task can trigger the readout device of another NI Task. In these cases, the
-                    trigger source name should be specified in the configs. This is only applicable
-                    for CDAQ to
-                    CDAQ setups (with or without real-time rack).
-                    E.g., cDAQ1/segment1 - More information at:
-                    https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
-                The reminder of the keys work as follows. If the attribute multiple_devices is set
-                to False, the following configurations apply:
-                    activation_instrument: str
-                        The name of the National Instument device used for writing the data into the
-                        activation electrodes of the hardware DNPU device.
-                        (e.g., cDAQ1Mod2)
-                    activation_channels: list
-                        A list containing the physical ao channels of the National Instrument device
-                        that will be used for writing the data into the activation electrodes of the
-                        hardware DNPU device. (e.g., [6,0,7,5,2,4,3])
-                    activation_voltage_ranges: list
-                        The maximum and minimum voltage values that the National Instrument device
-                        will be allowed to sent through the activation electrodes of a particular
-                        DNPU hardware device. The shape is (activation_electrode_no,2) where the
-                        second dimension stands for minimum and maximum of the range, respectively.
-                        E.g,:
-                        [[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7]]
-                    activation_channel_mask: list
-                        A list of zeroes and ones, representing each of the channels that go to the
-                        activationelectrodes of a particular DNPU. The list should have a length of
-                        (activation_electrode_no). Each zero in the list will be a deactivated
-                        channel, each one in the list will be an activated channel.
-                        E.g., [0,0,0,0,0,0,0]
-                    readout_instrument: str
-                        Name of the instrument that is used for reading the output of a hardware
-                        DNPU. E.g., cDAQ1Mod4
-                    readout_channels: list
-                        List of physical channels of the National Instruments device from which the
-                        output of a hardware DNPU will be read. The length of the list is the same
-                        as the number of readout electrodes.
+        1. instruments_setup:
+        1.1 multiple_devices: boolean
+        Whether if the configurations contain the configurations of reading from a
+        single DNPU hardware device or multiple DNPU hardware devices.
 
-                If the attribute multiple_devices is set to True, the same keys as above need to be
-                encapsulated on a previous dictionary level.
-                This can be repeated for more than one device, as follows. E.g., in a .yaml format,
-                the configurations for two different DNPU hardware devices (A and B) can be
-                declared as follows:
-                    "
-                    multiple_devices: True
-                    trigger_source: cDAQ1/segment1
-                    A:
-                        activation_instrument: cDAQ1Mod2
-                        activation_channels: [6,0,7,5,2,4,3] #ao
-                        activation_voltage_ranges:
-                        [[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7]]
-                        activation_channel_mask: [0,0,0,0,0,0,0]
-                        readout_instrument: cDAQ1Mod4
-                        readout_channels: [0] # ai0
-                    B:
-                        activation_instrument: cDAQ1Mod1
-                        activation_channels: [4,3,5,2,0,7,1] #ao
-                        activation_voltage_ranges:
-                        [[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7]]
-                        activation_channel_mask: [0,0,0,0,0,0,0]
-                        readout_instrument: cDAQ1Mod4
-                        readout_channels: [3] #ai3
-                    "
+        1.2 trigger_source: str
+        For synchronisation purposes, sending data for the activation voltages on one NI
+        Task can trigger the readout device of another NI Task. In these cases, the
+        trigger source name should be specified in the configs. This is only applicable
+        for CDAQ to
+        CDAQ setups (with or without real-time rack).
+        E.g., cDAQ1/segment1 - More information at:
+        https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
+
+        A. The reminder of the keys work as follows. If the attribute multiple_devices is set
+        to False, the following configurations apply:
+
+        A.1 activation_instrument: str
+        The name of the National Instument device used for writing the data into the
+        activation electrodes of the hardware DNPU device.
+        (e.g., cDAQ1Mod2)
+
+        A.2 activation_channels: list
+        A list containing the physical ao channels of the National Instrument device
+        that will be used for writing the data into the activation electrodes of the
+        hardware DNPU device. (e.g., [6,0,7,5,2,4,3])
+
+        A.3 activation_voltage_ranges: list
+        The maximum and minimum voltage values that the National Instrument device
+        will be allowed to sent through the activation electrodes of a particular
+        DNPU hardware device. The shape is (activation_electrode_no,2) where the
+        second dimension stands for minimum and maximum of the range, respectively.
+        E.g,:
+        [[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7]]
+
+        A.4 activation_channel_mask: list
+        A list of zeroes and ones, representing each of the channels that go to the
+        activationelectrodes of a particular DNPU. The list should have a length of
+        (activation_electrode_no). Each zero in the list will be a deactivated
+        channel, each one in the list will be an activated channel.
+        E.g., [0,0,0,0,0,0,0]
+
+        A.5 readout_instrument: str
+        Name of the instrument that is used for reading the output of a hardware
+        DNPU. E.g., cDAQ1Mod4
+
+        A.6 readout_channels: list
+        List of physical channels of the National Instruments device from which the
+        output of a hardware DNPU will be read. The length of the list is the same
+        as the number of readout electrodes.
+
+        
+        B. If the attribute multiple_devices is set to True, the same keys as above need to be
+        encapsulated on a previous dictionary level.
+        This can be repeated for more than one device, as follows. E.g., in a .yaml format,
+        the configurations for two different DNPU hardware devices (A and B) can be
+        declared as follows:
+        
+        >>> multiple_devices: True
+        >>> trigger_source: cDAQ1/segment1
+        >>> A:
+        >>>     activation_instrument: cDAQ1Mod2
+        >>>     activation_channels: [6,0,7,5,2,4,3] #ao
+        >>>     activation_voltage_ranges:
+        >>>     [[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7]]
+        >>>     activation_channel_mask: [0,0,0,0,0,0,0]
+        >>>     readout_instrument: cDAQ1Mod4
+        >>>     readout_channels: [0] # ai0
+        >>> B:
+        >>>     activation_instrument: cDAQ1Mod1
+        >>>     activation_channels: [4,3,5,2,0,7,1] #ao
+        >>>     activation_voltage_ranges:
+        >>>     [[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7],[-1.2,0.7]]
+        >>>     activation_channel_mask: [0,0,0,0,0,0,0]
+        >>>     readout_instrument: cDAQ1Mod4
+        >>>     readout_channels: [3] #ai3
+
     Returns
     -------
     result: np.array
@@ -309,21 +318,23 @@ def init_activation_channels(configs, activation_channel_list=[]):
     Method to retrieve all the activation channel lists from more than one
     hardware DNPU devices, in cases where the PCB supports writing to
     more than one DNPU hardware device simultaneously.
+
     Parameters
     ----------
     configs: dict
-    Configurations of the driver. There is only one key needed to operate this function:
-        activation_channels: list
-            List of physical channels of the National Instruments device from which the input of a
-            hardware DNPU will be read. The length of the list is the same as the number of
-            activation electrodes.
-        activation_instrument: str
-            Name of the instrument that is used for writing the input of a hardware DNPU.
+        Configurations of the driver. There is only one key needed to operate this function:
+        1. activation_channels: list
+        List of physical channels of the National Instruments device from which the input of a
+        hardware DNPU will be read. The length of the list is the same as the number of
+        activation electrodes.
+
+        2. activation_instrument: str
+        Name of the instrument that is used for writing the input of a hardware DNPU.
 
     Returns
     -------
     ractivation_channel_list: list
-        A list containing all the activation channels currently registered in the list.
+    A list containing all the activation channels currently registered in the list.
     """
     assert type(configs) == dict, "The configurations should be of type - dict"
     for i in range(len(configs["activation_channels"])):
@@ -338,16 +349,19 @@ def init_readout_channels(configs: dict, readout_channel_list: list = []):
     Method to retrieve all the readout channel lists from more than one
     hardware DNPU devices, in cases where the PCB supports reading from
     more than one DNPU hardware device simultaneously.
+
     Parameters
     ----------
     configs: dict
-    Configurations of the driver. There is only one key needed to operate this function:
-        readout_channels: list
-            List of physical channels of the National Instruments device from which the output of a
-            hardware DNPU will be read. The length of the list is the same as the number of readout
-            electrodes.
-        readout_instrument: str
-            Name of the instrument that is used for reading the output of a hardware DNPU.
+        Configurations of the driver. There is only one key needed to operate this function:
+
+        1. readout_channels: list
+        List of physical channels of the National Instruments device from which the output of a
+        hardware DNPU will be read. The length of the list is the same as the number of readout
+        electrodes.
+
+        2. readout_instrument: str
+        Name of the instrument that is used for reading the output of a hardware DNPU.
 
     Returns
     -------
@@ -372,14 +386,15 @@ def get_mask(configs: dict):
     Parameters
     ----------
     configs: Configurations of the driver. There is only one key needed to operate in this function:
-        activation_channel_mask: Optional[list]
-            A list of zeroes and ones, representing each of the channels that go to the activation
-            electrodes of a particular DNPU. The list should have a length of
-            (activation_electrode_no). Each zero in the list will be a deactivated channel, each one
-            in the list will be an activated channel.
-            E.g., for an 8 electrode hardware DNPU with 7 activation electrodes:
-                activation_channel_mask = [0,1,1,1,1,1,1] will act as if the first electrode does
-                not exist.
+        1. activation_channel_mask: Optional[list]
+        A list of zeroes and ones, representing each of the channels that go to the activation
+        electrodes of a particular DNPU. The list should have a length of
+        (activation_electrode_no). Each zero in the list will be a deactivated channel, each one
+        in the list will be an activated channel.
+        
+        E.g., for an 8 electrode hardware DNPU with 7 activation electrodes:
+        activation_channel_mask = [0,1,1,1,1,1,1] will act as if the first electrode does
+        not exist.
 
     Returns
     -------

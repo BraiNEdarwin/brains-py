@@ -3,10 +3,11 @@ This file contains drivers to handle nidaqmx.Tasks on different environments, th
 National Instrument racks or National Instrument real-time racks.
 
 Both drivers work seamlessly, they declare the following nidaqmx.Task instances:
-        * activation_task: It handles sending signals to the (DNPU) device through electrodes
-                           declared as activation electrodes.
-        * readout_task: It handles reading signlas comming out from the (DNPU) device from
-                        electrodes declared as readout electrodes.
+1. activation_task: It handles sending signals to the (DNPU) device through electrodes
+declared as activation electrodes.
+
+2. readout_task: It handles reading signlas comming out from the (DNPU) device from
+electrodes declared as readout electrodes.
 
 Both nidaqmx.Task instances will declare a channel per electrode, and in the case of the cdaq
 to nidaq connection, they will also declare an extra synchronization channel.
@@ -35,10 +36,12 @@ class IOTasksManager:
     def __init__(self, configs):
         """
         It declares the following nidaqmx.Task instances:
-            * activation_task: It handles sending signals to the (DNPU) device through electrodes
-                            declared as activation electrodes.
-            * readout_task: It handles reading signlas comming out from the (DNPU) device from
-                            electrodes declared as readout electrodes.
+
+        1. activation_task: It handles sending signals to the (DNPU) device through electrodes
+        declared as activation electrodes.
+
+        2. readout_task: It handles reading signlas comming out from the (DNPU) device from
+        electrodes declared as readout electrodes.
 
         Both nidaqmx.Task instances will declare a channel per electrode, and in the case of the
         cdaq to nidaq connection, they will also declare an extra synchronization channel.
@@ -164,6 +167,7 @@ class IOTasksManager:
         Sets the sampling frequency for the activation and readout tasks. The activation
         task is in charge to send signals from the  computer to the NI module, and the
         readout task is in charge of reading signals from the NI module.
+
         Parameters
         ----------
         activation_sampling_frequency : int
@@ -346,17 +350,17 @@ class IOTasksManager:
         This write method is dynamic, and is capable of accepting the samples to write in the
         various forms for most operations:
 
-            Scalar: Single sample for 1 channel.
-            List/1D numpy.ndarray: Multiple samples for 1 channel or 1 sample for multiple channels.
-            List of lists/2D numpy.ndarray: Multiple samples for multiple channels.
+        Scalar: Single sample for 1 channel.
+        List/1D numpy.ndarray: Multiple samples for 1 channel or 1 sample for multiple channels.
+        List of lists/2D numpy.ndarray: Multiple samples for multiple channels.
 
         The data type of the samples passed in must be appropriate for the channel type of the task.
 
         For counter output pulse operations, this write method only accepts samples in these forms:
 
-            Scalar CtrFreq, CtrTime, CtrTick (from nidaqmx.types): Single sample for 1 channel.
-            List of CtrFreq, CtrTime, CtrTick (from nidaqmx.types): Multiple samples for 1 channel
-            or 1 sample for multiple channels.
+        Scalar CtrFreq, CtrTime, CtrTick (from nidaqmx.types): Single sample for 1 channel.
+        List of CtrFreq, CtrTime, CtrTick (from nidaqmx.types): Multiple samples for 1 channel
+        or 1 sample for multiple channels.
 
         If the task uses on-demand timing, this method returns only after the device generates all
         samples. On-demand is the default timing type if you do not use the timing property on the
@@ -376,7 +380,8 @@ class IOTasksManager:
 
         auto_start : Bool
             True to enable auto-start from nidaqmx drivers. False to
-            start the tasks immediately after writing.        """
+            start the tasks immediately after writing.        
+        """
 
         assert type(
             y
@@ -417,78 +422,93 @@ class IOTasksManager:
 
             The configs should have the following keys:
 
-                sampling_frequency: int
-                    The average number of samples to be obtained in one second, when transforming
-                    the signal from analogue to digital.
-                amplification: float
-                    The output current (nA) of the device is converted by the readout hardware to
-                    voltage (V), because it is easier to do the readout of the device in voltages.
-                    This output signal in nA is amplified by the hardware when doing this current
-                    to voltage conversion, as larger signals are easier to detect. In order to
-                    obtain the real current (nA) output of the device, the conversion is
-                    automatically corrected in software by multiplying by the amplification value
-                    again.
-                    The amplification value depends on the feedback resistance of each of the
-                    setups.
+            1. sampling_frequency: int
+            The average number of samples to be obtained in one second, when transforming
+            the signal from analogue to digital.
 
-                    Below, there is a guide of the amplification value needed for each of the
-                    setups:
+            2. amplification: float
+            The output current (nA) of the device is converted by the readout hardware to
+            voltage (V), because it is easier to do the readout of the device in voltages.
+            This output signal in nA is amplified by the hardware when doing this current
+            to voltage conversion, as larger signals are easier to detect. In order to
+            obtain the real current (nA) output of the device, the conversion is
+            automatically corrected in software by multiplying by the amplification value
+            again.
+                    
+            The amplification value depends on the feedback resistance of each of the
+            setups. Below, there is a guide of the amplification value needed for each of the
+            setups:
 
-                                        Darwin: Variable amplification levels:
-                                            A: 1000 Amplification
-                                            Feedback resistance: 1 MOhm
-                                            B: 100 Amplification
-                                            Feedback resistance 10 MOhms
-                                            C: 10 Amplification
-                                            Feedback resistance: 100 MOhms
-                                            D: 1 Amplification
-                                            Feedback resistance 1 GOhm
-                                        Pinky:  - PCB 1 (6 converters with):
-                                                Amplification 10
-                                                Feedback resistance 100 MOhm
-                                                - PCB 2 (6 converters with):
-                                                Amplification 100 tims
-                                                10 mOhm Feedback resistance
-                                        Brains: Amplfication 28.5
-                                                Feedback resistance, 33.3 MOhm
-                                        Switch: (Information to be completed)
-                                        If no correction is desired, the amplification can be set
-                                        to 1.
-            instruments_setup:
-                multiple_devices: boolean
-                    False will initialise the drivers to read from a single hardware DNPU.
-                    True, will enable to read from more than one DNPU device at the same time.
-                activation_instrument: str
-                    Name of the activation instrument as observed in the NI Max software.
-                    E.g.,  cDAQ1Mod3
-                activation_channels: list
-                    Channels through which voltages will be sent for activating the device
-                    (both data inputs and control voltage electrodes). The channels can be
-                    checked in the schematic of the DNPU device.
-                    E.g., [8,10,13,11,7,12,14]
-                activation_voltage_ranges: list
-                    Minimum and maximum voltage for the activation electrodes.
-                    E.g., [[-1.2, 0.6], [-1.2, 0.6],
-                    [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-0.7, 0.3], [-0.7, 0.3]]
-                readout_instrument: str
-                    Name of the readout instrument as observed in the NI Max software.
-                    E.g., cDAQ1Mod4
-                readout_channels: [2] list
-                    Channels for reading the output current values.
-                    The channels can be checked in the schematic of the DNPU device.
-                trigger_source: str
-                    For synchronisation purposes, sending data for the activation voltages on
-                    one NI Task can trigger the readout device of another NI Task. In these
-                    cases,the trigger source name should be specified in the configs.
-                    This is only applicable for CDAQ to CDAQ setups
-                    (with or without real-time rack).
-                    E.g., cDAQ1/segment1
-                    More information at
-                    https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
-            plateau_length: float - Length of the plateau that is being sent through the forward
-            call of the HardwareProcessor
-            slope_length : float - Length of the slopes in the waveforms sent to the device through
-            the drivers
+            Setup 1 - Darwin: Variable amplification levels:
+            A: 1000 Amplification
+            Feedback resistance: 1 MOhm
+            
+            B: 100 Amplification
+            Feedback resistance 10 MOhms
+            
+            C: 10 Amplification
+            Feedback resistance: 100 MOhms
+            
+            D: 1 Amplification
+            Feedback resistance 1 GOhm
+            
+            Setup 2 - Pinky:  - PCB 1 (6 converters with):
+            A. Amplification 10
+            Feedback resistance 100 MOhm
+            
+            B. PCB 2 (6 converters with):
+            Amplification 100 tims
+            10 mOhm Feedback resistance
+
+            Setup 3 - Brains: Amplfication 28.5
+            Feedback resistance, 33.3 MOhm
+
+            Setup 4 - Switch: (Information to be completed)
+            If no correction is desired, the amplification can be set
+            to 1.
+
+            3. instruments_setup:
+            
+            3.1 multiple_devices: boolean
+            False will initialise the drivers to read from a single hardware DNPU.
+            True, will enable to read from more than one DNPU device at the same time.
+
+            3.2 activation_instrument: str
+            Name of the activation instrument as observed in the NI Max software.
+            E.g.,  cDAQ1Mod3
+
+            3.3 activation_channels: list
+            Channels through which voltages will be sent for activating the device
+            (both data inputs and control voltage electrodes). The channels can be
+            checked in the schematic of the DNPU device.
+            E.g., [8,10,13,11,7,12,14]
+
+            3.4 activation_voltage_ranges: list
+            Minimum and maximum voltage for the activation electrodes.
+            E.g., [[-1.2, 0.6], [-1.2, 0.6],
+            [-1.2, 0.6], [-1.2, 0.6], [-1.2, 0.6], [-0.7, 0.3], [-0.7, 0.3]]
+
+            3.5 readout_instrument: str
+            Name of the readout instrument as observed in the NI Max software.
+            E.g., cDAQ1Mod4
+
+            3.6 readout_channels: [2] list
+            Channels for reading the output current values.
+            The channels can be checked in the schematic of the DNPU device.
+
+            3.7 trigger_source: str
+            For synchronisation purposes, sending data for the activation voltages on
+            one NI Task can trigger the readout device of another NI Task. In these
+            cases,the trigger source name should be specified in the configs.
+            This is only applicable for CDAQ to CDAQ setups
+            (with or without real-time rack).
+            E.g., cDAQ1/segment1
+            More information at
+            https://nidaqmx-python.readthedocs.io/en/latest/start_trigger.html
+
+            4. plateau_length: float - Length of the plateau that is being sent through the forward
+            call of the HardwareProcessor slope_length : float - Length of the slopes in the waveforms
+            sent to the device through the drivers
 
         Returns
         -------

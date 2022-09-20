@@ -9,9 +9,7 @@ from brainspy.processors.hardware.drivers.ni.setup import (
 class CDAQtoCDAQ(NationalInstrumentsSetup):
     """
     Class to establish a connection (for a single, or multiple hardware DNPUs) with the
-    CDAQ-to-CDAQ national instrument. It can be of 2 types:
-            * With a regular rack
-            * With a real time rack
+    CDAQ-to-CDAQ national instrument.
     """
 
     def __init__(self, configs):
