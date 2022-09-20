@@ -1,7 +1,12 @@
 """
-Contains the main processor class. Creates either a simulation processor or a
-hardware processor with given settings.
-Also handles merging the data with control voltages.
+For providing seamless validation on hardware, the brains-py library leverages on the concept
+of Processor, which allows to change the internal behaviour of the class to measure on
+simulations or hardware measurements, while maintaining an equivalent behaviour for the
+public methods. Internally, the Processor class also deals with the differences between
+input/output signals that are inherent to measuring in hardware or simulations (e.g., noise
+or length of signal). This greatly facilitates the reuse of the same code for simulations and
+hardware measurements. Without this feature, the research on these materials becomes
+difficult and time-consuming to reproduce in hardware.
 """
 
 import warnings

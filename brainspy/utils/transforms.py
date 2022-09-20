@@ -1,3 +1,6 @@
+"""
+File that contains a set of methods to perform linear transformation from a given range to the range of the activation electrodes.
+"""
 import torch
 from typing import Tuple
 

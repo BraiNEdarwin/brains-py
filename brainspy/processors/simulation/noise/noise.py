@@ -1,5 +1,5 @@
 """
-Module for generating noise.
+File containing classes for generating noise.
 """
 import warnings
 

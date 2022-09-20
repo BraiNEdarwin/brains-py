@@ -1,3 +1,11 @@
+"""
+It is a very similar class to that of Processor, but it contains the con-
+trol voltages, declared as learnable parameters. Therefore, it only has the same
+input dimensions as the number of available data input electrodes. It is also a
+child of torch.nn.Module, and it allows for representing a layer of DNPUs in a time-
+multiplexing fashion (with the same Processor instance). It also enables applying
+linear transformations to the inputs before passing them to the processor.
+"""
 from random import random
 import torch
 import collections

@@ -1,3 +1,6 @@
+"""
+File for applying a convolution layer using DNPU based kernels.
+"""
 import torch
 
 from brainspy.processors.processor import Processor

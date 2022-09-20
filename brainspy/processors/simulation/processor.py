@@ -1,7 +1,5 @@
 """
-Module for creating and managing a surrogate model. A surrogate model consists
-of a basic neural network, as well as extra effects applied to its output:
-amplification, output clipping, noise.
+File containing the main class for Software Processor, which goes inside the Processor class.
 """
 
 import warnings

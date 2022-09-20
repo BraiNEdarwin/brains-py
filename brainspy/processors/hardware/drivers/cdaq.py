@@ -1,3 +1,6 @@
+"""
+File containing the class for CDAQ to CDAQ drivers.
+"""
 import numpy as np
 
 from brainspy.processors.hardware.drivers.ni.setup import (

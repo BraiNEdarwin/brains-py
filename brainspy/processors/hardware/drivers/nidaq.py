@@ -1,3 +1,6 @@
+"""
+File containing the class for CDAQ to NiDAQ drivers.
+"""
 import numpy as np
 import warnings
 from brainspy.processors.hardware.drivers.ni.setup import (

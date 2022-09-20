@@ -1,3 +1,6 @@
+"""
+File for applying a batch normalisation layer after a DNPU class.
+"""
 import torch.nn as nn
 
 from brainspy.processors.dnpu import DNPU

@@ -1,3 +1,7 @@
+"""
+File containing the genetic algorithm methods and the optimizer class for
+training a single DNPU.
+"""
 import os
 import torch
 import random  # TODO: set the seed with TorchUtils or substitute by numpy functions

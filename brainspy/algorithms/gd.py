@@ -1,3 +1,8 @@
+"""
+File containing the gradient descent algorithm methods adapted for DNPU classes and
+custom torch.nn.Module children custom classes that contain DNPU classes or DNPU based
+modules from brainspy.processors.modules.
+"""
 import os
 import torch
 import numpy as np

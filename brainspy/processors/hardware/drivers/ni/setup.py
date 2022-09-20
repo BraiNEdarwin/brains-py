@@ -1,5 +1,5 @@
 """
-
+File containing the generic class for creating a driver of national instruments
 """
 import sys
 import math

@@ -1,3 +1,6 @@
+"""
+Package for describing the dataset for training a perceptron after the signal of a Processor class or one of its children.
+"""
 import torch
 from torch.utils.data import Dataset
 

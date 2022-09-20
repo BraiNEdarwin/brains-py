@@ -1,12 +1,11 @@
-import numpy as np
-from typing import Union
 """
 This file contains a set of functions that are used to initialise the channels used to
 specify the connection between the National Instrument devices and the electrodes of
 DNPU hardware devices. It supports to declare channels for one or more DNPU hardware
 devices simultaneously.
 """
-
+import numpy as np
+from typing import Union
 
 def init_channel_data(configs):
     """

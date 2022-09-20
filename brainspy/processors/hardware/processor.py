@@ -1,3 +1,6 @@
+"""
+File containing the main class for Hardware Processor, which goes inside the Processor class.
+"""
 import torch
 import warnings
 from torch import nn
