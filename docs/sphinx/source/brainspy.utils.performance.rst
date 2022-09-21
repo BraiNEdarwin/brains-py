@@ -1,14 +1,6 @@
 brainspy.utils.performance package
 ==================================
 
-Module contents
----------------
-
-.. automodule:: brainspy.utils.performance
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Submodules
 ----------
 
@@ -28,4 +20,10 @@ brainspy.utils.performance.data module
    :undoc-members:
    :show-inheritance:
 
+Module contents
+---------------
 
+.. automodule:: brainspy.utils.performance
+   :members:
+   :undoc-members:
+   :show-inheritance:

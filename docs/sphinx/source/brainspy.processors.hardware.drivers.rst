@@ -1,14 +1,6 @@
 brainspy.processors.hardware.drivers package
 ============================================
 
-Module contents
----------------
-
-.. automodule:: brainspy.processors.hardware.drivers
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Subpackages
 -----------
 
@@ -36,3 +28,10 @@ brainspy.processors.hardware.drivers.nidaq module
    :undoc-members:
    :show-inheritance:
 
+Module contents
+---------------
+
+.. automodule:: brainspy.processors.hardware.drivers
+   :members:
+   :undoc-members:
+   :show-inheritance:

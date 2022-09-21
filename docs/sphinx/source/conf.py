@@ -24,7 +24,7 @@ sys.path.insert(0, '/home/unai/Documents/3-Programming/bspy/brains-py')
 extensions = [
 'sphinx.ext.autodoc',
 'sphinx.ext.napoleon',
-'sphinx.ext.autosummary',
+#'sphinx.ext.autosummary',
 #'autoapi.sphinx',
 'sphinx.ext.viewcode'
 ]

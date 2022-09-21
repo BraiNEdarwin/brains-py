@@ -1,14 +1,6 @@
 brainspy.algorithms package
 ===========================
 
-Module contents
----------------
-
-.. automodule:: brainspy.algorithms
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Submodules
 ----------
 
@@ -28,4 +20,10 @@ brainspy.algorithms.gd module
    :undoc-members:
    :show-inheritance:
 
+Module contents
+---------------
 
+.. automodule:: brainspy.algorithms
+   :members:
+   :undoc-members:
+   :show-inheritance:

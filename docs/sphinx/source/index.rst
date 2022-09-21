@@ -10,11 +10,15 @@ A python package based on PyTorch and NumPy to support the study of Dopant Netwo
 
 You can find usage information at: https://github.com/BraiNEdarwin/brains-py/wiki
 
-.. autosummary::
-   :toctree: _autosummary
-   :recursive:
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+#.. autosummary::
+#   :toctree: _autosummary
+#   :recursive:
    
    brainspy
-
+   modules
 
 

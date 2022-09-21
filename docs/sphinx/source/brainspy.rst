@@ -1,14 +1,6 @@
 brainspy package
 ================
 
-Module contents
----------------
-
-.. automodule:: brainspy
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Subpackages
 -----------
 
@@ -19,4 +11,10 @@ Subpackages
    brainspy.processors
    brainspy.utils
 
+Module contents
+---------------
 
+.. automodule:: brainspy
+   :members:
+   :undoc-members:
+   :show-inheritance:
