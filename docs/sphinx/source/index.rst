@@ -12,7 +12,7 @@ Welcome to brainspy's documentation!
    :toctree: _autosummary
    :recursive:
    
-   brainspy
+   modules
    
 Indices and tables
 ==================
