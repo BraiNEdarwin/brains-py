@@ -12,5 +12,5 @@ explore its scalability.
 
 More information at: https://github.com/BraiNEdarwin/brains-py/wiki
 """
-__VERSION__ = "1.0.1"
+__VERSION__ = "1.0.2"
 __TEST_MODE__ = "SIMULATION_PC"
