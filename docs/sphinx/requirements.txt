@@ -3,3 +3,4 @@ Markdown<3.2
 sphinx_rtd_theme
 sphinx-autoapi
 furo
+brainspy
