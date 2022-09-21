@@ -38,7 +38,7 @@ class DNPU(nn.Module):
         Initialises the super class and makes a separation between those electrodes that are data
         input and those that are control.
 
-        Attributes
+        Parameters
         ----------
         processor : Processor
             An instance of a Processor class representing either a simulation processor or a
@@ -84,7 +84,7 @@ class DNPU(nn.Module):
         """
         Sets the type of forward pass that is going to be used.
 
-        Attributes
+        Parameters
         ----------
         forward_pass_type : str
             It indicates if the forward pass for more than one DNPU devices on time-multiplexing
@@ -108,7 +108,7 @@ class DNPU(nn.Module):
         It counts how many control and data input electrodes are
         going to be declared using the data_input_indices variable.
 
-        Attributes
+        Parameters
         ----------
         data_input_indices: Sequence[int]
             Specifies which electrodes are going to be used for inputing data. The reminder of the

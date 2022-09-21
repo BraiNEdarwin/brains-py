@@ -27,7 +27,7 @@ class Processor(nn.Module):
     A class for handling the usage and swapping of hardware and software
     processors.
 
-    Attributes
+    Parameters
     ----------
     configs : dict
         Configs dictionary, documented in init method.

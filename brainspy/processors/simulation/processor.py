@@ -28,7 +28,7 @@ class SurrogateModel(nn.Module):
     The effects need to be set after creating a SurrogateModel, this is
     explained in __init__.
 
-    Attributes
+    Parameters
     ----------
     model : torch.nn.Module
         The neural network the surrogate model works on.

@@ -34,7 +34,7 @@ class WaveformManager:
     line that goes from the current point to the next point. The starting and
     ending points are considered zero.
 
-    Attributes
+    Parameters
     ----------
     plateau_length : int
         The length of the plateaus of this manager.
