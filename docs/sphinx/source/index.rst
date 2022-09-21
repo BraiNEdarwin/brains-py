@@ -13,8 +13,7 @@ You can find usage information at: https://github.com/BraiNEdarwin/brains-py/wik
 .. autosummary::
    :toctree: _autosummary
    :recursive:
-   
-   brainspy
 
+   brainspy
 
 
