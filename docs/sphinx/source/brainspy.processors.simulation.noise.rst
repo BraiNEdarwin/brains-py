@@ -1,6 +1,14 @@
 brainspy.processors.simulation.noise package
 ============================================
 
+Module contents
+---------------
+
+.. automodule:: brainspy.processors.simulation.noise
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -12,10 +20,4 @@ brainspy.processors.simulation.noise.noise module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
-.. automodule:: brainspy.processors.simulation.noise
-   :members:
-   :undoc-members:
-   :show-inheritance:

@@ -1,6 +1,14 @@
 brainspy.processors.hardware.drivers.ni package
 ===============================================
 
+Module contents
+---------------
+
+.. automodule:: brainspy.processors.hardware.drivers.ni
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -28,10 +36,4 @@ brainspy.processors.hardware.drivers.ni.tasks module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
-.. automodule:: brainspy.processors.hardware.drivers.ni
-   :members:
-   :undoc-members:
-   :show-inheritance:

@@ -1,6 +1,14 @@
 brainspy.utils package
 ======================
 
+Module contents
+---------------
+
+.. automodule:: brainspy.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -60,10 +68,4 @@ brainspy.utils.waveform module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
-.. automodule:: brainspy.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:

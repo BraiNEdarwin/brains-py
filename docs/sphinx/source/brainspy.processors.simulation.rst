@@ -1,6 +1,14 @@
 brainspy.processors.simulation package
 ======================================
 
+Module contents
+---------------
+
+.. automodule:: brainspy.processors.simulation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -28,10 +36,4 @@ brainspy.processors.simulation.processor module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
-.. automodule:: brainspy.processors.simulation
-   :members:
-   :undoc-members:
-   :show-inheritance:
