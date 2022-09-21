@@ -1,4 +1,4 @@
-﻿brainspy
+brainspy
 ========
 
 .. automodule:: brainspy

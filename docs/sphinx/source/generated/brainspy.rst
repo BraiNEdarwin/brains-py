@@ -1,0 +1,23 @@
+﻿brainspy
+========
+
+.. automodule:: brainspy
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+
