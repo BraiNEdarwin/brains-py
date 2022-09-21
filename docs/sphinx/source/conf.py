@@ -11,7 +11,7 @@ import autoapi
 project = 'BRAINS-Py'
 copyright = '2022, Unai Alegre-Ibarra et al.'
 author = 'Unai Alegre-Ibarra et al.'
-release = '1.0.1'
+release = '1.0.2'
 
 import os
 import sys
