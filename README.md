@@ -63,4 +63,6 @@ This project has received financial support from:
 - **Dutch Research Council** 
   - HTSM grant no. 16237
   - Natuurkunde Projectruimte grant no. 680-91-114
+- **Horizon Europe research and innovation programme**
+  - Grant no. 101046878
 - **Toyota Motor Europe N.V.**
