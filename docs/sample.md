@@ -1,6 +1,7 @@
 ---
-title: 'brains-py: A framework to support research on energy-efficient
-    unconventional hardware for machine learning'
+
+title: brains-py, A framework to support research on energy-efficient
+    unconventional hardware for machine learning
 tags:
   - Dopant network processing units (DNPUs)
   - Material Learning
@@ -92,11 +93,11 @@ One of the main aims of the framework is to explore different ways in which DNPU
 ![Scanning electron\
 microscope image and its sche-\
 matic cross
-section [@chen2020classification]\label={fig:sub1}](https://raw.githubusercontent.com/BraiNEdarwin/brains-py/master/docs/figures/dnpu.png)
+section [@chen2020classification]\label={fig:sub1}](figures/dnpu.png)
 
 \centering
 ![**Simplified class diagram for processors package in brains-py
-library.\label={fig:sub2}](https://raw.githubusercontent.com/BraiNEdarwin/brains-py/master/docs/figures/processor.jpg)
+library.\label={fig:sub2}](figures/processor)
 
 #Framework description
 
