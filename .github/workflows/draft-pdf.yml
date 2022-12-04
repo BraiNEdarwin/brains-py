@@ -3,17 +3,18 @@ on: [push]
 jobs:
   paper:
     runs-on: ubuntu-latest
-    name: brains-py, A framework to support research on energy-efficient
-    unconventional hardware for machine learning
+    name: Paper Draft
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Open Journals PDF Generator
+	uses: openjournals/openjournals-draft-action@v.1.0
       - name: Build draft PDF
         uses: openjournals/openjournals-draft-action@master
         with:
           journal: joss
           # This should be the path to the paper within your repo.
-          paper-path: docs/paper.md
+          paper-path: paper.md
       - name: Upload
         uses: actions/upload-artifact@v1
         with:

@@ -91,7 +91,7 @@ One of the main aims of the framework is to explore different ways in which DNPU
 
 ![Scanning electron microscope image and its schematic cross section [@chen2020classification]\label={fig:sub1}](figures/dnpu.png)
 
-![Simplified class diagram for processors package in brains-py library.\label={fig:sub2}](figures/processor)
+![Simplified class diagram for processors package in brains-py library.\label={fig:sub2}](figures/processor.jpg)
 
 
 #Framework description
