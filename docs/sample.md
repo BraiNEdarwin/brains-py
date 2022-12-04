@@ -89,15 +89,10 @@ One of the main aims of the framework is to explore different ways in which DNPU
 
 -   *DNPUConv2d*: It is a child of the *DNPU* class, and it enables the processing of the information in the same way as a convolution layer would do, for different kernel dimensions. In each 	case, a number of devices in parallel (time-multiplexed) will represent a kernel (e.g., for a 3x3 convolution, a layer of three eight-electrode devices can be used, where each device has 3 data-input electrodes and a single output). This layer can be used to reproduce computation with DNPUs using convolutional neural network (CNN) layers, and replicate existing deep-learning models.
 
-\centering
-![Scanning electron\
-microscope image and its sche-\
-matic cross
-section [@chen2020classification]\label={fig:sub1}](figures/dnpu.png)
+![Scanning electron microscope image and its schematic cross section [@chen2020classification]\label={fig:sub1}](figures/dnpu.png)
 
-\centering
-![**Simplified class diagram for processors package in brains-py
-library.\label={fig:sub2}](figures/processor)
+![Simplified class diagram for processors package in brains-py library.\label={fig:sub2}](figures/processor)
+
 
 #Framework description
 
