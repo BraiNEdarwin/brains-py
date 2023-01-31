@@ -1,6 +1,6 @@
 # brains-py [![CircleCI](https://dl.circleci.com/status-badge/img/gh/BraiNEdarwin/brains-py/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/BraiNEdarwin/brains-py/tree/master) [![Tools](https://img.shields.io/badge/brainspy-smg-darkblue.svg)](https://github.com/BraiNEdarwin/brainspy-smg) [![Theory](https://img.shields.io/badge/brainspy-tasks-lightblue.svg)](https://github.com/BraiNEdarwin/brainspy-tasks)
 
-A python package based on PyTorch and NumPy to support the study of Dopant Network Processing Units (DNPUs) [[1]]((https://doi.org/10.1038/s41586-019-1901-0))[[2]](https://arxiv.org/abs/2007.12371) as low-power computational units in the context of neural networks. The aim of the package is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.  The package is part of the brains-py project, a set of python libraries to support the development of nano-scale in-materio hardware for designing hardware accelerators for neural-network like operations. This package is based on several peer-reviewed scientific publications. 
+A python package based on PyTorch and NumPy to support the study of Dopant Network Processing Units (DNPUs) [[1]]((https://doi.org/10.1038/s41586-019-1901-0))[[2]](https://arxiv.org/abs/2007.12371) as low-power computational units in the context of neural networks. The aim of the package is to support key functions for hardware setups and algorithms related to searching functionality on DNPUs and DNPU architectures both in simulations and in hardware.  The package is part of the brains-py project, a set of python libraries to support the development of nano-scale in-materio hardware for designing hardware accelerators for neural-network like operations. This package is based on several peer-reviewed scientific publications.
 
 ## 1. Instructions
 
@@ -55,14 +55,16 @@ With the contribution of:
 - **Mohamadreza Zolfagharinejad** [@mamrez](https://github.com/mamrez) ([m.zolfagharinejad@utwente.nl](mailto:m.zolfagharinejad@utwente.nl)): Writing of some of the examples in Jupyter notebooks (IV curves and surrogate model generation).
 - **Jochem Wildeboer** [@jtwild](https://github.com/jtwild/)  Nearest neighbour loss functions.
 
-Other minor contributions might have been added, in form of previous scripts that have been improved and restructured from [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt), and the authorship remains of those people who collaborated in it. 
+Other minor contributions might have been added, in form of previous scripts that have been improved and restructured from [SkyNEt](https://github.com/BraiNEdarwin/SkyNEt), and the authorship remains of those people who collaborated in it.
 
 This project has received financial support from:
 
 - **University of Twente**
-- **Dutch Research Council** 
+- **Dutch Research Council**
   - HTSM grant no. 16237
   - Natuurkunde Projectruimte grant no. 680-91-114
 - **Horizon Europe research and innovation programme**
   - Grant no. 101046878
 - **Toyota Motor Europe N.V.**
+- **Deutsche Forschungsgemeinschaft**
+  -  Project 433682494 – SFB 1459
