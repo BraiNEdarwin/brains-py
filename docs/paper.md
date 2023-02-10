@@ -129,27 +129,7 @@ Within the scope of the above projects, several PhDs and Master Students have de
 
 # Related publications
 
-**Hopping-Transport Mechanism for Reconfigurable Logic in Disordered Dopant Networks**  
-Henri Tertilt, Jesse Bakker, Marlon Becker, Bram de Wilde, Indrek Klanberg, Bernard J. Geurts,  
-Wilfred G. van der Wiel, Andreas Heuer, and Peter A. Bobbert  
-[Phys. Rev. A **17**, 064025 (2022)](https://journals.aps.org/prapplied/abstract/10.1103/PhysRevApplied.17.064025)
-
-**Dopant Network Processing Units: Towards Efficient Neural-network Emulators with High-capacity Nanoelectronic Nodes**  
-Hans-Christian Ruiz Euler, Unai Alegre-Ibarra, Bram van de Ven, Hajo Broersma, Peter A. Bobbert, Wilfred G. van der Wiel  
-[Neuromorph. Comput. Eng. **1**, 024002 (2021)](https://iopscience.iop.org/article/10.1088/2634-4386/ac1a7f)
-
-**1/*f* noise and machine intelligence in a nonlinear dopant atom network**  
-Tao Chen, Peter A. Bobbert and Wilfred G. van der Wiel  
-[Small Science 202000014 (2021)](https://doi.org/10.1002/smsc.202000014)
-
-**A deep-learning approach to realizing functionality in nanoelectronic devices**  
-Hans-Christian Ruiz Euler, Marcus N.
-Boon, Jochem T. Wildeboer, Bram van de Ven, Tao Chen, Hajo Broersma,
-Peter A. Bobbert and Wilfred G. van der Wiel  
-[Nature Nanotechnology **15**, 992-998 (2020)](https://www.nature.com/articles/s41565-020-00779-y)
-
-**Classification with a disordered dopant-atom network in silicon**T. Chen, J. van Gelder, B. van de Ven, S. Amitonov, B. de Wilde, H.-C. Ruiz Euler,  
-H. J. Broersma, P. A. Bobbert, F. A. Zwanenburg, W.G. van der Wiel [Nature **577**, 341-345 (2020)](https://doi.org/10.1038/s41586-019-1901-0)
+Tested to remove related publications.
 
 # Acknowledgements
 
