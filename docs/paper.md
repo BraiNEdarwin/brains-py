@@ -83,6 +83,9 @@ There are two main flavours in which single DNPUs can be trained: *Evolution in 
 
 3. Validate on hardware: Once satisfactory control voltages for a task are found, brains-py supports seamlessly validating them on hardware, without having to modify the code of the model, by simply changing the model to hardware-evaluation mode.
 
+![Scanning electron microscope image and its schematic cross section \label={fig:sub1}](figures/dnpu.png)
+
+![Simplified class diagram for processors package in brains-py library.\label={fig:sub2}](figures/processor.jpg)
 
 # Finding functionality on multi-DNPU circuit design
 
