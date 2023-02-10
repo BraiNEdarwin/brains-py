@@ -79,11 +79,53 @@ We introduce a framework for facilitating the characterisation of different mate
 
 # Projects
 
-Tested to remove projects
+The tool is primarily used in the Center for Brain-Inspired NanoSystems, which
+includes the MESA+ Institute for Nanotechnology, the Digital Society Institute and
+the Faculty of Behavioural, Management and Social sciences. It has been used for several projects:
+
+1. HYBRAIN – Hybrid electronic-photonic architectures for brain-inspired computing
+
+        Project funded by the European Union's Horizon Europe research and innovation         programme under Grant Agreement No 101046878
+
+        [https://hybrain.eu/](https://hybrain.eu/)
+
+2. Collaborative Research Centre on Intelligent Matter (CRC 1459)
+
+        Project funded by the Deutsche Forschungsgemeinschaft (DFG, German Research         Foundation) through project 433682494 - [SFB 1459 - Intelligent Matter - University of Münster](https://www.uni-muenster.de/SFB1459/)
+
+3. Evolutionary Computing using Nanomaterial Networks
+
+        Project funded by the Dutch Research Council (NWO) Natuurkunde Projectruimte         Grant No. 680-91-114
+
+4. Nanomaterial Networks for Artificial Intelligence in the Automotive Industry: NANO(AI)2
+
+        Project funded by the Dutch Research Council (NWO) Natuurkunde Projectruimte         Grant No. 16237 DFG, German Research Foundation) through project 433682494 –         SFB 1459
+
+Within the scope of the above projects, several PhDs and Master Students have developed and are developing code based on this library.
 
 # Related publications
 
-Tested to remove related publications.
+**Hopping-Transport Mechanism for Reconfigurable Logic in Disordered Dopant Networks**  
+Henri Tertilt, Jesse Bakker, Marlon Becker, Bram de Wilde, Indrek Klanberg, Bernard J. Geurts,  
+Wilfred G. van der Wiel, Andreas Heuer, and Peter A. Bobbert  
+[Phys. Rev. A **17**, 064025 (2022)](https://journals.aps.org/prapplied/abstract/10.1103/PhysRevApplied.17.064025)
+
+**Dopant Network Processing Units: Towards Efficient Neural-network Emulators with High-capacity Nanoelectronic Nodes**  
+Hans-Christian Ruiz Euler, Unai Alegre-Ibarra, Bram van de Ven, Hajo Broersma, Peter A. Bobbert, Wilfred G. van der Wiel  
+[Neuromorph. Comput. Eng. **1**, 024002 (2021)](https://iopscience.iop.org/article/10.1088/2634-4386/ac1a7f)
+
+**1/*f* noise and machine intelligence in a nonlinear dopant atom network**  
+Tao Chen, Peter A. Bobbert and Wilfred G. van der Wiel  
+[Small Science 202000014 (2021)](https://doi.org/10.1002/smsc.202000014)
+
+**A deep-learning approach to realizing functionality in nanoelectronic devices**  
+Hans-Christian Ruiz Euler, Marcus N.
+Boon, Jochem T. Wildeboer, Bram van de Ven, Tao Chen, Hajo Broersma,
+Peter A. Bobbert and Wilfred G. van der Wiel  
+[Nature Nanotechnology **15**, 992-998 (2020)](https://www.nature.com/articles/s41565-020-00779-y)
+
+**Classification with a disordered dopant-atom network in silicon**T. Chen, J. van Gelder, B. van de Ven, S. Amitonov, B. de Wilde, H.-C. Ruiz Euler,  
+H. J. Broersma, P. A. Bobbert, F. A. Zwanenburg, W.G. van der Wiel [Nature **577**, 341-345 (2020)](https://doi.org/10.1038/s41586-019-1901-0)
 
 # Acknowledgements
 
