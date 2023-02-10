@@ -102,29 +102,7 @@ We introduce a framework for facilitating the characterisation of different mate
 
 # Projects
 
-The tool is primarily used in the Center for Brain-Inspired NanoSystems, which
-includes the MESA+ Institute for Nanotechnology, the Digital Society Institute and
-the Faculty of Behavioural, Management and Social sciences. It has been used for several projects:
-
-1. HYBRAIN – Hybrid electronic-photonic architectures for brain-inspired computing
-
-        Project funded by the European Union's Horizon Europe research and innovation         programme under Grant Agreement No 101046878
-
-        [https://hybrain.eu/](https://hybrain.eu/)
-
-2. Collaborative Research Centre on Intelligent Matter (CRC 1459)
-
-        Project funded by the Deutsche Forschungsgemeinschaft (DFG, German Research         Foundation) through project 433682494 - [SFB 1459 - Intelligent Matter - University of Münster](https://www.uni-muenster.de/SFB1459/)
-
-3. Evolutionary Computing using Nanomaterial Networks
-
-        Project funded by the Dutch Research Council (NWO) Natuurkunde Projectruimte         Grant No. 680-91-114
-
-4. Nanomaterial Networks for Artificial Intelligence in the Automotive Industry: NANO(AI)2
-
-        Project funded by the Dutch Research Council (NWO) Natuurkunde Projectruimte         Grant No. 16237 DFG, German Research Foundation) through project 433682494 –         SFB 1459
-
-Within the scope of the above projects, several PhDs and Master Students have developed and are developing code based on this library.
+Tested to remove projects
 
 # Related publications
 
