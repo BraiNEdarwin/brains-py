@@ -66,7 +66,7 @@ Projections about the limitations of digital computers for deep learning models 
 
 # Statement of need
 
-The breakthroughs of deep learning come along with high energy costs, related to the high throughput data-movement requirements for computing them. The increasing computational demands of these models, along with the projected traditional hardware limitations, are shifting the paradigm towards innovative hardware solutions, where analogue components for application-specific integrated circuits are keenly sought [@kaspar2021rise]. Dopant network processing units (DNPUs) are a novel concept consisting of a lightly doped semiconductor, edged with several electrodes, where hopping in dopant networks is the dominant charge transport mechanism [@chen2020classification, @ruiz2021dopant] (See Figure 1). The output current of DNPUs is a non-linear function of the input voltages, which can be tuned for representing different complex functions. The process of finding adequate control voltages for a particular task is called training. Once the right voltage values are found, the same device can represent different complex functions on demand. The main advantages of these CMOS-compatible devices are the very low currents, their multi-scale tunability on a high dimensional parameter space, and their potential for extensive parallelism. Devices based on this concept enable the creation of potentially very low energy-consuming hardware for computing deep neural network (DNN) models, where each DNPU has a projected energy consumption of over 100 Tera-operations per second per Watt [@chen2020classification]. This concept is still in its infancy, and it can be developed in diverse ways. From various types of materials (host and dopants) to distinct dopant concentrations, different device dimensions or the number of electrodes, as well as different combinations of data-input, control and readout electrodes. Also, there are different ways in which DNPU-based circuits could be scaled up, and having to create hardware circuits from scratch is an arduous and time-consuming process. For this reason, this paper introduces brains-py, a generic framework to facilitate research on different sorts of disordered nano-material networks for natural and energy-efficient analogue computing. To the extent of the knowledge of the authors, there is no other similar works on the area.
+The breakthroughs of deep learning come along with high energy costs, related to the high throughput data-movement requirements for computing them. The increasing computational demands of these models, along with the projected traditional hardware limitations, are shifting the paradigm towards innovative hardware solutions, where analogue components for application-specific integrated circuits are keenly sought [@kaspar2021rise]. Dopant network processing units (DNPUs) are a novel concept consisting of a lightly doped semiconductor, edged with several electrodes, where hopping in dopant networks is the dominant charge transport mechanism [@chen2020classification, @ruiz2021dopant, @tertilt2022hopping, @chen20211] (See Figure 1). The output current of DNPUs is a non-linear function of the input voltages, which can be tuned for representing different complex functions. The process of finding adequate control voltages for a particular task is called training. Once the right voltage values are found, the same device can represent different complex functions on demand. The main advantages of these CMOS-compatible devices are the very low currents, their multi-scale tunability on a high dimensional parameter space, and their potential for extensive parallelism. Devices based on this concept enable the creation of potentially very low energy-consuming hardware for computing deep neural network (DNN) models, where each DNPU has a projected energy consumption of over 100 Tera-operations per second per Watt [@chen2020classification]. This concept is still in its infancy, and it can be developed in diverse ways. From various types of materials (host and dopants) to distinct dopant concentrations, different device dimensions or the number of electrodes, as well as different combinations of data-input, control and readout electrodes. Also, there are different ways in which DNPU-based circuits could be scaled up, and having to create hardware circuits from scratch is an arduous and time-consuming process. For this reason, this paper introduces brains-py, a generic framework to facilitate research on different sorts of disordered nano-material networks for natural and energy-efficient analogue computing. To the extent of the knowledge of the authors, there is no other similar works on the area.
 
 
 # Framework description
@@ -127,29 +127,6 @@ the Faculty of Behavioural, Management and Social sciences. It has been used for
 
 Within the scope of the above projects, several PhDs and Master Students have developed and are developing code based on this library.
 
-# Related publications
-
-**Hopping-Transport Mechanism for Reconfigurable Logic in Disordered Dopant Networks**  
-Henri Tertilt, Jesse Bakker, Marlon Becker, Bram de Wilde, Indrek Klanberg, Bernard J. Geurts,  
-Wilfred G. van der Wiel, Andreas Heuer, and Peter A. Bobbert  
-[Phys. Rev. A **17**, 064025 (2022)](https://journals.aps.org/prapplied/abstract/10.1103/PhysRevApplied.17.064025)
-
-**Dopant Network Processing Units: Towards Efficient Neural-network Emulators with High-capacity Nanoelectronic Nodes**  
-Hans-Christian Ruiz Euler, Unai Alegre-Ibarra, Bram van de Ven, Hajo Broersma, Peter A. Bobbert, Wilfred G. van der Wiel  
-[Neuromorph. Comput. Eng. **1**, 024002 (2021)](https://iopscience.iop.org/article/10.1088/2634-4386/ac1a7f)
-
-**1/*f* noise and machine intelligence in a nonlinear dopant atom network**  
-Tao Chen, Peter A. Bobbert and Wilfred G. van der Wiel  
-[Small Science 202000014 (2021)](https://doi.org/10.1002/smsc.202000014)
-
-**A deep-learning approach to realizing functionality in nanoelectronic devices**  
-Hans-Christian Ruiz Euler, Marcus N.
-Boon, Jochem T. Wildeboer, Bram van de Ven, Tao Chen, Hajo Broersma,
-Peter A. Bobbert and Wilfred G. van der Wiel  
-[Nature Nanotechnology **15**, 992-998 (2020)](https://www.nature.com/articles/s41565-020-00779-y)
-
-**Classification with a disordered dopant-atom network in silicon**T. Chen, J. van Gelder, B. van de Ven, S. Amitonov, B. de Wilde, H.-C. Ruiz Euler,  
-H. J. Broersma, P. A. Bobbert, F. A. Zwanenburg, W.G. van der Wiel [Nature **577**, 341-345 (2020)](https://doi.org/10.1038/s41586-019-1901-0)
 
 # Acknowledgements
 
