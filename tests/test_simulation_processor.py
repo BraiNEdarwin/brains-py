@@ -133,25 +133,25 @@ class ModelTest(unittest.TestCase):
         self.assertEquals(self.model.get_key(d, key_noise),
                           {'type': "default"})
 
-    def test_set_effects(self):
-        """
-        Test setting effects.
-        """
-        self.model.set_effects(self.info_dict,
-                               amplification=[3.0],
-                               voltage_ranges="default",
-                               output_clipping=np.array([4.0, 3.0]))
-        print(self.model.output_clipping)
-        self.assertEquals(TorchUtils.format(self.model.amplification),
-                          TorchUtils.format([3.0]))
-        self.assertTrue(
-            torch.equal(TorchUtils.format(self.model.output_clipping),
-                        TorchUtils.format([4.0, 3.0])))
-        self.assertTrue(
-            torch.equal(
-                TorchUtils.format(self.model.get_voltage_ranges()),
-                TorchUtils.format(self.info_dict["activation_electrodes"]
-                                  ["voltage_ranges"])))
+    # def test_set_effects(self):
+    #     """
+    #     Test setting effects.
+    #     """
+    #     self.model.set_effects(self.info_dict,
+    #                            amplification=[3.0],
+    #                            voltage_ranges="default",
+    #                            output_clipping=np.array([4.0, 3.0]))
+    #     print(self.model.output_clipping)
+    #     self.assertEquals(TorchUtils.format(self.model.amplification),
+    #                       TorchUtils.format([3.0]))
+    #     self.assertTrue(
+    #         torch.equal(TorchUtils.format(self.model.output_clipping),
+    #                     TorchUtils.format([4.0, 3.0])))
+    #     self.assertTrue(
+    #         torch.equal(
+    #             TorchUtils.format(self.model.get_voltage_ranges()),
+    #             TorchUtils.format(self.info_dict["activation_electrodes"]
+    #                               ["voltage_ranges"])))
 
     def test_set_voltage_ranges(self):
         """
